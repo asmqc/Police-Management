@@ -17,32 +17,55 @@
     });
   });
 
-  /* ---------- Menu mobile ---------- */
-  var sheet = document.getElementById('sheet');
-  var openBtn = document.getElementById('menuOpen');
-  var closeBtn = document.getElementById('menuClose');
-  function setMenu(open) {
-    if (!sheet) return;
-    sheet.classList.toggle('open', open);
-    sheet.setAttribute('aria-hidden', open ? 'false' : 'true');
-    if (open) sheet.removeAttribute('inert'); else sheet.setAttribute('inert', '');
-    openBtn && openBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    document.body.classList.toggle('no-scroll', open);
-    if (open && closeBtn) closeBtn.focus();
-    else if (!open && openBtn && sheet.contains(document.activeElement)) openBtn.focus();
-  }
-  if (sheet) {
-    sheet.setAttribute('inert', '');
-    openBtn && openBtn.addEventListener('click', function () { setMenu(true); });
-    closeBtn && closeBtn.addEventListener('click', function () { setMenu(false); });
-    sheet.querySelectorAll('a').forEach(function (a) {
-      a.addEventListener('click', function () { setMenu(false); });
+  /* ---------- Menu ordinateur : indicateur qui glisse ---------- */
+  var menu = document.querySelector('.menu');
+  if (menu) {
+    var ind = menu.querySelector('.menu-ind');
+    var links = Array.prototype.slice.call(menu.querySelectorAll('a'));
+    var active = menu.querySelector('a[aria-current="page"]') || links[0];
+    function moveTo(a, instant) {
+      if (!a || !ind || !a.offsetWidth) return;
+      if (instant) ind.style.transition = 'none';
+      ind.style.setProperty('--x', (a.offsetLeft - 5) + 'px');
+      ind.style.setProperty('--w', a.offsetWidth + 'px');
+      ind.style.left = '5px';
+      links.forEach(function (l) { l.classList.toggle('lit', l === a); });
+      if (instant) { ind.offsetWidth; ind.style.transition = ''; }
+    }
+    moveTo(active, true);
+    menu.classList.add('ready');
+    links.forEach(function (a) {
+      a.addEventListener('mouseenter', function () { moveTo(a); });
+      a.addEventListener('focus', function () { moveTo(a); });
     });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && sheet.classList.contains('open')) setMenu(false);
-    });
-    window.matchMedia('(min-width:901px)').addEventListener('change', function (m) { if (m.matches) setMenu(false); });
+    menu.addEventListener('mouseleave', function () { moveTo(active); });
+    menu.addEventListener('focusout', function (e) { if (!menu.contains(e.relatedTarget)) moveTo(active); });
+    window.addEventListener('resize', function () { moveTo(active, true); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { moveTo(active, true); });
   }
+
+  /* ---------- Onglets téléphone : petite vibration visuelle au toucher ---------- */
+  var tabbar = document.querySelector('.tabbar');
+  if (tabbar) {
+    var home = tabbar.querySelector('a[aria-current="page"]');
+    var homeI = tabbar.querySelector('.tab-ind') ? tabbar.querySelector('.tab-ind').style.getPropertyValue('--i') : '';
+    /* Retour arrière (cache du navigateur) : remettre l'onglet de cette page */
+    window.addEventListener('pageshow', function (e) {
+      if (!e.persisted) return;
+      tabbar.querySelectorAll('a').forEach(function (l) { l.removeAttribute('aria-current'); });
+      if (home) home.setAttribute('aria-current', 'page');
+      var ti = tabbar.querySelector('.tab-ind'); if (ti) ti.style.setProperty('--i', homeI);
+    });
+  }
+  document.querySelectorAll('.tabbar a').forEach(function (a, i) {
+    a.addEventListener('click', function () {
+      var bar = a.parentNode;
+      var ind = bar.querySelector('.tab-ind');
+      if (ind) ind.style.setProperty('--i', i);
+      bar.querySelectorAll('a').forEach(function (l) { l.removeAttribute('aria-current'); });
+      a.setAttribute('aria-current', 'page');
+    });
+  });
 
   /* ---------- Année ---------- */
   document.querySelectorAll('[data-year]').forEach(function (el) { el.textContent = new Date().getFullYear(); });

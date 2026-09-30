@@ -95,13 +95,6 @@ button{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16.5px;letter-spacing:-.02em;white-space:nowrap}
 .brand-mark{width:32px;height:32px;flex:none;border-radius:10px;background:var(--grad);display:grid;place-items:center;box-shadow:0 6px 16px -6px rgba(91,79,240,.7)}
 .brand-mark svg{width:18px;height:18px}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-links a{
-  font-size:14px;font-weight:600;color:var(--ink-soft);
-  padding:8px 12px;border-radius:999px;transition:color .15s,background .15s;
-}
-.nav-links a:hover{color:var(--ink);background:var(--bg-soft)}
-.nav-links a[aria-current="page"]{color:var(--primary)}
 .nav-actions{display:flex;align-items:center;gap:8px}
 .icon-btn{
   width:44px;height:44px;border-radius:50%;border:1px solid var(--border);
@@ -113,35 +106,80 @@ button{font:inherit;color:inherit}
 .icon-btn .i-moon{display:none}
 html.dark .icon-btn .i-sun{display:none}
 html.dark .icon-btn .i-moon{display:block}
-.menu-btn{display:none}
 .nav-cta{display:inline-flex}
 
+/* ---------- Menu ordinateur : barre flottante + indicateur glissant ---------- */
+.menu{
+  position:relative;display:flex;align-items:center;gap:2px;padding:5px;
+  border-radius:999px;background:var(--bg-soft);border:1px solid var(--border);
+}
+.menu a{
+  position:relative;z-index:1;display:flex;align-items:center;gap:7px;
+  height:38px;padding:0 15px;border-radius:999px;
+  font-size:14px;font-weight:650;color:var(--ink-soft);white-space:nowrap;
+  transition:color .25s ease;
+}
+.menu a svg{width:16px;height:16px;flex:none;opacity:.85}
+.menu a:hover{color:var(--ink)}
+.menu a.lit,.menu a.lit:hover{color:#fff}
+.menu-ind{
+  position:absolute;z-index:0;top:5px;height:38px;left:0;width:0;border-radius:999px;
+  background:var(--grad);box-shadow:0 8px 20px -8px rgba(91,79,240,.85),inset 0 1px 0 rgba(255,255,255,.25);
+  transform:translateX(var(--x,0));width:var(--w,0);
+  transition:transform .45s cubic-bezier(.34,1.4,.5,1),width .45s cubic-bezier(.34,1.4,.5,1);
+  view-transition-name:menu-ind;
+}
+.menu:not(.ready) a[aria-current="page"]{background:var(--grad);color:#fff}
+@media (max-width:1060px){.menu a svg{display:none}.menu a{padding:0 13px}}
+
+/* ---------- Menu téléphone : barre d'onglets en bas (style iOS) ---------- */
+.tabbar{display:none}
 @media (max-width:900px){
-  .nav-links,.nav-actions .nav-cta{display:none}
-  .menu-btn{display:grid}
+  .menu,.nav-actions .nav-cta{display:none}
+  body{padding-bottom:calc(96px + var(--safe-bottom))}
+  .tabbar{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    position:fixed;z-index:65;
+    left:max(12px,var(--safe-left));right:max(12px,var(--safe-right));
+    bottom:calc(10px + var(--safe-bottom));
+    height:68px;padding:6px;border-radius:26px;
+    background:color-mix(in srgb,var(--bg) 90%,transparent);
+    -webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);
+    border:1px solid var(--border-strong);
+    box-shadow:0 18px 40px -16px rgba(10,22,40,.45),0 2px 6px rgba(10,22,40,.06);
+    view-transition-name:tabbar;
+  }
+  .tabbar a{
+    position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    border-radius:20px;font-size:10.5px;font-weight:700;letter-spacing:.01em;color:var(--ink-faint);
+    transition:color .25s ease,transform .15s ease;touch-action:manipulation;
+  }
+  .tabbar a svg{width:23px;height:23px;transition:transform .35s cubic-bezier(.34,1.6,.5,1)}
+  .tabbar a:active{transform:scale(.9)}
+  .tabbar a[aria-current="page"]{color:var(--primary)}
+  .tabbar a[aria-current="page"] svg{transform:translateY(-1px) scale(1.08)}
+  .tab-ind{
+    position:absolute;z-index:0;top:6px;bottom:6px;left:6px;
+    width:calc((100% - 12px) / 5);border-radius:20px;
+    background:color-mix(in srgb,var(--primary) 13%,transparent);
+    transform:translateX(calc(var(--i,0) * 100%));
+    transition:transform .45s cubic-bezier(.34,1.4,.5,1);
+    view-transition-name:tab-ind;
+  }
+  html.dark .tab-ind{background:color-mix(in srgb,var(--primary) 24%,transparent)}
+  html.dark .tabbar a[aria-current="page"]{color:#B4A8FF}
+  .site-footer{padding-bottom:28px}
 }
 
-/* Menu mobile plein écran */
-.sheet{
-  position:fixed;inset:0;z-index:70;
-  background:var(--bg);
-  padding:calc(var(--safe-top) + 12px) max(20px,var(--safe-right)) calc(var(--safe-bottom) + 24px) max(20px,var(--safe-left));
-  display:flex;flex-direction:column;
-  opacity:0;visibility:hidden;transform:translateY(-8px);
-  transition:opacity .22s ease,transform .22s ease,visibility 0s linear .22s;
-  overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-}
-.sheet.open{opacity:1;visibility:visible;transform:none;transition:opacity .22s ease,transform .22s ease}
-.sheet-top{display:flex;align-items:center;justify-content:space-between;height:52px;margin-bottom:12px}
-.sheet nav{display:flex;flex-direction:column}
-.sheet nav a{
-  display:flex;align-items:center;justify-content:space-between;
-  font-size:22px;font-weight:700;letter-spacing:-.02em;
-  padding:16px 4px;border-bottom:1px solid var(--border);min-height:56px;
-}
-.sheet nav a::after{content:"›";color:var(--ink-faint);font-weight:400;font-size:26px}
-.sheet .sheet-actions{margin-top:auto;padding-top:28px;display:grid;gap:10px}
-@media (min-width:901px){.sheet{display:none}}
+/* ---------- Transitions entre les pages ---------- */
+@view-transition{navigation:auto}
+.site-header{view-transition-name:header}
+::view-transition-old(root){animation:.16s ease both vt-out}
+::view-transition-new(root){animation:.32s cubic-bezier(.2,.8,.2,1) both vt-in}
+::view-transition-group(menu-ind),::view-transition-group(tab-ind){animation-duration:.45s;animation-timing-function:cubic-bezier(.34,1.3,.5,1)}
+@keyframes vt-out{to{opacity:0;transform:translateY(-8px)}}
+@keyframes vt-in{from{opacity:0;transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
 
 /* ---------------- Boutons ---------------- */
 .btn{

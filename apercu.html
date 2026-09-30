@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aperçu de l'app — Police Management</title>
+<meta name="description" content="Captures d'écran de Police Management : horaire, carte des postes, calculateur de vitesse, lois du Québec, forum et idées.">
+<meta name="theme-color" content="#FBFBFE">
+<meta name="color-scheme" content="light dark">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-title" content="Police Mgmt">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="Police Management">
+<meta property="og:description" content="La gestion d'horaire pensée pour les policiers du Québec.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://asmqc.github.io/Police-Management/assets/icon-512.png">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script>
+  /* Applique le thème avant l'affichage (évite le flash blanc) */
+  (function(){document.documentElement.classList.add('js');try{var s=localStorage.getItem('pm-theme');if(s==='dark'||(!s&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/app.css">
+<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
+</head>
+<body>
+<a class="skip" href="#main">Aller au contenu</a>
+
+<header class="site-header">
+  <div class="wrap nav">
+    <a href="index.html" class="brand" aria-label="Police Management — accueil"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>
+      Police Management</a>
+    <nav class="menu" aria-label="Navigation principale">
+      <span class="menu-ind" aria-hidden="true"></span>
+      <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h4v-5h4v5h4v-9"/></svg>Accueil</a>
+      <a href="fonctionnalites.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Fonctionnalités</a>
+      <a href="apercu.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Aperçu</a>
+      <a href="confidentialite.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.8 7 10 4-2.2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Sécurité</a>
+      <a href="contact.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>Contact</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="icon-btn" data-theme-toggle aria-label="Basculer le mode sombre">
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+      </button>
+      <a href="contact.html" class="btn btn-primary btn-sm nav-cta">Nous joindre</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-hero">
+    <div class="wrap">
+      <div class="crumbs"><a href="index.html">Accueil</a><span>›</span><span>Aperçu</span></div>
+      <span class="eyebrow">Aperçu de l'app</span>
+      <h1>Glisse pour découvrir</h1>
+      <p>Horaire, carte des postes, calculateur, lois du Québec, forum et idées — les vrais écrans de l'application.</p>
+    </div>
+  </section>
+  <section class="section" style="padding-top:clamp(32px,5vw,56px)">
+    <div class="wrap" data-carousel>
+      <div class="tour-head">
+        <div class="tabs" role="tablist" aria-label="Écrans de l'application">
+          <button class="tab" role="tab" data-go aria-controls="s-horaire">Horaire</button>
+          <button class="tab" role="tab" data-go aria-controls="s-carte">Carte</button>
+          <button class="tab" role="tab" data-go aria-controls="s-calc">Calculateur</button>
+          <button class="tab" role="tab" data-go aria-controls="s-lois">Lois</button>
+          <button class="tab" role="tab" data-go aria-controls="s-forum">Forum</button>
+          <button class="tab" role="tab" data-go aria-controls="s-idees">Idées</button>
+        </div>
+      </div>
+
+      <div class="slides" aria-live="polite">
+        <div class="slide" id="s-horaire" role="tabpanel" aria-label="Horaire">
+          <div class="shot"><img src="assets/img/horaire.webp" width="640" height="1377" loading="lazy" alt="Écran Mon horaire, vue mensuelle"></div>
+          <div>
+            <span class="tag">Horaire</span>
+            <h3>Ton horaire, toujours à jour</h3>
+            <p>Vue mois, semaine ou liste. Ta rotation se remplit automatiquement; ajoute congés, formations et jours fériés en un toucher. Une Live Activity affiche ton quart en cours directement sur l'écran verrouillé.</p>
+            <ul class="checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Deuxième calendrier pour ton conjoint ou ta conjointe, jamais partagé</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Export vers le calendrier iOS en un geste</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Horaire d'équipe partagé, sans tes notes personnelles</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="slide" id="s-carte" role="tabpanel" aria-label="Carte">
+          <div class="shot"><img src="assets/img/carte.webp" width="640" height="1363" loading="lazy" alt="Carte des postes de police du Québec et du Canada"></div>
+          <div>
+            <span class="tag">Carte SQ</span>
+            <h3>Chaque poste, à portée de main</h3>
+            <p>Postes autoroutiers, municipaux, hybrides et auxiliaires, quartiers généraux et unités spécialisées, repères kilométriques et sorties d'autoroute — le tout géolocalisé et fonctionnel hors ligne.</p>
+            <ul class="checks">
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Territoires autoroutiers et de postes en superposition</li>
+              <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Ta position reste sur ton appareil — jamais transmise</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="slide" id="s-calc" role="tabpanel" aria-label="Calculateur">
+          <div class="shot"><img src="assets/img/calculateur.webp" width="640" height="1375" loading="lazy" alt="Calculateur de vitesse et de constat"></div>
+          <div>
+            <span class="tag">Routière</span>
+            <h3>Le bon montant, tout de suite</h3>
+            <p>Entre la limite et la vitesse mesurée : amende selon l'article 516 du CSR, frais judiciaires, contribution pénale, réclamation totale et points d'inaptitude — zones travaux et scolaires prises en compte.</p>
+          </div>
+        </div>
+
+        <div class="slide" id="s-lois" role="tabpanel" aria-label="Lois">
+          <div class="shot"><img src="assets/img/lois.webp" width="640" height="1379" loading="lazy" alt="Section Lois du Québec"></div>
+          <div>
+            <span class="tag">Lois QC</span>
+            <h3>Les textes de loi, hors ligne</h3>
+            <p>Code de la sécurité routière, véhicules hors route, transport rémunéré de personnes, sécurité nautique fédérale et assurance automobile — recherche par article ou par mot-clé, sans connexion requise.</p>
+          </div>
+        </div>
+
+        <div class="slide" id="s-forum" role="tabpanel" aria-label="Forum">
+          <div class="shot"><img src="assets/img/forum.webp" width="640" height="1375" loading="lazy" alt="Forum CSR de l'application"></div>
+          <div>
+            <span class="tag">Forum</span>
+            <h3>L'expérience de tes collègues</h3>
+            <p>Un espace réservé aux membres de ton corps pour échanger sur les infractions et l'émission de constats — aucune donnée sur des civils, chaque publication peut être signalée à l'administrateur.</p>
+          </div>
+        </div>
+
+        <div class="slide" id="s-idees" role="tabpanel" aria-label="Idées">
+          <div class="shot"><img src="assets/img/idees.webp" width="640" height="1375" loading="lazy" alt="Section Idées, sondages et demandes de nouveautés"></div>
+          <div>
+            <span class="tag">Idées</span>
+            <h3>L'app évolue avec vous</h3>
+            <p>Vote aux sondages de l'administrateur, propose une nouveauté et appuie les idées des autres — les demandes les plus populaires montent naturellement en haut de la liste.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tour-nav">
+        <button class="icon-btn" data-prev aria-label="Écran précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button class="icon-btn" data-next aria-label="Écran suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-wrap">
+    <a class="next" href="confidentialite.html">
+      <span><small>Page suivante</small><b>Sécurité</b></span>
+      <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a href="index.html" class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>Police Management</a>
+        <p>Application indépendante — affiliée à aucune entreprise ni à aucun corps de police. Créée par Anthony Smith.</p>
+      </div>
+      <div class="foot-col">
+        <h5>Application</h5>
+        <a href="index.html">Accueil</a>
+        <a href="fonctionnalites.html">Fonctionnalités</a>
+        <a href="apercu.html">Aperçu</a>
+        <a href="confidentialite.html">Sécurité</a>
+        <a href="index.html#corps">Corps de police</a>
+      </div>
+      <div class="foot-col">
+        <h5>Contact</h5>
+        <a href="contact.html">Nous joindre</a>
+        <a href="mailto:police.management@hotmail.com">Courriel</a>
+        <a href="tel:+14384959849">438 495-9849</a>
+        <a href="https://discord.gg/mcTzBhRKP" target="_blank" rel="noopener">Discord de soutien</a>
+      </div>
+      <div class="foot-col">
+        <h5>Légal</h5>
+        <a href="confidentialite.html#politique">Politique de confidentialité</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span data-year>2026</span> Police Management. Tous droits réservés.</span>
+      <span>Fait au Québec 🇨🇦</span>
+    </div>
+  </div>
+</footer>
+
+<nav class="tabbar" aria-label="Navigation">
+  <span class="tab-ind" aria-hidden="true" style="--i:2"></span>
+  <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h4v-5h4v5h4v-9"/></svg><span>Accueil</span></a>
+  <a href="fonctionnalites.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Fonctions</span></a>
+  <a href="apercu.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><span>Aperçu</span></a>
+  <a href="confidentialite.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.8 7 10 4-2.2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Sécurité</span></a>
+  <a href="contact.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg><span>Contact</span></a>
+</nav>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

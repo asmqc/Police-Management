@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Politique de confidentialité — Police Management</title>
-<meta name="description" content="Politique de confidentialité de l'application Police Management, conforme à la Loi 25 du Québec, et façon de signaler un problème.">
+<title>Sécurité et confidentialité — Police Management</title>
+<meta name="description" content="Sécurité de Police Management et politique de confidentialité conforme à la Loi 25 du Québec, et façon de signaler un problème.">
 <meta name="theme-color" content="#FBFBFE">
 <meta name="color-scheme" content="light dark">
 <meta name="format-detection" content="telephone=no">
@@ -12,6 +12,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:title" content="Police Management">
+<meta property="og:description" content="La gestion d'horaire pensée pour les policiers du Québec.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://asmqc.github.io/Police-Management/assets/icon-512.png">
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -24,127 +28,82 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/site.css">
-<style>
-  .doc-hero{position:relative;isolation:isolate;overflow:hidden;background:#07080F;color:#fff;padding:clamp(40px,7vw,80px) 0 clamp(36px,5vw,56px)}
-  .doc-hero::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(55% 80% at 85% 0%,rgba(124,58,237,.45),transparent 70%),radial-gradient(45% 70% at 0% 0%,rgba(91,79,240,.35),transparent 70%)}
-  .doc-hero .eyebrow{color:#C4BDFF}
-  .doc-hero h1{font-size:clamp(30px,5vw,52px);line-height:1.08;letter-spacing:-.04em;font-weight:800;margin:14px 0 12px;text-wrap:balance}
-  .doc-hero .meta{display:flex;flex-wrap:wrap;gap:8px}
-  .doc-hero .meta span{font-size:13px;font-weight:600;color:rgba(255,255,255,.8);padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
-
-  .doc{display:grid;grid-template-columns:250px minmax(0,1fr);gap:clamp(32px,5vw,64px);padding-top:clamp(28px,5vw,56px);padding-bottom:clamp(56px,8vw,96px);align-items:start}
-  .toc{position:sticky;top:88px;max-height:calc(100vh - 110px);overflow:auto;scrollbar-width:thin}
-  .toc h5{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin:0 0 10px;font-weight:700}
-  .toc nav{display:flex;flex-direction:column;border-left:2px solid var(--border)}
-  .toc a{font-size:13.5px;color:var(--ink-soft);padding:7px 0 7px 14px;margin-left:-2px;border-left:2px solid transparent;line-height:1.4;transition:color .15s,border-color .15s}
-  .toc a:hover{color:var(--ink)}
-  .toc a.on{color:var(--primary);border-left-color:var(--primary);font-weight:600}
-
-  .report{position:relative;isolation:isolate;overflow:hidden;border-radius:24px;padding:clamp(22px,4vw,32px);color:#fff;background:#0B0C18;margin-bottom:36px}
-  .report::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(70% 100% at 100% 0%,rgba(124,58,237,.55),transparent 70%),radial-gradient(50% 80% at 0% 100%,rgba(91,79,240,.35),transparent 70%)}
-  .report h2{margin:0 0 8px;font-size:22px;letter-spacing:-.02em}
-  .report p{color:rgba(255,255,255,.75);margin:0 0 20px;font-size:15px}
-  .report-actions{display:flex;gap:10px;flex-wrap:wrap}
-
-  .prose{font-size:16px;line-height:1.75;color:var(--ink-soft)}
-  .prose strong{color:var(--ink);font-weight:700}
-  .prose a{color:var(--primary);font-weight:600;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;word-break:break-word}
-  .prose .lede{font-size:17px;color:var(--ink);line-height:1.7;margin-top:0}
-  .prose h2{color:var(--ink);font-size:clamp(19px,2.2vw,22px);letter-spacing:-.02em;line-height:1.3;margin:44px 0 12px;padding-top:28px;border-top:1px solid var(--border)}
-  .prose ul{padding-left:0;list-style:none;display:grid;gap:10px}
-  .prose ul li{position:relative;padding-left:22px}
-  .prose ul li::before{content:"";position:absolute;left:4px;top:.72em;width:7px;height:7px;border-radius:50%;background:var(--primary)}
-  .note{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:14px;padding:16px 18px;font-size:14.5px;line-height:1.6}
-  .table{border:1px solid var(--border);border-radius:18px;overflow:hidden;background:var(--card);margin:16px 0}
-  .table table{width:100%;border-collapse:collapse;font-size:14.5px;line-height:1.55}
-  .table th{text-align:left;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);background:var(--bg-soft);padding:12px 16px}
-  .table td{padding:14px 16px;border-top:1px solid var(--border);vertical-align:top}
-  .table td:first-child{color:var(--ink);font-weight:600;width:48%}
-  .doc-foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);color:var(--ink-faint);font-size:14px}
-
-  @media (max-width:900px){
-    .doc{grid-template-columns:minmax(0,1fr)}
-    .toc{position:static;max-height:none;overflow:visible}
-    .toc details{background:var(--card);border:1px solid var(--border);border-radius:16px}
-    .toc summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:52px;padding:0 18px;font-weight:700;font-size:15px}
-    .toc summary::-webkit-details-marker{display:none}
-    .toc summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--ink-faint);border-bottom:2px solid var(--ink-faint);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
-    .toc details[open] summary::after{transform:rotate(-135deg) translateY(-3px)}
-    .toc nav{border-left:0;padding:0 8px 10px}
-    .toc a{border-left:0;margin:0;padding:12px 10px;border-top:1px solid var(--border);min-height:44px;display:flex;align-items:center}
-    .toc h5{display:none}
-  }
-  @media (min-width:901px){.toc summary{display:none}}
-  @media (max-width:640px){
-    .table thead{display:none}
-    .table tr{display:block;padding:14px 16px;border-top:1px solid var(--border)}
-    .table tr:first-child{border-top:0}
-    .table td{display:block;padding:0;border:0;width:auto!important}
-    .table td::before{content:attr(data-label);display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:2px}
-    .table td + td{margin-top:10px}
-    .report-actions .btn{flex:1 1 100%}
-  }
-</style>
+<link rel="stylesheet" href="assets/app.css">
+<script type="speculationrules">{"prerender":[{"where":{"href_matches":"/*"},"eagerness":"moderate"}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Aller au contenu</a>
 
 <header class="site-header">
   <div class="wrap nav">
-    <a href="index.html" class="brand" aria-label="Police Management — accueil">
-      <span class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>
-      Police Management
-    </a>
-    <nav class="nav-links" aria-label="Navigation principale">
-      <a href="index.html#fonctionnalites">Fonctionnalités</a>
-      <a href="index.html#apercu">Aperçu</a>
-      <a href="index.html#securite">Sécurité</a>
-      <a href="index.html#corps">Corps de police</a>
-      <a href="confidentialite.html" aria-current="page">Confidentialité</a>
+    <a href="index.html" class="brand" aria-label="Police Management — accueil"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>
+      Police Management</a>
+    <nav class="menu" aria-label="Navigation principale">
+      <span class="menu-ind" aria-hidden="true"></span>
+      <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h4v-5h4v5h4v-9"/></svg>Accueil</a>
+      <a href="fonctionnalites.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg>Fonctionnalités</a>
+      <a href="apercu.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Aperçu</a>
+      <a href="confidentialite.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.8 7 10 4-2.2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>Sécurité</a>
+      <a href="contact.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>Contact</a>
     </nav>
     <div class="nav-actions">
       <button class="icon-btn" data-theme-toggle aria-label="Basculer le mode sombre">
         <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
         <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
       </button>
-      <a href="index.html#contact" class="btn btn-primary btn-sm nav-cta">Nous joindre</a>
-      <button class="icon-btn menu-btn" id="menuOpen" aria-label="Ouvrir le menu" aria-controls="sheet" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h16M4 16h16"/></svg>
-      </button>
+      <a href="contact.html" class="btn btn-primary btn-sm nav-cta">Nous joindre</a>
     </div>
   </div>
 </header>
 
-<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
-  <div class="sheet-top">
-    <span class="brand"><span class="brand-mark"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>Police Management</span>
-    <button class="icon-btn" id="menuClose" aria-label="Fermer le menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-    </button>
-  </div>
-  <nav aria-label="Navigation mobile">
-    <a href="index.html#fonctionnalites">Fonctionnalités</a>
-    <a href="index.html#apercu">Aperçu</a>
-    <a href="index.html#securite">Sécurité</a>
-    <a href="index.html#corps">Corps de police</a>
-    <a href="confidentialite.html" aria-current="page">Confidentialité</a>
-    <a href="index.html#contact">Contact</a>
-  </nav>
-  <div class="sheet-actions">
-    <a href="mailto:police.management@hotmail.com" class="btn btn-primary btn-block">Écrire un courriel</a>
-    <a href="https://discord.gg/mcTzBhRKP" target="_blank" rel="noopener" class="btn btn-ghost btn-block">Rejoindre le Discord</a>
-  </div>
-</div>
-
 <main id="main">
-  <section class="doc-hero">
+  <section class="page-hero">
     <div class="wrap">
-      <span class="eyebrow">Loi 25 · Québec</span>
-      <h1>Politique de confidentialité — Police Management</h1>
-      <div class="meta"><span>Dernière mise à jour : 19 septembre 2026</span><span>Version 2026.09.19</span></div>
+      <div class="crumbs"><a href="index.html">Accueil</a><span>›</span><span>Sécurité</span></div>
+      <span class="eyebrow">Sécurité & confidentialité</span>
+      <h1>Construite pour des données sensibles</h1>
+      <p>Chiffrement de bout en bout, Face ID, cloisonnement par corps de police et conformité à la Loi 25 — suivis de la politique de confidentialité complète.</p>
+    </div>
+  </section>
+  <section class="section" style="padding-top:clamp(32px,5vw,56px)">
+    <div class="wrap security">
+      <div class="reveal">
+        <span class="eyebrow">Protection</span>
+        <h2 class="h2">Ce qui protège tes données</h2>
+        <ul class="sec-list">
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z"/></svg></span>
+            <span><b>Chiffrement de bout en bout</b>Clé publique Curve25519 par membre; photo de profil, horaire partagé, forum, idées, sondages, échanges de quarts et commentaires sont chiffrés en AES-256-GCM avant l'envoi.</span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 1 1 8 0v3"/></svg></span>
+            <span><b>Face ID &amp; mot de passe salé</b>Verrouillage biométrique de l'app, mot de passe jamais conservé en clair (hachage SHA-256 salé).</span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18 13 13 0 0 1 0-18Z"/></svg></span>
+            <span><b>Cloisonnement par corps de police</b>Chaque corps ne voit que ses propres membres, son horaire et son forum — jamais ceux d'un autre corps.</span></li>
+          <li><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4Z"/></svg></span>
+            <span><b>Conforme à la Loi 25</b>Consentement explicite conservé comme preuve, droits d'accès et de suppression, aucune vente ni communication de données à des tiers, aucune publicité ni profilage.</span></li>
+        </ul>
+      </div>
+      <div class="panel reveal">
+        <h4>Ce qui n'est jamais collecté</h4>
+        <div class="big">Zéro analyse,<br>zéro pub</div>
+        <div class="row"><span>Traçage publicitaire</span><span><i class="ok"></i>Aucun</span></div>
+        <div class="row"><span>Outils d'analyse tiers</span><span><i class="ok"></i>Aucun</span></div>
+        <div class="row"><span>Vente de données</span><span><i class="ok"></i>Jamais</span></div>
+        <div class="row"><span>Position GPS transmise</span><span><i class="ok"></i>Jamais</span></div>
+        <div class="row"><span>Hébergement</span><span>Apple iCloud / CloudKit</span></div>
+        <a href="#politique" class="btn btn-white btn-block" style="margin-top:22px">Lire la politique de confidentialité</a>
+      </div>
     </div>
   </section>
 
+  <section class="section bg-soft" id="politique" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="section-head reveal" style="margin-bottom:0">
+        <span class="eyebrow">Loi 25 · Québec</span>
+        <h2 class="h2">Politique de confidentialité — Police Management</h2>
+        <p class="sub">Dernière mise à jour : 19 septembre 2026 · Version 2026.09.19</p>
+      </div>
+    </div>
+  </section>
+  <div class="bg-soft">
   <div class="wrap doc">
     <aside class="toc">
       <details id="tocDetails" open>
@@ -274,6 +233,14 @@
     </div>
     </article>
   </div>
+  </div>
+
+  <div class="wrap next-wrap">
+    <a class="next" href="contact.html">
+      <span><small>Page suivante</small><b>Contact</b></span>
+      <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </div>
 </main>
 
 <footer class="site-footer">
@@ -285,19 +252,22 @@
       </div>
       <div class="foot-col">
         <h5>Application</h5>
-        <a href="index.html#fonctionnalites">Fonctionnalités</a>
-        <a href="index.html#securite">Sécurité</a>
+        <a href="index.html">Accueil</a>
+        <a href="fonctionnalites.html">Fonctionnalités</a>
+        <a href="apercu.html">Aperçu</a>
+        <a href="confidentialite.html">Sécurité</a>
         <a href="index.html#corps">Corps de police</a>
       </div>
       <div class="foot-col">
         <h5>Contact</h5>
+        <a href="contact.html">Nous joindre</a>
         <a href="mailto:police.management@hotmail.com">Courriel</a>
         <a href="tel:+14384959849">438 495-9849</a>
         <a href="https://discord.gg/mcTzBhRKP" target="_blank" rel="noopener">Discord de soutien</a>
       </div>
       <div class="foot-col">
         <h5>Légal</h5>
-        <a href="confidentialite.html">Politique de confidentialité</a>
+        <a href="confidentialite.html#politique">Politique de confidentialité</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -306,6 +276,15 @@
     </div>
   </div>
 </footer>
+
+<nav class="tabbar" aria-label="Navigation">
+  <span class="tab-ind" aria-hidden="true" style="--i:3"></span>
+  <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h4v-5h4v5h4v-9"/></svg><span>Accueil</span></a>
+  <a href="fonctionnalites.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>Fonctions</span></a>
+  <a href="apercu.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg><span>Aperçu</span></a>
+  <a href="confidentialite.html" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.8 7 10 4-2.2 7-5.5 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg><span>Sécurité</span></a>
+  <a href="contact.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg><span>Contact</span></a>
+</nav>
 
 <script src="assets/site.js"></script>
 <script>
