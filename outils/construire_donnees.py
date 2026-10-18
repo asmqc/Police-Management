@@ -139,7 +139,7 @@ ecrire(postes, "sq_postes", 0.003, champs)
 ecrire(gpd.read_file(telecharger("districts")), "sq_districts", 0.01, ["NOM_DIST"])
 ecrire(gpd.read_file(telecharger("autoroutier")), "sq_autoroutier", 0.0015, champs)
 bur = gpd.read_file(telecharger("bureaux"))
-ecrire(bur, "sq_bureaux", 0, ["NOM_ENT", "CAT_UNIT", "ADRESSE", "MUNICIPALITE", "CODE_POST", "NOM_REG"])
+ecrire(bur, "sq_bureaux", 0, ["NOM_ENT", "NOM_UNIT", "CAT_UNIT", "ADRESSE", "MUNICIPALITE", "CODE_MUN", "CODE_POST", "NOM_CS", "NOM_REG", "NOM_DIST"])
 
 # 3. Municipalités non desservies par la SQ -> corps de police municipaux ou autochtones
 SOURCES["sda_rest"] = "https://servicescarto.mern.gouv.qc.ca/pes/rest/services/Territoire/SDA_WMS/MapServer"
@@ -264,6 +264,41 @@ except Exception as e:
 ecrire(hors, "municipalites_hors_sq", 0.0008, ["code", "nom", "mrc", "designation"])
 diag["municipalites_hors_sq_liste"] = sorted(
     (f"{r['nom']} ({r['designation']}, {r['mrc']}) [{r['code']}]" for _, r in hors.iterrows()))
+
+# 4. Toutes les municipalités (limites et code géographique), pour la carte et le « code municipal »
+toutes = mun.copy()
+col_reg = colonne("MUS_NM_REG", "NM_REG")
+toutes = toutes.rename(columns={col_code: "code", col_nom: "nom"})
+toutes["mrc"] = toutes[col_mrc] if col_mrc else ""
+toutes["region"] = toutes[col_reg] if col_reg else ""
+toutes["designation"] = toutes[col_des] if col_des else ""
+for c in ("code", "nom", "mrc", "region", "designation"):
+    toutes[c] = toutes[c].fillna("").astype(str)
+toutes = toutes[~toutes["nom"].str.startswith("TNO aquatique")]
+toutes = gpd.GeoDataFrame(toutes[["code", "nom", "mrc", "region", "designation", "geometry"]], geometry="geometry", crs=4326)
+toutes["geometry"] = toutes.geometry.simplify(0.0012, preserve_topology=True)
+chemin = f"{DATA}/municipalites.geojson"
+toutes.to_file(chemin, driver="GeoJSON", COORDINATE_PRECISION=4)
+diag["municipalites_geojson"] = {"nb": len(toutes), "octets": os.path.getsize(chemin)}
+print("municipalités (limites)", diag["municipalites_geojson"])
+
+# 5. Caméras de circulation du MTMD (Québec 511)
+try:
+    req = urllib.request.Request("https://www.donneesquebec.ca/recherche/api/3/action/package_show?id=camera-de-circulation", headers=UA)
+    pkg = json.loads(urllib.request.urlopen(req, timeout=120).read())["result"]
+    url_cam = next(r["url"] for r in pkg["resources"] if (r.get("format") or "").lower() == "geojson")
+    cam = json.loads(urllib.request.urlopen(urllib.request.Request(url_cam, headers=UA), timeout=300).read())
+    diag["cameras_exemple"] = [f["properties"] for f in cam["features"][:3]]
+    for f in cam["features"]:
+        g = f.get("geometry") or {}
+        if g.get("coordinates"):
+            g["coordinates"] = [round(x, 5) for x in g["coordinates"][:2]]
+    json.dump({"type": "FeatureCollection", "features": [f for f in cam["features"] if f.get("geometry")]},
+              open(f"{DATA}/cameras.geojson", "w"), ensure_ascii=False, separators=(",", ":"))
+    diag["cameras"] = {"nb": len(cam["features"]), "octets": os.path.getsize(f"{DATA}/cameras.geojson")}
+    print("caméras", diag["cameras"])
+except Exception as e:
+    print("caméras indisponibles :", e)
 
 json.dump(diag, open(f"{DIAG}/diagnostic.json", "w"), ensure_ascii=False, indent=1, default=str)
 print("Terminé")

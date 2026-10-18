@@ -2,7 +2,7 @@ name: Mettre à jour les données (carte et CSR)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 7 3 * *"   # le 3 de chaque mois
+    - cron: "17 7 * * 1"   # chaque lundi (caméras, postes, bornes, CSR)
 permissions:
   contents: write
 concurrency: donnees
