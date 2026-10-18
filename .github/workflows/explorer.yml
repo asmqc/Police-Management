@@ -1,0 +1,14 @@
+name: Explorer les sources
+on:
+  workflow_dispatch:
+jobs:
+  explorer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 outils/explorer.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: brut
+          path: brut/
+          retention-days: 3
