@@ -129,14 +129,11 @@
 
   async function corpsParType(type) {
     if (!listeCorps) {
-      try {
-        const { data, error } = await sb.rpc("liste_corps_police");
-        if (error) throw error;
-        listeCorps = data || [];
-      } catch { listeCorps = []; }
+      try { listeCorps = await charger("corps_police.json"); } catch { listeCorps = []; }
     }
-    return listeCorps.filter((c) => c.type === type).map((c) => c.nom);
+    return listeCorps.filter((c) => c.type === type).map((c) => c.nom).sort((x, y) => x.localeCompare(y, "fr"));
   }
+
   // Unités spécialisées : noms généraux (la liste officielle détaillée n'est pas publiée en données ouvertes)
   const UNITES_SPECIALISEES_SQ = [
     "Centre de gestion des appels", "Crimes majeurs", "Crimes contre la personne", "Crime organisé", "Crimes économiques et produits de la criminalité",
@@ -423,7 +420,7 @@
   const fichiers = {};
   function charger(nom) {
     if (!fichiers[nom]) {
-      fichiers[nom] = fetch("data/" + nom, { cache: "force-cache" }).then((r) => {
+      fichiers[nom] = fetch("data/" + nom, { cache: "no-cache" }).then((r) => {
         if (!r.ok) throw new Error("Fichier de données manquant : " + nom);
         return r.json();
       });
@@ -480,12 +477,13 @@
   }
 
   async function chargerCorps() {
-    const { data, error } = await sb.from("corps_police").select("*").order("nom");
-    if (error) { console.warn(error); return; }
-    etat.corps = data.map((c) => ({ ...c, _munis: new Set((c.municipalites || []).map(norm)) }));
+    let data;
+    try { data = await charger("corps_police.json"); } catch (e) { console.warn(e); return; }
+    etat.corps = data.map((c) => ({ ...c, _munis: new Set((c.municipalites || []).map(norm)) })).sort((x, y) => x.nom.localeCompare(y.nom, "fr"));
     if (etat.vue === "corps") rendreCorps();
     if (etat.couches && etat.couches.mun) restylerMunicipal();
   }
+
   const corpsPourMunicipalite = (nom) => etat.corps.find((c) => c._munis.has(norm(nom)));
 
   async function identifier(lat, lon) {
@@ -803,69 +801,15 @@
     rendreAdminCorps();
   }
 
-  function formCorps(c = {}) {
-    const id = c.id || "nouveau";
-    return `<form class="edition-corps" data-id="${id}">
-      <div class="rangee3">
-        <div><label class="ref" for="ec-nom-${id}">Nom</label><input id="ec-nom-${id}" name="nom" value="${esc(c.nom || "")}" required></div>
-        <div><label class="ref" for="ec-sigle-${id}">Sigle</label><input id="ec-sigle-${id}" name="sigle" value="${esc(c.sigle || "")}"></div>
-        <div><label class="ref" for="ec-type-${id}">Type</label>
-          <select id="ec-type-${id}" name="type">${["municipal", "autochtone", "SQ", "GRC"].map((t) => `<option ${c.type === t ? "selected" : ""}>${t}</option>`).join("")}</select></div>
-      </div>
-      <div class="rangee3">
-        <div><label class="ref" for="ec-tel-${id}">Téléphone</label><input id="ec-tel-${id}" name="telephone" value="${esc(c.telephone || "")}"></div>
-        <div><label class="ref" for="ec-coul-${id}">Couleur (carte)</label><input id="ec-coul-${id}" name="couleur" value="${esc(c.couleur || "")}" placeholder="#2467C4"></div>
-        <div><label class="ref" for="ec-notes-${id}">Notes</label><input id="ec-notes-${id}" name="notes" value="${esc(c.notes || "")}"></div>
-      </div>
-      <label class="ref" for="ec-munis-${id}">Municipalités desservies (une par ligne)</label>
-      <textarea id="ec-munis-${id}" name="municipalites">${esc((c.municipalites || []).join("\n"))}</textarea>
-      <div class="boutons">
-        ${c.id ? `<button type="button" class="btn-danger" data-suppr>Supprimer</button>` : `<button type="button" class="btn-secondaire" data-annuler>Annuler</button>`}
-        <button type="submit" class="btn-ok">Enregistrer</button>
-      </div>
-    </form>`;
-  }
-
+  const LIEN_EDITION_CORPS = "https://github.com/asmqc/Police-Extreme/edit/main/data/corps_police.json";
   function rendreAdminCorps() {
-    const el = $("#admin-corps");
-    el.innerHTML = etat.corps.map((c) => `<details class="liste-sq" style="margin-bottom:8px"><summary>${esc(c.nom)} <span class="ref">${(c.municipalites || []).length} municipalité(s)</span></summary>${formCorps(c)}</details>`).join("");
-    $$("form.edition-corps", el).forEach(brancherFormCorps);
+    $("#admin-corps").innerHTML = `
+      <div class="liste-sq">${etat.corps.map((c) => `
+        <details><summary>${esc(c.nom)} <span class="ref">${(c.municipalites || []).length} municipalité(s)</span></summary>
+        <ul>${(c.municipalites || []).map((m) => `<li>${esc(m)}</li>`).join("") || "<li>—</li>"}</ul></details>`).join("")}
+      </div>`;
   }
-  function brancherFormCorps(f) {
-    f.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      const d = Object.fromEntries(new FormData(f));
-      const ligne = {
-        nom: d.nom.trim(), sigle: d.sigle.trim() || null, type: d.type, telephone: d.telephone.trim() || null,
-        couleur: d.couleur.trim() || null, notes: d.notes.trim() || null,
-        municipalites: d.municipalites.split("\n").map((s) => s.trim()).filter(Boolean), maj_le: new Date().toISOString(),
-      };
-      if (!ligne.nom) return toast("Le nom est obligatoire");
-      const q = f.dataset.id === "nouveau" ? sb.from("corps_police").insert(ligne) : sb.from("corps_police").update(ligne).eq("id", f.dataset.id);
-      const { error } = await q;
-      if (error) return toast(traduireErreur(error));
-      toast("Enregistré");
-      await chargerCorps();
-      rendreAdminCorps();
-    });
-    const suppr = $("[data-suppr]", f);
-    if (suppr) suppr.addEventListener("click", async () => {
-      if (suppr.dataset.confirme !== "1") { suppr.dataset.confirme = "1"; suppr.textContent = "Confirmer la suppression"; return; }
-      const { error } = await sb.from("corps_police").delete().eq("id", f.dataset.id);
-      if (error) return toast(traduireErreur(error));
-      toast("Supprimé");
-      await chargerCorps();
-      rendreAdminCorps();
-    });
-    const annuler = $("[data-annuler]", f);
-    if (annuler) annuler.addEventListener("click", () => f.remove());
-  }
-  $("#btn-ajout-corps").addEventListener("click", () => {
-    if ($("form.edition-corps[data-id='nouveau']")) return;
-    $("#admin-corps").insertAdjacentHTML("afterbegin", formCorps({ type: "municipal" }));
-    brancherFormCorps($("form.edition-corps[data-id='nouveau']"));
-    $("#ec-nom-nouveau").focus();
-  });
+  $("#lien-edition-corps").href = LIEN_EDITION_CORPS;
 
   demarrer();
 })();
