@@ -20,7 +20,7 @@
 ### Accueil
 - Salutation avec la photo de profil, le corps de police et l'unité.
 - Quart du jour et du lendemain, tirés de l'horaire rotatif.
-- Raccourcis vers chaque outil : article du CSR, table des vitesses, borne kilométrique, « Où suis-je ? », territoires, horaire, compte, installation.
+- Raccourcis vers chaque outil : article du CSR, table des vitesses, borne kilométrique, « Où suis-je ? », territoires, horaire, compte, app (installation).
 - Pour l'administrateur : nombre de demandes d'accès en attente.
 
 ### Code de la sécurité routière (CSR)
@@ -60,7 +60,7 @@
 - Suppression définitive d'un compte (données et photo effacées de Supabase).
 
 ### Installation comme une application
-La tuile **Installer l'app** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
+La tuile **App** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
 
 ---
 
