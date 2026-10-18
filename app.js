@@ -353,7 +353,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); }
+    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); majReglagePartage(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
   }
   // Menu de la photo de profil
@@ -648,6 +648,23 @@
     setTimeout(() => ouvrirConversation(id, true), 50);
   }
 
+  /* ---------------- Réglage : partage de la rotation avec le poste (activé par défaut) ---------------- */
+  const partageActif = () => !etat.profil || etat.profil.partage_poste !== false;
+  function majReglagePartage() {
+    const actif = partageActif();
+    $("#rg-partage-poste").checked = actif;
+    const etatTxt = $("#hr-partage-etat");
+    if (etatTxt) etatTxt.textContent = actif ? "Votre rotation est partagée avec votre poste." : "Le partage de votre rotation avec votre poste est désactivé.";
+  }
+  $("#rg-partage-poste").addEventListener("change", async (e) => {
+    const actif = e.target.checked;
+    const { error } = await sb.rpc("regler_partage_poste", { p_actif: actif });
+    if (error) { e.target.checked = !actif; return toast(traduireErreur(error)); }
+    etat.profil.partage_poste = actif;
+    majReglagePartage();
+    toast(actif ? "Rotation partagée avec votre poste" : "Rotation retirée du partage avec votre poste");
+  });
+
   /* ---------------- Notifications (Web Push) ---------------- */
   const pushPossible = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   const estIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
@@ -811,6 +828,7 @@
     hr.poste = (poste && poste.data) || [];
     const p = etat.profil;
     $("#hr-poste-titre").textContent = p.unite ? `Mon poste · ${p.unite}` : "Mon poste";
+    majReglagePartage();
     $("#hr-poste-liste").innerHTML = !p.unite
       ? `<li class="vide-petit">Indiquez votre unité ou votre poste dans Mon compte pour voir les rotations de vos collègues.</li>`
       : hr.poste.length ? hr.poste.map((x) => `
