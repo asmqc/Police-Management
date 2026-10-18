@@ -12,12 +12,13 @@ Outil de référence réservé aux policiers du Québec, accessible après appro
 | Élément | Où |
 |---|---|
 | Site | GitHub Pages (branche `main`, dossier racine) |
-| Comptes, demandes d'accès, texte du CSR, corps de police | Supabase, projet `police-extreme` (Canada) |
-| Données de la carte (`data/`) | Générées par l'action « Mettre à jour les données de la carte », le 3 de chaque mois |
+| Comptes, demandes d'accès, corps de police | Supabase, projet `police-extreme` (Canada) |
+| Données de la carte et texte du CSR (`data/`) | Générés par l'action « Mettre à jour les données (carte et CSR) », le 3 de chaque mois |
 
 Chaque nouvelle personne inscrite est « en attente » et ne voit rien tant que l'administrateur
 (anthony.smith@surete.qc.ca) ne l'a pas approuvée. Les règles d'accès de la base (RLS) empêchent
-toute lecture du CSR ou des corps de police sans approbation.
+toute lecture des comptes et des corps de police sans approbation. Le texte du CSR, déjà public
+sur LégisQuébec, est servi avec les fichiers du site.
 
 ## Sources (licence CC-BY 4.0, Données Québec)
 

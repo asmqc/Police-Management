@@ -229,14 +229,7 @@
     $$("#csr-raccourcis button").forEach((b) => b.addEventListener("click", () => { $("#csr-q").value = b.dataset.q; chercherCsr(); }));
     $("#csr-etat").textContent = "Chargement du Code…";
     try {
-      let tous = [], de = 0;
-      for (;;) {
-        const { data, error } = await sb.from("csr_articles").select("numero,ordre,titre,chapitre,section,texte").order("ordre").range(de, de + 999);
-        if (error) throw error;
-        tous = tous.concat(data);
-        if (data.length < 1000) break;
-        de += 1000;
-      }
+      const tous = await charger("csr.json");
       etat.csr = tous.map((a) => ({ ...a, _n: norm(a.numero + " " + (a.section || "") + " " + a.texte) }));
     } catch (e) {
       $("#csr-etat").textContent = traduireErreur(e);

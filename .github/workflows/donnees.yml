@@ -1,4 +1,4 @@
-name: Mettre à jour les données de la carte
+name: Mettre à jour les données (carte et CSR)
 on:
   workflow_dispatch:
   schedule:
@@ -31,18 +31,21 @@ jobs:
             -H "Accept-Language: fr-CA,fr" --retry 3 -o exploration/csr_complet.html \
             "https://www.legisquebec.gouv.qc.ca/fr/document/lc/C-24.2" -w "%{http_code} %{size_download}\n" > exploration/csr_statut.txt 2>&1 || true
           cat exploration/csr_statut.txt
-          python outils/extraire_csr.py exploration/csr_complet.html exploration/csr.json
-          rm -f exploration/csr_complet.html
+          python outils/extraire_csr.py exploration/csr_complet.html tmp_csr.json
+          python3 -c "import json,sys; a=json.load(open('tmp_csr.json')); sys.exit(0 if len(a) > 1000 else 1)" \
+            && python3 -c "import json; json.dump(json.load(open('tmp_csr.json')), open('data/csr.json','w'), ensure_ascii=False, separators=(',',':'))" \
+            || echo "Extraction incomplète : on garde la version actuelle du CSR"
+          rm -f exploration/csr_complet.html tmp_csr.json
       - name: Enregistrer
         if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+          git add data/csr.json
           if [ "${{ steps.construire.outcome }}" = "success" ]; then
             git add data/
-            git commit -qm "Données de la carte mises à jour [skip ci]" || echo "Aucun changement"
-            git push origin HEAD:main
           fi
+          git commit -qm "Données mises à jour (carte et CSR) [skip ci]" && git push origin HEAD:main || echo "Aucun changement"
           git checkout --orphan exploration
           git rm -rfq --cached .
           git add -f exploration/
