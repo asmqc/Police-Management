@@ -148,7 +148,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   padding-block: 18px 32px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right));
   display: flex; flex-direction: column; gap: 14px;
 }
-.vue > * { width: 100%; max-width: 980px; margin-inline: auto; }
+.vue > * { width: 100%; max-width: 980px; margin-inline: auto; flex-shrink: 0; } /* jamais écrasé : la page défile */
 .vue-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .vue-tete h2 { font-size: 1.7rem; font-weight: 700; }
 .ref { margin: 0; font-family: var(--f-mono); font-size: .8rem; color: var(--fg-doux); }
