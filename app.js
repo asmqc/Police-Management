@@ -297,6 +297,7 @@
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
     compterMessages();
+    ecouterMessages();
     if (p.role === "admin") compterAttente();
   }
 
@@ -364,115 +365,221 @@
     hr.chargé = true;
   }
 
-  /* ---------------- Messagerie (BÊTA) : l'administrateur écrit, les policiers lisent ---------------- */
-  const msg = { boite: "recus", liste: [], comptes: [], ouvert: null };
+  /* ---------------- Messagerie (BÊTA) : conversations entre l'administrateur et chaque policier ---------------- */
+  const msg = { comptes: null, admin: null, autre: null, fil: [], canal: null, sondage: null };
   const estAdmin = () => etat.profil && etat.profil.role === "admin";
+  const heureFr = (d) => new Date(d).toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+  const jourFr = (d) => {
+    const x = new Date(d), auj = new Date(), hier = new Date(Date.now() - 86400000);
+    if (x.toDateString() === auj.toDateString()) return "Aujourd'hui";
+    if (x.toDateString() === hier.toDateString()) return "Hier";
+    return x.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+  };
 
   async function compterMessages() {
-    const { count } = await sb.from("messages").select("id", { count: "exact", head: true })
-      .eq("destinataire", etat.profil.id).is("lu_le", null).eq("masque_par_destinataire", false);
+    if (!etat.profil) return 0;
+    const { count } = await sb.from("messages").select("id", { count: "exact", head: true }).eq("destinataire", etat.profil.id).is("lu_le", null);
     const b = $("#badge-messages");
     b.textContent = count || "";
     b.hidden = !count;
     const carte = $("#ac-msg");
     carte.hidden = !count;
-    if (count) carte.innerHTML = `<b>${count}</b><span>nouveau${count > 1 ? "x" : ""} message${count > 1 ? "s" : ""} de l'administrateur</span><i>Lire ›</i>`;
+    if (count) carte.innerHTML = `<b>${count}</b><span>nouveau${count > 1 ? "x" : ""} message${count > 1 ? "s" : ""}</span><i>Lire ›</i>`;
     carte.classList.toggle("urgent", !!count);
     return count || 0;
   }
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.profil && etat.profil.statut === "approuve") compterMessages(); });
+
+  // Messages en direct (Supabase Realtime)
+  function ecouterMessages() {
+    if (msg.canal || !etat.profil) return;
+    const moi = etat.profil.id;
+    msg.canal = sb.channel("messages-" + moi)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `destinataire=eq.${moi}` }, (e) => nouveauMessage(e.new))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `expediteur=eq.${moi}` }, (e) => {
+        const m = msg.fil.find((x) => x.id === e.new.id);
+        if (m) { m.lu_le = e.new.lu_le; rendreFil(false); }
+      })
+      .subscribe();
+  }
+  function nouveauMessage(m) {
+    const ouvert = etat.vue === "messages" && !$("#chat-vue").hidden && msg.autre && m.expediteur === msg.autre.id && document.visibilityState === "visible";
+    if (ouvert) {
+      if (!msg.fil.some((x) => x.id === m.id)) msg.fil.push(m);
+      rendreFil(true);
+      sb.rpc("conversation_lue", { p_autre: m.expediteur }).then(compterMessages);
+    } else {
+      compterMessages();
+      if (etat.vue === "messages" && !$("#conv-vue").hidden) chargerConversations();
+      toast("Nouveau message");
+    }
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible" || !etat.profil || etat.profil.statut !== "approuve") return;
+    compterMessages();
+    if (etat.vue === "messages" && msg.autre && !$("#chat-vue").hidden) ouvrirConversation(msg.autre.id, false);
+  });
+
+  async function comptesApprouves() {
+    if (!msg.comptes) {
+      const { data } = await sb.rpc("admin_comptes");
+      msg.comptes = (data || []).filter((c) => c.id !== etat.profil.id);
+    }
+    return msg.comptes;
+  }
+  const nomCompte = (c) => (c ? c.nom_complet || c.email : "Compte supprimé");
 
   async function initMessages() {
-    const admin = estAdmin();
-    $("#msg-form").hidden = !admin;
-    $("#msg-onglets").hidden = !admin;
-    if (!admin) msg.boite = "recus";
-    if (admin && !msg.comptes.length) {
-      const { data } = await sb.rpc("admin_comptes");
-      msg.comptes = (data || []).filter((c) => c.statut === "approuve" && c.id !== etat.profil.id);
-      $("#msg-dest").innerHTML = `<option value="">Choisir un policier…</option>` + msg.comptes
-        .sort((a, b) => (a.nom_complet || a.email).localeCompare(b.nom_complet || b.email, "fr"))
-        .map((c) => `<option value="${c.id}">${esc((c.grade ? c.grade + " " : "") + (c.nom_complet || c.email))}${c.matricule ? " · " + esc(c.matricule) : ""}</option>`).join("");
+    ecouterMessages();
+    if (estAdmin()) {
+      if (msg.autre && !$("#chat-vue").hidden) return ouvrirConversation(msg.autre.id, false);
+      afficherListeConversations();
+    } else {
+      if (!msg.admin) {
+        const { data } = await sb.rpc("contact_admin");
+        msg.admin = (data && data[0]) || { id: null, nom: "Administrateur" };
+      }
+      ouvrirConversation(msg.admin.id, true);
     }
-    await chargerMessages();
   }
 
-  async function chargerMessages() {
-    let q = sb.from("messages").select("id, destinataire, sujet, contenu, cree_le, lu_le").order("cree_le", { ascending: false }).limit(200);
-    q = msg.boite === "envoyes" ? q.eq("expediteur", etat.profil.id) : q.eq("destinataire", etat.profil.id);
-    const { data, error } = await q;
-    const el = $("#msg-liste");
+  async function afficherListeConversations() {
+    msg.autre = null;
+    $("#chat-vue").hidden = true;
+    $("#conv-vue").hidden = false;
+    const comptes = await comptesApprouves();
+    $("#conv-nouveau").innerHTML = `<option value="">+ Nouvelle conversation…</option>` + comptes
+      .filter((c) => c.statut === "approuve")
+      .sort((a, b) => nomCompte(a).localeCompare(nomCompte(b), "fr"))
+      .map((c) => `<option value="${c.id}">${esc((c.grade ? c.grade + " " : "") + nomCompte(c))}${c.matricule ? " · " + esc(c.matricule) : ""}</option>`).join("");
+    chargerConversations();
+  }
+
+  async function chargerConversations() {
+    const moi = etat.profil.id;
+    const { data, error } = await sb.from("messages").select("id, expediteur, destinataire, contenu, cree_le, lu_le").order("cree_le", { ascending: false }).limit(1000);
+    const el = $("#conv-liste");
     if (error) { el.innerHTML = `<li class="vide">${esc(traduireErreur(error))}</li>`; return; }
-    msg.liste = data || [];
-    const nomDe = (id) => { const c = msg.comptes.find((x) => x.id === id); return c ? c.nom_complet || c.email : "Compte supprimé"; };
-    const nonLus = msg.liste.filter((m) => !m.lu_le).length;
-    $("#msg-resume").textContent = msg.boite === "envoyes" ? `${msg.liste.length} message(s) envoyé(s)` : nonLus ? `${nonLus} non lu(s)` : "Messages de l'administrateur";
-    el.innerHTML = msg.liste.length ? msg.liste.map((m) => `
-      <li><button class="message-ligne ${msg.boite === "recus" && !m.lu_le ? "non-lu" : ""}" data-msg="${m.id}">
-        <span class="msg-haut"><b>${esc(msg.boite === "envoyes" ? "À : " + nomDe(m.destinataire) : m.sujet)}</b><small>${esc(dateFr(m.cree_le))}</small></span>
-        <span class="msg-apercu">${esc(msg.boite === "envoyes" ? m.sujet + " — " : "")}${esc(m.contenu.slice(0, 140))}</span>
-        ${msg.boite === "envoyes" ? `<span class="msg-etat ${m.lu_le ? "lu" : ""}">${m.lu_le ? "Lu le " + esc(dateFr(m.lu_le)) : "Pas encore lu"}</span>` : ""}
-      </button></li>`).join("")
-      : `<li class="vide">${msg.boite === "envoyes" ? "Aucun message envoyé." : "Aucun message pour le moment."}</li>`;
-    $$("[data-msg]", el).forEach((b) => b.addEventListener("click", () => ouvrirMessage(+b.dataset.msg)));
+    const convs = new Map();
+    for (const m of data || []) {
+      const autre = m.expediteur === moi ? m.destinataire : m.expediteur;
+      if (!autre) continue;
+      if (!convs.has(autre)) convs.set(autre, { autre, dernier: m, nonLus: 0 });
+      if (m.destinataire === moi && !m.lu_le) convs.get(autre).nonLus++;
+    }
+    const comptes = await comptesApprouves();
+    const liste = [...convs.values()];
+    const urls = await urlsAvatars(liste.map((c) => (comptes.find((x) => x.id === c.autre) || {}).avatar_path));
+    $("#conv-resume").textContent = liste.length ? `${liste.length} conversation${liste.length > 1 ? "s" : ""}` : "";
+    el.innerHTML = liste.length ? liste.map((c, i) => {
+      const p = comptes.find((x) => x.id === c.autre) || { nom_complet: "Compte supprimé" };
+      const deMoi = c.dernier.expediteur === moi;
+      return `<li><button class="conv ${c.nonLus ? "non-lu" : ""}" data-conv="${c.autre}">
+        ${htmlAvatar(p, urls[i])}
+        <span class="conv-txt"><span class="conv-haut"><b>${esc(nomCompte(p))}</b><small>${esc(jourFr(c.dernier.cree_le) === "Aujourd'hui" ? heureFr(c.dernier.cree_le) : jourFr(c.dernier.cree_le))}</small></span>
+        <span class="conv-apercu">${deMoi ? "Vous : " : ""}${esc(c.dernier.contenu.slice(0, 90))}</span></span>
+        ${c.nonLus ? `<b class="conv-badge">${c.nonLus}</b>` : ""}
+      </button></li>`;
+    }).join("") : `<li class="vide">Aucune conversation. Choisissez un policier ci-dessus pour lui écrire.</li>`;
+    $$("[data-conv]", el).forEach((b) => b.addEventListener("click", () => ouvrirConversation(b.dataset.conv, true)));
+  }
+  $("#conv-nouveau").addEventListener("change", (e) => { if (e.target.value) ouvrirConversation(e.target.value, true); e.target.value = ""; });
+
+  async function ouvrirConversation(id, defiler) {
+    const moi = etat.profil.id;
+    $("#conv-vue").hidden = true;
+    $("#chat-vue").hidden = false;
+    $("#chat-retour").hidden = !estAdmin();
+    let personne;
+    if (estAdmin()) {
+      const p = (await comptesApprouves()).find((x) => x.id === id) || { id, nom_complet: "Compte supprimé" };
+      personne = { id, nom: nomCompte(p), sous: [p.grade, p.corps_police].filter(Boolean).join(" · "), profil: p };
+    } else {
+      personne = { id: msg.admin.id, nom: msg.admin.nom, sous: "Administrateur" + (msg.admin.grade ? " · " + msg.admin.grade : ""), profil: { nom_complet: msg.admin.nom } };
+    }
+    msg.autre = personne;
+    $("#chat-nom").textContent = personne.nom;
+    $("#chat-sous").textContent = personne.sous;
+    const [url] = estAdmin() ? await urlsAvatars([personne.profil.avatar_path]) : [null];
+    $("#chat-avatar").innerHTML = url ? `<img src="${esc(url)}" alt="">` : esc(initiales(personne.profil));
+    if (!id) { msg.fil = []; rendreFil(true); return; }
+    const { data, error } = await sb.from("messages").select("id, expediteur, destinataire, contenu, cree_le, lu_le")
+      .or(`and(expediteur.eq.${moi},destinataire.eq.${id}),and(expediteur.eq.${id},destinataire.eq.${moi})`)
+      .order("cree_le", { ascending: true }).limit(500);
+    if (error) return toast(traduireErreur(error));
+    msg.fil = data || [];
+    rendreFil(defiler);
+    if (msg.fil.some((m) => m.destinataire === moi && !m.lu_le)) {
+      await sb.rpc("conversation_lue", { p_autre: id });
+      compterMessages();
+    }
+    clearInterval(msg.sondage);
+    msg.sondage = setInterval(() => { if (etat.vue === "messages" && !$("#chat-vue").hidden && document.visibilityState === "visible") rafraichirFil(); else clearInterval(msg.sondage); }, 20000);
+  }
+  async function rafraichirFil() {
+    const moi = etat.profil.id, id = msg.autre && msg.autre.id;
+    if (!id) return;
+    const { data } = await sb.from("messages").select("id, expediteur, destinataire, contenu, cree_le, lu_le")
+      .or(`and(expediteur.eq.${moi},destinataire.eq.${id}),and(expediteur.eq.${id},destinataire.eq.${moi})`)
+      .order("cree_le", { ascending: true }).limit(500);
+    if (!data) return;
+    const nouveau = data.length !== msg.fil.length;
+    msg.fil = data;
+    rendreFil(nouveau);
+    if (data.some((m) => m.destinataire === moi && !m.lu_le)) { await sb.rpc("conversation_lue", { p_autre: id }); compterMessages(); }
   }
 
-  async function ouvrirMessage(id) {
-    const m = msg.liste.find((x) => x.id === id);
-    if (!m) return;
-    msg.ouvert = m;
-    const envoye = msg.boite === "envoyes";
-    $("#msg-lu-meta").textContent = `${envoye ? "Envoyé" : "Reçu"} le ${dateFr(m.cree_le)}${envoye ? " · " + (m.lu_le ? "lu le " + dateFr(m.lu_le) : "pas encore lu") : ""}`;
-    $("#msg-lu-sujet").textContent = m.sujet;
-    $("#msg-lu-contenu").textContent = m.contenu;
-    $("#msg-retirer").textContent = envoye ? "Supprimer ce message" : "Retirer de ma boîte";
-    $("#msg-retirer").dataset.arme = "";
-    $("#msg-voile").hidden = false;
-    if (!envoye && !m.lu_le) {
-      await sb.rpc("message_lu", { p_id: id });
-      m.lu_le = new Date().toISOString();
-      compterMessages();
-      chargerMessages();
+  function rendreFil(defiler) {
+    const moi = etat.profil.id, el = $("#chat-fil");
+    if (!msg.fil.length) {
+      el.innerHTML = `<p class="chat-vide">${estAdmin() ? "Écrivez le premier message." : "Écrivez à l'administrateur. Il vous répondra ici."}</p>`;
+      return;
     }
+    let html = "", jour = "";
+    const dernierDeMoi = [...msg.fil].reverse().find((m) => m.expediteur === moi);
+    msg.fil.forEach((m, i) => {
+      const j = jourFr(m.cree_le);
+      if (j !== jour) { jour = j; html += `<div class="chat-jour">${esc(j)}</div>`; }
+      const mien = m.expediteur === moi;
+      const suivant = msg.fil[i + 1];
+      const groupe = suivant && suivant.expediteur === m.expediteur && jourFr(suivant.cree_le) === j;
+      html += `<div class="bulle ${mien ? "moi" : "eux"} ${groupe ? "groupe" : ""}"><span class="bulle-txt">${esc(m.contenu)}</span><span class="bulle-heure">${esc(heureFr(m.cree_le))}</span></div>`;
+      if (m === dernierDeMoi) html += `<div class="chat-statut">${m.lu_le ? "Lu à " + esc(heureFr(m.lu_le)) : m.id < 0 ? "Envoi…" : "Envoyé"}</div>`;
+    });
+    el.innerHTML = html;
+    if (defiler) el.scrollTop = el.scrollHeight;
   }
-  $("#msg-fermer").addEventListener("click", () => ($("#msg-voile").hidden = true));
-  $("#msg-voile").addEventListener("click", (e) => { if (e.target.id === "msg-voile") e.currentTarget.hidden = true; });
-  $("#msg-retirer").addEventListener("click", async (e) => {
-    const b = e.currentTarget, m = msg.ouvert;
-    if (!m) return;
-    if (b.dataset.arme !== "1") { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
-    const { error } = msg.boite === "envoyes"
-      ? await sb.from("messages").delete().eq("id", m.id)
-      : await sb.rpc("message_masquer", { p_id: m.id });
-    if (error) return toast(traduireErreur(error));
-    $("#msg-voile").hidden = true;
-    toast(msg.boite === "envoyes" ? "Message supprimé" : "Message retiré");
-    chargerMessages();
-    compterMessages();
+
+  // Zone de saisie : grandit avec le texte, Entrée envoie sur ordinateur (Maj+Entrée = nouvelle ligne)
+  const zone = $("#chat-texte");
+  zone.addEventListener("input", () => { zone.style.height = "auto"; zone.style.height = Math.min(zone.scrollHeight, 140) + "px"; });
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(pointer: fine)").matches) { e.preventDefault(); $("#chat-form").requestSubmit(); }
   });
-  $$("[data-boite]").forEach((b) => b.addEventListener("click", () => {
-    msg.boite = b.dataset.boite;
-    $$("[data-boite]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    chargerMessages();
-  }));
-  $("#msg-form").addEventListener("submit", async (ev) => {
+  $("#chat-form").addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const dest = $("#msg-dest").value, sujet = $("#msg-sujet").value.trim(), contenu = $("#msg-contenu").value.trim();
-    if (!dest) { $("#msg-dest").focus(); return toast("Choisissez un destinataire"); }
-    if (!sujet) { $("#msg-sujet").focus(); return toast("Écrivez un sujet"); }
-    if (!contenu) { $("#msg-contenu").focus(); return toast("Écrivez le message"); }
-    const btn = $("#msg-form .btn-principal");
-    btn.disabled = true;
-    const { error } = await sb.from("messages").insert({ destinataire: dest, expediteur: etat.profil.id, sujet, contenu });
-    btn.disabled = false;
-    if (error) return toast(traduireErreur(error));
-    $("#msg-sujet").value = ""; $("#msg-contenu").value = "";
-    toast("Message envoyé");
-    if (msg.boite === "envoyes") chargerMessages();
+    const texte = zone.value.trim();
+    if (!texte || !msg.autre) return;
+    if (!msg.autre.id) return toast("Aucun administrateur disponible");
+    const temp = { id: -Date.now(), expediteur: etat.profil.id, destinataire: msg.autre.id, contenu: texte, cree_le: new Date().toISOString(), lu_le: null };
+    msg.fil.push(temp);
+    zone.value = ""; zone.style.height = "auto";
+    rendreFil(true);
+    const { data, error } = await sb.rpc("envoyer_message", { p_contenu: texte, p_destinataire: estAdmin() ? msg.autre.id : null });
+    const i = msg.fil.indexOf(temp);
+    if (error) {
+      if (i >= 0) msg.fil.splice(i, 1);
+      zone.value = texte;
+      rendreFil(true);
+      return toast(traduireErreur(error));
+    }
+    if (i >= 0) msg.fil[i] = data;
+    rendreFil(true);
   });
+  $("#chat-retour").addEventListener("click", () => { clearInterval(msg.sondage); afficherListeConversations(); });
+
   function ecrireA(id) {
     afficherVue("messages");
-    setTimeout(() => { $("#msg-dest").value = id; $("#msg-sujet").focus(); }, 400);
+    setTimeout(() => ouvrirConversation(id, true), 50);
   }
 
   /* ---------------- Accueil ---------------- */

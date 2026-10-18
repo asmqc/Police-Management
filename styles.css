@@ -559,3 +559,40 @@ a { color: var(--bleu); }
 @media (max-width: 420px) { .nav button span { font-size: .6rem; letter-spacing: 0; } .nav svg { width: 22px; height: 22px; } }
 .beta-nav { position: absolute; top: 5px; right: calc(50% + 8px); font: 700 .5rem/1 var(--f-texte); font-style: normal; letter-spacing: .06em; padding: 2px 3px; border-radius: 3px; background: #7B4FC9; color: #fff; }
 @media (min-width: 900px) { .beta-nav { top: 10px; } }
+
+/* Messagerie style texto */
+.vue-chat { padding: 0; gap: 0; overflow: hidden; }
+.vue-chat > * { max-width: 820px; }
+.chat-panneau { flex: 1; min-height: 0; display: flex; flex-direction: column; width: 100%; }
+.conv-panneau { overflow-y: auto; gap: 12px; padding-block: 18px 24px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.liste-conv { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--ligne); border: 1px solid var(--ligne); border-radius: var(--r); overflow: hidden; }
+.liste-conv .vide { background: var(--surface); border: 0; border-radius: 0; }
+.conv { width: 100%; border: 0; background: var(--surface); display: flex; align-items: center; gap: 12px; padding: 12px 14px; text-align: left; }
+.conv:hover { background: var(--surface-2); }
+.conv-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.conv-haut { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.conv-haut b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-haut small { color: var(--fg-doux); font-size: .78rem; white-space: nowrap; }
+.conv-apercu { color: var(--fg-doux); font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv.non-lu b, .conv.non-lu .conv-apercu { color: var(--fg); font-weight: 700; }
+.conv-badge { background: #7B4FC9; color: #fff; border-radius: 999px; min-width: 22px; height: 22px; display: grid; place-items: center; font-size: .75rem; padding: 0 6px; }
+
+.chat-tete { display: flex; align-items: center; gap: 10px; padding: 10px max(14px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left)); background: var(--surface); border-bottom: 1px solid var(--ligne); }
+.chat-retour { font-size: 1.8rem; line-height: 1; }
+.chat-qui { flex: 1; min-width: 0; display: grid; }
+.chat-qui b { font-size: 1.02rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-qui small { color: var(--fg-doux); font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-fil { flex: 1; min-height: 0; overflow-y: auto; padding: 14px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
+.chat-vide { margin: auto; color: var(--fg-doux); text-align: center; max-width: 30ch; }
+.chat-jour { align-self: center; margin: 12px 0 6px; font-size: .74rem; font-weight: 600; color: var(--fg-doux); text-transform: capitalize; background: var(--surface-2); padding: 3px 10px; border-radius: 999px; }
+.bulle { max-width: min(78%, 520px); padding: 8px 12px 6px; border-radius: 18px; display: grid; gap: 2px; margin-bottom: 6px; overflow-wrap: anywhere; }
+.bulle.groupe { margin-bottom: 1px; }
+.bulle.moi { align-self: flex-end; background: #6A3FE0; color: #fff; border-bottom-right-radius: 6px; }
+.bulle.eux { align-self: flex-start; background: var(--surface); color: var(--fg); border: 1px solid var(--ligne); border-bottom-left-radius: 6px; }
+.bulle-txt { white-space: pre-line; line-height: 1.4; }
+.bulle-heure { font-size: .66rem; opacity: .7; justify-self: end; }
+.chat-statut { align-self: flex-end; font-size: .72rem; color: var(--fg-doux); margin: -2px 4px 6px; }
+.chat-saisie { display: flex; align-items: flex-end; gap: 8px; padding: 8px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left)); background: var(--surface); border-top: 1px solid var(--ligne); }
+.chat-saisie textarea { flex: 1; resize: none; border-radius: 20px; padding: 10px 14px; max-height: 140px; line-height: 1.35; }
+.chat-envoyer { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #6A3FE0; color: #fff; display: grid; place-items: center; }
+.chat-envoyer:active { transform: scale(.95); }

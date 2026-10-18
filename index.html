@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610181941">
+  <link rel="stylesheet" href="styles.css?v=202610181945">
 </head>
 <body>
   <!-- Chargement -->
@@ -343,30 +343,36 @@
       <div id="sq-liste" class="liste-sq"></div>
     </section>
 
-    <!-- Vue Messages (BÊTA) -->
-    <section id="vue-messages" class="vue" hidden>
-      <div class="vue-tete">
-        <h2>Messages <span class="beta">BÊTA</span></h2>
-        <p class="ref" id="msg-resume"></p>
+    <!-- Vue Messages (BÊTA) : conversations style texto entre l'administrateur et chaque policier -->
+    <section id="vue-messages" class="vue vue-chat" hidden>
+      <div id="conv-vue" class="chat-panneau conv-panneau" hidden>
+        <div class="vue-tete">
+          <h2>Messages <span class="beta">BÊTA</span></h2>
+          <p class="ref" id="conv-resume"></p>
+        </div>
+        <div class="conv-nouvelle">
+          <label for="conv-nouveau" class="visuellement-cache">Nouvelle conversation</label>
+          <select id="conv-nouveau"><option value="">+ Nouvelle conversation…</option></select>
+        </div>
+        <ul class="liste-conv" id="conv-liste"></ul>
       </div>
 
-      <form id="msg-form" class="panneau formulaire" novalidate hidden>
-        <h3 class="intertitre" style="margin:0">Nouveau message</h3>
-        <label for="msg-dest">Destinataire</label>
-        <select id="msg-dest" required><option value="">Choisir un policier…</option></select>
-        <label for="msg-sujet">Sujet</label>
-        <input id="msg-sujet" type="text" maxlength="120" required>
-        <label for="msg-contenu">Message</label>
-        <textarea id="msg-contenu" rows="5" maxlength="5000" required></textarea>
-        <p class="aide">Message personnel : seul le destinataire le verra. Il ne peut pas répondre pour le moment (BÊTA).</p>
-        <button type="submit" class="btn-principal">Envoyer</button>
-      </form>
-
-      <div class="onglets-csr" id="msg-onglets" role="tablist" hidden>
-        <button role="tab" data-boite="recus" aria-selected="true">Reçus</button>
-        <button role="tab" data-boite="envoyes" aria-selected="false">Envoyés</button>
+      <div id="chat-vue" class="chat-panneau" hidden>
+        <header class="chat-tete">
+          <button class="btn-icone chat-retour" id="chat-retour" aria-label="Retour aux conversations" hidden>‹</button>
+          <span class="avatar moyen" id="chat-avatar"></span>
+          <div class="chat-qui"><b id="chat-nom"></b><small id="chat-sous"></small></div>
+          <span class="beta">BÊTA</span>
+        </header>
+        <div class="chat-fil" id="chat-fil" aria-live="polite"></div>
+        <form class="chat-saisie" id="chat-form" autocomplete="off">
+          <label for="chat-texte" class="visuellement-cache">Message</label>
+          <textarea id="chat-texte" rows="1" maxlength="5000" placeholder="Message" enterkeyhint="send"></textarea>
+          <button type="submit" class="chat-envoyer" aria-label="Envoyer">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" fill="currentColor"/></svg>
+          </button>
+        </form>
       </div>
-      <ul class="liste-messages" id="msg-liste"></ul>
     </section>
 
     <!-- Vue Horaire -->
@@ -648,21 +654,11 @@
     </section>
   </div>
 
-  <div id="msg-voile" class="voile" hidden>
-    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="msg-lu-sujet">
-      <button class="btn-icone fermer" id="msg-fermer" aria-label="Fermer">✕</button>
-      <p class="ref" id="msg-lu-meta"></p>
-      <h3 class="titre-voile" id="msg-lu-sujet"></h3>
-      <div class="msg-texte" id="msg-lu-contenu"></div>
-      <div class="fc-ligne"><button class="btn-secondaire" id="msg-retirer">Retirer de ma boîte</button></div>
-    </section>
-  </div>
-
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610181941"></script>
+  <script src="config.js?v=202610181945"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610181941"></script>
+  <script src="app.js?v=202610181945"></script>
 </body>
 </html>
