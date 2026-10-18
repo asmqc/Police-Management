@@ -15,6 +15,25 @@
 
   const etat = { session: null, profil: null, vue: "csr", csr: null, corps: [], donnees: {}, carte: null };
 
+  // Thème clair / sombre / automatique, mémorisé sur cet appareil
+  function appliquerTheme(t) {
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+    else document.documentElement.removeAttribute("data-theme");
+    const sombre = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", sombre ? "#0A1420" : "#0E1B2C");
+  }
+  let themeChoisi = "auto";
+  try { themeChoisi = localStorage.getItem("pm-theme") || "auto"; } catch { /* stockage indisponible */ }
+  appliquerTheme(themeChoisi);
+  function majChoixTheme() { document.querySelectorAll("[data-theme-choix]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.themeChoix === themeChoisi))); }
+  document.querySelectorAll("[data-theme-choix]").forEach((b) => b.addEventListener("click", () => {
+    themeChoisi = b.dataset.themeChoix;
+    try { localStorage.setItem("pm-theme", themeChoisi); } catch { /* stockage indisponible */ }
+    appliquerTheme(themeChoisi);
+    majChoixTheme();
+  }));
+
   // Pas de zoom (pincement ou double toucher) ailleurs que sur la carte
   const surCarte = (e) => e.target && e.target.closest && e.target.closest("#carte");
   ["gesturestart", "gesturechange", "gestureend"].forEach((t) => document.addEventListener(t, (e) => { if (!surCarte(e)) e.preventDefault(); }, { passive: false }));
@@ -304,10 +323,10 @@
     }
     if (p.doit_changer_mdp) { montrer("#ecran-mdp-temp"); $("#mt-mdp").focus(); return; }
     majBarreCompte();
-    $("#nav-admin").hidden = p.role !== "admin";
+    $("#menu-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
     compterMessages();
     ecouterMessages();
@@ -334,9 +353,38 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
+    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
   }
-  $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
+  // Menu de la photo de profil
+  function ouvrirMenu() {
+    const p = etat.profil;
+    $("#menu-nom").textContent = p.nom_complet || p.email;
+    $("#menu-sous").textContent = [p.grade, p.corps_police].filter(Boolean).join(" · ") || p.email;
+    remplirAvatar($("#menu-avatar"), p);
+    $("#menu-voile").hidden = false;
+    $("#btn-menu").setAttribute("aria-expanded", "true");
+  }
+  function fermerMenu() { $("#menu-voile").hidden = true; $("#btn-menu").setAttribute("aria-expanded", "false"); }
+  $("#btn-menu").addEventListener("click", ouvrirMenu);
+  // Rafraîchir : va chercher la dernière version de l'app et des données, puis recharge
+  $("#btn-rafraichir").addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.classList.contains("tourne")) return;
+    b.classList.add("tourne");
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) await reg.update().catch(() => {});
+      }
+    } catch { /* sans gravité */ }
+    const vue = etat.vue;
+    setTimeout(() => { location.hash = vue; location.reload(); }, 350);
+  });
+  $("#btn-reglages").addEventListener("click", () => afficherVue("reglages"));
+  $("#menu-voile").addEventListener("click", (e) => { if (e.target.id === "menu-voile") fermerMenu(); });
+  $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
+  { const v = (document.querySelector('script[src^="app.js"]') || {}).src || ""; const m = v.match(/v=(\d{8})(\d{4})/); if (m) $("#rg-version").textContent = `Version du ${m[1].slice(6, 8)}/${m[1].slice(4, 6)}/${m[1].slice(0, 4)}`; }
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
 
   /* ---------------- Horaire rotatif ---------------- */
@@ -394,8 +442,9 @@
     if (!etat.profil) return 0;
     const { count } = await sb.from("messages").select("id", { count: "exact", head: true }).eq("destinataire", etat.profil.id).is("lu_le", null);
     const b = $("#badge-messages");
-    b.textContent = count || "";
+    b.textContent = count > 99 ? "99+" : count || "";
     b.hidden = !count;
+    $("#beta-nav").hidden = !!count;
     compteurs.messages = count || 0;
     majPastille();
     const carte = $("#ac-msg");
@@ -1934,6 +1983,7 @@
     const b = $("#badge-attente");
     b.textContent = count || "";
     b.hidden = !count;
+    $("#badge-menu").textContent = count || ""; $("#badge-menu").hidden = !count;
     compteurs.demandes = count || 0;
     majPastille();
   }
@@ -1955,6 +2005,7 @@
     $("#nb-bloque").textContent = compte("bloque");
     const b = $("#badge-attente"); b.textContent = compte("en_attente") || ""; b.hidden = !compte("en_attente");
     compteurs.demandes = compte("en_attente"); majPastille();
+    $("#badge-menu").textContent = compte("en_attente") || ""; $("#badge-menu").hidden = !compte("en_attente");
     const liste = comptesAdmin.filter((p) => p.statut === filtreAdmin);
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
     el.innerHTML = liste.length ? liste.map((p, i) => `

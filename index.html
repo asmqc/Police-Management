@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610182323">
+  <link rel="stylesheet" href="styles.css?v=202610182338">
 </head>
 <body>
   <!-- Chargement -->
@@ -145,47 +145,57 @@
         <span class="marque petite">Police <span>Management</span></span>
       </div>
       <div class="barre-droite">
-        <button class="btn-compte" id="btn-compte" data-vue-lien="compte" aria-label="Mon compte">
+        <button class="btn-icone btn-rafraichir" id="btn-rafraichir" aria-label="Rafraîchir" title="Rafraîchir">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="btn-icone btn-rafraichir" id="btn-reglages" aria-label="Réglages" title="Réglages">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <button class="btn-compte" id="btn-menu" aria-haspopup="menu" aria-expanded="false" aria-label="Menu">
           <span class="avatar petit" id="barre-avatar"></span>
           <span id="barre-usager" class="usager"></span>
-        </button>
-        <button class="btn-icone" data-action="deconnexion" title="Se déconnecter" aria-label="Se déconnecter">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <b class="badge badge-menu" id="badge-menu" hidden></b>
         </button>
       </div>
     </header>
 
     <nav class="nav" aria-label="Sections">
       <button data-vue="accueil" aria-current="page">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 10v10h5v-6h4v6h5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Accueil</span>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7M5 10v10h5v-6h4v6h5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 2.4 10.6a1 1 0 0 0 1.2 1.6L5 11.1V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-8.9l1.4 1.1a1 1 0 0 0 1.2-1.6z" fill="currentColor"/></svg>
+        </span>
+        <span class="nav-txt">Accueil</span>
       </button>
       <button data-vue="csr">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <span>CSR</span>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8.6L20 7.4V21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zm8 1.5V8h4.5M8.5 12.5h7v-1.5h-7zm0 4h5V15h-5z" fill="currentColor" fill-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-txt">CSR</span>
       </button>
       <button data-vue="carte">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <span>Carte</span>
-      </button>
-      <button data-vue="corps">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <span>Territoires</span>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.3v14.9l-5 1.7A1 1 0 0 1 2 19V6.3a1 1 0 0 1 .7-1zm2 0 4 1.4v14.9l-4-1.4zm6 1.4 5-1.6A1 1 0 0 1 22 4v12.7a1 1 0 0 1-.7 1L16 19.6z" fill="currentColor"/></svg>
+        </span>
+        <span class="nav-txt">Carte</span>
       </button>
       <button data-vue="horaire">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        <span>Horaire</span>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2a1 1 0 0 1 1 1v1h6V3a1 1 0 1 1 2 0v1h2a2 2 0 0 1 2 2v3H3V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1zM3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/></svg>
+        </span>
+        <span class="nav-txt">Horaire</span>
       </button>
       <button data-vue="messages">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4zM8 9h8M8 12h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Messages</span>
-        <i class="beta-nav" aria-label="Bêta">BÊTA</i>
-        <b class="badge" id="badge-messages" hidden></b>
-      </button>
-      <button data-vue="admin" id="nav-admin" hidden>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0M4 20c1-3.5 4.3-5 8-5s7 1.5 8 5M18 4l1.5 1.5L22 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Admin</span>
-        <b id="badge-attente" class="badge" hidden></b>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H9.4l-4.8 3.8A1 1 0 0 1 3 20V5a1 1 0 0 1 1-1z" fill="currentColor"/></svg>
+          <b class="badge" id="badge-messages" hidden></b>
+          <i class="beta-nav" id="beta-nav">BÊTA</i>
+        </span>
+        <span class="nav-txt">Messages</span>
       </button>
     </nav>
 
@@ -345,6 +355,40 @@
       <div id="corps-liste" class="grille-corps"></div>
       <h3 class="intertitre">Postes de la Sûreté du Québec</h3>
       <div id="sq-liste" class="liste-sq"></div>
+    </section>
+
+    <!-- Vue Réglages -->
+    <section id="vue-reglages" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Réglages</h2>
+        <p class="ref" id="rg-version"></p>
+      </div>
+
+      <h3 class="intertitre">Apparence</h3>
+      <div class="panneau">
+        <div class="segmente segmente-theme" role="radiogroup" aria-label="Thème">
+          <button type="button" role="radio" data-theme-choix="auto" aria-checked="true">Automatique</button>
+          <button type="button" role="radio" data-theme-choix="light" aria-checked="false">Clair</button>
+          <button type="button" role="radio" data-theme-choix="dark" aria-checked="false">Sombre</button>
+        </div>
+        <p class="aide">Automatique suit le réglage de votre téléphone ou ordinateur (sombre la nuit, par exemple).</p>
+      </div>
+
+      <h3 class="intertitre">Notifications</h3>
+      <div class="panneau">
+        <div class="notif-bloc" data-notif>
+          <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+          <button type="button" class="btn-ok petit notif-bouton">Activer</button>
+        </div>
+      </div>
+
+      <h3 class="intertitre">Compte et app</h3>
+      <div class="liste-reglages">
+        <button data-menu="compte"><span>Mon compte</span><small>Photo, grade, unité, mot de passe</small><i>›</i></button>
+        <button data-menu="horaire"><span>Mon horaire</span><small>Rotation et partages</small><i>›</i></button>
+        <button data-menu="aide"><span>Installer l'app</span><small>iPhone, Android, ordinateur</small><i>›</i></button>
+        <button data-action="deconnexion" class="rouge"><span>Se déconnecter</span><i>›</i></button>
+      </div>
     </section>
 
     <!-- Vue Messages (BÊTA) : conversations style texto entre l'administrateur et chaque policier -->
@@ -675,11 +719,25 @@
     </section>
   </div>
 
+  <div id="menu-voile" class="voile voile-menu" hidden>
+    <section class="menu-feuille" role="menu" aria-label="Menu">
+      <div class="menu-tete">
+        <span class="avatar moyen" id="menu-avatar"></span>
+        <div><b id="menu-nom"></b><small id="menu-sous"></small></div>
+      </div>
+      <button role="menuitem" data-menu="compte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mon compte</span></button>
+      <button role="menuitem" data-menu="corps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Territoires</span></button>
+      <button role="menuitem" data-menu="admin" id="menu-admin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0M4 20c1-3.5 4.3-5 8-5s7 1.5 8 5M18 4l1.5 1.5L22 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Administration</span><b class="badge-ligne" id="badge-attente" hidden></b></button>
+      <button role="menuitem" data-menu="aide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 11l4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>App (installer)</span></button>
+      <button role="menuitem" class="menu-sortie" data-action="deconnexion"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Se déconnecter</span></button>
+    </section>
+  </div>
+
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610182323"></script>
+  <script src="config.js?v=202610182338"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610182323"></script>
+  <script src="app.js?v=202610182338"></script>
 </body>
 </html>
