@@ -1,0 +1,22 @@
+name: Charger le CSR dans Supabase
+on:
+  workflow_dispatch:
+jobs:
+  charger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chargement
+      - name: Envoyer le texte vérifié
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          contenu = open("csr.json", encoding="utf-8").read()
+          cfg = open("/dev/null")  # aucune donnée secrète : la base vérifie l'empreinte du contenu
+          url = "https://skafnhlxlptmykboqzfq.supabase.co/rest/v1/rpc/charger_csr"
+          cle = "sb_publishable_zVkaou2CPfTRG66k01ZMJA_pAHn1fUy"
+          req = urllib.request.Request(url, data=json.dumps({"contenu": contenu}).encode(), method="POST",
+                headers={"apikey": cle, "Authorization": "Bearer " + cle, "Content-Type": "application/json"})
+          print(urllib.request.urlopen(req, timeout=120).read().decode())
+          PY
