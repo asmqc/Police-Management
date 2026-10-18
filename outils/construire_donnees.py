@@ -32,16 +32,16 @@ SOURCES = {
 diag = {}
 
 
-def telecharger(cle):
+def telecharger(cle, essais=4, delai=600):
     url = SOURCES[cle]
     ext = ".zip" if url.endswith(".zip") else ".geojson"
     chemin = f"{TMP}/{cle}{ext}"
     if os.path.exists(chemin):
         return chemin
-    for essai in range(4):
+    for essai in range(essais):
         try:
             req = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(req, timeout=600) as r, open(chemin, "wb") as f:
+            with urllib.request.urlopen(req, timeout=delai) as r, open(chemin, "wb") as f:
                 f.write(r.read())
             print("téléchargé", cle, os.path.getsize(chemin))
             return chemin
@@ -102,15 +102,60 @@ bur = gpd.read_file(telecharger("bureaux"))
 ecrire(bur, "sq_bureaux", 0, ["NOM_ENT", "CAT_UNIT", "ADRESSE", "MUNICIPALITE", "CODE_POST", "NOM_REG"])
 
 # 3. Municipalités non desservies par la SQ -> corps de police municipaux ou autochtones
-z = telecharger("sda")
-zipfile.ZipFile(z).extractall(f"{TMP}/sda")
-gpkgs = glob.glob(f"{TMP}/sda/**/*.gpkg", recursive=True)
-diag["sda_fichiers"] = gpkgs
-import fiona
-couches = fiona.listlayers(gpkgs[0])
-diag["sda_couches"] = couches
-nom_couche = next(c for c in couches if "munic" in c.lower() and c.lower().endswith("_s"))
-mun = gpd.read_file(gpkgs[0], layer=nom_couche).to_crs(4326)
+SOURCES["sda_rest"] = "https://servicescarto.mern.gouv.qc.ca/pes/rest/services/Territoire/SDA_WMS/MapServer"
+SOURCES["statcan"] = "https://www12.statcan.gc.ca/census-recensement/2021/geo/sip-pis/boundary-limites/files-fichiers/lcsd000b21a_f.zip"
+
+
+def municipalites_sda():
+    z = telecharger("sda", essais=1, delai=90)
+    zipfile.ZipFile(z).extractall(f"{TMP}/sda")
+    gpkgs = glob.glob(f"{TMP}/sda/**/*.gpkg", recursive=True)
+    import fiona
+    couches = fiona.listlayers(gpkgs[0])
+    nom_couche = next(c for c in couches if "munic" in c.lower() and c.lower().endswith("_s"))
+    return gpd.read_file(gpkgs[0], layer=nom_couche).to_crs(4326)
+
+
+def municipalites_rest():
+    base = SOURCES["sda_rest"]
+    req = urllib.request.Request(base + "?f=json", headers=UA)
+    meta = json.loads(urllib.request.urlopen(req, timeout=60).read())
+    couche = next(l for l in meta["layers"] if "unicipalit" in l["name"] and not l.get("subLayerIds"))
+    diag["rest_couche"] = couche
+    morceaux, offset = [], 0
+    while True:
+        q = (f"{base}/{couche['id']}/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326"
+             f"&maxAllowableOffset=0.0003&f=geojson&resultOffset={offset}&resultRecordCount=500")
+        g = json.loads(urllib.request.urlopen(urllib.request.Request(q, headers=UA), timeout=180).read())
+        fs = g.get("features", [])
+        if not fs:
+            break
+        morceaux.extend(fs)
+        offset += len(fs)
+    return gpd.GeoDataFrame.from_features(morceaux, crs=4326)
+
+
+def municipalites_statcan():
+    z = telecharger("statcan", essais=2, delai=600)
+    g = gpd.read_file("zip://" + z)
+    g = g[g["PRUID"].astype(str) == "24"].to_crs(4326)
+    g["MUS_CO_GEO"] = g["SDRIDU"].astype(str).str[2:] if "SDRIDU" in g else g["CSDUID"].astype(str).str[2:]
+    g["MUS_NM_MUN"] = g["SDRNOM"] if "SDRNOM" in g else g["CSDNAME"]
+    g["MUS_CO_DES"] = g["SDRGENRE"] if "SDRGENRE" in g else g.get("CSDTYPE", "")
+    return g
+
+
+mun = None
+for nom_source, fonction in (("SDA", municipalites_sda), ("REST MRNF", municipalites_rest), ("Statistique Canada", municipalites_statcan)):
+    try:
+        mun = fonction()
+        diag["source_municipalites"] = nom_source
+        print("municipalités :", nom_source, len(mun))
+        break
+    except BaseException as e:
+        print("source municipalités indisponible :", nom_source, repr(e)[:200])
+if mun is None:
+    raise SystemExit("Aucune source de municipalités disponible")
 diag["sda_champs"] = list(mun.columns)
 diag["sda_exemple"] = mun.drop(columns="geometry").head(3).astype(str).to_dict("records")
 
@@ -118,10 +163,17 @@ zone_sq = unary_union(postes.to_crs(4326).geometry.buffer(0))
 pts = mun.geometry.representative_point()
 mun["sq"] = pts.within(zone_sq)
 hors = mun[~mun["sq"]].copy()
-col_code = next((c for c in mun.columns if c.upper() in ("MUS_CO_GEO", "CO_GEO", "CODE_GEO")), None)
-col_nom = next((c for c in mun.columns if c.upper() in ("MUS_NM_MUN", "NM_MUN", "NOM_MUN")), None)
-col_mrc = next((c for c in mun.columns if c.upper() in ("MUS_NM_MRC", "NM_MRC")), None)
-col_des = next((c for c in mun.columns if c.upper() in ("MUS_CO_DES", "CO_DES")), None)
+def colonne(*motifs):
+    for m in motifs:
+        for c in mun.columns:
+            if m in c.upper():
+                return c
+    return None
+col_code = colonne("MUS_CO_GEO", "CO_GEO", "CODE_GEO")
+col_nom = colonne("MUS_NM_MUN", "NM_MUN", "NOM_MUN")
+col_mrc = colonne("MUS_NM_MRC", "NM_MRC")
+col_des = colonne("MUS_CO_DES", "CO_DES")
+diag["colonnes"] = [col_code, col_nom, col_mrc, col_des]
 # Index léger de toutes les municipalités (recherche « qui couvre ce territoire »)
 index = []
 for (_, r), pt in zip(mun.iterrows(), pts):

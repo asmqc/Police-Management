@@ -15,14 +15,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -q geopandas pyogrio fiona
+      - run: pip install -q geopandas pyogrio fiona beautifulsoup4 lxml
       - name: Construire les données
         id: construire
         run: |
           mkdir -p exploration
           set -o pipefail
           python outils/construire_donnees.py 2>&1 | tee exploration/journal.txt
-      - name: Page du CSR (échantillon pour l'analyse)
+      - name: Texte du CSR
         if: always()
         continue-on-error: true
         run: |
@@ -31,7 +31,7 @@ jobs:
             -H "Accept-Language: fr-CA,fr" --retry 3 -o exploration/csr_complet.html \
             "https://www.legisquebec.gouv.qc.ca/fr/document/lc/C-24.2" -w "%{http_code} %{size_download}\n" > exploration/csr_statut.txt 2>&1 || true
           cat exploration/csr_statut.txt
-          head -c 400000 exploration/csr_complet.html > exploration/csr_debut.html || true
+          python outils/extraire_csr.py exploration/csr_complet.html exploration/csr.json
           rm -f exploration/csr_complet.html
       - name: Enregistrer
         if: always()
