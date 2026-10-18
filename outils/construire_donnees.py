@@ -65,17 +65,35 @@ def ecrire(gdf, nom, tolerance, garder):
 
 # 1. Repères kilométriques -> tableau compact (le service WFS plafonne le nombre d'entités : on pagine)
 from collections import Counter
-features, depart, PAGE = [], 0, 5000
-while True:
-    url = SOURCES["reperes"] + f"&count={PAGE}&startIndex={depart}&sortBy=objectid"
-    req = urllib.request.Request(url, headers=UA)
-    page = json.loads(urllib.request.urlopen(req, timeout=600).read())
-    lot = page.get("features", [])
-    features.extend(lot)
-    print("repères", depart, len(lot))
-    if len(lot) < PAGE:
-        break
-    depart += len(lot)
+PLAFOND = 14000
+features = []
+
+
+def tuile(lat1, lon1, lat2, lon2, prof=0):
+    """Télécharge les repères d'une boîte ; la subdivise si le plafond du service est atteint."""
+    bbox = f"&bbox={lat1},{lon1},{lat2},{lon2},urn:ogc:def:crs:EPSG::4326"
+    for essai in range(3):
+        try:
+            req = urllib.request.Request(SOURCES["reperes"] + bbox, headers=UA)
+            lot = json.loads(urllib.request.urlopen(req, timeout=600).read()).get("features", [])
+            break
+        except Exception as e:
+            print("échec tuile", lat1, lon1, e)
+            time.sleep(5)
+    else:
+        raise SystemExit("Repères : tuile impossible à télécharger")
+    if len(lot) >= PLAFOND * 0.98 and prof < 6:
+        mlat, mlon = (lat1 + lat2) / 2, (lon1 + lon2) / 2
+        for b in ((lat1, lon1, mlat, mlon), (lat1, mlon, mlat, lon2), (mlat, lon1, lat2, mlon), (mlat, mlon, lat2, lon2)):
+            tuile(*b, prof + 1)
+    else:
+        print("tuile", round(lat1, 2), round(lon1, 2), len(lot))
+        features.extend(lot)
+
+
+for lat in range(44, 64, 4):
+    for lon in range(-80, -56, 6):
+        tuile(lat, lon, lat + 4, lon + 6)
 vus_id = set()
 lignes, noms = [], {}
 for f in features:

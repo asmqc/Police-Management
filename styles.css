@@ -174,8 +174,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .liste-articles li button { width: 100%; text-align: left; border: 0; background: var(--surface); padding: 12px 14px; display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; align-items: baseline; }
 .liste-articles li button:hover, .liste-articles li button[aria-current="true"] { background: var(--surface-2); }
 .no-art { font-family: var(--f-mono); font-weight: 600; color: var(--ambre); font-variant-numeric: tabular-nums; }
+.extrait-bloc { display: grid; gap: 2px; min-width: 0; }
+.extrait-bloc small { color: var(--fg-doux); font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .extrait { font-size: .92rem; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.extrait small { display: block; color: var(--fg-doux); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
 mark { background: color-mix(in srgb, var(--ambre-vif) 45%, transparent); color: inherit; border-radius: 2px; }
 
 .article { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 20px; position: sticky; top: 0; }
@@ -222,8 +223,8 @@ a { color: var(--bleu); }
 }
 .fiche .fermer { position: absolute; top: 6px; right: 6px; }
 .fiche h4 { margin: 0; font-family: var(--f-titre); font-size: 1.3rem; padding-right: 36px; }
-.fiche .ligne-info { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; font-size: .92rem; }
-.fiche .ligne-info span:first-child { color: var(--fg-doux); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
+.fiche .ligne-info { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 8px; font-size: .92rem; }
+.fiche .ligne-info > span:first-child { color: var(--fg-doux); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
 .borne {
   display: inline-grid; justify-items: center; background: #1F7A3A; color: #fff; border: 2px solid #fff; outline: 1.5px solid #1F7A3A;
   border-radius: 4px; padding: 2px 8px; font-family: var(--f-titre); font-weight: 700; line-height: 1.05;

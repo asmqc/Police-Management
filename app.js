@@ -298,7 +298,7 @@
     $("#csr-liste").innerHTML = res.slice(0, max).map((a) => `
       <li><button data-no="${esc(a.numero)}">
         <span class="no-art">${esc(a.numero)}</span>
-        <span class="extrait"><small>${esc(a.section || a.chapitre || a.titre || "")}</small>${surligner(extrait(a, termes), termes)}</span>
+        <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span></span>
       </button></li>`).join("");
     $$("#csr-liste button").forEach((b) => b.addEventListener("click", () => ouvrirArticle(etat.csr.find((a) => a.numero === b.dataset.no), termes)));
   }
@@ -627,7 +627,7 @@
     if (q.length < 2) { out.innerHTML = ""; return; }
     let munis;
     try { munis = await charger("municipalites.json"); } catch (e) { out.innerHTML = `<p class="vide">${esc(e.message)}</p>`; return; }
-    const trouvees = munis.municipalites.filter((m) => norm(m[0]).includes(q)).sort((a, b) => (norm(a[0]) === q ? -1 : norm(b[0]) === q ? 1 : norm(a[0]).startsWith(q) ? -1 : 1)).slice(0, 8);
+    const trouvees = munis.municipalites.filter((m) => !/^tno aquatique/.test(norm(m[0])) && norm(m[0]).includes(q)).sort((a, b) => (norm(a[0]) === q ? -1 : norm(b[0]) === q ? 1 : norm(a[0]).startsWith(q) ? -1 : 1)).slice(0, 8);
     if (!trouvees.length) { out.innerHTML = `<p class="vide">Aucune municipalité trouvée pour « ${esc($("#corps-q").value)} ».</p>`; return; }
     const blocs = await Promise.all(trouvees.map(async (m) => {
       const [nom, , mrc, lon, lat] = m;
