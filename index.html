@@ -63,7 +63,7 @@
             </select>
           </div>
         </div>
-        <div id="bloc-unite" class="bloc-champ" hidden>
+        <div id="dm-bloc-unite" class="bloc-champ" hidden>
           <label for="dm-unite">Précisez l'unité ou le poste</label>
           <input id="dm-unite" type="text">
         </div>
@@ -107,6 +107,24 @@
     </section>
   </main>
 
+  <!-- Changement obligatoire après un mot de passe temporaire -->
+  <main id="ecran-mdp-temp" class="ecran-centre" hidden>
+    <section class="attente-carte">
+      <img src="assets/logo.svg" alt="" width="56" height="64">
+      <h1>Choisissez votre mot de passe</h1>
+      <p>L'administrateur vous a donné un mot de passe temporaire. Choisissez maintenant votre propre mot de passe pour continuer.</p>
+      <form id="form-mdp-temp" class="formulaire" novalidate style="width:100%">
+        <label for="mt-mdp">Nouveau mot de passe (10 caractères minimum)</label>
+        <input id="mt-mdp" type="password" autocomplete="new-password" minlength="10" required>
+        <label for="mt-mdp2">Confirmer le mot de passe</label>
+        <input id="mt-mdp2" type="password" autocomplete="new-password" minlength="10" required>
+        <button type="submit" class="btn-principal">Enregistrer et continuer</button>
+      </form>
+      <p id="mt-message" class="message erreur" role="status" hidden></p>
+      <button class="lien" data-action="deconnexion">Se déconnecter</button>
+    </section>
+  </main>
+
   <!-- Application -->
   <div id="ecran-app" class="app" hidden>
     <header class="barre">
@@ -115,7 +133,10 @@
         <span class="marque petite">Police <span>Extrême</span></span>
       </div>
       <div class="barre-droite">
-        <span id="barre-usager" class="usager"></span>
+        <button class="btn-compte" id="btn-compte" data-vue-lien="compte" aria-label="Mon compte">
+          <span class="avatar petit" id="barre-avatar"></span>
+          <span id="barre-usager" class="usager"></span>
+        </button>
         <button class="btn-icone" data-action="deconnexion" title="Se déconnecter" aria-label="Se déconnecter">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -210,6 +231,76 @@
       <div id="sq-liste" class="liste-sq"></div>
     </section>
 
+    <!-- Vue Mon compte -->
+    <section id="vue-compte" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Mon compte</h2>
+        <p class="ref" id="mc-courriel"></p>
+      </div>
+
+      <div class="panneau">
+        <div class="avatar-bloc">
+          <span class="avatar grand" id="mc-avatar"></span>
+          <div class="avatar-actions">
+            <label class="btn-secondaire" for="mc-fichier">Changer la photo</label>
+            <input id="mc-fichier" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <button type="button" class="lien" id="mc-retirer-avatar">Retirer la photo</button>
+          </div>
+        </div>
+
+        <form id="form-compte" class="formulaire" novalidate>
+          <label for="mc-nom">Nom complet</label>
+          <input id="mc-nom" type="text" autocomplete="name" required>
+          <div class="rangee">
+            <div>
+              <label for="mc-matricule">Matricule</label>
+              <input id="mc-matricule" type="text" inputmode="numeric">
+            </div>
+            <div>
+              <label for="mc-poste">Unité / poste</label>
+              <select id="mc-poste" disabled><option value="">Choisir le corps d'abord</option></select>
+            </div>
+          </div>
+          <div id="mc-bloc-unite" class="bloc-champ" hidden>
+            <label for="mc-unite">Précisez l'unité ou le poste</label>
+            <input id="mc-unite" type="text">
+          </div>
+          <label for="mc-corps">Corps de police</label>
+          <select id="mc-corps">
+            <option value="">Choisir…</option>
+            <option>Sûreté du Québec</option>
+            <option>Service de police de la Ville de Montréal</option>
+            <option>Service de police de la Ville de Québec</option>
+            <option>Service de police de Laval</option>
+            <option>Service de police de l'agglomération de Longueuil</option>
+            <option>Service de police de la Ville de Gatineau</option>
+            <option>Autre corps de police municipal</option>
+            <option>Corps de police autochtone</option>
+            <option>Contrôle routier Québec</option>
+            <option>Autre</option>
+          </select>
+          <button type="submit" class="btn-principal">Enregistrer les modifications</button>
+        </form>
+      </div>
+
+      <h3 class="intertitre">Mot de passe</h3>
+      <form id="form-mdp-compte" class="panneau formulaire" novalidate>
+        <label for="mc-mdp">Nouveau mot de passe (10 caractères minimum)</label>
+        <input id="mc-mdp" type="password" autocomplete="new-password" minlength="10">
+        <label for="mc-mdp2">Confirmer le mot de passe</label>
+        <input id="mc-mdp2" type="password" autocomplete="new-password" minlength="10">
+        <button type="submit" class="btn-secondaire">Changer le mot de passe</button>
+      </form>
+
+      <h3 class="intertitre danger">Supprimer mon compte</h3>
+      <div class="panneau zone-danger">
+        <p>La suppression est définitive : votre compte, votre photo et toutes vos informations sont effacés de Police Extrême. Pour revenir, il faudra refaire une demande d'accès.</p>
+        <label for="mc-confirmer-suppr">Écrivez SUPPRIMER pour confirmer</label>
+        <input id="mc-confirmer-suppr" type="text" autocomplete="off" autocapitalize="characters">
+        <button type="button" class="btn-danger" id="mc-supprimer" disabled>Supprimer mon compte pour toujours</button>
+      </div>
+    </section>
+
     <!-- Vue admin -->
     <section id="vue-admin" class="vue" hidden>
       <div class="vue-tete">
@@ -220,6 +311,7 @@
         <button data-filtre="en_attente" aria-selected="true">En attente <b id="nb-attente">0</b></button>
         <button data-filtre="approuve" aria-selected="false">Approuvés <b id="nb-approuve">0</b></button>
         <button data-filtre="refuse" aria-selected="false">Refusés <b id="nb-refuse">0</b></button>
+        <button data-filtre="bloque" aria-selected="false">Bloqués <b id="nb-bloque">0</b></button>
       </div>
       <div id="admin-liste" class="admin-liste"></div>
 
@@ -227,6 +319,13 @@
       <p class="aide">La liste est dans le fichier <span class="ref">data/corps_police.json</span> sur GitHub. Elle sert au formulaire d'inscription, à la carte et à l'onglet Territoires. Écrivez le nom officiel de chaque municipalité. Les changements apparaissent dans l'app environ une minute après l'enregistrement sur GitHub.</p>
       <a class="btn-secondaire" id="lien-edition-corps" href="#" target="_blank" rel="noopener">Modifier la liste sur GitHub</a>
       <div id="admin-corps"></div>
+    </section>
+  </div>
+
+  <div id="fiche-compte" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="fc-nom">
+      <button class="btn-icone fermer" id="fc-fermer" aria-label="Fermer">✕</button>
+      <div id="fc-contenu"></div>
     </section>
   </div>
 

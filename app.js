@@ -25,7 +25,7 @@
     toastMinuteur = setTimeout(() => (t.hidden = true), 3200);
   }
   function montrer(ecran) {
-    ["#ecran-chargement", "#ecran-auth", "#ecran-attente", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
+    ["#ecran-chargement", "#ecran-auth", "#ecran-attente", "#ecran-mdp-temp", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
   }
   function messageAuth(texte, type = "") {
     const m = $("#auth-message");
@@ -36,6 +36,8 @@
   function traduireErreur(e) {
     const m = (e && (e.message || e.error_description)) || String(e);
     if (/Invalid login credentials/i.test(m)) return "Courriel ou mot de passe incorrect.";
+    if (/banned/i.test(m)) return "Ce compte est bloqué. Communiquez avec l'administrateur.";
+    if (/should be different/i.test(m)) return "Le nouveau mot de passe doit être différent de l'ancien.";
     if (/Email not confirmed/i.test(m)) return "Confirmez d'abord votre courriel : ouvrez le lien reçu par courriel, puis reconnectez-vous.";
     if (/already registered|already been registered/i.test(m)) return "Ce courriel a déjà une demande. Utilisez « Connexion » ou « Mot de passe oublié ».";
     if (/Password should be at least/i.test(m)) return "Le mot de passe doit contenir au moins 10 caractères.";
@@ -176,9 +178,10 @@
   const opt = (v) => `<option>${esc(v)}</option>`;
   const optAutre = `<option value="${AUTRE}">Autre (préciser)</option>`;
 
-  async function majChampPoste() {
-    const corps = $("#dm-corps").value;
-    const sel = $("#dm-poste");
+  // p = préfixe du formulaire : "dm" (demande d'accès) ou "mc" (mon compte)
+  async function majChampPoste(p = "dm") {
+    const corps = $(`#${p}-corps`).value;
+    const sel = $(`#${p}-poste`);
     let html = "";
     try {
       if (!corps) html = "";
@@ -186,7 +189,7 @@
         html = (await postesSQ()).map(([r, us]) => `<optgroup label="${esc(r)}">${us.map(opt).join("")}</optgroup>`).join("") +
           `<optgroup label="Autre">${optAutre}</optgroup>`;
       } else if (corps === "Autre corps de police municipal") {
-        const noms = (await corpsParType("municipal")).filter((n) => ![...$("#dm-corps").options].some((o) => o.value === n));
+        const noms = (await corpsParType("municipal")).filter((n) => ![...$(`#${p}-corps`).options].some((o) => o.value === n));
         html = noms.map(opt).join("") + optAutre;
       } else if (corps === "Corps de police autochtone") {
         html = (await corpsParType("autochtone")).map(opt).join("") + optAutre;
@@ -202,17 +205,19 @@
     sel.innerHTML = `<option value="">${titre}</option>` + html;
     sel.disabled = !corps;
     if (html === optAutre) sel.value = AUTRE;
-    majChampAutre();
+    majChampAutre(p);
   }
-  function majChampAutre() {
-    $("#bloc-unite").hidden = $("#dm-poste").value !== AUTRE;
+  function majChampAutre(p = "dm") {
+    $(`#${p}-bloc-unite`).hidden = $(`#${p}-poste`).value !== AUTRE;
   }
-  function uniteChoisie() {
-    const v = $("#dm-poste").value;
-    return v === AUTRE ? $("#dm-unite").value.trim() : v;
+  function uniteChoisie(p = "dm") {
+    const v = $(`#${p}-poste`).value;
+    return v === AUTRE ? $(`#${p}-unite`).value.trim() : v;
   }
-  $("#dm-corps").addEventListener("change", majChampPoste);
-  $("#dm-poste").addEventListener("change", majChampAutre);
+  for (const p of ["dm", "mc"]) {
+    $(`#${p}-corps`).addEventListener("change", () => majChampPoste(p));
+    $(`#${p}-poste`).addEventListener("change", () => majChampAutre(p));
+  }
 
   function formNouveauMdp() {
     montrer("#ecran-auth");
@@ -270,11 +275,12 @@
     }
     const p = etat.profil;
     if (!p || p.statut !== "approuve") {
-      $("#attente-titre").textContent = p && p.statut === "refuse" ? "Demande refusée" : "Demande en attente";
-      $("#attente-texte").textContent =
-        p && p.statut === "refuse"
-          ? "Votre demande d'accès n'a pas été acceptée. Communiquez avec l'administrateur si vous croyez qu'il s'agit d'une erreur."
-          : "Votre demande a été reçue. Vous aurez accès dès que l'administrateur l'aura approuvée.";
+      const st = p ? p.statut : "en_attente";
+      $("#attente-titre").textContent = { refuse: "Demande refusée", bloque: "Compte bloqué" }[st] || "Demande en attente";
+      $("#attente-texte").textContent = {
+        refuse: "Votre demande d'accès n'a pas été acceptée. Communiquez avec l'administrateur si vous croyez qu'il s'agit d'une erreur.",
+        bloque: "L'accès à ce compte a été bloqué par l'administrateur.",
+      }[st] || "Votre demande a été reçue. Vous aurez accès dès que l'administrateur l'aura approuvée.";
       $("#attente-details").innerHTML = p
         ? `<dt>Nom</dt><dd>${esc(p.nom_complet || "—")}</dd><dt>Courriel</dt><dd>${esc(p.email)}</dd><dt>Matricule</dt><dd>${esc(p.matricule || "—")}</dd><dt>Corps</dt><dd>${esc(p.corps_police || "—")}</dd>`
         : "";
@@ -282,11 +288,12 @@
       if (manuel) toast(p && p.statut === "refuse" ? "Demande refusée" : "Toujours en attente");
       return;
     }
-    $("#barre-usager").textContent = p.nom_complet || p.email;
+    if (p.doit_changer_mdp) { montrer("#ecran-mdp-temp"); $("#mt-mdp").focus(); return; }
+    majBarreCompte();
     $("#nav-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["csr", "carte", "corps", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
+    afficherVue(["csr", "carte", "corps", "compte", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
     chargerCorps();
     if (p.role === "admin") compterAttente();
   }
@@ -307,8 +314,182 @@
     if (nom === "carte") initCarte();
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
+    if (nom === "compte") initCompte();
   }
+  $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
+
+  /* ---------------- Avatars ---------------- */
+  const cacheAvatars = new Map();
+  async function urlsAvatars(chemins) {
+    const manquants = [...new Set(chemins.filter((c) => c && !cacheAvatars.has(c)))];
+    if (manquants.length) {
+      const { data } = await sb.storage.from("avatars").createSignedUrls(manquants, 3600);
+      (data || []).forEach((d) => d.signedUrl && cacheAvatars.set(d.path, d.signedUrl));
+    }
+    return chemins.map((c) => cacheAvatars.get(c) || null);
+  }
+  const initiales = (p) => (p.nom_complet || p.email || "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("");
+  function htmlAvatar(p, url, taille = "moyen") {
+    return `<span class="avatar ${taille}">${url ? `<img src="${esc(url)}" alt="">` : esc(initiales(p))}</span>`;
+  }
+  async function remplirAvatar(el, p) {
+    const [url] = await urlsAvatars([p.avatar_path]);
+    el.innerHTML = url ? `<img src="${esc(url)}" alt="">` : esc(initiales(p));
+  }
+  function majBarreCompte() {
+    const p = etat.profil;
+    $("#barre-usager").textContent = p.nom_complet || p.email;
+    remplirAvatar($("#barre-avatar"), p);
+  }
+
+  // Réduit la photo à 320 px (JPEG) avant l'envoi
+  function reduireImage(fichier, cote = 320) {
+    return new Promise((ok, ko) => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement("canvas");
+        const r = Math.min(img.width, img.height);
+        c.width = c.height = cote;
+        c.getContext("2d").drawImage(img, (img.width - r) / 2, (img.height - r) / 2, r, r, 0, 0, cote, cote);
+        c.toBlob((b) => (b ? ok(b) : ko(new Error("Image illisible"))), "image/jpeg", 0.85);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => ko(new Error("Ce fichier n'est pas une image lisible."));
+      img.src = URL.createObjectURL(fichier);
+    });
+  }
+
+  /* ---------------- Mon compte ---------------- */
+  async function enregistrerProfil(avatar) {
+    const p = etat.profil;
+    const { error } = await sb.rpc("modifier_mon_profil", {
+      p_nom: $("#mc-nom").value, p_matricule: $("#mc-matricule").value, p_corps: $("#mc-corps").value,
+      p_unite: uniteChoisie("mc"), p_avatar: avatar === undefined ? p.avatar_path || "" : avatar,
+    });
+    if (error) throw error;
+    etat.profil = await chargerProfil();
+    majBarreCompte();
+  }
+
+  async function initCompte() {
+    const p = etat.profil;
+    $("#mc-courriel").textContent = p.email;
+    $("#mc-nom").value = p.nom_complet || "";
+    $("#mc-matricule").value = p.matricule || "";
+    const corps = $("#mc-corps");
+    corps.value = [...corps.options].some((o) => o.value === p.corps_police) ? p.corps_police : (p.corps_police ? "Autre" : "");
+    await majChampPoste("mc");
+    const poste = $("#mc-poste");
+    if (p.unite && [...poste.options].some((o) => o.value === p.unite)) poste.value = p.unite;
+    else if (p.unite) { poste.value = AUTRE; $("#mc-unite").value = p.unite; }
+    majChampAutre("mc");
+    remplirAvatar($("#mc-avatar"), p);
+    $("#mc-retirer-avatar").hidden = !p.avatar_path;
+    $("#mc-confirmer-suppr").value = "";
+    $("#mc-supprimer").disabled = true;
+  }
+
+  $("#form-compte").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!$("#mc-nom").value.trim()) { $("#mc-nom").focus(); return toast("Le nom est obligatoire"); }
+    if ($("#mc-poste").value === AUTRE && !$("#mc-unite").value.trim()) { $("#mc-unite").focus(); return toast("Précisez votre unité ou votre poste"); }
+    const btn = $("#form-compte .btn-principal");
+    btn.disabled = true;
+    try { await enregistrerProfil(); toast("Compte mis à jour"); }
+    catch (e) { toast(traduireErreur(e)); }
+    btn.disabled = false;
+  });
+
+  $("#mc-fichier").addEventListener("change", async (ev) => {
+    const f = ev.target.files[0];
+    ev.target.value = "";
+    if (!f) return;
+    if (f.size > 15 * 1024 * 1024) return toast("Photo trop lourde (15 Mo maximum)");
+    toast("Envoi de la photo…");
+    try {
+      const blob = await reduireImage(f);
+      const ancien = etat.profil.avatar_path;
+      const chemin = `${etat.profil.id}/avatar-${Date.now()}.jpg`;
+      const { error } = await sb.storage.from("avatars").upload(chemin, blob, { contentType: "image/jpeg", upsert: false });
+      if (error) throw error;
+      await enregistrerProfil(chemin);
+      if (ancien) await sb.storage.from("avatars").remove([ancien]);
+      remplirAvatar($("#mc-avatar"), etat.profil);
+      $("#mc-retirer-avatar").hidden = false;
+      toast("Photo mise à jour");
+    } catch (e) { toast(traduireErreur(e)); }
+  });
+
+  $("#mc-retirer-avatar").addEventListener("click", async () => {
+    const ancien = etat.profil.avatar_path;
+    try {
+      await enregistrerProfil("");
+      if (ancien) await sb.storage.from("avatars").remove([ancien]);
+      remplirAvatar($("#mc-avatar"), etat.profil);
+      $("#mc-retirer-avatar").hidden = true;
+      toast("Photo retirée");
+    } catch (e) { toast(traduireErreur(e)); }
+  });
+
+  async function changerMotDePasse(v1, v2) {
+    if (v1.length < 10) throw new Error("Le mot de passe doit contenir au moins 10 caractères.");
+    if (v1 !== v2) throw new Error("Les deux mots de passe ne sont pas identiques.");
+    const { error } = await sb.auth.updateUser({ password: v1 });
+    if (error) throw error;
+    await sb.rpc("mot_de_passe_change");
+  }
+  $("#form-mdp-compte").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    try {
+      await changerMotDePasse($("#mc-mdp").value, $("#mc-mdp2").value);
+      ev.target.reset();
+      toast("Mot de passe changé");
+    } catch (e) { toast(traduireErreur(e)); }
+  });
+  $("#form-mdp-temp").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const m = $("#mt-message");
+    m.hidden = true;
+    try {
+      await changerMotDePasse($("#mt-mdp").value, $("#mt-mdp2").value);
+      ev.target.reset();
+      toast("Mot de passe enregistré");
+      demarrer();
+    } catch (e) { m.textContent = traduireErreur(e); m.hidden = false; }
+  });
+
+  // Appel de la fonction sécurisée (Supabase Edge Function)
+  async function actionCompte(corps) {
+    const { data, error } = await sb.functions.invoke("admin-comptes", { body: corps });
+    if (error) {
+      let message = error.message;
+      try { const j = await error.context.json(); if (j && j.erreur) message = j.erreur; } catch { /* message par défaut */ }
+      throw new Error(message);
+    }
+    if (data && data.erreur) throw new Error(data.erreur);
+    return data;
+  }
+
+  $("#mc-confirmer-suppr").addEventListener("input", (e) => {
+    $("#mc-supprimer").disabled = e.target.value.trim().toUpperCase() !== "SUPPRIMER";
+  });
+  $("#mc-supprimer").addEventListener("click", async () => {
+    const btn = $("#mc-supprimer");
+    btn.disabled = true;
+    btn.textContent = "Suppression…";
+    try {
+      await actionCompte({ action: "supprimer_mon_compte" });
+      await sb.auth.signOut({ scope: "local" });
+      montrer("#ecran-auth");
+      ongletAuth("connexion");
+      messageAuth("Votre compte a été supprimé définitivement.", "ok");
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = "Supprimer mon compte pour toujours";
+      toast(traduireErreur(e));
+    }
+  });
 
   /* ---------------- Code de la sécurité routière ---------------- */
   const RACCOURCIS = [
@@ -759,47 +940,180 @@
     b.hidden = !count;
   }
 
+  let comptesAdmin = [];
+  const dateFr = (d) => d ? new Date(d).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }) : "—";
+  const NOM_STATUT = { en_attente: "En attente", approuve: "Approuvé", refuse: "Refusé", bloque: "Bloqué" };
+
   async function initAdmin() {
     if (!etat.profil || etat.profil.role !== "admin") return;
-    const { data, error } = await sb.from("profiles").select("*").order("cree_le", { ascending: false });
     const el = $("#admin-liste");
+    const { data, error } = await sb.rpc("admin_liste_comptes");
     if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
-    const compte = (s) => data.filter((p) => p.statut === s).length;
+    comptesAdmin = data || [];
+    const compte = (st) => comptesAdmin.filter((p) => p.statut === st).length;
     $("#nb-attente").textContent = compte("en_attente");
     $("#nb-approuve").textContent = compte("approuve");
     $("#nb-refuse").textContent = compte("refuse");
+    $("#nb-bloque").textContent = compte("bloque");
     const b = $("#badge-attente"); b.textContent = compte("en_attente") || ""; b.hidden = !compte("en_attente");
-    const liste = data.filter((p) => p.statut === filtreAdmin);
-    const date = (d) => d ? new Date(d).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }) : "";
-    el.innerHTML = liste.length ? liste.map((p) => `
+    const liste = comptesAdmin.filter((p) => p.statut === filtreAdmin);
+    const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
+    el.innerHTML = liste.length ? liste.map((p, i) => `
       <div class="demande">
-        <div>
-          <h4>${esc(p.nom_complet || "(sans nom)")} ${p.role === "admin" ? '<span class="type SQ">admin</span>' : ""}</h4>
-          <div class="meta">
-            <span>${esc(p.email)}</span>
-            <span>Matricule <b>${esc(p.matricule || "—")}</b></span>
-            <span>${esc(p.corps_police || "—")}${p.unite ? " · " + esc(p.unite) : ""}</span>
-            <span>Demande : ${esc(date(p.cree_le))}</span>
-            ${p.decide_le ? `<span>Décision : ${esc(date(p.decide_le))}</span>` : ""}
+        <div class="personne">
+          ${htmlAvatar(p, urls[i])}
+          <div>
+            <h4>${esc(p.nom_complet || "(sans nom)")} ${p.role === "admin" ? '<span class="type SQ">admin</span>' : ""}</h4>
+            <div class="meta">
+              <span>${esc(p.email)}</span>
+              <span>Matricule <b>${esc(p.matricule || "—")}</b></span>
+              <span>${esc(p.corps_police || "—")}${p.unite ? " · " + esc(p.unite) : ""}</span>
+              <span>Demande : ${esc(dateFr(p.cree_le))}</span>
+            </div>
           </div>
         </div>
         <div class="boutons">
-          ${p.id === etat.profil.id ? "" : `
-            ${p.statut !== "approuve" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>` : ""}
-            ${p.statut !== "refuse" ? `<button class="btn-danger" data-id="${p.id}" data-statut="refuse">${p.statut === "approuve" ? "Retirer l'accès" : "Refuser"}</button>` : ""}
-            ${p.statut === "refuse" ? `<button class="btn-secondaire" data-id="${p.id}" data-statut="en_attente">Remettre en attente</button>` : ""}`}
+          ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
+            <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
+          <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
         </div>
       </div>`).join("")
       : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : "Aucun compte dans cette catégorie."}</p>`;
-    $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", async () => {
-      btn.disabled = true;
-      const { error } = await sb.rpc("decider_demande", { p_id: btn.dataset.id, p_statut: btn.dataset.statut });
-      if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
-      toast({ approuve: "Accès approuvé", refuse: btn.textContent.includes("Retirer") ? "Accès retiré" : "Demande refusée", en_attente: "Remise en attente" }[btn.dataset.statut]);
-      initAdmin();
-    }));
+    $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
+    $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
   }
+
+  async function decider(btn, id, statut) {
+    if (btn) btn.disabled = true;
+    const { error } = await sb.rpc("decider_demande", { p_id: id, p_statut: statut });
+    if (error) { if (btn) btn.disabled = false; toast(traduireErreur(error)); return false; }
+    toast({ approuve: "Accès approuvé", refuse: "Accès refusé", en_attente: "Remis en attente" }[statut]);
+    await initAdmin();
+    return true;
+  }
+
+  function motDePasseAleatoire() {
+    const car = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
+    const v = new Uint32Array(12);
+    crypto.getRandomValues(v);
+    return [...v].map((n) => car[n % car.length]).join("").replace(/(.{4})(?=.)/g, "$1-");
+  }
+
+  // Bouton à double confirmation : le premier toucher arme, le second exécute
+  function confirmer(btn, libelleConfirmation, action) {
+    btn.addEventListener("click", async () => {
+      if (btn.dataset.arme !== "1") {
+        btn.dataset.arme = "1";
+        btn.dataset.libelle = btn.textContent;
+        btn.textContent = libelleConfirmation;
+        btn.classList.add("plein");
+        setTimeout(() => { if (btn.isConnected && btn.dataset.arme === "1") { btn.dataset.arme = ""; btn.textContent = btn.dataset.libelle; btn.classList.remove("plein"); } }, 5000);
+        return;
+      }
+      btn.disabled = true;
+      try { await action(); } catch (e) { toast(traduireErreur(e)); btn.disabled = false; }
+    });
+  }
+
+  async function ouvrirFiche(id) {
+    const p = comptesAdmin.find((c) => c.id === id);
+    if (!p) return;
+    const [url] = await urlsAvatars([p.avatar_path]);
+    const moi = p.id === etat.profil.id;
+    const ligne = (t, v) => `<dt>${t}</dt><dd>${v}</dd>`;
+    $("#fc-contenu").innerHTML = `
+      <div class="fc-tete">
+        ${htmlAvatar(p, url, "grand")}
+        <div>
+          <h3 id="fc-nom">${esc(p.nom_complet || "(sans nom)")}</h3>
+          <p class="ref">${esc(p.email)}</p>
+          <span class="pastille-statut ${esc(p.statut)}">${esc(NOM_STATUT[p.statut] || p.statut)}</span>
+          ${p.role === "admin" ? '<span class="pastille-statut approuve">Admin</span>' : ""}
+        </div>
+      </div>
+      <dl class="fc-donnees">
+        ${ligne("Matricule", esc(p.matricule || "—"))}
+        ${ligne("Corps de police", esc(p.corps_police || "—"))}
+        ${ligne("Unité / poste", esc(p.unite || "—"))}
+        ${ligne("Demande", esc(dateFr(p.cree_le)))}
+        ${ligne("Courriel confirmé", p.courriel_confirme_le ? esc(dateFr(p.courriel_confirme_le)) : "Non")}
+        ${ligne("Dernière connexion", esc(dateFr(p.derniere_connexion)))}
+        ${ligne("Décision", esc(dateFr(p.decide_le)))}
+        ${ligne("Compte modifié", esc(dateFr(p.modifie_le)))}
+        ${p.doit_changer_mdp ? ligne("Mot de passe", "Temporaire, à changer à la prochaine connexion") : ""}
+        ${ligne("Identifiant", `<span class="ref">${esc(p.id)}</span>`)}
+      </dl>
+      ${moi ? `<div class="fc-section"><p>C'est votre compte. Modifiez-le dans « Mon compte ».</p></div>` : `
+      <div class="fc-section">
+        <h4>Accès</h4>
+        <div class="fc-ligne">
+          ${p.statut === "bloque" ? `<button class="btn-ok" id="fc-debloquer">Débloquer</button>` : `
+            ${p.statut !== "approuve" ? `<button class="btn-ok" data-fc-statut="approuve">Approuver</button>` : ""}
+            ${p.statut === "approuve" ? `<button class="btn-danger" data-fc-statut="refuse">Retirer l'accès</button>` : ""}
+            ${p.statut === "en_attente" ? `<button class="btn-danger" data-fc-statut="refuse">Refuser</button>` : ""}
+            ${p.statut === "refuse" ? `<button class="btn-secondaire" data-fc-statut="en_attente">Remettre en attente</button>` : ""}`}
+        </div>
+      </div>
+      <div class="fc-section">
+        <h4>Mot de passe temporaire</h4>
+        <p>La personne devra choisir son propre mot de passe à sa prochaine connexion. Transmettez-le-lui de vive voix ou par un moyen sûr.</p>
+        <div class="fc-ligne">
+          <input id="fc-mdp" type="text" autocomplete="off" spellcheck="false" aria-label="Mot de passe temporaire" value="${motDePasseAleatoire()}">
+          <button class="btn-secondaire" id="fc-generer" type="button">Générer</button>
+          <button class="btn-secondaire" id="fc-copier" type="button">Copier</button>
+        </div>
+        <div class="fc-ligne"><button class="btn-ok" id="fc-appliquer">Appliquer ce mot de passe</button></div>
+      </div>
+      <div class="fc-section">
+        <h4>Bloquer ou supprimer</h4>
+        <p>Bloquer empêche toute connexion et empêche la personne de refaire une demande avec ce courriel. Supprimer efface le compte, la photo et toutes les données de Supabase, définitivement.</p>
+        <div class="fc-ligne">
+          ${p.statut === "bloque" ? "" : `<button class="btn-danger" id="fc-bloquer">Bloquer</button>`}
+          <button class="btn-danger" id="fc-supprimer">Supprimer définitivement</button>
+        </div>
+      </div>`}`;
+    $("#fiche-compte").hidden = false;
+    $("#fc-fermer").focus();
+    if (moi) return;
+
+    const recharger = async (message) => {
+      toast(message);
+      await initAdmin();
+      if (comptesAdmin.some((c) => c.id === id)) ouvrirFiche(id); else fermerFiche();
+    };
+    $$("[data-fc-statut]").forEach((btn) => btn.addEventListener("click", async () => {
+      if (await decider(btn, id, btn.dataset.fcStatut)) ouvrirFiche(id);
+    }));
+    $("#fc-generer").addEventListener("click", () => { $("#fc-mdp").value = motDePasseAleatoire(); });
+    $("#fc-copier").addEventListener("click", () => copier($("#fc-mdp").value));
+    $("#fc-appliquer").addEventListener("click", async (e) => {
+      const v = $("#fc-mdp").value.trim();
+      if (v.length < 10) return toast("Au moins 10 caractères");
+      e.target.disabled = true;
+      try { await actionCompte({ action: "mot_de_passe_temporaire", id, mot_de_passe: v }); await copier(v); await recharger("Mot de passe temporaire appliqué et copié"); }
+      catch (err) { e.target.disabled = false; toast(traduireErreur(err)); }
+    });
+    if ($("#fc-debloquer")) $("#fc-debloquer").addEventListener("click", async (e) => {
+      e.target.disabled = true;
+      try { await actionCompte({ action: "debloquer", id }); await recharger("Compte débloqué"); }
+      catch (err) { e.target.disabled = false; toast(traduireErreur(err)); }
+    });
+    if ($("#fc-bloquer")) confirmer($("#fc-bloquer"), "Confirmer le blocage", async () => {
+      await actionCompte({ action: "bloquer", id });
+      await recharger("Compte bloqué");
+    });
+    confirmer($("#fc-supprimer"), "Confirmer : supprimer pour toujours", async () => {
+      await actionCompte({ action: "supprimer", id });
+      fermerFiche();
+      toast("Compte supprimé définitivement");
+      await initAdmin();
+    });
+  }
+  function fermerFiche() { $("#fiche-compte").hidden = true; }
+  $("#fc-fermer").addEventListener("click", fermerFiche);
+  $("#fiche-compte").addEventListener("click", (e) => { if (e.target.id === "fiche-compte") fermerFiche(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#fiche-compte").hidden) fermerFiche(); });
 
   const LIEN_EDITION_CORPS = "https://github.com/asmqc/Police-Extreme/edit/main/data/corps_police.json";
   function rendreAdminCorps() {

@@ -279,6 +279,56 @@ a { color: var(--bleu); }
 .edition-corps textarea { min-height: 90px; font-size: .9rem; }
 .edition-corps .boutons { display: flex; gap: 8px; justify-content: end; }
 
+/* ---------- Avatar et Mon compte ---------- */
+.avatar {
+  display: inline-grid; place-items: center; flex: none; border-radius: 50%; overflow: hidden;
+  background: var(--ambre-vif); color: var(--sur-ambre); font-family: var(--f-titre); font-weight: 700; text-transform: uppercase;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.petit { width: 30px; height: 30px; font-size: .85rem; }
+.avatar.moyen { width: 48px; height: 48px; font-size: 1.1rem; }
+.avatar.grand { width: 104px; height: 104px; font-size: 2.2rem; box-shadow: 0 0 0 4px var(--surface), 0 0 0 6px var(--ambre-vif); }
+.btn-compte { display: flex; align-items: center; gap: 8px; background: transparent; border: 0; color: inherit; padding: 4px 8px 4px 4px; border-radius: 999px; min-width: 0; }
+.btn-compte:hover { background: rgba(255,255,255,.08); }
+.panneau { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 18px; display: grid; gap: 14px; }
+.avatar-bloc { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.avatar-actions { display: grid; gap: 4px; justify-items: start; }
+.avatar-actions label.btn-secondaire { cursor: pointer; }
+.intertitre.danger { color: var(--rouge); }
+.zone-danger { border-color: color-mix(in srgb, var(--rouge) 45%, var(--ligne)); }
+.zone-danger p { margin: 0; color: var(--fg-doux); font-size: .92rem; max-width: 65ch; }
+.zone-danger label { font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-doux); }
+.btn-danger:disabled { opacity: .45; cursor: not-allowed; }
+.btn-danger.plein { background: var(--rouge); color: #fff; border-color: var(--rouge); }
+
+/* ---------- Fiche de compte (admin) ---------- */
+.voile { position: fixed; inset: 0; z-index: 1500; background: rgba(6, 12, 20, .55); display: grid; place-items: end center; padding: 0; }
+@media (min-width: 700px) { .voile { place-items: center; padding: 24px; } }
+.fiche-compte {
+  position: relative; width: min(100%, 560px); max-height: 92%; overflow-y: auto; background: var(--surface); color: var(--fg);
+  border-radius: 16px 16px 0 0; box-shadow: var(--ombre); display: grid; gap: 16px;
+  padding: 22px max(18px, env(safe-area-inset-right)) calc(22px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+}
+@media (min-width: 700px) { .fiche-compte { border-radius: 16px; } }
+.fiche-compte .fermer { position: absolute; top: 10px; right: 10px; }
+.fc-tete { display: flex; align-items: center; gap: 14px; padding-right: 36px; }
+.fc-tete h3 { font-size: 1.5rem; }
+.fc-tete .ref { margin-top: 2px; overflow-wrap: anywhere; }
+.pastille-statut { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+.pastille-statut.en_attente { background: color-mix(in srgb, var(--ambre) 20%, transparent); color: var(--ambre); }
+.pastille-statut.approuve { background: color-mix(in srgb, var(--vert) 18%, transparent); color: var(--vert); }
+.pastille-statut.refuse, .pastille-statut.bloque { background: color-mix(in srgb, var(--rouge) 16%, transparent); color: var(--rouge); }
+.fc-donnees { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; margin: 0; font-size: .93rem; }
+.fc-donnees dt { color: var(--fg-doux); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: 2px; }
+.fc-donnees dd { margin: 0; overflow-wrap: anywhere; }
+.fc-section { display: grid; gap: 8px; border-top: 1px solid var(--ligne); padding-top: 14px; }
+.fc-section h4 { margin: 0; font-family: var(--f-titre); font-size: 1.05rem; text-transform: uppercase; letter-spacing: .06em; }
+.fc-section p { margin: 0; color: var(--fg-doux); font-size: .88rem; }
+.fc-ligne { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fc-ligne input { flex: 1 1 180px; font-family: var(--f-mono); }
+.demande .personne { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.demande .personne > div { min-width: 0; }
+
 /* ---------- Toast ---------- */
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); z-index: 2000;
@@ -286,3 +336,10 @@ a { color: var(--bleu); }
 }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* Barre du haut sur téléphone : avatar seul, marque sur une ligne */
+.marque.petite { white-space: nowrap; }
+@media (max-width: 520px) {
+  .btn-compte .usager { display: none; }
+  .fc-tete .avatar.grand { width: 72px; height: 72px; font-size: 1.6rem; }
+}
