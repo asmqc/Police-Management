@@ -137,15 +137,44 @@
     }
     return listeCorps.filter((c) => c.type === type).map((c) => c.nom);
   }
+  // Unités spécialisées : noms généraux (la liste officielle détaillée n'est pas publiée en données ouvertes)
+  const UNITES_SPECIALISEES_SQ = [
+    "Centre de gestion des appels", "Crimes majeurs", "Crimes contre la personne", "Crime organisé", "Crimes économiques et produits de la criminalité",
+    "Cybercriminalité", "Exploitation sexuelle des enfants sur Internet", "Renseignement criminel", "Surveillance", "Identité judiciaire",
+    "Groupe tactique d'intervention", "Unité d'urgence", "Escouade canine", "Patrouille nautique", "Service aérien",
+    "Sécurité routière et contrôle autoroutier", "Enquêtes sur les collisions (reconstitution)", "Protection de personnalités",
+    "Normes professionnelles", "Formation", "Soutien administratif",
+  ];
+  const nomBureau = (n) => n.replace(/\s+/g, " ").trim()
+    .replace(/^Bureau du /, "").replace(/^Bureau des /, "").replace(/^Bureau de l'/, "").replace(/^Bureau de la /, "")
+    .replace(/^./, (c) => c.toUpperCase());
+
   async function postesSQ() {
     if (groupesSQ) return groupesSQ;
-    const parRegion = {};
-    const [postes, aut] = await Promise.all([charger("sq_postes.geojson"), charger("sq_autoroutier.geojson")]);
-    for (const f of postes.features) (parRegion[f.properties.NOM_REG] ||= new Set()).add(f.properties.NOM_UNIT);
-    for (const f of aut.features) (parRegion["Postes autoroutiers"] ||= new Set()).add(f.properties.NOM_UNIT);
-    delete parRegion["s.o."];
-    const regions = Object.keys(parRegion).sort((a, b) => (a === "Postes autoroutiers") - (b === "Postes autoroutiers") || a.localeCompare(b, "fr"));
-    return (groupesSQ = regions.map((r) => [r, [...parRegion[r]].sort((a, b) => a.localeCompare(b, "fr"))]));
+    const [bureaux, postes] = await Promise.all([charger("sq_bureaux.geojson"), charger("sq_postes.geojson")]);
+    const qg = new Set(), autoroutiers = new Set(), centres = new Set(), parRegion = {};
+    const ajout = (reg, nom) => (parRegion[reg] ||= new Set()).add(nom);
+    for (const f of bureaux.features) {
+      const p = f.properties, nom = nomBureau(p.NOM_ENT || "");
+      if (!nom) continue;
+      if (["Grand quartier général", "District", "Région"].includes(p.CAT_UNIT)) qg.add(nom);
+      else if (p.CAT_UNIT === "Poste autoroutier") autoroutiers.add(nom);
+      else ajout(p.NOM_REG && p.NOM_REG !== "s.o." ? p.NOM_REG : "Autres postes", nom);
+    }
+    for (const f of postes.features) {
+      const p = f.properties;
+      if (p.NOM_CS && p.NOM_CS !== "s.o.") centres.add(p.NOM_CS.replace(/\s+/g, " ").trim());
+      if (p.NOM_REG && p.NOM_REG !== "s.o." && ![...(parRegion[p.NOM_REG] || [])].some((n) => n.includes(p.NOM_UNIT.replace(/^Poste /, "")))) ajout(p.NOM_REG, p.NOM_UNIT);
+    }
+    const tri = (set) => [...set].sort((a, b) => a.localeCompare(b, "fr"));
+    const ordreQG = (n) => (/^Grand/.test(n) ? 0 : /district/i.test(n) ? 1 : 2);
+    groupesSQ = [["Quartiers généraux", [...qg].sort((a, b) => ordreQG(a) - ordreQG(b) || a.localeCompare(b, "fr"))]];
+    Object.keys(parRegion).sort((a, b) => (a === "Autres postes") - (b === "Autres postes") || a.localeCompare(b, "fr"))
+      .forEach((r) => groupesSQ.push(["Postes — " + r, tri(parRegion[r])]));
+    groupesSQ.push(["Postes autoroutiers", tri(autoroutiers)]);
+    groupesSQ.push(["Centres de services MRC", tri(centres)]);
+    groupesSQ.push(["Unités spécialisées", [...UNITES_SPECIALISEES_SQ].sort((a, b) => a.localeCompare(b, "fr"))]);
+    return groupesSQ;
   }
   const opt = (v) => `<option>${esc(v)}</option>`;
   const optAutre = `<option value="${AUTRE}">Autre (préciser)</option>`;
@@ -158,7 +187,7 @@
       if (!corps) html = "";
       else if (corps === SQ) {
         html = (await postesSQ()).map(([r, us]) => `<optgroup label="${esc(r)}">${us.map(opt).join("")}</optgroup>`).join("") +
-          `<optgroup label="Autres unités">${opt("Grand quartier général")}${optAutre}</optgroup>`;
+          `<optgroup label="Autre">${optAutre}</optgroup>`;
       } else if (corps === "Autre corps de police municipal") {
         const noms = (await corpsParType("municipal")).filter((n) => ![...$("#dm-corps").options].some((o) => o.value === n));
         html = noms.map(opt).join("") + optAutre;
