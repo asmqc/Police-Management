@@ -434,8 +434,10 @@
   }
 
   function nomRoute(no, rep) {
-    const n = (rep.routes && rep.routes[String(no)]) || "";
-    const prefixe = no < 100 || (no >= 400 && no < 1000) ? "A-" : "R-";
+    const autoroute = no < 100 || (no >= 400 && no < 1000);
+    let n = (rep.routes && rep.routes[String(no)]) || "";
+    if (!autoroute && /^autoroute/i.test(n)) n = "route " + no;
+    const prefixe = autoroute ? "A-" : "R-";
     return { court: prefixe + no, long: n };
   }
 
