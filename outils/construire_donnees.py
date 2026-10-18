@@ -63,33 +63,54 @@ def ecrire(gdf, nom, tolerance, garder):
     return gdf
 
 
-# 1. Repères kilométriques -> tableau compact
-rep = json.load(open(telecharger("reperes")))
-lignes = []
-for f in rep["features"]:
+# 1. Repères kilométriques -> tableau compact (le service WFS plafonne le nombre d'entités : on pagine)
+from collections import Counter
+features, depart, PAGE = [], 0, 5000
+while True:
+    url = SOURCES["reperes"] + f"&count={PAGE}&startIndex={depart}&sortBy=objectid"
+    req = urllib.request.Request(url, headers=UA)
+    page = json.loads(urllib.request.urlopen(req, timeout=600).read())
+    lot = page.get("features", [])
+    features.extend(lot)
+    print("repères", depart, len(lot))
+    if len(lot) < PAGE:
+        break
+    depart += len(lot)
+vus_id = set()
+lignes, noms = [], {}
+for f in features:
     p = f["properties"]
+    if p.get("idrepere") in vus_id:
+        continue
+    vus_id.add(p.get("idrepere"))
     try:
         no = int(str(p.get("norte") or "0"))
     except ValueError:
         continue
     km = p.get("affichnb")
-    if km is None or not f.get("geometry"):
+    if not no or km is None or not f.get("geometry"):
         continue
     lon, lat = f["geometry"]["coordinates"][:2]
-    lignes.append([no, float(km), (p.get("direction") or "")[:1], round(lon, 5), round(lat, 5),
-                   p.get("nommun") or "", p.get("nomrte") or ""])
-noms_routes = {}
-for l in lignes:
-    noms_routes.setdefault(l[0], set()).add(l[6])
+    lignes.append([no, float(km), (p.get("direction") or "")[:1], round(lon, 5), round(lat, 5), p.get("nommun") or ""])
+    noms.setdefault(no, Counter())[p.get("nomrte") or ""] += 1
+
+
+def meilleur_nom(c):
+    autoroutes = [n for n, _ in c.most_common() if n.lower().startswith("autoroute")]
+    routes = [n for n, _ in c.most_common() if n.lower().startswith("route")]
+    return (autoroutes or routes or [c.most_common(1)[0][0]])[0]
+
+
 sortie = {
     "source": "Repères kilométriques, MTMD (Données Québec, CC-BY 4.0)",
-    "version": rep["features"][0]["properties"].get("version") if rep["features"] else None,
+    "version": features[0]["properties"].get("version") if features else None,
     "champs": ["route", "km", "direction", "lon", "lat", "municipalite"],
-    "routes": {str(k): sorted(v)[0] for k, v in noms_routes.items()},
-    "reperes": [l[:6] for l in sorted(lignes, key=lambda x: (x[0], x[1]))],
+    "routes": {str(k): meilleur_nom(v) for k, v in noms.items()},
+    "reperes": sorted(lignes, key=lambda x: (x[0], x[1])),
 }
 json.dump(sortie, open(f"{DATA}/reperes.json", "w"), ensure_ascii=False, separators=(",", ":"))
 diag["reperes"] = {"nb": len(lignes), "octets": os.path.getsize(f"{DATA}/reperes.json")}
+print("repères", diag["reperes"])
 
 # 2. Desserte SQ
 champs = ["NOM_UNIT", "CAT_UNIT", "NOM_CS", "NOM_REG", "NOM_DIST"]
