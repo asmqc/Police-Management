@@ -294,8 +294,9 @@
     $("#nav-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
+    compterMessages();
     if (p.role === "admin") compterAttente();
   }
 
@@ -318,6 +319,7 @@
     if (nom === "compte") initCompte();
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
+    if (nom === "messages") initMessages();
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
@@ -362,6 +364,117 @@
     hr.chargé = true;
   }
 
+  /* ---------------- Messagerie (BÊTA) : l'administrateur écrit, les policiers lisent ---------------- */
+  const msg = { boite: "recus", liste: [], comptes: [], ouvert: null };
+  const estAdmin = () => etat.profil && etat.profil.role === "admin";
+
+  async function compterMessages() {
+    const { count } = await sb.from("messages").select("id", { count: "exact", head: true })
+      .eq("destinataire", etat.profil.id).is("lu_le", null).eq("masque_par_destinataire", false);
+    const b = $("#badge-messages");
+    b.textContent = count || "";
+    b.hidden = !count;
+    const carte = $("#ac-msg");
+    carte.hidden = !count;
+    if (count) carte.innerHTML = `<b>${count}</b><span>nouveau${count > 1 ? "x" : ""} message${count > 1 ? "s" : ""} de l'administrateur</span><i>Lire ›</i>`;
+    carte.classList.toggle("urgent", !!count);
+    return count || 0;
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.profil && etat.profil.statut === "approuve") compterMessages(); });
+
+  async function initMessages() {
+    const admin = estAdmin();
+    $("#msg-form").hidden = !admin;
+    $("#msg-onglets").hidden = !admin;
+    if (!admin) msg.boite = "recus";
+    if (admin && !msg.comptes.length) {
+      const { data } = await sb.rpc("admin_comptes");
+      msg.comptes = (data || []).filter((c) => c.statut === "approuve" && c.id !== etat.profil.id);
+      $("#msg-dest").innerHTML = `<option value="">Choisir un policier…</option>` + msg.comptes
+        .sort((a, b) => (a.nom_complet || a.email).localeCompare(b.nom_complet || b.email, "fr"))
+        .map((c) => `<option value="${c.id}">${esc((c.grade ? c.grade + " " : "") + (c.nom_complet || c.email))}${c.matricule ? " · " + esc(c.matricule) : ""}</option>`).join("");
+    }
+    await chargerMessages();
+  }
+
+  async function chargerMessages() {
+    let q = sb.from("messages").select("id, destinataire, sujet, contenu, cree_le, lu_le").order("cree_le", { ascending: false }).limit(200);
+    q = msg.boite === "envoyes" ? q.eq("expediteur", etat.profil.id) : q.eq("destinataire", etat.profil.id);
+    const { data, error } = await q;
+    const el = $("#msg-liste");
+    if (error) { el.innerHTML = `<li class="vide">${esc(traduireErreur(error))}</li>`; return; }
+    msg.liste = data || [];
+    const nomDe = (id) => { const c = msg.comptes.find((x) => x.id === id); return c ? c.nom_complet || c.email : "Compte supprimé"; };
+    const nonLus = msg.liste.filter((m) => !m.lu_le).length;
+    $("#msg-resume").textContent = msg.boite === "envoyes" ? `${msg.liste.length} message(s) envoyé(s)` : nonLus ? `${nonLus} non lu(s)` : "Messages de l'administrateur";
+    el.innerHTML = msg.liste.length ? msg.liste.map((m) => `
+      <li><button class="message-ligne ${msg.boite === "recus" && !m.lu_le ? "non-lu" : ""}" data-msg="${m.id}">
+        <span class="msg-haut"><b>${esc(msg.boite === "envoyes" ? "À : " + nomDe(m.destinataire) : m.sujet)}</b><small>${esc(dateFr(m.cree_le))}</small></span>
+        <span class="msg-apercu">${esc(msg.boite === "envoyes" ? m.sujet + " — " : "")}${esc(m.contenu.slice(0, 140))}</span>
+        ${msg.boite === "envoyes" ? `<span class="msg-etat ${m.lu_le ? "lu" : ""}">${m.lu_le ? "Lu le " + esc(dateFr(m.lu_le)) : "Pas encore lu"}</span>` : ""}
+      </button></li>`).join("")
+      : `<li class="vide">${msg.boite === "envoyes" ? "Aucun message envoyé." : "Aucun message pour le moment."}</li>`;
+    $$("[data-msg]", el).forEach((b) => b.addEventListener("click", () => ouvrirMessage(+b.dataset.msg)));
+  }
+
+  async function ouvrirMessage(id) {
+    const m = msg.liste.find((x) => x.id === id);
+    if (!m) return;
+    msg.ouvert = m;
+    const envoye = msg.boite === "envoyes";
+    $("#msg-lu-meta").textContent = `${envoye ? "Envoyé" : "Reçu"} le ${dateFr(m.cree_le)}${envoye ? " · " + (m.lu_le ? "lu le " + dateFr(m.lu_le) : "pas encore lu") : ""}`;
+    $("#msg-lu-sujet").textContent = m.sujet;
+    $("#msg-lu-contenu").textContent = m.contenu;
+    $("#msg-retirer").textContent = envoye ? "Supprimer ce message" : "Retirer de ma boîte";
+    $("#msg-retirer").dataset.arme = "";
+    $("#msg-voile").hidden = false;
+    if (!envoye && !m.lu_le) {
+      await sb.rpc("message_lu", { p_id: id });
+      m.lu_le = new Date().toISOString();
+      compterMessages();
+      chargerMessages();
+    }
+  }
+  $("#msg-fermer").addEventListener("click", () => ($("#msg-voile").hidden = true));
+  $("#msg-voile").addEventListener("click", (e) => { if (e.target.id === "msg-voile") e.currentTarget.hidden = true; });
+  $("#msg-retirer").addEventListener("click", async (e) => {
+    const b = e.currentTarget, m = msg.ouvert;
+    if (!m) return;
+    if (b.dataset.arme !== "1") { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+    const { error } = msg.boite === "envoyes"
+      ? await sb.from("messages").delete().eq("id", m.id)
+      : await sb.rpc("message_masquer", { p_id: m.id });
+    if (error) return toast(traduireErreur(error));
+    $("#msg-voile").hidden = true;
+    toast(msg.boite === "envoyes" ? "Message supprimé" : "Message retiré");
+    chargerMessages();
+    compterMessages();
+  });
+  $$("[data-boite]").forEach((b) => b.addEventListener("click", () => {
+    msg.boite = b.dataset.boite;
+    $$("[data-boite]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    chargerMessages();
+  }));
+  $("#msg-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const dest = $("#msg-dest").value, sujet = $("#msg-sujet").value.trim(), contenu = $("#msg-contenu").value.trim();
+    if (!dest) { $("#msg-dest").focus(); return toast("Choisissez un destinataire"); }
+    if (!sujet) { $("#msg-sujet").focus(); return toast("Écrivez un sujet"); }
+    if (!contenu) { $("#msg-contenu").focus(); return toast("Écrivez le message"); }
+    const btn = $("#msg-form .btn-principal");
+    btn.disabled = true;
+    const { error } = await sb.from("messages").insert({ destinataire: dest, expediteur: etat.profil.id, sujet, contenu });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    $("#msg-sujet").value = ""; $("#msg-contenu").value = "";
+    toast("Message envoyé");
+    if (msg.boite === "envoyes") chargerMessages();
+  });
+  function ecrireA(id) {
+    afficherVue("messages");
+    setTimeout(() => { $("#msg-dest").value = id; $("#msg-sujet").focus(); }, 400);
+  }
+
   /* ---------------- Accueil ---------------- */
   async function initAccueil() {
     const p = etat.profil;
@@ -386,6 +499,7 @@
           <em>Demain : ${esc(demain.code ? QUARTS[demain.code].nom : "—")}${q.note ? " · " + esc(q.note) : ""}</em></span>`;
       }
     } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
+    compterMessages();
     // Demandes en attente (admin)
     const ad = $("#ac-admin");
     if (p.role === "admin") {
@@ -1719,6 +1833,10 @@
             ${p.statut === "refuse" ? `<button class="btn-secondaire" data-fc-statut="en_attente">Remettre en attente</button>` : ""}`}
         </div>
       </div>
+      ${p.statut === "approuve" ? `<div class="fc-section">
+        <h4>Message <span class="beta">BÊTA</span></h4>
+        <div class="fc-ligne"><button class="btn-secondaire" id="fc-ecrire">Envoyer un message personnel</button></div>
+      </div>` : ""}
       <div class="fc-section">
         <h4>Mot de passe temporaire</h4>
         <p>La personne devra choisir son propre mot de passe à sa prochaine connexion. Transmettez-le-lui de vive voix ou par un moyen sûr.</p>
@@ -1749,6 +1867,7 @@
     $$("[data-fc-statut]").forEach((btn) => btn.addEventListener("click", async () => {
       if (await decider(btn, id, btn.dataset.fcStatut)) ouvrirFiche(id);
     }));
+    if ($("#fc-ecrire")) $("#fc-ecrire").addEventListener("click", () => { fermerFiche(); ecrireA(id); });
     $("#fc-generer").addEventListener("click", () => { $("#fc-mdp").value = motDePasseAleatoire(); });
     $("#fc-copier").addEventListener("click", () => copier($("#fc-mdp").value));
     $("#fc-appliquer").addEventListener("click", async (e) => {

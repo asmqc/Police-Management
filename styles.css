@@ -534,3 +534,28 @@ a { color: var(--bleu); }
 .tuile[data-aller="corps"] .tuile-ico { background: color-mix(in srgb, var(--bleu) 20%, var(--surface)); }
 .tuile[data-aller="horaire"] .tuile-ico { background: color-mix(in srgb, #7B4FC9 22%, var(--surface)); }
 .pied-accueil { margin: 6px 0 0; color: var(--fg-doux); font-size: .78rem; text-align: center; }
+
+/* Messagerie (BÊTA) */
+.beta { display: inline-block; vertical-align: middle; font: 700 .62rem/1 var(--f-texte); letter-spacing: .1em; padding: 4px 6px; border-radius: 4px; background: #7B4FC9; color: #fff; }
+.vue-tete h2 .beta { font-size: .7rem; margin-left: 6px; }
+.liste-messages { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--ligne); border: 1px solid var(--ligne); border-radius: var(--r); overflow: hidden; }
+.liste-messages .vide { border: 0; border-radius: 0; background: var(--surface); }
+.message-ligne { width: 100%; text-align: left; border: 0; background: var(--surface); padding: 12px 14px; display: grid; gap: 4px; position: relative; }
+.message-ligne:hover { background: var(--surface-2); }
+.message-ligne.non-lu { padding-left: 26px; }
+.message-ligne.non-lu::before { content: ""; position: absolute; left: 10px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--bleu); }
+.message-ligne.non-lu b { font-weight: 800; }
+.msg-haut { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.msg-haut b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-haut small { color: var(--fg-doux); font-size: .78rem; white-space: nowrap; }
+.msg-apercu { color: var(--fg-doux); font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.msg-etat { font-size: .78rem; color: var(--ambre); font-weight: 600; }
+.msg-etat.lu { color: var(--vert); }
+.msg-texte { white-space: pre-line; line-height: 1.6; max-width: 65ch; }
+.ac-msg.urgent { border-color: var(--bleu); background: color-mix(in srgb, var(--bleu) 8%, var(--surface)); }
+.ac-msg.urgent b { color: var(--bleu); }
+#msg-contenu { resize: vertical; min-height: 110px; }
+.nav button span { white-space: nowrap; }
+@media (max-width: 420px) { .nav button span { font-size: .6rem; letter-spacing: 0; } .nav svg { width: 22px; height: 22px; } }
+.beta-nav { position: absolute; top: 5px; right: calc(50% + 8px); font: 700 .5rem/1 var(--f-texte); font-style: normal; letter-spacing: .06em; padding: 2px 3px; border-radius: 3px; background: #7B4FC9; color: #fff; }
+@media (min-width: 900px) { .beta-nav { top: 10px; } }
