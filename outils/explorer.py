@@ -65,3 +65,30 @@ for u in [
         print("OK", nom, len(data))
     except Exception as e:
         print("ÉCHEC", u, e)
+
+# Résumé léger pour consultation (les gros fichiers restent sur le serveur d'Actions)
+import glob
+resume = {}
+for p in glob.glob(f"{OUT}/*"):
+    n = os.path.basename(p)
+    taille = os.path.getsize(p)
+    info = {"taille": taille}
+    try:
+        if n.endswith(".geojson"):
+            g = json.load(open(p))
+            fs = g.get("features", [])
+            info["nb"] = len(fs)
+            info["crs"] = g.get("crs")
+            info["exemples"] = [f.get("properties") for f in fs[:4]]
+            info["geom"] = fs[0]["geometry"]["type"] if fs else None
+        elif n.endswith(".csv"):
+            info["tete"] = open(p, encoding="utf-8", errors="replace").read(3000)
+    except Exception as e:
+        info["err"] = str(e)
+    resume[n] = info
+os.makedirs("exploration", exist_ok=True)
+json.dump(resume, open("exploration/resume.json", "w"), ensure_ascii=False, indent=1, default=str)
+import shutil
+shutil.copy(f"{OUT}/rapport.json", "exploration/rapport.json")
+if os.path.exists(f"{OUT}/csr.html"):
+    shutil.copy(f"{OUT}/csr.html", "exploration/csr.html")

@@ -1,14 +1,20 @@
 name: Explorer les sources
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   explorer:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: python3 outils/explorer.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: brut
-          path: brut/
-          retention-days: 3
+      - name: Publier le résumé sur la branche exploration
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan exploration
+          git rm -rfq --cached .
+          git add exploration/
+          git commit -qm "Résumé d'exploration"
+          git push -f origin exploration
