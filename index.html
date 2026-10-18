@@ -151,11 +151,15 @@
       </button>
       <button data-vue="carte">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-        <span>Carte & km</span>
+        <span>Carte</span>
       </button>
       <button data-vue="corps">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
         <span>Territoires</span>
+      </button>
+      <button data-vue="horaire">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Horaire</span>
       </button>
       <button data-vue="aide">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -240,6 +244,70 @@
       <div id="corps-liste" class="grille-corps"></div>
       <h3 class="intertitre">Postes de la Sûreté du Québec</h3>
       <div id="sq-liste" class="liste-sq"></div>
+    </section>
+
+    <!-- Vue Horaire -->
+    <section id="vue-horaire" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Mon horaire</h2>
+        <p class="ref" id="hr-resume">Horaire rotatif</p>
+      </div>
+
+      <div id="hr-vide" class="panneau" hidden>
+        <p class="aide">Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.</p>
+        <button class="btn-principal" id="hr-commencer">Configurer ma rotation</button>
+      </div>
+
+      <div id="hr-principal" hidden>
+        <div class="hr-aujourdhui" id="hr-aujourdhui"></div>
+        <div class="hr-semaine" id="hr-semaine" aria-label="Les 7 prochains jours"></div>
+
+        <div class="hr-mois-tete">
+          <button class="btn-icone" id="hr-prec" aria-label="Mois précédent">‹</button>
+          <h3 id="hr-mois"></h3>
+          <button class="btn-icone" id="hr-suiv" aria-label="Mois suivant">›</button>
+          <button class="btn-secondaire petit" id="hr-auj">Aujourd'hui</button>
+        </div>
+        <div class="hr-grille" id="hr-grille"></div>
+        <div class="hr-legende" id="hr-legende"></div>
+        <p class="aide">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
+        <div class="hr-actions">
+          <button class="btn-secondaire" id="hr-config">Modifier ma rotation</button>
+          <button class="btn-secondaire" id="hr-ics">Ajouter à mon calendrier (.ics)</button>
+        </div>
+      </div>
+
+      <form id="hr-form" class="panneau formulaire" novalidate hidden>
+        <h3 class="intertitre" style="margin:0">Ma rotation</h3>
+        <label for="hr-modele">Modèle de départ</label>
+        <select id="hr-modele">
+          <option value="">Choisir un modèle…</option>
+          <option value="4-4J">4 jours / 4 congés (jour)</option>
+          <option value="4-4JN">4-4 alterné : 4 jours, 4 congés, 4 nuits, 4 congés</option>
+          <option value="223">2-2-3 (Pitman, 12 h, jour et nuit)</option>
+          <option value="7-7">7 jours / 7 congés</option>
+          <option value="3-3">3 jours / 3 congés</option>
+          <option value="5-2">5 jours / 2 congés (semaine)</option>
+          <option value="JSN">Jour, soir, nuit (5-2 en rotation sur 3 semaines)</option>
+          <option value="perso">Personnalisé</option>
+        </select>
+        <label for="hr-debut">Premier jour du cycle</label>
+        <input id="hr-debut" type="date" required>
+        <p class="aide">C'est la date où commence la case n° 1 ci-dessous.</p>
+
+        <label>Cycle (<span id="hr-longueur">0</span> jours) — touchez une case pour changer le quart</label>
+        <div class="hr-cycle" id="hr-cycle"></div>
+        <div class="fc-ligne">
+          <button type="button" class="btn-secondaire petit" id="hr-ajout-jour">+ Ajouter un jour</button>
+          <button type="button" class="btn-secondaire petit" id="hr-retrait-jour">− Retirer le dernier</button>
+        </div>
+
+        <label>Heures des quarts</label>
+        <div class="hr-heures" id="hr-heures"></div>
+
+        <button type="submit" class="btn-principal">Enregistrer ma rotation</button>
+        <button type="button" class="lien" id="hr-annuler">Annuler</button>
+      </form>
     </section>
 
     <!-- Vue Aide -->
@@ -413,6 +481,21 @@
       <button class="btn-icone fermer" id="aide-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile">Installer Police Extrême</h3>
       <div id="aide-voile-contenu"></div>
+    </section>
+  </div>
+
+  <div id="hr-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="hr-jour-titre">
+      <button class="btn-icone fermer" id="hr-jour-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="hr-jour-titre"></h3>
+      <p class="aide" id="hr-jour-prevu"></p>
+      <div class="hr-choix" id="hr-jour-choix"></div>
+      <label class="ref" for="hr-jour-note">Note (facultatif)</label>
+      <input id="hr-jour-note" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
+      <div class="fc-ligne">
+        <button class="btn-principal" id="hr-jour-ok" style="margin:0">Enregistrer</button>
+        <button class="btn-secondaire" id="hr-jour-retirer">Revenir à la rotation</button>
+      </div>
     </section>
   </div>
 

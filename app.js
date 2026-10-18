@@ -293,7 +293,7 @@
     $("#nav-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["csr", "carte", "corps", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
+    afficherVue(["csr", "carte", "corps", "horaire", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
     chargerCorps();
     if (p.role === "admin") compterAttente();
   }
@@ -315,9 +315,213 @@
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
     if (nom === "compte") initCompte();
+    if (nom === "horaire") initHoraire();
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
+
+  /* ---------------- Horaire rotatif ---------------- */
+  const QUARTS = {
+    J: { nom: "Jour" }, S: { nom: "Soir" }, N: { nom: "Nuit" }, C: { nom: "Congé" },
+    V: { nom: "Vacances" }, M: { nom: "Maladie" }, F: { nom: "Formation" }, T: { nom: "Cour" }, X: { nom: "Temps supp." },
+  };
+  const QUARTS_CYCLE = ["J", "S", "N", "C"];
+  const HEURES_DEFAUT = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
+  const MODELES = {
+    "4-4J": "JJJJCCCC", "4-4JN": "JJJJCCCCNNNNCCCC", "223": "JJCCJJJCCJJCCCNNCCNNNCCNNCCC",
+    "7-7": "JJJJJJJCCCCCCC", "3-3": "JJJCCC", "5-2": "JJJJJCC", "JSN": "JJJJJCCSSSSSCCNNNNNCC",
+  };
+  const MS_JOUR = 86400000;
+  const jourUTC = (iso) => { const [a, m, j] = iso.split("-").map(Number); return Date.UTC(a, m - 1, j) / MS_JOUR; };
+  const isoDe = (n) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
+  const aujourdhuiISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  const hr = { config: null, exceptions: {}, mois: null, brouillon: null, jourChoisi: null };
+
+  function quartDu(iso) {
+    const e = hr.exceptions[iso];
+    const c = hr.config;
+    let prevu = null;
+    if (c && c.cycle && c.cycle.length && c.debut) {
+      const n = jourUTC(iso) - jourUTC(c.debut);
+      prevu = c.cycle[((n % c.cycle.length) + c.cycle.length) % c.cycle.length];
+    }
+    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e };
+  }
+  const heuresDe = (code) => { const h = (hr.config && hr.config.heures && hr.config.heures[code]) || HEURES_DEFAUT[code]; return h ? `${h[0]} – ${h[1]}` : ""; };
+
+  async function initHoraire() {
+    if (!hr.chargé) {
+      const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", etat.profil.id).maybeSingle();
+      if (error) return toast(traduireErreur(error));
+      hr.config = data && data.config && data.config.cycle ? data.config : null;
+      hr.exceptions = (data && data.exceptions) || {};
+      hr.chargé = true;
+    }
+    if (!hr.mois) { const d = new Date(); hr.mois = [d.getFullYear(), d.getMonth()]; }
+    rendreHoraire();
+  }
+
+  async function sauverHoraire() {
+    const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, maj_le: new Date().toISOString() });
+    if (error) throw error;
+  }
+
+  function rendreHoraire() {
+    const enConfig = !$("#hr-form").hidden;
+    $("#hr-vide").hidden = !!hr.config || enConfig;
+    $("#hr-principal").hidden = !hr.config || enConfig;
+    if (!hr.config) { $("#hr-resume").textContent = "Aucune rotation configurée"; return; }
+    $("#hr-resume").textContent = `Cycle de ${hr.config.cycle.length} jours`;
+    const auj = aujourdhuiISO();
+    // Aujourd'hui
+    const q = quartDu(auj);
+    const travail = ["J", "S", "N", "X", "T", "F"].includes(q.code);
+    $("#hr-aujourdhui").innerHTML = `
+      <span class="pastille-q q q-${esc(q.code || "C")}">${esc(q.code || "–")}</span>
+      <small>Aujourd'hui · ${esc(new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</small>
+      <div><strong>${esc(QUARTS[q.code] ? QUARTS[q.code].nom : "—")}</strong> ${travail && heuresDe(q.code) ? `<span class="heures">${esc(heuresDe(q.code))}</span>` : ""}</div>
+      ${q.note ? `<span class="note">${esc(q.note)}</span>` : ""}`;
+    // 7 prochains jours
+    const n0 = jourUTC(auj);
+    $("#hr-semaine").innerHTML = Array.from({ length: 7 }, (_, i) => {
+      const iso = isoDe(n0 + i), qq = quartDu(iso);
+      const d = new Date(iso + "T12:00:00");
+      return `<div class="q q-${esc(qq.code || "C")} ${i === 0 ? "auj" : ""}"><small>${esc(d.toLocaleDateString("fr-CA", { weekday: "short" }).replace(".", ""))}</small><b>${esc(qq.code || "–")}</b><small>${d.getDate()}</small></div>`;
+    }).join("");
+    // Mois
+    const [a, m] = hr.mois;
+    $("#hr-mois").textContent = new Date(a, m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const premier = new Date(a, m, 1);
+    const decalage = (premier.getDay() + 6) % 7; // lundi = 0
+    const debutGrille = jourUTC(`${a}-${String(m + 1).padStart(2, "0")}-01`) - decalage;
+    const nbSemaines = Math.ceil((decalage + new Date(a, m + 1, 0).getDate()) / 7);
+    let html = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((j) => `<span class="jsem">${j}</span>`).join("");
+    for (let i = 0; i < nbSemaines * 7; i++) {
+      const iso = isoDe(debutGrille + i), qq = quartDu(iso);
+      const dansMois = Number(iso.slice(5, 7)) === m + 1;
+      html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${qq.exception ? "exc" : ""}" aria-label="${esc(iso)} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun")}">
+        <span class="num">${Number(iso.slice(8))}</span>${qq.code ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}</span>` : ""}</button>`;
+    }
+    $("#hr-grille").innerHTML = html;
+    $$("#hr-grille button").forEach((b) => b.addEventListener("click", () => ouvrirJour(b.dataset.jour)));
+    $("#hr-legende").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("");
+  }
+
+  $("#hr-prec").addEventListener("click", () => { const [a, m] = hr.mois; hr.mois = m ? [a, m - 1] : [a - 1, 11]; rendreHoraire(); });
+  $("#hr-suiv").addEventListener("click", () => { const [a, m] = hr.mois; hr.mois = m === 11 ? [a + 1, 0] : [a, m + 1]; rendreHoraire(); });
+  $("#hr-auj").addEventListener("click", () => { const d = new Date(); hr.mois = [d.getFullYear(), d.getMonth()]; rendreHoraire(); });
+
+  // Configuration de la rotation
+  function ouvrirConfig() {
+    const c = hr.config;
+    hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) } };
+    $("#hr-modele").value = c ? (c.modele || "perso") : "4-4J";
+    $("#hr-debut").value = hr.brouillon.debut;
+    $("#hr-form").hidden = false;
+    rendreBrouillon();
+    rendreHoraire();
+  }
+  function rendreBrouillon() {
+    const b = hr.brouillon;
+    $("#hr-longueur").textContent = b.cycle.length;
+    $("#hr-cycle").innerHTML = b.cycle.map((q, i) => `<button type="button" class="q q-${q}" data-i="${i}" aria-label="Jour ${i + 1} : ${QUARTS[q].nom}">${q}<small>${i + 1}</small></button>`).join("");
+    $$("#hr-cycle button").forEach((btn) => btn.addEventListener("click", () => {
+      const i = +btn.dataset.i;
+      b.cycle[i] = QUARTS_CYCLE[(QUARTS_CYCLE.indexOf(b.cycle[i]) + 1) % QUARTS_CYCLE.length];
+      $("#hr-modele").value = "perso";
+      rendreBrouillon();
+    }));
+    $("#hr-heures").innerHTML = ["J", "S", "N"].map((k) => `<div class="ligne"><span><i class="q q-${k}"></i>${QUARTS[k].nom}</span>
+      <input type="time" data-h="${k}" data-pos="0" value="${esc(b.heures[k][0])}" aria-label="${QUARTS[k].nom} : début">
+      <input type="time" data-h="${k}" data-pos="1" value="${esc(b.heures[k][1])}" aria-label="${QUARTS[k].nom} : fin"></div>`).join("");
+    $$("#hr-heures input").forEach((inp) => inp.addEventListener("change", () => { b.heures[inp.dataset.h][+inp.dataset.pos] = inp.value; }));
+  }
+  $("#hr-modele").addEventListener("change", (e) => {
+    if (MODELES[e.target.value]) { hr.brouillon.cycle = MODELES[e.target.value].split(""); rendreBrouillon(); }
+  });
+  $("#hr-ajout-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length < 84) { hr.brouillon.cycle.push("C"); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
+  $("#hr-retrait-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length > 1) { hr.brouillon.cycle.pop(); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
+  $("#hr-commencer").addEventListener("click", ouvrirConfig);
+  $("#hr-config").addEventListener("click", ouvrirConfig);
+  $("#hr-annuler").addEventListener("click", () => { $("#hr-form").hidden = true; rendreHoraire(); });
+  $("#hr-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const debut = $("#hr-debut").value;
+    if (!debut) { $("#hr-debut").focus(); return toast("Choisissez le premier jour du cycle"); }
+    const ancien = hr.config;
+    hr.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso" };
+    try {
+      await sauverHoraire();
+      $("#hr-form").hidden = true;
+      rendreHoraire();
+      toast("Rotation enregistrée");
+    } catch (e) { hr.config = ancien; toast(traduireErreur(e)); }
+  });
+
+  // Exceptions sur une journée
+  function ouvrirJour(iso) {
+    hr.jourChoisi = iso;
+    const q = quartDu(iso);
+    $("#hr-jour-titre").textContent = new Date(iso + "T12:00:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    $("#hr-jour-prevu").textContent = `Selon la rotation : ${q.prevu ? QUARTS[q.prevu].nom + (heuresDe(q.prevu) && q.prevu !== "C" ? " (" + heuresDe(q.prevu) + ")" : "") : "—"}`;
+    $("#hr-jour-choix").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<button type="button" class="q q-${k}" data-q="${k}" aria-pressed="${String(q.code === k)}">${k} · ${esc(v.nom)}</button>`).join("");
+    $$("#hr-jour-choix button").forEach((b) => b.addEventListener("click", () => $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)))));
+    $("#hr-jour-note").value = q.note || "";
+    $("#hr-jour-retirer").hidden = !q.exception;
+    $("#hr-voile").hidden = false;
+  }
+  const fermerJour = () => ($("#hr-voile").hidden = true);
+  $("#hr-jour-fermer").addEventListener("click", fermerJour);
+  $("#hr-voile").addEventListener("click", (e) => { if (e.target.id === "hr-voile") fermerJour(); });
+  $("#hr-jour-ok").addEventListener("click", async () => {
+    const iso = hr.jourChoisi;
+    const choix = ($("#hr-jour-choix button[aria-pressed='true']") || {}).dataset;
+    const type = choix ? choix.q : quartDu(iso).prevu;
+    const note = $("#hr-jour-note").value.trim();
+    const avant = hr.exceptions[iso];
+    if (type === quartDu(iso).prevu && !note) delete hr.exceptions[iso];
+    else hr.exceptions[iso] = { type, note };
+    try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
+    catch (e) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; toast(traduireErreur(e)); }
+  });
+  $("#hr-jour-retirer").addEventListener("click", async () => {
+    const iso = hr.jourChoisi, avant = hr.exceptions[iso];
+    delete hr.exceptions[iso];
+    try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Retour à la rotation"); }
+    catch (e) { hr.exceptions[iso] = avant; toast(traduireErreur(e)); }
+  });
+
+  // Export vers le calendrier du téléphone (.ics), 6 mois à partir d'aujourd'hui
+  $("#hr-ics").addEventListener("click", () => {
+    const n0 = jourUTC(aujourdhuiISO());
+    const pad = (x) => String(x).padStart(2, "0");
+    const lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Police Extreme//Horaire//FR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Horaire Police Extrême"];
+    const maintenant = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    for (let i = 0; i < 183; i++) {
+      const iso = isoDe(n0 + i), q = quartDu(iso);
+      if (!q.code || q.code === "C") continue;
+      const date = iso.replace(/-/g, "");
+      const titre = (QUARTS[q.code] ? QUARTS[q.code].nom : q.code) + (q.note ? " — " + q.note : "");
+      const h = (hr.config.heures || HEURES_DEFAUT)[q.code];
+      lignes.push("BEGIN:VEVENT", `UID:${date}-${q.code}@police-extreme`, `DTSTAMP:${maintenant}`);
+      if (h && ["J", "S", "N"].includes(q.code)) {
+        const fin = h[1] <= h[0] ? isoDe(n0 + i + 1).replace(/-/g, "") : date; // quart de nuit : se termine le lendemain
+        lignes.push(`DTSTART:${date}T${h[0].replace(":", "")}00`, `DTEND:${fin}T${h[1].replace(":", "")}00`);
+      } else {
+        lignes.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${isoDe(n0 + i + 1).replace(/-/g, "")}`);
+      }
+      lignes.push(`SUMMARY:${titre.replace(/[,;\\]/g, (c) => "\\" + c)}`, "END:VEVENT");
+    }
+    lignes.push("END:VCALENDAR");
+    const blob = new Blob([lignes.join("\r\n")], { type: "text/calendar" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "horaire-police-extreme.ics";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast("Fichier prêt : ouvrez-le pour l'ajouter à votre calendrier");
+  });
 
   /* ---------------- Aide : installation ---------------- */
   function plateformeProbable() {

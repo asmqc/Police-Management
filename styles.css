@@ -385,3 +385,59 @@ a { color: var(--bleu); }
 .lien-clair { color: #F2B33D; justify-self: center; text-align: center; }
 .titre-voile { font-size: 1.4rem; padding-right: 36px; }
 @media (min-width: 900px) { .app { grid-template-rows: var(--barre-h) 1fr; } }
+
+/* Horaire rotatif */
+.btn-secondaire.petit, .btn-ok.petit { min-height: 36px; padding: 6px 12px; font-size: .9rem; }
+.q { --q: var(--surface-2); --qt: var(--fg); background: var(--q); color: var(--qt); }
+.q-J { --q: #F2B33D; --qt: #1A1204; }
+.q-S { --q: #7B4FC9; --qt: #fff; }
+.q-N { --q: #1F3A64; --qt: #fff; }
+.q-C { --q: var(--surface-2); --qt: var(--fg-doux); }
+.q-V { --q: #1E8A55; --qt: #fff; }
+.q-M { --q: #C62F3A; --qt: #fff; }
+.q-F { --q: #0E7C86; --qt: #fff; }
+.q-T { --q: #2467C4; --qt: #fff; }
+.q-X { --q: #C2410C; --qt: #fff; }
+:root[data-theme="dark"] .q-N { --q: #3B5E92; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .q-N { --q: #3B5E92; } }
+
+.hr-aujourdhui { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; align-items: center; background: var(--encre); color: #E8EEF6; border-radius: var(--r); padding: 16px 18px; }
+.hr-aujourdhui .pastille-q { grid-row: span 2; width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center; font: 700 1.9rem var(--f-titre); }
+.hr-aujourdhui small { color: #9FB0C6; text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+.hr-aujourdhui strong { font: 700 1.5rem/1.1 var(--f-titre); }
+.hr-aujourdhui .heures { font-family: var(--f-mono); color: #F2B33D; }
+.hr-aujourdhui .note { grid-column: 1 / -1; color: #C9D4E3; font-size: .9rem; }
+.hr-semaine { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.hr-semaine div { border-radius: 8px; padding: 6px 2px; text-align: center; display: grid; gap: 1px; border: 1px solid transparent; }
+.hr-semaine div small { font-size: .66rem; text-transform: uppercase; letter-spacing: .04em; opacity: .85; }
+.hr-semaine div b { font: 700 1.05rem var(--f-titre); }
+.hr-semaine div.auj { outline: 2px solid var(--ambre-vif); outline-offset: 1px; }
+
+.hr-mois-tete { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.hr-mois-tete h3 { font-size: 1.3rem; text-transform: capitalize; min-width: 0; flex: 1; text-align: center; }
+.hr-mois-tete .btn-icone { font-size: 1.6rem; background: var(--surface); border: 1px solid var(--ligne); }
+.hr-grille { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.hr-grille .jsem { text-align: center; font-size: .72rem; font-weight: 700; color: var(--fg-doux); text-transform: uppercase; padding: 2px 0; }
+.hr-grille button { border: 1px solid var(--ligne); border-radius: 8px; padding: 4px 2px 6px; min-height: 58px; display: grid; justify-items: center; align-content: start; gap: 3px; background: var(--surface); position: relative; }
+.hr-grille button.hors { opacity: .4; }
+.hr-grille button.auj { outline: 2px solid var(--ambre-vif); outline-offset: 1px; }
+.hr-grille .num { font-size: .78rem; font-variant-numeric: tabular-nums; color: var(--fg-doux); }
+.hr-grille .chip { min-width: 28px; padding: 2px 4px; border-radius: 5px; font: 700 .9rem var(--f-titre); }
+.hr-grille .exc::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--rouge); }
+.hr-legende { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .82rem; color: var(--fg-doux); }
+.hr-legende span { display: inline-flex; align-items: center; gap: 5px; }
+.hr-legende i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; background: var(--q); }
+.hr-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.hr-cycle { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 6px; }
+.hr-cycle button { border: 0; border-radius: 8px; min-height: 52px; display: grid; place-items: center; gap: 0; font: 700 1.05rem var(--f-titre); padding: 4px 0; }
+.hr-cycle button small { font: 500 .62rem var(--f-mono); opacity: .8; }
+.hr-heures { display: grid; gap: 8px; }
+.hr-heures .ligne { display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.hr-heures .ligne span { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.hr-heures .ligne span i { width: 14px; height: 14px; border-radius: 3px; background: var(--q); }
+.hr-heures input { padding: 8px; font-family: var(--f-mono); }
+.hr-choix { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.hr-choix button { border: 2px solid transparent; border-radius: 10px; padding: 10px; font-weight: 600; text-align: left; }
+.hr-choix button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 2px var(--surface) inset; }
+@media (max-width: 420px) { .nav button span { font-size: .64rem; } }
