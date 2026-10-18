@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/icone-192.png" alt="Logo Police Extrême" width="120">
+  <img src="assets/icone-192.png" alt="Logo Police Management" width="120">
 </p>
 
-<h1 align="center">Police Extrême</h1>
+<h1 align="center">Police Management</h1>
 
 <p align="center">
   Outil de référence réservé aux policiers du Québec.<br>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <b><a href="https://asmqc.github.io/Police-Extreme/">asmqc.github.io/Police-Extreme</a></b>
+  <b><a href="https://asmqc.github.io/Police-Management/">asmqc.github.io/Police-Management</a></b>
 </p>
 
 ---
@@ -53,7 +53,7 @@
 - Suppression définitive d'un compte (données et photo effacées de Supabase).
 
 ### Installation comme une application
-L'onglet **Aide** explique comment installer Police Extrême sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
+L'onglet **Aide** explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
 
 ---
 
@@ -69,7 +69,7 @@ La connexion est obligatoire. Chaque nouvelle personne remplit une demande d'acc
 |---|---|
 | Site | GitHub Pages (branche `main`, dossier racine) |
 | Contenu public : CSR, carte, postes SQ, corps de police, caméras | Dossier `data/` de ce dépôt |
-| Comptes, demandes d'accès, photos de profil, horaires et partages | Supabase, projet `police-extreme` (région Canada) |
+| Comptes, demandes d'accès, photos de profil, horaires et partages | Supabase (projet de l'app, région Canada) |
 | Actions sensibles (mot de passe temporaire, blocage, suppression) | Fonction sécurisée Supabase `admin-comptes` (code dans `supabase/functions/`) |
 
 Les règles d'accès de la base (RLS) protègent les renseignements personnels : chaque policier ne voit que son propre compte et son propre horaire, sauf les horaires qu'un collègue a choisi de lui partager. Seul l'administrateur voit la liste des comptes.
@@ -113,4 +113,4 @@ Le bouton **« Modifier la liste sur GitHub »** de l'onglet Admin ouvre directe
 
 ## Avis
 
-Police Extrême est un outil indépendant de référence. Il n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. En cas de doute, le texte officiel de LégisQuébec fait foi.
+Police Management est un outil indépendant de référence. Il n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. En cas de doute, le texte officiel de LégisQuébec fait foi.

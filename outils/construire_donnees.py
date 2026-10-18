@@ -18,7 +18,7 @@ DIAG = "exploration"
 for d in (DATA, TMP, DIAG):
     os.makedirs(d, exist_ok=True)
 
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) police-extreme-donnees/1.0"}
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) police-management-donnees/1.0"}
 DSQ = "https://www.donneesquebec.ca/recherche/dataset/777a8cfc-9d97-4959-b89a-37c07f11dd5c/resource/"
 SOURCES = {
     "reperes": "https://ws.mapserver.transports.gouv.qc.ca/swtq?service=wfs&version=2.0.0&request=getfeature&typename=ms:repere_km&outfile=RepereKilometrique&srsname=EPSG:4326&outputformat=geojson",

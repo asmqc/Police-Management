@@ -1,4 +1,4 @@
-// Configuration publique de Police Extrême.
+// Configuration publique de Police Management.
 // La clé « publishable » est faite pour être visible dans le navigateur : la sécurité
 // est assurée par les règles d'accès (RLS) de la base de données Supabase.
 window.PE_CONFIG = {

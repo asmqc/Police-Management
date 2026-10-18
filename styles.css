@@ -1,4 +1,4 @@
-/* Police Extrême — signalisation routière de nuit : encre marine, ambre réfléchissant, gyrophares en touche.
+/* Police Management — signalisation routière de nuit : encre marine, ambre réfléchissant, gyrophares en touche.
    Mise en page : application à barre d'onglets en bas sur téléphone, rail latéral sur grand écran. */
 :root {
   --encre: #0E1B2C;
@@ -456,3 +456,7 @@ a { color: var(--bleu); }
 .hr-jour-lecture { display: grid; gap: 8px; justify-items: start; }
 .hr-jour-lecture p { margin: 0; }
 .chip-grand { padding: 8px 14px; border-radius: 8px; font: 700 1.2rem var(--f-titre); }
+
+/* Logo (image) */
+.logo { border-radius: 22%; display: block; flex: none; }
+.auth-entete .logo { box-shadow: 0 4px 14px rgba(80, 60, 220, .35); }

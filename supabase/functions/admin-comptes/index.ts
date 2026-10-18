@@ -1,4 +1,4 @@
-// Police Extrême — actions sensibles sur les comptes.
+// Police Management — actions sensibles sur les comptes.
 // La clé secrète reste ici, côté serveur ; le navigateur envoie seulement le jeton de session de la personne connectée.
 //
 // Actions :

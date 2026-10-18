@@ -1,4 +1,4 @@
-/* Police Extrême — application principale */
+/* Police Management — application principale */
 (() => {
   "use strict";
 
@@ -407,7 +407,7 @@
     ev.preventDefault();
     const champ = $("#hr-partage-courriel");
     const courriel = champ.value.trim();
-    if (!courriel || !champ.checkValidity()) { champ.focus(); return toast("Entrez le courriel d'un collègue inscrit à Police Extrême"); }
+    if (!courriel || !champ.checkValidity()) { champ.focus(); return toast("Entrez le courriel d'un collègue inscrit à Police Management"); }
     const btn = $("#hr-form-partage button");
     btn.disabled = true;
     const { data, error } = await sb.rpc("partager_horaire", { p_email: courriel });
@@ -568,7 +568,7 @@
   $("#hr-ics").addEventListener("click", () => {
     const n0 = jourUTC(aujourdhuiISO());
     const pad = (x) => String(x).padStart(2, "0");
-    const lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Police Extreme//Horaire//FR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Horaire Police Extrême"];
+    const lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Police Management//Horaire//FR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Horaire Police Management"];
     const maintenant = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
     for (let i = 0; i < 183; i++) {
       const iso = isoDe(n0 + i), q = quartDu(iso, hr);
@@ -576,7 +576,7 @@
       const date = iso.replace(/-/g, "");
       const titre = (QUARTS[q.code] ? QUARTS[q.code].nom : q.code) + (q.note ? " — " + q.note : "");
       const h = (hr.config.heures || HEURES_DEFAUT)[q.code];
-      lignes.push("BEGIN:VEVENT", `UID:${date}-${q.code}@police-extreme`, `DTSTAMP:${maintenant}`);
+      lignes.push("BEGIN:VEVENT", `UID:${date}-${q.code}@police-management`, `DTSTAMP:${maintenant}`);
       if (h && ["J", "S", "N"].includes(q.code)) {
         const fin = h[1] <= h[0] ? isoDe(n0 + i + 1).replace(/-/g, "") : date; // quart de nuit : se termine le lendemain
         lignes.push(`DTSTART:${date}T${h[0].replace(":", "")}00`, `DTEND:${fin}T${h[1].replace(":", "")}00`);
@@ -589,7 +589,7 @@
     const blob = new Blob([lignes.join("\r\n")], { type: "text/calendar" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "horaire-police-extreme.ics";
+    a.download = "horaire-police-management.ics";
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -837,7 +837,7 @@
       return;
     }
     if (!etat.csr.length) {
-      $("#csr-etat").innerHTML = `Le texte du Code n'est pas encore chargé dans Police Extrême. Consultez-le sur <a href="${LEGIS}" target="_blank" rel="noopener">LégisQuébec</a>.`;
+      $("#csr-etat").innerHTML = `Le texte du Code n'est pas encore chargé dans Police Management. Consultez-le sur <a href="${LEGIS}" target="_blank" rel="noopener">LégisQuébec</a>.`;
       return;
     }
     chercherCsr();
@@ -1624,7 +1624,7 @@
   $("#fiche-compte").addEventListener("click", (e) => { if (e.target.id === "fiche-compte") fermerFiche(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#fiche-compte").hidden) fermerFiche(); });
 
-  const LIEN_EDITION_CORPS = "https://github.com/asmqc/Police-Extreme/edit/main/data/corps_police.json";
+  const LIEN_EDITION_CORPS = "https://github.com/asmqc/Police-Management/edit/main/data/corps_police.json";
   function rendreAdminCorps() {
     $("#admin-corps").innerHTML = `
       <div class="liste-sq">${etat.corps.map((c) => `

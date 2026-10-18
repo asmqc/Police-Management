@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Police Extrême</title>
+  <title>Police Management</title>
   <meta name="description" content="Outil de référence réservé aux policiers du Québec : Code de la sécurité routière, bornes kilométriques et territoires des corps de police.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0E1B2C">
-  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-title" content="Police Management">
+  <link rel="icon" href="assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="assets/icone-180.png">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,16 +20,16 @@
 <body>
   <!-- Chargement -->
   <div id="ecran-chargement" class="ecran-centre">
-    <img src="assets/logo.svg" alt="" class="logo-pulse" width="72" height="82">
+    <img src="assets/logo.png" alt="" class="logo logo-pulse" width="80" height="80">
   </div>
 
   <!-- Connexion / demande d'accès -->
   <main id="ecran-auth" class="auth" hidden>
     <section class="auth-carte">
       <header class="auth-entete">
-        <img src="assets/logo.svg" alt="Logo Police Extrême" width="64" height="73">
+        <img src="assets/logo.png" alt="Logo Police Management" class="logo" width="64" height="64">
         <div>
-          <h1 class="marque">Police <span>Extrême</span></h1>
+          <h1 class="marque">Police <span>Management</span></h1>
           <p class="sous-marque">Accès réservé aux policiers du Québec</p>
         </div>
       </header>
@@ -97,7 +98,7 @@
   <!-- En attente / refusé -->
   <main id="ecran-attente" class="ecran-centre" hidden>
     <section class="attente-carte">
-      <img src="assets/logo.svg" alt="" width="56" height="64">
+      <img src="assets/logo.png" alt="" class="logo" width="60" height="60">
       <h1 id="attente-titre">Demande en attente</h1>
       <p id="attente-texte">Votre demande a été reçue. Vous aurez accès dès que l'administrateur l'aura approuvée.</p>
       <dl id="attente-details" class="details"></dl>
@@ -111,7 +112,7 @@
   <!-- Changement obligatoire après un mot de passe temporaire -->
   <main id="ecran-mdp-temp" class="ecran-centre" hidden>
     <section class="attente-carte">
-      <img src="assets/logo.svg" alt="" width="56" height="64">
+      <img src="assets/logo.png" alt="" class="logo" width="60" height="60">
       <h1>Choisissez votre mot de passe</h1>
       <p>L'administrateur vous a donné un mot de passe temporaire. Choisissez maintenant votre propre mot de passe pour continuer.</p>
       <form id="form-mdp-temp" class="formulaire" novalidate style="width:100%">
@@ -130,8 +131,8 @@
   <div id="ecran-app" class="app" hidden>
     <header class="barre">
       <div class="barre-marque">
-        <img src="assets/logo.svg" alt="" width="28" height="32">
-        <span class="marque petite">Police <span>Extrême</span></span>
+        <img src="assets/logo.png" alt="" class="logo" width="30" height="30">
+        <span class="marque petite">Police <span>Management</span></span>
       </div>
       <div class="barre-droite">
         <button class="btn-compte" id="btn-compte" data-vue-lien="compte" aria-label="Mon compte">
@@ -285,7 +286,7 @@
       <div id="hr-partage" class="hr-partage" hidden>
         <h3 class="intertitre">Partager mon horaire</h3>
         <form id="hr-form-partage" class="panneau" novalidate>
-          <p class="aide">Votre collègue doit avoir un compte approuvé sur Police Extrême. Il verra votre horaire en lecture seule, avec vos notes. Vous pouvez retirer le partage quand vous voulez.</p>
+          <p class="aide">Votre collègue doit avoir un compte approuvé sur Police Management. Il verra votre horaire en lecture seule, avec vos notes. Vous pouvez retirer le partage quand vous voulez.</p>
           <div class="fc-ligne">
             <input id="hr-partage-courriel" type="email" placeholder="Courriel du collègue" autocomplete="off" aria-label="Courriel du collègue">
             <button type="submit" class="btn-ok">Partager</button>
@@ -332,11 +333,11 @@
     <!-- Vue Aide -->
     <section id="vue-aide" class="vue" hidden>
       <div class="vue-tete">
-        <h2>Installer Police Extrême</h2>
+        <h2>Installer Police Management</h2>
         <p class="ref">iPhone · Android · Windows · Mac</p>
       </div>
       <div id="aide-contenu" class="aide-contenu">
-        <p class="aide-intro">Police Extrême s'installe comme une vraie application, sans magasin d'applications : une icône sur votre écran d'accueil ou votre bureau, et l'app s'ouvre en plein écran. C'est gratuit et ça prend 30 secondes.</p>
+        <p class="aide-intro">Police Management s'installe comme une vraie application, sans magasin d'applications : une icône sur votre écran d'accueil ou votre bureau, et l'app s'ouvre en plein écran. C'est gratuit et ça prend 30 secondes.</p>
         <div class="installer-direct" id="installer-direct" hidden>
           <button class="btn-principal" id="btn-installer">Installer l'application maintenant</button>
         </div>
@@ -350,17 +351,17 @@
         <div class="plateforme" data-plateforme="ios">
           <p class="navigateur">Avec <b>Safari</b> (ou Chrome)</p>
           <ol class="etapes">
-            <li><span class="no">1</span><div><b>Ouvrez le site dans Safari</b><p>Allez à l'adresse de Police Extrême.</p></div></li>
+            <li><span class="no">1</span><div><b>Ouvrez le site dans Safari</b><p>Allez à l'adresse de Police Management.</p></div></li>
             <li><span class="no">2</span><div><b>Touchez le bouton Partager <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><p>En bas de l'écran sur iPhone, en haut à droite sur iPad. Dans Chrome, il est à droite de la barre d'adresse.</p></div></li>
             <li><span class="no">3</span><div><b>Choisissez « Sur l'écran d'accueil » <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></b><p>Faites défiler la liste vers le bas si vous ne le voyez pas.</p></div></li>
-            <li><span class="no">4</span><div><b>Touchez « Ajouter »</b><p>L'icône Police Extrême apparaît sur votre écran d'accueil. Ouvrez l'app à partir de cette icône.</p></div></li>
+            <li><span class="no">4</span><div><b>Touchez « Ajouter »</b><p>L'icône Police Management apparaît sur votre écran d'accueil. Ouvrez l'app à partir de cette icône.</p></div></li>
           </ol>
         </div>
 
         <div class="plateforme" data-plateforme="android" hidden>
           <p class="navigateur">Avec <b>Chrome</b></p>
           <ol class="etapes">
-            <li><span class="no">1</span><div><b>Ouvrez le site dans Chrome</b><p>Allez à l'adresse de Police Extrême.</p></div></li>
+            <li><span class="no">1</span><div><b>Ouvrez le site dans Chrome</b><p>Allez à l'adresse de Police Management.</p></div></li>
             <li><span class="no">2</span><div><b>Touchez le menu <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg></b><p>En haut à droite de l'écran.</p></div></li>
             <li><span class="no">3</span><div><b>Choisissez « Installer l'application »</b><p>Sur certains téléphones, l'option s'appelle « Ajouter à l'écran d'accueil ».</p></div></li>
             <li><span class="no">4</span><div><b>Confirmez avec « Installer »</b><p>L'icône apparaît sur l'écran d'accueil et dans la liste de vos applications.</p></div></li>
@@ -371,7 +372,7 @@
         <div class="plateforme" data-plateforme="windows" hidden>
           <p class="navigateur">Avec <b>Microsoft Edge</b> ou <b>Google Chrome</b></p>
           <ol class="etapes">
-            <li><span class="no">1</span><div><b>Ouvrez le site dans Edge ou Chrome</b><p>Allez à l'adresse de Police Extrême.</p></div></li>
+            <li><span class="no">1</span><div><b>Ouvrez le site dans Edge ou Chrome</b><p>Allez à l'adresse de Police Management.</p></div></li>
             <li><span class="no">2</span><div><b>Cliquez sur l'icône d'installation <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M9 10l3 3 3-3M8 21h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><p>Elle est à droite dans la barre d'adresse.</p></div></li>
             <li><span class="no">3</span><div><b>Cliquez sur « Installer »</b><p>Si l'icône n'apparaît pas : <b>Edge</b> → menu <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg> → Applications → « Installer ce site en tant qu'application ». <b>Chrome</b> → menu <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg> → « Caster, enregistrer et partager » → « Installer la page en tant qu'application ».</p></div></li>
             <li><span class="no">4</span><div><b>Épinglez l'app</b><p>Elle s'ouvre dans sa propre fenêtre. Faites un clic droit sur son icône dans la barre des tâches, puis « Épingler à la barre des tâches ».</p></div></li>
@@ -381,9 +382,9 @@
         <div class="plateforme" data-plateforme="mac" hidden>
           <p class="navigateur">Avec <b>Safari</b> ou <b>Google Chrome</b></p>
           <ol class="etapes">
-            <li><span class="no">1</span><div><b>Ouvrez le site dans Safari</b><p>Allez à l'adresse de Police Extrême.</p></div></li>
+            <li><span class="no">1</span><div><b>Ouvrez le site dans Safari</b><p>Allez à l'adresse de Police Management.</p></div></li>
             <li><span class="no">2</span><div><b>Menu Fichier → « Ajouter au Dock »</b><p>Vous pouvez aussi cliquer sur le bouton Partager <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>, puis « Ajouter au Dock ». Il faut macOS Sonoma ou plus récent.</p></div></li>
-            <li><span class="no">3</span><div><b>Cliquez sur « Ajouter »</b><p>L'icône Police Extrême apparaît dans le Dock et dans le dossier Applications.</p></div></li>
+            <li><span class="no">3</span><div><b>Cliquez sur « Ajouter »</b><p>L'icône Police Management apparaît dans le Dock et dans le dossier Applications.</p></div></li>
             <li><span class="no">4</span><div><b>Avec Chrome</b><p>Cliquez sur l'icône d'installation <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M9 10l3 3 3-3M8 21h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> dans la barre d'adresse, puis « Installer ».</p></div></li>
           </ol>
         </div>
@@ -460,7 +461,7 @@
 
       <h3 class="intertitre danger">Supprimer mon compte</h3>
       <div class="panneau zone-danger">
-        <p>La suppression est définitive : votre compte, votre photo et toutes vos informations sont effacés de Police Extrême. Pour revenir, il faudra refaire une demande d'accès.</p>
+        <p>La suppression est définitive : votre compte, votre photo et toutes vos informations sont effacés de Police Management. Pour revenir, il faudra refaire une demande d'accès.</p>
         <label for="mc-confirmer-suppr">Écrivez SUPPRIMER pour confirmer</label>
         <input id="mc-confirmer-suppr" type="text" autocomplete="off" autocapitalize="characters">
         <button type="button" class="btn-danger" id="mc-supprimer" disabled>Supprimer mon compte pour toujours</button>
@@ -498,7 +499,7 @@
   <div id="aide-voile" class="voile" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-label="Installer l'application">
       <button class="btn-icone fermer" id="aide-fermer" aria-label="Fermer">✕</button>
-      <h3 class="titre-voile">Installer Police Extrême</h3>
+      <h3 class="titre-voile">Installer Police Management</h3>
       <div id="aide-voile-contenu"></div>
     </section>
   </div>

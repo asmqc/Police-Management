@@ -1,6 +1,6 @@
-// Police Extrême — service minimal : réseau d'abord, copie locale en secours (hors ligne).
+// Police Management — service minimal : réseau d'abord, copie locale en secours (hors ligne).
 // Les appels à Supabase et aux autres sites ne sont jamais mis en cache.
-const CACHE = "police-extreme-v1";
+const CACHE = "police-management-v1";
 self.addEventListener("install", (e) => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", (e) => {
