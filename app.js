@@ -815,6 +815,87 @@
     }
   });
 
+  /* ---------------- Table des vitesses (mêmes règles que l'app Police Management iOS) ---------------- */
+  const LIMITES = [10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100];
+  const vt = { limite: 90, vitesse: 118, zone: "normale" };
+  function calculVitesse(limite, vitesse, zone) {
+    const exces = Math.max(0, vitesse - limite);
+    const tarif = exces <= 20 ? 10 : exces <= 30 ? 15 : exces <= 45 ? 20 : exces <= 60 ? 25 : 30;
+    const tranches = Math.floor(exces / 5);
+    const amendeBase = exces > 0 ? 30 + tranches * tarif : 0;
+    const gev = exces > 0 && (limite <= 60 ? exces >= 40 : limite <= 90 ? exces >= 50 : exces >= 60);
+    let amende = amendeBase;
+    if (gev) amende *= 2;
+    if (zone !== "normale") amende *= 2;
+    const pointsBase = exces <= 10 ? 0 : exces <= 20 ? 1 : exces <= 30 ? 2 : exces <= 45 ? 3 : exces <= 60 ? 5 : exces <= 80 ? 7 : exces <= 100 ? 9 : 12 + Math.floor((exces - 101) / 20) * 3;
+    const points = gev ? pointsBase * 2 : pointsBase;
+    const frais = amende <= 0 ? 0 : amende <= 10 ? 7 : amende < 50 ? 16 : amende < 100 ? 33 : amende < 150 ? 59 : amende < 300 ? 86 : amende < 600 ? 172 : amende < 1500 ? 343
+      : amende <= 10000 ? Math.round(amende * 0.25) : 2500 + Math.round((amende - 10000) * 0.01);
+    const contribution = amende <= 0 ? 0 : amende <= 100 ? 28 : amende <= 300 ? 52 : amende <= 500 ? 75 : Math.round(amende * 0.25);
+    return { exces, tarif, tranches, amende, gev, points, frais, contribution, total: amende + frais + contribution };
+  }
+  const dollars = (n) => n.toLocaleString("fr-CA") + " $";
+
+  function initVitesse() {
+    const sel = $("#vt-limite");
+    if (!sel.options.length) {
+      sel.innerHTML = LIMITES.map((l) => `<option value="${l}">${l} km/h</option>`).join("");
+      sel.value = vt.limite;
+      sel.addEventListener("change", () => { vt.limite = +sel.value; rendreVitesse(); });
+      $("#vt-vitesse").addEventListener("input", (e) => { vt.vitesse = Math.max(0, Math.min(260, +e.target.value || 0)); rendreVitesse(false); });
+      $$(".segmente button").forEach((b) => b.addEventListener("click", () => {
+        vt.zone = b.dataset.zone;
+        $$(".segmente button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+        rendreVitesse();
+      }));
+    }
+    rendreVitesse();
+  }
+
+  function rendreVitesse(table = true) {
+    const r = calculVitesse(vt.limite, vt.vitesse, vt.zone);
+    const zoneTxt = vt.zone === "travaux" ? "de travaux" : "scolaire";
+    $("#vt-resultat").innerHTML = r.exces <= 0
+      ? `<p class="message ok">Aucun excès de vitesse.</p>`
+      : `<div class="vt-carte ${r.gev ? "gev" : ""}">
+          <div class="vt-chiffres">
+            <div><small>Excès</small><b>${r.exces} km/h</b></div>
+            <div><small>Amende</small><b class="rouge">${dollars(r.amende)}</b></div>
+            <div><small>Points</small><b class="orange">${r.points}</b></div>
+          </div>
+          <dl class="vt-detail">
+            <dt>Calcul (art. 516)</dt><dd>30 $ + ${r.tranches} × ${r.tarif} $</dd>
+            ${r.gev ? `<dt>Grand excès (art. 516.1)</dt><dd>amende × 2, points × 2</dd>` : ""}
+            ${vt.zone !== "normale" ? `<dt>Zone ${zoneTxt}</dt><dd>amende × 2</dd>` : ""}
+            <dt>Frais judiciaires</dt><dd>${dollars(r.frais)}</dd>
+            <dt>Contribution</dt><dd>${dollars(r.contribution)}</dd>
+            <dt class="total">Réclamation totale</dt><dd class="total">${dollars(r.total)}</dd>
+          </dl>
+          ${r.gev ? `<div class="vt-gev"><b>GRAND EXCÈS DE VITESSE</b>
+            <ul><li>Amende et points doublés (déjà inclus)</li><li>Suspension immédiate du permis : 7 jours</li><li>Récidive (10 ans) : suspension de 30 jours, saisie du véhicule possible, amende triplée (plus de deux GEV)</li></ul></div>` : ""}
+        </div>`;
+    if (!table) { surlignerLigne(); return; }
+    $("#vt-table-titre").textContent = `· zone de ${vt.limite} km/h${vt.zone !== "normale" ? ", " + zoneTxt : ""}`;
+    let lignes = "";
+    for (let v = vt.limite + 5; v <= vt.limite + 150 && v <= 260; v += 5) {
+      const x = calculVitesse(vt.limite, v, vt.zone);
+      lignes += `<tr data-v="${v}" class="${x.gev ? "gev" : ""}"><td>${v}</td><td>+${x.exces}</td><td>${dollars(x.amende)}</td><td class="opt">${dollars(x.frais)}</td><td class="opt">${dollars(x.contribution)}</td><td><b>${dollars(x.total)}</b></td><td>${x.points}</td><td>${x.gev ? "GEV" : ""}</td></tr>`;
+    }
+    $("#vt-table").innerHTML = `<thead><tr><th>Vitesse</th><th>Excès</th><th>Amende</th><th class="opt">Frais</th><th class="opt">Contrib.</th><th>Total</th><th>Pts</th><th></th></tr></thead><tbody>${lignes}</tbody>`;
+    $$("#vt-table tbody tr").forEach((tr) => tr.addEventListener("click", () => { vt.vitesse = +tr.dataset.v; $("#vt-vitesse").value = vt.vitesse; rendreVitesse(false); }));
+    surlignerLigne();
+  }
+  function surlignerLigne() {
+    $$("#vt-table tbody tr").forEach((tr) => tr.classList.toggle("choisie", +tr.dataset.v === Math.floor(vt.vitesse / 5) * 5));
+  }
+  $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => {
+    const vitesse = b.dataset.csrOnglet === "vitesse";
+    $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    $("#csr-vitesse").hidden = !vitesse;
+    $("#csr-articles").hidden = vitesse;
+    if (vitesse) initVitesse();
+  }));
+
   /* ---------------- Code de la sécurité routière ---------------- */
   const RACCOURCIS = [
     ["Cellulaire", "443.1"], ["Vitesse", "vitesse excède"], ["Ceinture", "ceinture de sécurité"], ["Alcool", "alcool"],

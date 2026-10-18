@@ -179,6 +179,36 @@
         <h2>Code de la sécurité routière</h2>
         <p class="ref">RLRQ, c. C-24.2</p>
       </div>
+      <div class="onglets-csr" role="tablist" aria-label="Section du CSR">
+        <button role="tab" data-csr-onglet="articles" aria-selected="true">Articles</button>
+        <button role="tab" data-csr-onglet="vitesse" aria-selected="false">Table des vitesses</button>
+      </div>
+
+      <div id="csr-vitesse" class="vitesse" hidden>
+        <div class="panneau vitesse-saisie">
+          <div class="rangee">
+            <div>
+              <label for="vt-limite">Limite</label>
+              <select id="vt-limite"></select>
+            </div>
+            <div>
+              <label for="vt-vitesse">Vitesse mesurée</label>
+              <input id="vt-vitesse" type="number" inputmode="numeric" min="1" max="260" value="118">
+            </div>
+          </div>
+          <div class="segmente" role="radiogroup" aria-label="Type de zone">
+            <button type="button" data-zone="normale" aria-checked="true" role="radio">Normale</button>
+            <button type="button" data-zone="travaux" aria-checked="false" role="radio">Travaux</button>
+            <button type="button" data-zone="scolaire" aria-checked="false" role="radio">Scolaire</button>
+          </div>
+        </div>
+        <div id="vt-resultat"></div>
+        <h3 class="intertitre">Table complète <span class="ref" id="vt-table-titre"></span></h3>
+        <div class="table-defile"><table class="table-vitesse" id="vt-table"></table></div>
+        <p class="aide vitesse-source">Amende : art. 516 CSR en vigueur depuis le 1er juin 2024 (PL 48) — 30 $ + 10 à 30 $ par tranche complète de 5 km/h. Grand excès : art. 516.1 (amende et points doublés). Zone de travaux (art. 516.2) et zone scolaire en période scolaire : amende doublée, points inchangés. Frais judiciaires : Tarif judiciaire en matière pénale (C-25.1, r. 6), indexé au 1er janvier 2026, pour un paiement sans contestation. Contribution : art. 8.1 du Code de procédure pénale (grille de décembre 2024). Points : Règlement sur les points d'inaptitude (C-24.2, r. 37). Outil de référence : les textes officiels et les barèmes de la SAAQ prévalent.</p>
+      </div>
+
+      <div id="csr-articles">
       <div class="recherche">
         <input id="csr-q" type="search" placeholder="Article (ex. 328) ou mots-clés (ex. cellulaire)" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans le CSR">
       </div>
@@ -187,6 +217,7 @@
       <div class="csr-corps">
         <ol id="csr-liste" class="liste-articles"></ol>
         <article id="csr-article" class="article" hidden></article>
+      </div>
       </div>
     </section>
 

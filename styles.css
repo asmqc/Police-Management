@@ -460,3 +460,42 @@ a { color: var(--bleu); }
 /* Logo (image) */
 .logo { border-radius: 22%; display: block; flex: none; }
 .auth-entete .logo { box-shadow: 0 4px 14px rgba(80, 60, 220, .35); }
+
+/* Table des vitesses */
+.onglets-csr { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 10px; padding: 4px; gap: 4px; }
+.onglets-csr button { border: 0; background: transparent; padding: 10px; border-radius: 7px; font-weight: 600; color: var(--fg-doux); }
+.onglets-csr button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.vitesse { display: grid; gap: 14px; }
+.vitesse-saisie label { font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-doux); }
+.vitesse-saisie #vt-vitesse { font-family: var(--f-mono); font-weight: 600; font-size: 1.15rem; }
+.segmente { display: grid; grid-template-columns: repeat(3, 1fr); border: 1.5px solid var(--ligne); border-radius: 8px; overflow: hidden; }
+.segmente button { border: 0; background: var(--surface); padding: 10px 6px; font-weight: 600; color: var(--fg-doux); }
+.segmente button + button { border-left: 1.5px solid var(--ligne); }
+.segmente button[aria-checked="true"] { background: var(--encre); color: #fff; }
+.vt-carte { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 16px; display: grid; gap: 14px; }
+.vt-carte.gev { border-color: var(--rouge); box-shadow: 0 0 0 1px var(--rouge) inset; }
+.vt-chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.vt-chiffres div { background: var(--surface-2); border-radius: 8px; padding: 10px 4px; display: grid; gap: 2px; }
+.vt-chiffres small { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--fg-doux); }
+.vt-chiffres b { font: 700 1.5rem/1.1 var(--f-titre); font-variant-numeric: tabular-nums; }
+.rouge { color: var(--rouge); }
+.orange { color: #C2410C; }
+.vt-detail { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 0; font-size: .95rem; }
+.vt-detail dt { color: var(--fg-doux); }
+.vt-detail dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-family: var(--f-mono); }
+.vt-detail .total { border-top: 1px solid var(--ligne); padding-top: 8px; font-weight: 700; color: var(--fg); }
+.vt-detail dd.total { color: var(--rouge); font-size: 1.15rem; }
+.vt-gev { background: color-mix(in srgb, var(--rouge) 12%, var(--surface)); border-radius: 8px; padding: 10px 12px; font-size: .9rem; }
+.vt-gev b { color: var(--rouge); letter-spacing: .05em; }
+.vt-gev ul { margin: 6px 0 0; padding-left: 18px; }
+.table-defile { overflow-x: auto; border: 1px solid var(--ligne); border-radius: var(--r); background: var(--surface); }
+.table-vitesse { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+.table-vitesse th { position: sticky; top: 0; background: var(--surface-2); text-align: right; padding: 8px 10px; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-doux); white-space: nowrap; }
+.table-vitesse td { text-align: right; padding: 7px 10px; border-top: 1px solid var(--ligne); white-space: nowrap; font-family: var(--f-mono); }
+.table-vitesse th:first-child, .table-vitesse td:first-child { text-align: left; font-weight: 600; }
+.table-vitesse tbody tr { cursor: pointer; }
+.table-vitesse tr.gev td { background: color-mix(in srgb, var(--rouge) 8%, transparent); }
+.table-vitesse tr.gev td:last-child { color: var(--rouge); font-weight: 700; }
+.table-vitesse tr.choisie td { background: color-mix(in srgb, var(--ambre-vif) 30%, transparent); }
+.vitesse-source { font-size: .8rem; }
+@media (max-width: 520px) { .table-vitesse .opt { display: none; } }
