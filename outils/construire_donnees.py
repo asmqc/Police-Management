@@ -122,6 +122,22 @@ col_code = next((c for c in mun.columns if c.upper() in ("MUS_CO_GEO", "CO_GEO",
 col_nom = next((c for c in mun.columns if c.upper() in ("MUS_NM_MUN", "NM_MUN", "NOM_MUN")), None)
 col_mrc = next((c for c in mun.columns if c.upper() in ("MUS_NM_MRC", "NM_MRC")), None)
 col_des = next((c for c in mun.columns if c.upper() in ("MUS_CO_DES", "CO_DES")), None)
+# Index léger de toutes les municipalités (recherche « qui couvre ce territoire »)
+index = []
+for (_, r), pt in zip(mun.iterrows(), pts):
+    index.append([r[col_nom], str(r[col_code]), r[col_mrc] if col_mrc else "", round(pt.x, 5), round(pt.y, 5), bool(r["sq"])])
+vus = set()
+index_u = []
+for e in sorted(index, key=lambda e: e[0]):
+    if (e[0], e[1]) in vus:
+        continue
+    vus.add((e[0], e[1]))
+    index_u.append(e)
+json.dump({"source": "Découpages administratifs, MRNF (Données Québec, CC-BY 4.0)",
+           "champs": ["nom", "code", "mrc", "lon", "lat", "sq"], "municipalites": index_u},
+          open(f"{DATA}/municipalites.json", "w"), ensure_ascii=False, separators=(",", ":"))
+diag["municipalites"] = {"nb": len(index_u), "octets": os.path.getsize(f"{DATA}/municipalites.json")}
+
 hors = hors.rename(columns={col_code: "code", col_nom: "nom"})
 if col_mrc:
     hors = hors.rename(columns={col_mrc: "mrc"})

@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Police Extrême</title>
+  <meta name="description" content="Outil de référence réservé aux policiers du Québec : Code de la sécurité routière, bornes kilométriques et territoires des corps de police.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0E1B2C">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icone-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Chargement -->
+  <div id="ecran-chargement" class="ecran-centre">
+    <img src="assets/logo.svg" alt="" class="logo-pulse" width="72" height="82">
+  </div>
+
+  <!-- Connexion / demande d'accès -->
+  <main id="ecran-auth" class="auth" hidden>
+    <section class="auth-carte">
+      <header class="auth-entete">
+        <img src="assets/logo.svg" alt="Logo Police Extrême" width="64" height="73">
+        <div>
+          <h1 class="marque">Police <span>Extrême</span></h1>
+          <p class="sous-marque">Accès réservé aux policiers du Québec</p>
+        </div>
+      </header>
+
+      <div class="onglets-auth" role="tablist">
+        <button role="tab" id="tab-connexion" aria-selected="true" data-auth="connexion">Connexion</button>
+        <button role="tab" id="tab-demande" aria-selected="false" data-auth="demande">Demande d'accès</button>
+      </div>
+
+      <form id="form-connexion" class="formulaire" novalidate>
+        <label for="cx-courriel">Courriel</label>
+        <input id="cx-courriel" type="email" autocomplete="email" required>
+        <label for="cx-mdp">Mot de passe</label>
+        <input id="cx-mdp" type="password" autocomplete="current-password" required>
+        <button type="submit" class="btn-principal">Se connecter</button>
+        <button type="button" class="lien" id="btn-oubli">Mot de passe oublié</button>
+      </form>
+
+      <form id="form-demande" class="formulaire" novalidate hidden>
+        <p class="aide">Remplissez la demande. L'administrateur vérifie chaque demande avant d'ouvrir l'accès.</p>
+        <label for="dm-nom">Nom complet</label>
+        <input id="dm-nom" type="text" autocomplete="name" required>
+        <div class="rangee">
+          <div>
+            <label for="dm-matricule">Matricule</label>
+            <input id="dm-matricule" type="text" inputmode="numeric" required>
+          </div>
+          <div>
+            <label for="dm-unite">Unité / poste</label>
+            <input id="dm-unite" type="text" placeholder="Ex. Poste MRC de Joliette">
+          </div>
+        </div>
+        <label for="dm-corps">Corps de police</label>
+        <select id="dm-corps" required>
+          <option value="">Choisir…</option>
+          <option>Sûreté du Québec</option>
+          <option>Service de police de la Ville de Montréal</option>
+          <option>Service de police de la Ville de Québec</option>
+          <option>Service de police de Laval</option>
+          <option>Service de police de l'agglomération de Longueuil</option>
+          <option>Service de police de la Ville de Gatineau</option>
+          <option>Autre corps de police municipal</option>
+          <option>Corps de police autochtone</option>
+          <option>Contrôle routier Québec</option>
+          <option>Autre</option>
+        </select>
+        <label for="dm-courriel">Courriel professionnel</label>
+        <input id="dm-courriel" type="email" autocomplete="email" required>
+        <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>
+        <input id="dm-mdp" type="password" autocomplete="new-password" minlength="10" required>
+        <button type="submit" class="btn-principal">Envoyer la demande</button>
+      </form>
+
+      <p id="auth-message" class="message" role="status" hidden></p>
+    </section>
+    <p class="pied-auth">Outil indépendant de référence. Il ne remplace pas les textes officiels.</p>
+  </main>
+
+  <!-- En attente / refusé -->
+  <main id="ecran-attente" class="ecran-centre" hidden>
+    <section class="attente-carte">
+      <img src="assets/logo.svg" alt="" width="56" height="64">
+      <h1 id="attente-titre">Demande en attente</h1>
+      <p id="attente-texte">Votre demande a été reçue. Vous aurez accès dès que l'administrateur l'aura approuvée.</p>
+      <dl id="attente-details" class="details"></dl>
+      <div class="actions">
+        <button class="btn-secondaire" id="btn-reverifier">Vérifier de nouveau</button>
+        <button class="lien" data-action="deconnexion">Se déconnecter</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Application -->
+  <div id="ecran-app" class="app" hidden>
+    <header class="barre">
+      <div class="barre-marque">
+        <img src="assets/logo.svg" alt="" width="28" height="32">
+        <span class="marque petite">Police <span>Extrême</span></span>
+      </div>
+      <div class="barre-droite">
+        <span id="barre-usager" class="usager"></span>
+        <button class="btn-icone" data-action="deconnexion" title="Se déconnecter" aria-label="Se déconnecter">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="nav" aria-label="Sections">
+      <button data-vue="csr" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>Code (CSR)</span>
+      </button>
+      <button data-vue="carte">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>Carte & km</span>
+      </button>
+      <button data-vue="corps">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>Territoires</span>
+      </button>
+      <button data-vue="admin" id="nav-admin" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0M4 20c1-3.5 4.3-5 8-5s7 1.5 8 5M18 4l1.5 1.5L22 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Admin</span>
+        <b id="badge-attente" class="badge" hidden></b>
+      </button>
+    </nav>
+
+    <!-- Vue CSR -->
+    <section id="vue-csr" class="vue">
+      <div class="vue-tete">
+        <h2>Code de la sécurité routière</h2>
+        <p class="ref">RLRQ, c. C-24.2</p>
+      </div>
+      <div class="recherche">
+        <input id="csr-q" type="search" placeholder="Article (ex. 328) ou mots-clés (ex. cellulaire)" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans le CSR">
+      </div>
+      <div class="puces" id="csr-raccourcis" aria-label="Recherches fréquentes"></div>
+      <p id="csr-etat" class="etat"></p>
+      <div class="csr-corps">
+        <ol id="csr-liste" class="liste-articles"></ol>
+        <article id="csr-article" class="article" hidden></article>
+      </div>
+    </section>
+
+    <!-- Vue carte -->
+    <section id="vue-carte" class="vue vue-carte" hidden>
+      <form id="form-km" class="km-barre" autocomplete="off">
+        <div class="km-champ">
+          <label for="km-route">Route</label>
+          <input id="km-route" inputmode="numeric" placeholder="20" required>
+        </div>
+        <div class="km-champ">
+          <label for="km-km">Km</label>
+          <input id="km-km" inputmode="decimal" placeholder="150" required>
+        </div>
+        <button type="submit" class="btn-principal">Localiser</button>
+        <button type="button" class="btn-secondaire" id="btn-position" title="Ma position">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>Ma position</span>
+        </button>
+      </form>
+      <div class="carte-zone">
+        <div id="carte"></div>
+        <div class="legende" id="legende">
+          <button class="legende-tete" id="legende-bascule" aria-expanded="true">Couches</button>
+          <div class="legende-corps" id="legende-corps">
+            <label><input type="checkbox" id="c-sq" checked> <i class="pastille sq"></i>Postes SQ (MRC)</label>
+            <label><input type="checkbox" id="c-mun" checked> <i class="pastille mun"></i>Corps de police municipaux</label>
+            <label><input type="checkbox" id="c-aut" checked> <i class="trait aut"></i>Patrouille autoroutière SQ</label>
+            <label><input type="checkbox" id="c-km" checked> <i class="pastille km"></i>Bornes km (MTMD)</label>
+            <label><input type="checkbox" id="c-sorties"> <i class="pastille sortie"></i>Sorties d'autoroute</label>
+            <label><input type="checkbox" id="c-bur"> <i class="pastille bur"></i>Bureaux SQ</label>
+          </div>
+        </div>
+        <div id="fiche-lieu" class="fiche" hidden></div>
+      </div>
+      <p class="source">Données : MTMD, Sûreté du Québec, MRNF — Données Québec (CC-BY 4.0). Fond : © OpenStreetMap.</p>
+    </section>
+
+    <!-- Vue territoires -->
+    <section id="vue-corps" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Qui couvre ce territoire ?</h2>
+        <p class="ref">Municipalité, MRC ou poste</p>
+      </div>
+      <div class="recherche">
+        <input id="corps-q" type="search" placeholder="Ex. Boucherville, Joliette, Mirabel" autocomplete="off" aria-label="Chercher une municipalité">
+      </div>
+      <div id="corps-resultat"></div>
+      <h3 class="intertitre">Corps de police municipaux et autochtones</h3>
+      <div id="corps-liste" class="grille-corps"></div>
+      <h3 class="intertitre">Postes de la Sûreté du Québec</h3>
+      <div id="sq-liste" class="liste-sq"></div>
+    </section>
+
+    <!-- Vue admin -->
+    <section id="vue-admin" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Administration</h2>
+        <p class="ref">Demandes d'accès et corps de police</p>
+      </div>
+      <div class="filtres" role="tablist">
+        <button data-filtre="en_attente" aria-selected="true">En attente <b id="nb-attente">0</b></button>
+        <button data-filtre="approuve" aria-selected="false">Approuvés <b id="nb-approuve">0</b></button>
+        <button data-filtre="refuse" aria-selected="false">Refusés <b id="nb-refuse">0</b></button>
+      </div>
+      <div id="admin-liste" class="admin-liste"></div>
+
+      <h3 class="intertitre">Corps de police (modifiable)</h3>
+      <p class="aide">Les municipalités servent à colorer la carte. Une municipalité par ligne, avec le nom officiel.</p>
+      <div id="admin-corps"></div>
+      <button class="btn-secondaire" id="btn-ajout-corps">Ajouter un corps de police</button>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
