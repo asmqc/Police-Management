@@ -293,7 +293,7 @@
     $("#nav-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["csr", "carte", "corps", "compte", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
+    afficherVue(["csr", "carte", "corps", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
     chargerCorps();
     if (p.role === "admin") compterAttente();
   }
@@ -318,6 +318,53 @@
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
+
+  /* ---------------- Aide : installation ---------------- */
+  function plateformeProbable() {
+    const ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "ios";
+    if (/Android/.test(ua)) return "android";
+    if (/Macintosh|Mac OS X/.test(ua)) return "mac";
+    return "windows";
+  }
+  function brancherAide(racine) {
+    const choisir = (pf) => {
+      $$("[data-plateforme]", racine).forEach((el) => {
+        if (el.getAttribute("role") === "tab") el.setAttribute("aria-selected", String(el.dataset.plateforme === pf));
+        else el.hidden = el.dataset.plateforme !== pf;
+      });
+    };
+    $$("button[data-plateforme]", racine).forEach((b) => b.addEventListener("click", () => choisir(b.dataset.plateforme)));
+    choisir(plateformeProbable());
+    const btn = $("#btn-installer", racine);
+    if (btn) btn.addEventListener("click", installer);
+  }
+  let invitationInstall = null;
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    invitationInstall = e;
+    $$(".installer-direct").forEach((el) => (el.hidden = false));
+  });
+  async function installer() {
+    if (!invitationInstall) return;
+    invitationInstall.prompt();
+    await invitationInstall.userChoice;
+    invitationInstall = null;
+    $$(".installer-direct").forEach((el) => (el.hidden = true));
+  }
+  brancherAide($("#vue-aide"));
+  $("#btn-aide-auth").addEventListener("click", () => {
+    const cible = $("#aide-voile-contenu");
+    if (!cible.childElementCount) {
+      cible.innerHTML = $("#aide-contenu").innerHTML;
+      brancherAide(cible);
+      if (invitationInstall) $$(".installer-direct", cible).forEach((el) => (el.hidden = false));
+    }
+    $("#aide-voile").hidden = false;
+  });
+  $("#aide-fermer").addEventListener("click", () => ($("#aide-voile").hidden = true));
+  $("#aide-voile").addEventListener("click", (e) => { if (e.target.id === "aide-voile") e.currentTarget.hidden = true; });
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
   /* ---------------- Avatars ---------------- */
   const cacheAvatars = new Map();
@@ -672,6 +719,11 @@
       charger("municipalites_hors_sq.geojson"), charger("sq_postes.geojson"), charger("sq_autoroutier.geojson"), charger("reperes.json"),
     ]);
     const res = { lat, lon };
+    try {
+      const toutes = await charger("municipalites.geojson");
+      const f = trouverPolygone(toutes, lon, lat);
+      if (f) res.muni = f.properties;
+    } catch { /* fichier pas encore généré */ }
     const fm = trouverPolygone(mun, lon, lat);
     if (fm) {
       const c = corpsPourMunicipalite(fm.properties.nom);
@@ -717,7 +769,7 @@
     const lignes = [];
     if (res.corps) {
       lignes.push(["Corps de police", `<span class="etiquette-corps" style="--c:${res.corps.couleur}">${esc(res.corps.nom)}</span>${res.corps.inconnu ? `<br><small>Municipalité non desservie par la SQ. Ajoutez le corps de police dans Admin.</small>` : ""}${res.corps.telephone ? `<br><span class="ref">${esc(res.corps.telephone)}</span>` : ""}`]);
-      lignes.push(["Municipalité", esc(res.municipalite.nom) + (res.municipalite.mrc ? `<br><small>${esc(res.municipalite.mrc)}</small>` : "")]);
+      if (!res.muni) lignes.push(["Municipalité", esc(res.municipalite.nom) + (res.municipalite.mrc ? `<br><small>${esc(res.municipalite.mrc)}</small>` : "")]);
     } else if (res.sq) {
       lignes.push(["Corps de police", `<span class="etiquette-corps" style="--c:var(--sq)">Sûreté du Québec</span>`]);
       lignes.push(["Poste", esc(res.sq.NOM_UNIT)]);
@@ -725,6 +777,10 @@
       lignes.push(["Région / district", esc(res.sq.NOM_REG + (res.sq.NOM_DIST && res.sq.NOM_DIST !== "s.o." ? " · " + res.sq.NOM_DIST : ""))]);
     } else {
       lignes.push(["Corps de police", "Hors des territoires connus (plan d'eau, terres non organisées ou limite de données)."]);
+    }
+    if (res.muni) {
+      lignes.push(["Code municipal", `<span class="code-mun">${esc(res.muni.code)}</span> <button class="lien" data-copier-code="${esc(res.muni.code)}">Copier</button>`]);
+      lignes.push(["Municipalité", esc(res.muni.nom) + `<br><small>${esc([res.muni.mrc, res.muni.region].filter(Boolean).join(" · "))}</small>`]);
     }
     if (res.autoroutier) lignes.push(["Autoroute", `Patrouille : ${esc(res.autoroutier.NOM_UNIT)}`]);
     if (res.borne) {
@@ -741,6 +797,7 @@
     f.hidden = false;
     $(".fermer", f).addEventListener("click", () => (f.hidden = true));
     $("[data-copier-pos]", f).addEventListener("click", () => copier(`${res.lat.toFixed(5)}, ${res.lon.toFixed(5)}`));
+    $$("[data-copier-code]", f).forEach((b) => b.addEventListener("click", () => copier(b.dataset.copierCode)));
   }
   const dirNom = (d) => ({ N: "Nord", S: "Sud", E: "Est", O: "Ouest" }[d] || d);
 
@@ -783,6 +840,45 @@
       layers: "sortie_aut", format: "image/png", transparent: true, version: "1.3.0", minZoom: 10, attribution: "MTMD",
     });
 
+    // Limites municipales avec nom et code (chargées à la demande)
+    etat.couches.limites = L.layerGroup();
+    etat.couches.etiquettes = L.layerGroup();
+    const fg = () => getComputedStyle(document.documentElement).getPropertyValue("--fg-doux").trim() || "#556479";
+    const chargerLimites = async () => {
+      if (etat.couches.limites.getLayers().length) return;
+      try {
+        const fc = await charger("municipalites.geojson");
+        L.geoJSON(fc, { renderer: rendu, interactive: false, style: { color: fg(), weight: 1, opacity: 0.8, fill: false, dashArray: "3 3" } }).addTo(etat.couches.limites);
+      } catch { toast("Les limites municipales seront offertes après la prochaine mise à jour des données"); }
+    };
+    const dessinerEtiquettes = async () => {
+      const g = etat.couches.etiquettes;
+      g.clearLayers();
+      if (!$("#c-limites").checked || carte.getZoom() < 11) return;
+      const idx = await charger("municipalites.json");
+      const b = carte.getBounds();
+      let n = 0;
+      for (const m of idx.municipalites) {
+        if (m[4] < b.getSouth() || m[4] > b.getNorth() || m[3] < b.getWest() || m[3] > b.getEast() || /^TNO aquatique/.test(m[0])) continue;
+        if (++n > 300) break;
+        L.marker([m[4], m[3]], { interactive: false, icon: L.divIcon({ className: "etiquette-mun", html: `<b>${esc(m[0])}</b><span>${esc(m[1])}</span>`, iconSize: null }) }).addTo(g);
+      }
+    };
+    carte.on("moveend zoomend", dessinerEtiquettes);
+
+    // Caméras de circulation du MTMD
+    etat.couches.cam = L.layerGroup();
+    const chargerCameras = async () => {
+      if (etat.couches.cam.getLayers().length) return;
+      try {
+        const fc = await charger("cameras.geojson");
+        L.geoJSON(fc, {
+          pointToLayer: (f, ll) => L.marker(ll, { icon: L.divIcon({ className: "icone-camera", html: "", iconSize: [22, 22] }), title: champCamera(f.properties).nom }),
+          onEachFeature: (f, l) => l.bindPopup(() => popupCamera(f.properties), { maxWidth: 340, minWidth: 260 }),
+        }).addTo(etat.couches.cam);
+      } catch { toast("Les caméras seront offertes après la prochaine mise à jour des données"); }
+    };
+
     // Bornes kilométriques dessinées à partir du fichier local
     etat.couches.km = L.layerGroup().addTo(carte);
     const dessinerBornes = async () => {
@@ -811,10 +907,21 @@
     const bascule = (id, cle, versArriere) => $(id).addEventListener("change", (e) => {
       const c = etat.couches[cle];
       if (cle === "km") return dessinerBornes();
+      if (cle === "limites") {
+        if (e.target.checked) { chargerLimites(); etat.couches.limites.addTo(carte); etat.couches.etiquettes.addTo(carte); dessinerEtiquettes(); }
+        else { carte.removeLayer(etat.couches.limites); carte.removeLayer(etat.couches.etiquettes); }
+        return;
+      }
+      if (cle === "cam") {
+        if (e.target.checked) { chargerCameras(); etat.couches.cam.addTo(carte); } else carte.removeLayer(etat.couches.cam);
+        return;
+      }
       if (!c) return;
       e.target.checked ? (c.addTo(carte), versArriere && c.bringToBack && c.bringToBack()) : carte.removeLayer(c);
     });
-    bascule("#c-sq", "sq", true); bascule("#c-mun", "mun"); bascule("#c-aut", "aut"); bascule("#c-km", "km"); bascule("#c-sorties", "sorties"); bascule("#c-bur", "bur");
+    bascule("#c-sq", "sq", true); bascule("#c-mun", "mun"); bascule("#c-aut", "aut"); bascule("#c-km", "km"); bascule("#c-sorties", "sorties"); bascule("#c-bur", "bur"); bascule("#c-limites", "limites"); bascule("#c-cam", "cam");
+    etat.surligne = L.layerGroup().addTo(carte);
+    remplirChoixUnite();
     $("#legende-bascule").addEventListener("click", (e) => {
       const ouvert = e.currentTarget.getAttribute("aria-expanded") === "true";
       e.currentTarget.setAttribute("aria-expanded", String(!ouvert));
@@ -840,6 +947,131 @@
     return { color: col, weight: 1.2, fillColor: col, fillOpacity: c ? 0.22 : 0.12, dashArray: c ? null : "4 3" };
   }
   function restylerMunicipal() { etat.couches.mun.setStyle(styleMunicipal); }
+
+  /* Caméras : les noms de champs du MTMD sont détectés automatiquement */
+  function champCamera(p) {
+    p = p || {};
+    const no = parseInt(p.NumeroRoute, 10);
+    return {
+      nom: p.DescriptionLocalisationFr || p.DescriptionLocalisationEn || "Caméra de circulation",
+      route: no ? (no < 100 || (no >= 400 && no < 1000) ? "Autoroute " : "Route ") + no : "",
+      direction: [p.NomRegionDiffusion, p.NomPosteFrontalier, p.NomPontFrontalier].filter(Boolean).join(" · "),
+      image: null,
+      video: p.URL_FLUX_DONNEE || null,
+      numero: p.NumeroCamera || "",
+    };
+  }
+  function popupCamera(p) {
+    const c = champCamera(p);
+    const img = c.image ? `${c.image}${c.image.includes("?") ? "&" : "?"}t=${Date.now()}` : null;
+    return `<div class="popup-camera">
+      <b>${esc(c.nom)}</b>
+      ${c.route || c.direction ? `<small>${esc([c.route, c.direction].filter(Boolean).join(" · "))}</small>` : ""}
+      ${c.numero ? `<small class="ref">Caméra ${esc(c.numero)}</small>` : ""}
+      ${img ? `<img src="${esc(img)}" alt="Image de la caméra" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('small'),{textContent:'Image non disponible pour le moment.'}))">` : ""}
+      ${c.video ? `<a href="${esc(c.video)}" target="_blank" rel="noopener">Voir la caméra en direct (Québec 511)</a>` : ""}
+    </div>`;
+  }
+
+  /* Menu « Poste ou corps de police » : toutes les infos + territoire surligné */
+  async function remplirChoixUnite() {
+    const sel = $("#choix-unite");
+    let bureaux, corps;
+    try { [bureaux, corps] = await Promise.all([charger("sq_bureaux.geojson"), charger("corps_police.json")]); }
+    catch { return; }
+    const groupes = {};
+    const ajouter = (g, v, t) => (groupes[g] ||= []).push([v, t]);
+    bureaux.features.forEach((f, i) => {
+      const p = f.properties, nom = nomBureau(p.NOM_ENT || "");
+      if (["Grand quartier général", "District", "Région"].includes(p.CAT_UNIT)) ajouter("SQ — Quartiers généraux", "b:" + i, nom);
+      else if (p.CAT_UNIT === "Poste autoroutier") ajouter("SQ — Postes autoroutiers", "b:" + i, nom);
+      else ajouter("SQ — " + (p.NOM_REG && p.NOM_REG !== "s.o." ? p.NOM_REG : "Autres postes"), "b:" + i, nom);
+    });
+    corps.filter((c) => c.type === "municipal").forEach((c) => ajouter("Corps de police municipaux", "c:" + c.nom, c.nom));
+    corps.filter((c) => c.type === "autochtone").forEach((c) => ajouter("Corps de police autochtones", "c:" + c.nom, c.nom));
+    const ordre = (g) => (g.startsWith("SQ — Quartiers") ? 0 : g.startsWith("SQ — Postes auto") ? 2 : g.startsWith("SQ") ? 1 : g.includes("municipaux") ? 3 : 4);
+    sel.innerHTML = `<option value="">Choisir un poste ou un corps de police…</option>` +
+      Object.keys(groupes).sort((a, b) => ordre(a) - ordre(b) || a.localeCompare(b, "fr")).map((g) =>
+        `<optgroup label="${esc(g)}">${groupes[g].sort((a, b) => a[1].localeCompare(b[1], "fr")).map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join("")}</optgroup>`).join("");
+  }
+
+  async function afficherUnite(valeur) {
+    if (!valeur) return;
+    const carte = etat.carte;
+    const g = etat.surligne;
+    g.clearLayers();
+    const style = { color: "#F2B33D", weight: 3, fillColor: "#F2B33D", fillOpacity: 0.18 };
+    const lignes = [];
+    let titre = "", bornes = null;
+    const idx = await charger("municipalites.json");
+    const codeDe = (nom, horsSQ = valeur.startsWith("c:")) =>
+      (idx.municipalites.find((m) => norm(m[0]) === norm(nom) && (!horsSQ || !m[5])) || idx.municipalites.find((m) => norm(m[0]) === norm(nom)) || [])[1];
+    const listeMunis = (noms) => {
+      const tri = [...noms].sort((a, b) => a.localeCompare(b, "fr"));
+      return `<details><summary>${tri.length} municipalité${tri.length > 1 ? "s" : ""}</summary><ul class="liste-munis">${tri.map((n) => {
+        const code = codeDe(n);
+        return `<li>${esc(n)}${code ? ` <span class="ref">${esc(code)}</span>` : ""}</li>`;
+      }).join("")}</ul></details>`;
+    };
+
+    if (valeur.startsWith("b:")) {
+      const bureaux = await charger("sq_bureaux.geojson");
+      const f = bureaux.features[+valeur.slice(2)];
+      const p = f.properties;
+      titre = nomBureau(p.NOM_ENT);
+      const [lon, lat] = f.geometry.coordinates;
+      L.circleMarker([lat, lon], { radius: 9, color: "#fff", weight: 3, fillColor: "#C62F3A", fillOpacity: 1 }).addTo(g);
+      bornes = L.latLngBounds([[lat, lon]]);
+      lignes.push(["Corps de police", `<span class="etiquette-corps" style="--c:var(--sq)">Sûreté du Québec</span>`]);
+      lignes.push(["Type", esc(p.CAT_UNIT || "—")]);
+      const adresse = [p.ADRESSE, p.MUNICIPALITE, p.CODE_POST].filter((x) => x && x !== "s.o.").join(", ");
+      if (adresse) lignes.push(["Adresse", `${esc(adresse)}<br><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(adresse + ", Québec")}" target="_blank" rel="noopener">Itinéraire</a>`]);
+      if (p.CODE_MUN && p.CODE_MUN !== "s.o.") lignes.push(["Code municipal", `<span class="code-mun">${esc(p.CODE_MUN)}</span> <small>(lieu du bureau)</small>`]);
+      if (p.NOM_CS && p.NOM_CS !== "s.o.") lignes.push(["Centre de services", esc(p.NOM_CS)]);
+      const rd = [p.NOM_REG, p.NOM_DIST].filter((x) => x && x !== "s.o.").join(" · ");
+      if (rd) lignes.push(["Région / district", esc(rd)]);
+      // Territoire desservi
+      const unite = p.NOM_UNIT;
+      if (p.CAT_UNIT === "Poste autoroutier") {
+        const aut = await charger("sq_autoroutier.geojson");
+        const tr = aut.features.filter((x) => x.properties.NOM_UNIT === unite);
+        if (tr.length) { const l = L.geoJSON({ type: "FeatureCollection", features: tr }, { style: { color: "#F2B33D", weight: 7, opacity: 0.9 } }).addTo(g); bornes.extend(l.getBounds()); }
+        lignes.push(["Territoire", tr.length ? `${tr.length} tronçon${tr.length > 1 ? "s" : ""} d'autoroute (en jaune)` : "—"]);
+      } else if (unite) {
+        const postes = await charger("sq_postes.geojson");
+        const terr = postes.features.filter((x) => x.properties.NOM_UNIT === unite);
+        if (terr.length) {
+          const l = L.geoJSON({ type: "FeatureCollection", features: terr }, { style }).addTo(g);
+          bornes.extend(l.getBounds());
+          const munis = idx.municipalites.filter((m) => m[5] && !/^TNO aquatique/.test(m[0]) && terr.some((t) => dansGeometrie(m[3], m[4], t.geometry))).map((m) => m[0]);
+          lignes.push(["Territoire", listeMunis(new Set(munis))]);
+        }
+      }
+    } else if (valeur.startsWith("c:")) {
+      const c = etat.corps.find((x) => x.nom === valeur.slice(2));
+      if (!c) return;
+      titre = c.nom;
+      lignes.push(["Corps de police", `<span class="etiquette-corps" style="--c:${couleurCorps(c)}">${esc(c.nom)}</span>${c.sigle ? ` <span class="ref">${esc(c.sigle)}</span>` : ""}`]);
+      lignes.push(["Type", c.type === "autochtone" ? "Corps de police autochtone" : "Corps de police municipal"]);
+      if (c.telephone) lignes.push(["Téléphone", `<span class="ref">${esc(c.telephone)}</span>`]);
+      if (c.notes) lignes.push(["Notes", esc(c.notes)]);
+      lignes.push(["Territoire", listeMunis(c.municipalites || [])]);
+      try {
+        const toutes = await charger("municipalites_hors_sq.geojson"); // évite les homonymes desservis par la SQ
+        const noms = new Set((c.municipalites || []).map(norm));
+        const fs = toutes.features.filter((x) => noms.has(norm(x.properties.nom)));
+        if (fs.length) { const l = L.geoJSON({ type: "FeatureCollection", features: fs }, { style }).addTo(g); bornes = l.getBounds(); }
+      } catch { /* limites pas encore générées */ }
+    }
+    if (bornes && bornes.isValid()) carte.fitBounds(bornes.pad(0.15), { maxZoom: 13 });
+    const f = $("#fiche-lieu");
+    f.innerHTML = `<button class="btn-icone fermer" aria-label="Fermer">✕</button>
+      <h4>${esc(titre)}</h4>
+      ${lignes.map(([a, b]) => `<div class="ligne-info"><span>${a}</span><span>${b}</span></div>`).join("")}`;
+    f.hidden = false;
+    $(".fermer", f).addEventListener("click", () => { f.hidden = true; g.clearLayers(); $("#choix-unite").value = ""; });
+  }
+  $("#choix-unite").addEventListener("change", (e) => afficherUnite(e.target.value));
 
   $("#form-km").addEventListener("submit", async (ev) => {
     ev.preventDefault();

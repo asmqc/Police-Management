@@ -343,3 +343,45 @@ a { color: var(--bleu); }
   .btn-compte .usager { display: none; }
   .fc-tete .avatar.grand { width: 72px; height: 72px; font-size: 1.6rem; }
 }
+
+/* Carte : menu des postes, codes municipaux, caméras */
+.km-choix { flex: 1 1 100%; min-width: 0; }
+.km-choix select { padding: 9px 10px; }
+.visuellement-cache { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.code-mun { font-family: var(--f-mono); font-weight: 600; font-size: 1.05rem; background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 4px; padding: 1px 6px; }
+.trait.limites { width: 16px; height: 0; border-top: 2px dashed var(--fg-doux); flex: none; }
+.pastille.cam { background: #2F7FE0; border-radius: 50%; border: 2px solid #fff; outline: 1px solid #2F7FE0; }
+.etiquette-mun { background: none; border: 0; }
+.etiquette-mun b, .etiquette-mun span { display: block; white-space: nowrap; text-align: center; transform: translateX(-50%); text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff; color: #142235; }
+.etiquette-mun b { font: 600 12px/1.1 var(--f-texte); }
+.etiquette-mun span { font: 600 11px/1.1 var(--f-mono); color: #8a5a00; }
+.icone-camera { background: #2F7FE0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 7h11v10H4zM15 10l5-3v10l-5-3' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 6px rgba(0,0,0,.35); }
+.popup-camera { display: grid; gap: 6px; }
+.popup-camera img { width: 100%; border-radius: 6px; background: var(--surface-2); min-height: 120px; }
+.popup-camera small { color: var(--fg-doux); }
+.fiche details summary { cursor: pointer; color: var(--bleu); }
+.liste-munis { margin: 6px 0 0; padding-left: 18px; max-height: 180px; overflow-y: auto; font-size: .88rem; }
+.fiche { max-height: calc(100% - 20px); overflow-y: auto; }
+
+/* Aide : installation */
+.aide-contenu { display: grid; gap: 16px; }
+.aide-intro { margin: 0; max-width: 65ch; color: var(--fg-doux); }
+.onglets-aide { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface-2); border-radius: 10px; padding: 4px; gap: 4px; }
+@media (max-width: 480px) { .onglets-aide { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.onglets-aide button { border: 0; background: transparent; padding: 10px 6px; border-radius: 7px; font-weight: 600; color: var(--fg-doux); }
+.onglets-aide button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.plateforme { display: grid; gap: 12px; }
+.navigateur { margin: 0; font-size: .9rem; color: var(--fg-doux); }
+.etapes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.etapes li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 14px; }
+.etapes .no { width: 34px; height: 34px; border-radius: 50%; background: var(--encre); color: var(--ambre-vif); display: grid; place-items: center; font: 700 1.1rem var(--f-titre); }
+.etapes b { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.etapes p { margin: 4px 0 0; color: var(--fg-doux); font-size: .92rem; }
+.etapes p b { display: inline; }
+.ico { width: 22px; height: 22px; display: inline-block; vertical-align: -5px; color: var(--bleu); background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 6px; padding: 2px; }
+.astuce { margin: 0; font-size: .9rem; color: var(--fg-doux); }
+.aide-faq p { margin: 6px 0 0; max-width: 65ch; }
+.installer-direct .btn-principal { margin: 0; width: 100%; }
+.lien-clair { color: #F2B33D; justify-self: center; text-align: center; }
+.titre-voile { font-size: 1.4rem; padding-right: 36px; }
+@media (min-width: 900px) { .app { grid-template-rows: var(--barre-h) 1fr; } }
