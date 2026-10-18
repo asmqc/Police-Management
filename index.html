@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610181935">
+  <link rel="stylesheet" href="styles.css?v=202610181937">
 </head>
 <body>
   <!-- Chargement -->
@@ -52,6 +52,12 @@
         <p class="aide">Remplissez la demande. L'administrateur vérifie chaque demande avant d'ouvrir l'accès.</p>
         <label for="dm-nom">Nom complet</label>
         <input id="dm-nom" type="text" autocomplete="name" required>
+        <label for="dm-grade">Grade</label>
+        <select id="dm-grade" required>
+          <option value="">Choisir…</option>
+          <optgroup label="Grades policiers"><option>Agent</option><option>Sergent</option><option>Sergent-enquêteur</option><option>Sergent-détective</option><option>Lieutenant</option><option>Lieutenant-détective</option><option>Capitaine</option><option>Commandant</option><option>Inspecteur</option><option>Inspecteur-chef</option><option>Directeur adjoint</option><option>Directeur</option></optgroup>
+          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Constable spécial</option><option>Contrôleur routier</option><option>Personnel civil</option><option>Autre</option></optgroup>
+        </select>
         <div class="rangee">
           <div>
             <label for="dm-matricule">Matricule</label>
@@ -501,6 +507,12 @@
         <form id="form-compte" class="formulaire" novalidate>
           <label for="mc-nom">Nom complet</label>
           <input id="mc-nom" type="text" autocomplete="name" required>
+          <label for="mc-grade">Grade</label>
+          <select id="mc-grade">
+          <option value="">Choisir…</option>
+          <optgroup label="Grades policiers"><option>Agent</option><option>Sergent</option><option>Sergent-enquêteur</option><option>Sergent-détective</option><option>Lieutenant</option><option>Lieutenant-détective</option><option>Capitaine</option><option>Commandant</option><option>Inspecteur</option><option>Inspecteur-chef</option><option>Directeur adjoint</option><option>Directeur</option></optgroup>
+          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Constable spécial</option><option>Contrôleur routier</option><option>Personnel civil</option><option>Autre</option></optgroup>
+        </select>
           <div class="rangee">
             <div>
               <label for="mc-matricule">Matricule</label>
@@ -605,9 +617,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610181935"></script>
+  <script src="config.js?v=202610181937"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610181935"></script>
+  <script src="app.js?v=202610181937"></script>
 </body>
 </html>

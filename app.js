@@ -84,7 +84,7 @@
 
   $("#form-demande").addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const champs = { nom: $("#dm-nom"), matricule: $("#dm-matricule"), corps: $("#dm-corps"), courriel: $("#dm-courriel"), mdp: $("#dm-mdp") };
+    const champs = { nom: $("#dm-nom"), grade: $("#dm-grade"), matricule: $("#dm-matricule"), corps: $("#dm-corps"), courriel: $("#dm-courriel"), mdp: $("#dm-mdp") };
     if ($("#dm-corps").value && !$("#dm-poste").value) { $("#dm-poste").focus(); return messageAuth("Choisissez votre unité ou votre poste dans la liste.", "erreur"); }
     if ($("#dm-poste").value === AUTRE && !$("#dm-unite").value.trim()) { $("#dm-unite").focus(); return messageAuth("Précisez votre unité ou votre poste.", "erreur"); }
     for (const [k, el] of Object.entries(champs)) {
@@ -102,6 +102,7 @@
         data: {
           nom_complet: champs.nom.value.trim(),
           matricule: champs.matricule.value.trim(),
+          grade: champs.grade.value,
           corps_police: champs.corps.value,
           unite: uniteChoisie(),
         },
@@ -282,7 +283,7 @@
         bloque: "L'accès à ce compte a été bloqué par l'administrateur.",
       }[st] || "Votre demande a été reçue. Vous aurez accès dès que l'administrateur l'aura approuvée.";
       $("#attente-details").innerHTML = p
-        ? `<dt>Nom</dt><dd>${esc(p.nom_complet || "—")}</dd><dt>Courriel</dt><dd>${esc(p.email)}</dd><dt>Matricule</dt><dd>${esc(p.matricule || "—")}</dd><dt>Corps</dt><dd>${esc(p.corps_police || "—")}</dd>`
+        ? `<dt>Nom</dt><dd>${esc(p.nom_complet || "—")}</dd><dt>Courriel</dt><dd>${esc(p.email)}</dd><dt>Grade</dt><dd>${esc(p.grade || "—")}</dd><dt>Matricule</dt><dd>${esc(p.matricule || "—")}</dd><dt>Corps</dt><dd>${esc(p.corps_police || "—")}</dd>`
         : "";
       montrer("#ecran-attente");
       if (manuel) toast(p && p.statut === "refuse" ? "Demande refusée" : "Toujours en attente");
@@ -368,7 +369,7 @@
     const prenom = (p.nom_complet || "").trim().split(/\s+/)[0] || "";
     $("#ac-bonjour").textContent = `${h >= 18 || h < 5 ? "Bonsoir" : "Bonjour"}${prenom ? ", " + prenom : ""}`;
     $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
-    $("#ac-unite").textContent = [p.corps_police, p.unite].filter(Boolean).join(" · ");
+    $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
     // Quart du jour
     const carte = $("#ac-quart");
@@ -421,17 +422,17 @@
 
   /* Partage de l'horaire */
   async function chargerPartages() {
-    const { data, error } = await sb.rpc("mes_partages");
+    const { data, error } = await sb.rpc("mes_partages_v2");
     if (error) return;
     hr.partages = data || [];
     const donnes = hr.partages.filter((x) => x.sens === "donne");
     const recus = hr.partages.filter((x) => x.sens === "recu");
     $("#hr-partages-donnes").innerHTML = donnes.length ? donnes.map((x) => `
-      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
       <button class="btn-danger petit" data-retirer="${x.id}">Retirer</button></li>`).join("")
       : `<li class="vide-petit">Votre horaire n'est partagé avec personne.</li>`;
     $("#hr-partages-recus").innerHTML = recus.length ? recus.map((x) => `
-      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
       <span class="fc-ligne"><button class="btn-secondaire petit" data-voir="${x.id}">Voir</button><button class="lien" data-quitter="${x.id}">Ne plus recevoir</button></span></li>`).join("")
       : `<li class="vide-petit">Personne ne vous a encore partagé son horaire.</li>`;
     const sel = $("#hr-qui");
@@ -696,7 +697,20 @@
   });
   $("#aide-fermer").addEventListener("click", () => ($("#aide-voile").hidden = true));
   $("#aide-voile").addEventListener("click", (e) => { if (e.target.id === "aide-voile") e.currentTarget.hidden = true; });
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+  // Mise à jour automatique : dès qu'une nouvelle version du site est publiée, l'app se recharge une fois
+  if ("serviceWorker" in navigator) {
+    const avaitControleur = !!navigator.serviceWorker.controller;
+    let recharge = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (avaitControleur && !recharge) { recharge = true; location.reload(); }
+    });
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        reg.update().catch(() => {});
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") reg.update().catch(() => {}); });
+      })
+      .catch(() => {});
+  }
 
   /* ---------------- Avatars ---------------- */
   const cacheAvatars = new Map();
@@ -743,7 +757,7 @@
   async function enregistrerProfil(avatar) {
     const p = etat.profil;
     const { error } = await sb.rpc("modifier_mon_profil", {
-      p_nom: $("#mc-nom").value, p_matricule: $("#mc-matricule").value, p_corps: $("#mc-corps").value,
+      p_nom: $("#mc-nom").value, p_matricule: $("#mc-matricule").value, p_grade: $("#mc-grade").value, p_corps: $("#mc-corps").value,
       p_unite: uniteChoisie("mc"), p_avatar: avatar === undefined ? p.avatar_path || "" : avatar,
     });
     if (error) throw error;
@@ -756,6 +770,9 @@
     $("#mc-courriel").textContent = p.email;
     $("#mc-nom").value = p.nom_complet || "";
     $("#mc-matricule").value = p.matricule || "";
+    const g = $("#mc-grade");
+    if (p.grade && ![...g.options].some((o) => o.value === p.grade)) g.insertAdjacentHTML("beforeend", `<option>${esc(p.grade)}</option>`);
+    g.value = p.grade || "";
     const corps = $("#mc-corps");
     corps.value = [...corps.options].some((o) => o.value === p.corps_police) ? p.corps_police : (p.corps_police ? "Autre" : "");
     await majChampPoste("mc");
@@ -1592,7 +1609,7 @@
   async function initAdmin() {
     if (!etat.profil || etat.profil.role !== "admin") return;
     const el = $("#admin-liste");
-    const { data, error } = await sb.rpc("admin_liste_comptes");
+    const { data, error } = await sb.rpc("admin_comptes");
     if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     comptesAdmin = data || [];
     const compte = (st) => comptesAdmin.filter((p) => p.statut === st).length;
@@ -1611,6 +1628,7 @@
             <h4>${esc(p.nom_complet || "(sans nom)")} ${p.role === "admin" ? '<span class="type SQ">admin</span>' : ""}</h4>
             <div class="meta">
               <span>${esc(p.email)}</span>
+              ${p.grade ? `<span>${esc(p.grade)}</span>` : ""}
               <span>Matricule <b>${esc(p.matricule || "—")}</b></span>
               <span>${esc(p.corps_police || "—")}${p.unite ? " · " + esc(p.unite) : ""}</span>
               <span>Demande : ${esc(dateFr(p.cree_le))}</span>
@@ -1678,6 +1696,7 @@
         </div>
       </div>
       <dl class="fc-donnees">
+        ${ligne("Grade", esc(p.grade || "—"))}
         ${ligne("Matricule", esc(p.matricule || "—"))}
         ${ligne("Corps de police", esc(p.corps_police || "—"))}
         ${ligne("Unité / poste", esc(p.unite || "—"))}
