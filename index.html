@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610181945">
+  <link rel="stylesheet" href="styles.css?v=202610182025">
 </head>
 <body>
   <!-- Chargement -->
@@ -350,6 +350,10 @@
           <h2>Messages <span class="beta">BÊTA</span></h2>
           <p class="ref" id="conv-resume"></p>
         </div>
+        <div class="notif-bloc compact" data-notif>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <button type="button" class="btn-ok petit notif-bouton">Activer</button>
+      </div>
         <div class="conv-nouvelle">
           <label for="conv-nouveau" class="visuellement-cache">Nouvelle conversation</label>
           <select id="conv-nouveau"><option value="">+ Nouvelle conversation…</option></select>
@@ -364,6 +368,10 @@
           <div class="chat-qui"><b id="chat-nom"></b><small id="chat-sous"></small></div>
           <span class="beta">BÊTA</span>
         </header>
+        <div class="chat-notif"><div class="notif-bloc compact" data-notif>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <button type="button" class="btn-ok petit notif-bouton">Activer</button>
+      </div></div>
         <div class="chat-fil" id="chat-fil" aria-live="polite"></div>
         <form class="chat-saisie" id="chat-form" autocomplete="off">
           <label for="chat-texte" class="visuellement-cache">Message</label>
@@ -519,6 +527,7 @@
 
         <div class="aide-faq">
           <h3 class="intertitre">Bon à savoir</h3>
+          <p><b>Notifications :</b> une fois l'app installée, activez-les dans Mon compte ou dans Messages. Sur iPhone, il faut iOS 16.4 ou plus récent et ouvrir l'app à partir de son icône sur l'écran d'accueil.</p>
           <p><b>Mises à jour :</b> l'app se met à jour toute seule, rien à télécharger.</p>
           <p><b>Connexion :</b> vous restez connecté. Si l'app vous le redemande, utilisez le même courriel et mot de passe.</p>
           <p><b>Désinstaller :</b> supprimez l'icône comme n'importe quelle autre application.</p>
@@ -582,6 +591,14 @@
           </select>
           <button type="submit" class="btn-principal">Enregistrer les modifications</button>
         </form>
+      </div>
+
+      <h3 class="intertitre">Notifications</h3>
+      <div class="panneau">
+      <div class="notif-bloc" data-notif>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <button type="button" class="btn-ok petit notif-bouton">Activer</button>
+      </div>
       </div>
 
       <h3 class="intertitre">Mot de passe</h3>
@@ -656,9 +673,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610181945"></script>
+  <script src="config.js?v=202610182025"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610181945"></script>
+  <script src="app.js?v=202610182025"></script>
 </body>
 </html>

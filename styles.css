@@ -596,3 +596,12 @@ a { color: var(--bleu); }
 .chat-saisie textarea { flex: 1; resize: none; border-radius: 20px; padding: 10px 14px; max-height: 140px; line-height: 1.35; }
 .chat-envoyer { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: #6A3FE0; color: #fff; display: grid; place-items: center; }
 .chat-envoyer:active { transform: scale(.95); }
+
+/* Notifications */
+.notif-bloc { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.notif-txt { flex: 1 1 200px; display: grid; gap: 2px; min-width: 0; }
+.notif-txt small { color: var(--fg-doux); font-size: .86rem; }
+.notif-bloc.compact { background: color-mix(in srgb, #7B4FC9 10%, var(--surface)); border: 1px solid color-mix(in srgb, #7B4FC9 35%, var(--ligne)); border-radius: var(--r); padding: 10px 12px; }
+.notif-bloc.compact b { font-size: .92rem; }
+.chat-notif:empty, .chat-notif:has(> [hidden]) { display: none; }
+.chat-notif { padding: 8px max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); background: var(--bg); }

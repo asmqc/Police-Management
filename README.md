@@ -52,6 +52,12 @@
 - Messages en direct (Supabase Realtime) et badge des messages non lus.
 - L'administrateur peut écrire à n'importe quel policier approuvé ; un policier peut seulement écrire à l'administrateur.
 
+### Notifications
+- Alerte sur le téléphone ou l'ordinateur à chaque nouveau message, même app fermée (Web Push).
+- L'administrateur est aussi averti de chaque nouvelle demande d'accès.
+- iPhone et iPad : iOS 16.4 ou plus récent, app ajoutée à l'écran d'accueil. Android, Windows et Mac : Chrome, Edge, Firefox ou Safari.
+- Activation par chaque utilisateur dans Mon compte ou Messages. Envoi par la fonction Supabase `notifier`, déclenchée par la base de données ; la clé privée est gardée dans Supabase Vault.
+
 ### Mon compte
 - Photo de profil, nom, matricule, corps de police et unité.
 - Changement de mot de passe.

@@ -298,6 +298,8 @@
     chargerCorps();
     compterMessages();
     ecouterMessages();
+    verifierAbonnement();
+    effacerPastille();
     if (p.role === "admin") compterAttente();
   }
 
@@ -317,10 +319,10 @@
     if (nom === "carte") initCarte();
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
-    if (nom === "compte") initCompte();
+    if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "messages") initMessages();
+    if (nom === "messages") { initMessages(); majBlocsNotif(); effacerPastille(); }
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
@@ -581,6 +583,92 @@
     afficherVue("messages");
     setTimeout(() => ouvrirConversation(id, true), 50);
   }
+
+  /* ---------------- Notifications (Web Push) ---------------- */
+  const pushPossible = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const estIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+  const estInstallee = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  function cleVapid() {
+    const b = C.vapidPublic.replace(/-/g, "+").replace(/_/g, "/");
+    const brut = atob(b + "=".repeat((4 - (b.length % 4)) % 4));
+    return Uint8Array.from(brut, (c) => c.charCodeAt(0));
+  }
+  async function abonnementActuel() {
+    if (!pushPossible()) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return reg.pushManager.getSubscription();
+  }
+  async function enregistrerAbonnement(abo) {
+    const j = abo.toJSON();
+    const { error } = await sb.from("push_abonnements").upsert({
+      user_id: etat.profil.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth,
+      appareil: navigator.userAgent.slice(0, 200),
+    }, { onConflict: "endpoint" });
+    if (error) throw error;
+  }
+  async function majBlocsNotif() {
+    const blocs = $$("[data-notif]");
+    let etatTxt, libelle, actif = false, desactive = false;
+    if (!pushPossible()) {
+      if (estIOS() && !estInstallee()) { etatTxt = "Sur iPhone, ajoutez d'abord l'app à l'écran d'accueil (tuile App de l'accueil), puis ouvrez-la à partir de son icône."; libelle = "Comment faire"; }
+      else { etatTxt = "Ce navigateur ne permet pas les notifications."; libelle = "Non offert"; desactive = true; }
+    } else if (Notification.permission === "denied") {
+      etatTxt = "Notifications bloquées. Autorisez-les dans les réglages du navigateur ou du téléphone pour ce site."; libelle = "Bloquées"; desactive = true;
+    } else {
+      const abo = await abonnementActuel().catch(() => null);
+      actif = !!abo && Notification.permission === "granted";
+      etatTxt = actif ? "Activées sur cet appareil." : "Recevez une alerte pour chaque nouveau message, même app fermée.";
+      libelle = actif ? "Désactiver" : "Activer";
+    }
+    blocs.forEach((b) => {
+      $(".notif-etat", b).textContent = etatTxt;
+      const btn = $(".notif-bouton", b);
+      btn.textContent = libelle;
+      btn.disabled = desactive;
+      btn.classList.toggle("btn-ok", !actif && !desactive);
+      btn.classList.toggle("btn-secondaire", actif || desactive);
+      b.classList.toggle("actif", actif);
+      b.hidden = b.classList.contains("compact") && actif; // dans Messages, on cache le rappel une fois activé
+    });
+  }
+  async function basculerNotifications() {
+    if (!pushPossible()) {
+      if (estIOS() && !estInstallee()) afficherVue("aide");
+      return;
+    }
+    try {
+      const abo = await abonnementActuel();
+      if (abo && Notification.permission === "granted") {
+        await sb.from("push_abonnements").delete().eq("endpoint", abo.endpoint);
+        await abo.unsubscribe();
+        toast("Notifications désactivées sur cet appareil");
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") { toast("Notifications non autorisées"); return majBlocsNotif(); }
+        const reg = await navigator.serviceWorker.ready;
+        const nouvel = abo || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleVapid() });
+        await enregistrerAbonnement(nouvel);
+        toast("Notifications activées");
+      }
+    } catch (e) { toast(traduireErreur(e)); }
+    majBlocsNotif();
+  }
+  $$("[data-notif] .notif-bouton").forEach((b) => b.addEventListener("click", basculerNotifications));
+  // À chaque connexion, on s'assure que l'appareil déjà autorisé est bien enregistré
+  async function verifierAbonnement() {
+    try {
+      if (!pushPossible() || Notification.permission !== "granted") return majBlocsNotif();
+      const abo = await abonnementActuel();
+      if (abo) await enregistrerAbonnement(abo);
+    } catch { /* sans gravité */ }
+    majBlocsNotif();
+  }
+  // Clic sur une notification alors que l'app est déjà ouverte
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => {
+    const cible = e.data && e.data.aller && e.data.aller.replace("#", "");
+    if (cible && etat.profil && etat.profil.statut === "approuve") afficherVue(cible === "admin" && !estAdmin() ? "accueil" : cible);
+  });
+  const effacerPastille = () => { if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {}); };
 
   /* ---------------- Accueil ---------------- */
   async function initAccueil() {
