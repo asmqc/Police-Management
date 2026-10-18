@@ -75,7 +75,8 @@ def tuile(lat1, lon1, lat2, lon2, prof=0):
     for essai in range(3):
         try:
             req = urllib.request.Request(SOURCES["reperes"] + bbox, headers=UA)
-            lot = json.loads(urllib.request.urlopen(req, timeout=600).read()).get("features", [])
+            brut = urllib.request.urlopen(req, timeout=600).read().strip()
+            lot = json.loads(brut).get("features", []) if brut else []
             break
         except Exception as e:
             print("échec tuile", lat1, lon1, e)
