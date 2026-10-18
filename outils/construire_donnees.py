@@ -166,6 +166,12 @@ for nom_source, fonction in (("SDA", municipalites_sda), ("REST MRNF", municipal
 json.dump(diag, open(f"{DIAG}/diagnostic.json", "w"), ensure_ascii=False, indent=1, default=str)
 if mun is None:
     raise SystemExit("Aucune source de municipalités disponible")
+from shapely.validation import make_valid
+mun = mun[mun.geometry.notna()].copy()
+mun["geometry"] = mun.geometry.apply(make_valid)
+diag["mun_champs"] = list(mun.columns)
+diag["mun_exemple"] = mun.drop(columns="geometry").head(3).astype(str).to_dict("records")
+json.dump(diag, open(f"{DIAG}/diagnostic.json", "w"), ensure_ascii=False, indent=1, default=str)
 diag["sda_champs"] = list(mun.columns)
 diag["sda_exemple"] = mun.drop(columns="geometry").head(3).astype(str).to_dict("records")
 
@@ -209,7 +215,12 @@ if col_des:
     hors = hors.rename(columns={col_des: "designation"})
 else:
     hors["designation"] = ""
-hors = hors.dissolve(by=["code", "nom", "mrc", "designation"], as_index=False)
+for c in ("code", "nom", "mrc", "designation"):
+    hors[c] = hors[c].fillna("").astype(str)
+try:
+    hors = hors.dissolve(by=["code", "nom", "mrc", "designation"], as_index=False)
+except Exception as e:
+    print("fusion ignorée :", e)
 ecrire(hors, "municipalites_hors_sq", 0.0008, ["code", "nom", "mrc", "designation"])
 diag["municipalites_hors_sq_liste"] = sorted(
     (f"{r['nom']} ({r['designation']}, {r['mrc']}) [{r['code']}]" for _, r in hors.iterrows()))
