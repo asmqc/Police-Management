@@ -51,30 +51,25 @@
         <p class="aide">Remplissez la demande. L'administrateur vérifie chaque demande avant d'ouvrir l'accès.</p>
         <label for="dm-nom">Nom complet</label>
         <input id="dm-nom" type="text" autocomplete="name" required>
-        <div class="rangee">
-          <div>
-            <label for="dm-matricule">Matricule</label>
-            <input id="dm-matricule" type="text" inputmode="numeric" required>
-          </div>
-          <div>
-            <label for="dm-unite">Unité / poste</label>
-            <input id="dm-unite" type="text" placeholder="Ex. Poste MRC de Joliette">
-          </div>
-        </div>
+        <label for="dm-matricule">Matricule</label>
+        <input id="dm-matricule" type="text" inputmode="numeric" required>
         <label for="dm-corps">Corps de police</label>
         <select id="dm-corps" required>
           <option value="">Choisir…</option>
           <option>Sûreté du Québec</option>
-          <option>Service de police de la Ville de Montréal</option>
-          <option>Service de police de la Ville de Québec</option>
-          <option>Service de police de Laval</option>
-          <option>Service de police de l'agglomération de Longueuil</option>
-          <option>Service de police de la Ville de Gatineau</option>
-          <option>Autre corps de police municipal</option>
-          <option>Corps de police autochtone</option>
           <option>Contrôle routier Québec</option>
           <option>Autre</option>
         </select>
+        <div id="bloc-poste" class="bloc-champ" hidden>
+          <label for="dm-poste">Poste ou unité</label>
+          <select id="dm-poste">
+            <option value="">Choisir votre poste…</option>
+          </select>
+        </div>
+        <div id="bloc-unite" class="bloc-champ" hidden>
+          <label for="dm-unite" id="dm-unite-label">Unité / poste</label>
+          <input id="dm-unite" type="text" placeholder="Ex. Patrouille, Enquêtes, Poste de quartier 21">
+        </div>
         <label for="dm-courriel">Courriel professionnel</label>
         <input id="dm-courriel" type="email" autocomplete="email" required>
         <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>

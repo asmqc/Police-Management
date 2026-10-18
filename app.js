@@ -83,6 +83,8 @@
   $("#form-demande").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const champs = { nom: $("#dm-nom"), matricule: $("#dm-matricule"), corps: $("#dm-corps"), courriel: $("#dm-courriel"), mdp: $("#dm-mdp") };
+    if (!$("#bloc-poste").hidden && !$("#dm-poste").value) { $("#dm-poste").focus(); return messageAuth("Choisissez votre poste dans la liste.", "erreur"); }
+    if ($("#dm-poste").value === "__autre" && !$("#dm-unite").value.trim()) { $("#dm-unite").focus(); return messageAuth("Précisez votre unité.", "erreur"); }
     for (const [k, el] of Object.entries(champs)) {
       if (!el.value.trim()) { el.focus(); return messageAuth("Remplissez tous les champs obligatoires.", "erreur"); }
       if (k === "courriel" && !el.checkValidity()) { el.focus(); return messageAuth("Le courriel n'est pas valide.", "erreur"); }
@@ -99,7 +101,7 @@
           nom_complet: champs.nom.value.trim(),
           matricule: champs.matricule.value.trim(),
           corps_police: champs.corps.value,
-          unite: $("#dm-unite").value.trim(),
+          unite: uniteChoisie(),
         },
       },
     });
@@ -109,6 +111,7 @@
       return messageAuth("Ce courriel a déjà une demande. Utilisez « Connexion ».", "erreur");
     }
     $("#form-demande").reset();
+    majChampPoste();
     ongletAuth("connexion");
     messageAuth(
       data.session
@@ -117,6 +120,61 @@
       "ok"
     );
   });
+
+  /* Listes déroulantes du formulaire d'inscription */
+  const SQ = "Sûreté du Québec";
+  async function remplirCorpsInscription() {
+    const sel = $("#dm-corps");
+    let liste = [];
+    try {
+      const { data, error } = await sb.rpc("liste_corps_police");
+      if (error) throw error;
+      liste = data || [];
+    } catch { return; } // on garde les choix de base
+    const groupes = { municipal: "Corps de police municipaux", autochtone: "Corps de police autochtones" };
+    let html = `<option value="">Choisir…</option><option>${SQ}</option>`;
+    for (const [type, titre] of Object.entries(groupes)) {
+      const noms = liste.filter((c) => c.type === type).map((c) => c.nom);
+      if (noms.length) html += `<optgroup label="${esc(titre)}">${noms.map((n) => `<option>${esc(n)}</option>`).join("")}</optgroup>`;
+    }
+    html += `<optgroup label="Autres"><option>Contrôle routier Québec</option><option>GRC</option><option>Autre</option></optgroup>`;
+    const avant = sel.value;
+    sel.innerHTML = html;
+    sel.value = avant;
+  }
+
+  let postesSQ;
+  async function remplirPostesSQ() {
+    if (postesSQ) return;
+    postesSQ = true;
+    const parRegion = {};
+    try {
+      const [postes, aut] = await Promise.all([charger("sq_postes.geojson"), charger("sq_autoroutier.geojson")]);
+      for (const f of postes.features) (parRegion[f.properties.NOM_REG] ||= new Set()).add(f.properties.NOM_UNIT);
+      for (const f of aut.features) (parRegion["Postes autoroutiers"] ||= new Set()).add(f.properties.NOM_UNIT);
+    } catch { postesSQ = false; }
+    const regions = Object.keys(parRegion).filter((r) => r && r !== "s.o.").sort((a, b) => (a === "Postes autoroutiers") - (b === "Postes autoroutiers") || a.localeCompare(b, "fr"));
+    $("#dm-poste").innerHTML = `<option value="">Choisir votre poste…</option>` +
+      regions.map((r) => `<optgroup label="${esc(r)}">${[...parRegion[r]].sort((a, b) => a.localeCompare(b, "fr")).map((u) => `<option>${esc(u)}</option>`).join("")}</optgroup>`).join("") +
+      `<optgroup label="Autres unités"><option>Grand quartier général (Montréal)</option><option>Quartier général de district</option><option value="__autre">Autre unité (préciser)</option></optgroup>`;
+  }
+
+  function majChampPoste() {
+    const corps = $("#dm-corps").value;
+    const estSQ = corps === SQ;
+    $("#bloc-poste").hidden = !estSQ;
+    const autre = estSQ && $("#dm-poste").value === "__autre";
+    $("#bloc-unite").hidden = !corps || (estSQ && !autre);
+    $("#dm-unite-label").textContent = autre ? "Précisez votre unité" : "Unité / poste (facultatif)";
+    if (estSQ) remplirPostesSQ();
+  }
+  function uniteChoisie() {
+    if ($("#dm-corps").value === SQ && $("#dm-poste").value && $("#dm-poste").value !== "__autre") return $("#dm-poste").value;
+    return $("#dm-unite").value.trim();
+  }
+  $("#dm-corps").addEventListener("change", majChampPoste);
+  $("#dm-poste").addEventListener("change", majChampPoste);
+  remplirCorpsInscription();
 
   function formNouveauMdp() {
     montrer("#ecran-auth");

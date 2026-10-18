@@ -91,6 +91,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--focus); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
 .rangee { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rangee > div { display: grid; gap: 6px; min-width: 0; }
+.bloc-champ { display: grid; gap: 6px; }
 .aide { color: var(--fg-doux); font-size: .9rem; margin: 0; }
 
 .btn-principal, .btn-secondaire, .btn-danger {
