@@ -17,8 +17,15 @@
 
 ## Fonctionnalités
 
+### Accueil
+- Salutation avec la photo de profil, le corps de police et l'unité.
+- Quart du jour et du lendemain, tirés de l'horaire rotatif.
+- Raccourcis vers chaque outil : article du CSR, table des vitesses, borne kilométrique, « Où suis-je ? », territoires, horaire, compte, installation.
+- Pour l'administrateur : nombre de demandes d'accès en attente.
+
 ### Code de la sécurité routière (CSR)
 - Les 1 225 articles du RLRQ, c. C-24.2.
+- **Table des vitesses** : calculateur (amende, frais, contribution, réclamation totale, points d'inaptitude, grand excès, zones de travaux et scolaires) et table complète par tranche de 5 km/h.
 - Recherche par numéro (ex. `443.1`) ou par mots-clés (ex. `cellulaire`), avec raccourcis pour les recherches fréquentes.
 - Lien direct vers le texte officiel de chaque article sur LégisQuébec.
 
@@ -53,7 +60,7 @@
 - Suppression définitive d'un compte (données et photo effacées de Supabase).
 
 ### Installation comme une application
-L'onglet **Aide** explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
+La tuile **Installer l'app** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
 
 ---
 

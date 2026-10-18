@@ -293,7 +293,7 @@
     $("#nav-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["csr", "carte", "corps", "horaire", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "csr");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "compte", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
     if (p.role === "admin") compterAttente();
   }
@@ -316,6 +316,7 @@
     if (nom === "admin") initAdmin();
     if (nom === "compte") initCompte();
     if (nom === "horaire") initHoraire();
+    if (nom === "accueil") initAccueil();
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
@@ -350,6 +351,60 @@
     return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e };
   }
   const heuresDe = (code, src = affichee()) => { const h = (src.config && src.config.heures && src.config.heures[code]) || HEURES_DEFAUT[code]; return h ? `${h[0]} – ${h[1]}` : ""; };
+
+  async function chargerMonHoraire() {
+    if (hr.chargé) return;
+    const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", etat.profil.id).maybeSingle();
+    if (error) throw error;
+    hr.config = data && data.config && data.config.cycle ? data.config : null;
+    hr.exceptions = (data && data.exceptions) || {};
+    hr.chargé = true;
+  }
+
+  /* ---------------- Accueil ---------------- */
+  async function initAccueil() {
+    const p = etat.profil;
+    const h = new Date().getHours();
+    const prenom = (p.nom_complet || "").trim().split(/\s+/)[0] || "";
+    $("#ac-bonjour").textContent = `${h >= 18 || h < 5 ? "Bonsoir" : "Bonjour"}${prenom ? ", " + prenom : ""}`;
+    $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+    $("#ac-unite").textContent = [p.corps_police, p.unite].filter(Boolean).join(" · ");
+    remplirAvatar($("#ac-avatar"), p);
+    // Quart du jour
+    const carte = $("#ac-quart");
+    try {
+      await chargerMonHoraire();
+      if (!hr.config) {
+        carte.innerHTML = `<span class="pastille-q q q-C">?</span><span><small>Mon horaire</small><strong>Configurer ma rotation</strong><em>Votre quart du jour s'affichera ici</em></span>`;
+      } else {
+        const auj = aujourdhuiISO(), q = quartDu(auj, hr);
+        const demain = quartDu(isoDe(jourUTC(auj) + 1), hr);
+        const travail = ["J", "S", "N"].includes(q.code);
+        carte.innerHTML = `<span class="pastille-q q q-${esc(q.code || "C")}">${esc(q.code || "–")}</span>
+          <span><small>Aujourd'hui</small><strong>${esc(q.code ? QUARTS[q.code].nom : "—")}${travail && heuresDe(q.code, hr) ? ` <span class="heures">${esc(heuresDe(q.code, hr))}</span>` : ""}</strong>
+          <em>Demain : ${esc(demain.code ? QUARTS[demain.code].nom : "—")}${q.note ? " · " + esc(q.note) : ""}</em></span>`;
+      }
+    } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
+    // Demandes en attente (admin)
+    const ad = $("#ac-admin");
+    if (p.role === "admin") {
+      const { count } = await sb.from("profiles").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
+      ad.hidden = false;
+      ad.innerHTML = count
+        ? `<b>${count}</b><span>demande${count > 1 ? "s" : ""} d'accès en attente</span><i>Voir ›</i>`
+        : `<b class="zero">0</b><span>Aucune demande en attente</span><i>Admin ›</i>`;
+      ad.classList.toggle("urgent", !!count);
+    }
+  }
+
+  function allerA(cible) {
+    if (cible === "vitesse") { afficherVue("csr"); $("[data-csr-onglet='vitesse']").click(); return; }
+    if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
+    afficherVue(cible);
+    const champ = { csr: "#csr-q", carte: "#km-route", corps: "#corps-q" }[cible];
+    if (champ) setTimeout(() => $(champ).focus(), 150);
+  }
+  $$("[data-aller]").forEach((b) => b.addEventListener("click", () => allerA(b.dataset.aller)));
 
   async function initHoraire() {
     if (!hr.chargé) {

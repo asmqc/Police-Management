@@ -499,3 +499,38 @@ a { color: var(--bleu); }
 .table-vitesse tr.choisie td { background: color-mix(in srgb, var(--ambre-vif) 30%, transparent); }
 .vitesse-source { font-size: .8rem; }
 @media (max-width: 520px) { .table-vitesse .opt { display: none; } }
+
+/* Accueil */
+.accueil-tete { display: flex; align-items: center; gap: 16px; }
+.accueil-tete .avatar.grand { width: 72px; height: 72px; font-size: 1.6rem; }
+.accueil-tete h2 { font-size: 1.9rem; font-weight: 700; }
+.accueil-tete .ref { margin: 0 0 2px; text-transform: capitalize; }
+.ac-sous { margin: 2px 0 0; color: var(--fg-doux); font-size: .9rem; }
+.ac-quart { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; text-align: left; border: 0; background: var(--encre); color: #E8EEF6; border-radius: var(--r); padding: 16px 18px; width: 100%; }
+.ac-quart .pastille-q { width: 60px; height: 60px; border-radius: 14px; display: grid; place-items: center; font: 700 1.8rem var(--f-titre); }
+.ac-quart > span:last-child { display: grid; gap: 2px; min-width: 0; }
+.ac-quart small { color: #9FB0C6; text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+.ac-quart strong { font: 700 1.45rem/1.15 var(--f-titre); }
+.ac-quart .heures { font-family: var(--f-mono); font-size: 1rem; color: #F2B33D; font-weight: 600; }
+.ac-quart em { font-style: normal; color: #C9D4E3; font-size: .9rem; }
+.ac-admin { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 12px 16px; }
+.ac-admin b { font: 700 1.6rem var(--f-titre); color: var(--fg-doux); min-width: 28px; text-align: center; }
+.ac-admin span { flex: 1; font-weight: 600; }
+.ac-admin i { font-style: normal; color: var(--bleu); font-weight: 600; }
+.ac-admin.urgent { border-color: var(--rouge); background: color-mix(in srgb, var(--rouge) 8%, var(--surface)); }
+.ac-admin.urgent b { color: var(--rouge); }
+.tuiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 700px) { .tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tuile { display: grid; gap: 10px; align-content: start; text-align: left; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 14px; min-height: 118px; transition: border-color .15s, transform .15s; }
+.tuile:hover { border-color: var(--ambre); }
+.tuile:active { transform: scale(.98); }
+.tuile-ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--fg); }
+.tuile-ico svg { width: 22px; height: 22px; }
+.tuile-txt { display: grid; gap: 2px; }
+.tuile-txt b { font-size: .98rem; line-height: 1.2; }
+.tuile-txt small { color: var(--fg-doux); font-size: .8rem; line-height: 1.3; }
+.tuile[data-aller="csr"] .tuile-ico, .tuile[data-aller="vitesse"] .tuile-ico { background: color-mix(in srgb, var(--ambre-vif) 25%, var(--surface)); }
+.tuile[data-aller="carte"] .tuile-ico, .tuile[data-aller="position"] .tuile-ico { background: color-mix(in srgb, var(--vert) 20%, var(--surface)); }
+.tuile[data-aller="corps"] .tuile-ico { background: color-mix(in srgb, var(--bleu) 20%, var(--surface)); }
+.tuile[data-aller="horaire"] .tuile-ico { background: color-mix(in srgb, #7B4FC9 22%, var(--surface)); }
+.pied-accueil { margin: 6px 0 0; color: var(--fg-doux); font-size: .78rem; text-align: center; }
