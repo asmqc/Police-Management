@@ -605,3 +605,13 @@ a { color: var(--bleu); }
 .notif-bloc.compact b { font-size: .92rem; }
 .chat-notif:empty, .chat-notif:has(> [hidden]) { display: none; }
 .chat-notif { padding: 8px max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); background: var(--bg); }
+
+/* Comportement d'application (pas de zoom ni de sélection accidentelle, sauf sur la carte et les textes à lire) */
+html, body { touch-action: pan-x pan-y; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+button, a, .nav, .tuile, .conv { touch-action: manipulation; }
+input, select, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; font-size: 16px; }
+.article .texte, .bulle-txt, .msg-texte, .fiche, .fc-donnees, .vt-detail, .table-vitesse, .ref, .code-mun, .liste-munis, .reponse { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+#carte, .leaflet-container { touch-action: none; }
+.vue { overscroll-behavior: contain; }
+img { -webkit-user-drag: none; }

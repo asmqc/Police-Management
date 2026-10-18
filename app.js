@@ -15,6 +15,19 @@
 
   const etat = { session: null, profil: null, vue: "csr", csr: null, corps: [], donnees: {}, carte: null };
 
+  // Pas de zoom (pincement ou double toucher) ailleurs que sur la carte
+  const surCarte = (e) => e.target && e.target.closest && e.target.closest("#carte");
+  ["gesturestart", "gesturechange", "gestureend"].forEach((t) => document.addEventListener(t, (e) => { if (!surCarte(e)) e.preventDefault(); }, { passive: false }));
+  document.addEventListener("touchmove", (e) => { if (e.touches.length > 1 && !surCarte(e)) e.preventDefault(); }, { passive: false });
+  let dernierToucher = 0;
+  document.addEventListener("touchend", (e) => {
+    const t = Date.now();
+    // Les boutons et champs gardent les touchers rapides (ex. changer plusieurs cases d'horaire) : seul le zoom est bloqué
+    if (t - dernierToucher < 320 && !surCarte(e) && !(e.target.closest && e.target.closest("button, a, input, textarea, select, label, summary"))) e.preventDefault();
+    dernierToucher = t;
+  }, { passive: false });
+  document.addEventListener("dblclick", (e) => { if (!surCarte(e)) e.preventDefault(); }, { passive: false });
+
   /* ---------------- Utilitaires d'interface ---------------- */
   let toastMinuteur;
   function toast(msg) {
