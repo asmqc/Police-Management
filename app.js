@@ -299,7 +299,6 @@
     compterMessages();
     ecouterMessages();
     verifierAbonnement();
-    effacerPastille();
     if (p.role === "admin") compterAttente();
   }
 
@@ -322,7 +321,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "messages") { initMessages(); majBlocsNotif(); effacerPastille(); }
+    if (nom === "messages") { initMessages(); majBlocsNotif(); }
   }
   $("#btn-compte").addEventListener("click", () => afficherVue("compte"));
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
@@ -420,6 +419,7 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible" || !etat.profil || etat.profil.statut !== "approuve") return;
     compterMessages();
+    if (estAdmin()) compterAttente();
     if (etat.vue === "messages" && msg.autre && !$("#chat-vue").hidden) ouvrirConversation(msg.autre.id, false);
   });
 
@@ -671,15 +671,16 @@
     if (cible && etat.profil && etat.profil.statut === "approuve") afficherVue(cible === "admin" && !estAdmin() ? "accueil" : cible);
   });
   // Pastille sur l'icône de l'app : messages non lus + demandes en attente (admin)
-  const compteurs = { messages: 0, demandes: 0 };
+  // On attend d'avoir les deux chiffres avant de toucher à la pastille, pour ne jamais l'effacer par erreur
+  const compteurs = { messages: null, demandes: null };
   function majPastille() {
+    if (compteurs.messages === null || (estAdmin() && compteurs.demandes === null)) return;
     const total = compteurs.messages + (estAdmin() ? compteurs.demandes : 0);
     try {
       if (total > 0 && navigator.setAppBadge) navigator.setAppBadge(total).catch(() => {});
       else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
     } catch { /* non offert sur cet appareil */ }
   }
-  const effacerPastille = majPastille;
 
   /* ---------------- Accueil ---------------- */
   async function initAccueil() {
