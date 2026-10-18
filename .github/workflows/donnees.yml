@@ -1,0 +1,41 @@
+name: Mettre à jour les données de la carte
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 3 * *"   # le 3 de chaque mois
+permissions:
+  contents: write
+concurrency: donnees
+jobs:
+  donnees:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q geopandas pyogrio fiona
+      - run: python outils/construire_donnees.py
+      - name: Page du CSR (échantillon pour l'analyse)
+        continue-on-error: true
+        run: |
+          mkdir -p exploration
+          curl -sSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" \
+            -H "Accept-Language: fr-CA,fr" --retry 3 -o exploration/csr_complet.html \
+            "https://www.legisquebec.gouv.qc.ca/fr/document/lc/C-24.2" -w "%{http_code} %{size_download}\n" > exploration/csr_statut.txt 2>&1 || true
+          cat exploration/csr_statut.txt
+          head -c 400000 exploration/csr_complet.html > exploration/csr_debut.html || true
+          rm -f exploration/csr_complet.html
+      - name: Enregistrer
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/
+          git commit -qm "Données de la carte mises à jour" || echo "Aucun changement"
+          git push origin HEAD:main
+          git checkout --orphan exploration
+          git rm -rfq --cached .
+          git add exploration/
+          git commit -qm "Diagnostic"
+          git push -f origin exploration
