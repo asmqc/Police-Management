@@ -138,7 +138,9 @@ def municipalites_rest():
 def municipalites_statcan():
     z = telecharger("statcan", essais=2, delai=600)
     g = gpd.read_file("zip://" + z)
-    g = g[g["PRUID"].astype(str) == "24"].to_crs(4326)
+    diag["statcan_colonnes"] = list(g.columns)
+    col_pr = "PRIDU" if "PRIDU" in g else "PRUID"
+    g = g[g[col_pr].astype(str) == "24"].to_crs(4326)
     g["MUS_CO_GEO"] = g["SDRIDU"].astype(str).str[2:] if "SDRIDU" in g else g["CSDUID"].astype(str).str[2:]
     g["MUS_NM_MUN"] = g["SDRNOM"] if "SDRNOM" in g else g["CSDNAME"]
     g["MUS_CO_DES"] = g["SDRGENRE"] if "SDRGENRE" in g else g.get("CSDTYPE", "")
@@ -146,7 +148,7 @@ def municipalites_statcan():
 
 
 mun = None
-for nom_source, fonction in (("SDA", municipalites_sda), ("REST MRNF", municipalites_rest), ("Statistique Canada", municipalites_statcan)):
+for nom_source, fonction in (("SDA", municipalites_sda), ("Statistique Canada", municipalites_statcan)):
     try:
         mun = fonction()
         diag["source_municipalites"] = nom_source
@@ -154,6 +156,7 @@ for nom_source, fonction in (("SDA", municipalites_sda), ("REST MRNF", municipal
         break
     except BaseException as e:
         print("source municipalités indisponible :", nom_source, repr(e)[:200])
+json.dump(diag, open(f"{DIAG}/diagnostic.json", "w"), ensure_ascii=False, indent=1, default=str)
 if mun is None:
     raise SystemExit("Aucune source de municipalités disponible")
 diag["sda_champs"] = list(mun.columns)

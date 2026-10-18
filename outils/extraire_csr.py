@@ -20,6 +20,9 @@ def propre(t):
     t = re.sub(r"\( ", "(", t)
     t = re.sub(r" \)", ")", t)
     t = re.sub(r" ([,.;:])", r"\1", t)
+    t = re.sub(r"(\d) °", r"\1°", t)
+    t = re.sub(r"(— )+—", "—", t)
+    t = re.sub(r"\. —", ". —", t)
     return re.sub(r"\n{2,}", "\n", t).strip()
 
 
