@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610182338">
+  <link rel="stylesheet" href="styles.css?v=202610182345">
 </head>
 <body>
   <!-- Chargement -->
@@ -468,9 +468,14 @@
       </div>
 
       <div id="hr-partage" class="hr-partage" hidden>
-        <h3 class="intertitre">Partager mon horaire</h3>
+        <h3 class="intertitre" id="hr-poste-titre">Mon poste</h3>
+        <div class="panneau">
+          <p class="aide">Les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité). Seule la rotation est visible : vos vacances, congés personnels et notes restent privés.</p>
+          <ul class="liste-partages" id="hr-poste-liste"></ul>
+        </div>
+        <h3 class="intertitre">Partager avec un autre poste</h3>
         <form id="hr-form-partage" class="panneau" novalidate>
-          <p class="aide">Votre collègue doit avoir un compte approuvé sur Police Management. Il verra votre horaire en lecture seule, avec vos notes. Vous pouvez retirer le partage quand vous voulez.</p>
+          <p class="aide">Pour un collègue d'un autre poste. Il doit avoir un compte approuvé. Il verra seulement votre rotation (jours, soirs, nuits, congés de rotation), jamais vos vacances, maladies, cours, formations ni vos notes.</p>
           <div class="fc-ligne">
             <input id="hr-partage-courriel" type="email" placeholder="Courriel du collègue" autocomplete="off" aria-label="Courriel du collègue">
             <button type="submit" class="btn-ok">Partager</button>
@@ -735,9 +740,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610182338"></script>
+  <script src="config.js?v=202610182345"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610182338"></script>
+  <script src="app.js?v=202610182345"></script>
 </body>
 </html>

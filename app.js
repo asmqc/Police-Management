@@ -805,9 +805,18 @@
 
   /* Partage de l'horaire */
   async function chargerPartages() {
-    const { data, error } = await sb.rpc("mes_partages_v2");
+    const [{ data, error }, poste] = await Promise.all([sb.rpc("mes_partages_v2"), sb.rpc("collegues_poste")]);
     if (error) return;
     hr.partages = data || [];
+    hr.poste = (poste && poste.data) || [];
+    const p = etat.profil;
+    $("#hr-poste-titre").textContent = p.unite ? `Mon poste · ${p.unite}` : "Mon poste";
+    $("#hr-poste-liste").innerHTML = !p.unite
+      ? `<li class="vide-petit">Indiquez votre unité ou votre poste dans Mon compte pour voir les rotations de vos collègues.</li>`
+      : hr.poste.length ? hr.poste.map((x) => `
+      <li><span><b>${esc(x.nom)}</b><small>${esc(x.grade || "")}${x.a_rotation ? "" : (x.grade ? " · " : "") + "rotation pas encore configurée"}</small></span>
+      ${x.a_rotation ? `<button class="btn-secondaire petit" data-voir="${x.id}">Voir</button>` : ""}</li>`).join("")
+      : `<li class="vide-petit">Aucun autre membre de votre poste n'utilise encore l'app.</li>`;
     const donnes = hr.partages.filter((x) => x.sens === "donne");
     const recus = hr.partages.filter((x) => x.sens === "recu");
     $("#hr-partages-donnes").innerHTML = donnes.length ? donnes.map((x) => `
@@ -819,9 +828,13 @@
       <span class="fc-ligne"><button class="btn-secondaire petit" data-voir="${x.id}">Voir</button><button class="lien" data-quitter="${x.id}">Ne plus recevoir</button></span></li>`).join("")
       : `<li class="vide-petit">Personne ne vous a encore partagé son horaire.</li>`;
     const sel = $("#hr-qui");
-    sel.innerHTML = `<option value="">Mon horaire</option>` + recus.map((x) => `<option value="${x.id}">${esc(x.nom || x.email)}</option>`).join("");
+    const duPoste = hr.poste.filter((x) => x.a_rotation);
+    const autres = recus.filter((x) => !duPoste.some((y) => y.id === x.id));
+    sel.innerHTML = `<option value="">Mon horaire</option>` +
+      (duPoste.length ? `<optgroup label="Mon poste">${duPoste.map((x) => `<option value="${x.id}">${esc(x.nom)}</option>`).join("")}</optgroup>` : "") +
+      (autres.length ? `<optgroup label="Partagés avec moi">${autres.map((x) => `<option value="${x.id}">${esc(x.nom || x.email)}</option>`).join("")}</optgroup>` : "");
     sel.value = hr.vue ? hr.vue.id : "";
-    $("#hr-qui-bloc").hidden = !recus.length;
+    $("#hr-qui-bloc").hidden = !(duPoste.length || autres.length);
     $$("[data-retirer]").forEach((b) => b.addEventListener("click", () => retirerPartage(etat.profil.id, b.dataset.retirer, "Partage retiré")));
     $$("[data-quitter]").forEach((b) => b.addEventListener("click", () => retirerPartage(b.dataset.quitter, etat.profil.id, "Vous ne recevez plus cet horaire")));
     $$("[data-voir]").forEach((b) => b.addEventListener("click", () => { $("#hr-qui").value = b.dataset.voir; afficherHoraireDe(b.dataset.voir); window.scrollTo(0, 0); $("#vue-horaire").scrollTo(0, 0); }));
@@ -835,10 +848,11 @@
   }
   async function afficherHoraireDe(id) {
     if (!id) { hr.vue = null; rendreHoraire(); return; }
-    const pers = hr.partages.find((x) => x.id === id && x.sens === "recu");
-    const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", id).maybeSingle();
+    const pers = hr.partages.find((x) => x.id === id && x.sens === "recu") || (hr.poste || []).find((x) => x.id === id);
+    // Seulement la rotation : les exceptions et les notes restent privées (vérifié aussi par la base de données)
+    const { data, error } = await sb.rpc("rotation_collegue", { p_id: id });
     if (error) return toast(traduireErreur(error));
-    hr.vue = { id, nom: pers ? pers.nom || pers.email : "Collègue", config: data && data.config && data.config.cycle ? data.config : null, exceptions: (data && data.exceptions) || {} };
+    hr.vue = { id, nom: pers ? pers.nom || pers.email : "Collègue", config: data && data.cycle ? data : null, exceptions: {} };
     rendreHoraire();
   }
   $("#hr-qui").addEventListener("change", (e) => afficherHoraireDe(e.target.value));
@@ -873,9 +887,9 @@
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
     $("#hr-partage").hidden = lecture || enConfig;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
-    $("#hr-astuce").textContent = lecture ? "Lecture seule. Touchez une journée pour voir le détail." : "Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.";
+    $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.";
     if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
-    $("#hr-resume").textContent = `${lecture ? "Partagé avec vous · " : ""}Cycle de ${src.config.cycle.length} jours`;
+    $("#hr-resume").textContent = `${lecture ? "Rotation seulement · " : ""}Cycle de ${src.config.cycle.length} jours`;
     const auj = aujourdhuiISO();
     // Aujourd'hui
     const q = quartDu(auj);

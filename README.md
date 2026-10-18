@@ -45,7 +45,9 @@
 - Calendrier mensuel en couleurs, quart du jour et 7 prochains jours.
 - Exceptions : vacances, maladie, formation, cour, temps supplémentaire, échanges, avec notes.
 - Export vers le calendrier du téléphone ou d'Outlook (fichier `.ics`).
-- **Partage** avec un collègue de la plateforme, en lecture seule. Le partage peut être retiré en tout temps.
+- **Mon poste** : les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité).
+- **Partage** avec un collègue d'un autre poste, retirable en tout temps.
+- Seule la rotation est visible par les collègues : les vacances, maladies, cours, formations et notes restent privés (vérifié par la base de données).
 
 ### Messages (BÊTA)
 - Conversations style texto entre l'administrateur et chaque policier, avec bulles, date, heure et indicateur « Lu ».
