@@ -22,13 +22,27 @@ async function chargerCles() {
   return cles;
 }
 
+// Chiffre de la pastille : messages non lus, plus les demandes en attente pour l'administrateur
+async function pastille(userId: string): Promise<number> {
+  const { count: msgs } = await admin.from("messages").select("id", { count: "exact", head: true }).eq("destinataire", userId).is("lu_le", null);
+  const { data: p } = await admin.from("profiles").select("role").eq("id", userId).maybeSingle();
+  let total = msgs ?? 0;
+  if (p?.role === "admin") {
+    const { count: dem } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("statut", "en_attente");
+    total += dem ?? 0;
+  }
+  return total;
+}
+
 async function envoyer(userIds: string[], charge: Record<string, unknown>) {
   if (!userIds.length) return 0;
-  const { data: abos } = await admin.from("push_abonnements").select("id, endpoint, p256dh, auth").in("user_id", userIds);
+  const { data: abos } = await admin.from("push_abonnements").select("id, user_id, endpoint, p256dh, auth").in("user_id", userIds);
+  const chiffres: Record<string, number> = {};
+  for (const id of new Set((abos ?? []).map((a) => a.user_id))) chiffres[id] = await pastille(id);
   let n = 0;
   await Promise.all((abos ?? []).map(async (a) => {
     try {
-      await webpush.sendNotification({ endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } }, JSON.stringify(charge), { TTL: 86400, urgency: "high" });
+      await webpush.sendNotification({ endpoint: a.endpoint, keys: { p256dh: a.p256dh, auth: a.auth } }, JSON.stringify({ ...charge, pastille: chiffres[a.user_id] ?? 0 }), { TTL: 86400, urgency: "high" });
       n++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;

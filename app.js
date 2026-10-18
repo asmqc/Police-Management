@@ -384,6 +384,8 @@
     const b = $("#badge-messages");
     b.textContent = count || "";
     b.hidden = !count;
+    compteurs.messages = count || 0;
+    majPastille();
     const carte = $("#ac-msg");
     carte.hidden = !count;
     if (count) carte.innerHTML = `<b>${count}</b><span>nouveau${count > 1 ? "x" : ""} message${count > 1 ? "s" : ""}</span><i>Lire ›</i>`;
@@ -668,7 +670,16 @@
     const cible = e.data && e.data.aller && e.data.aller.replace("#", "");
     if (cible && etat.profil && etat.profil.statut === "approuve") afficherVue(cible === "admin" && !estAdmin() ? "accueil" : cible);
   });
-  const effacerPastille = () => { if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {}); };
+  // Pastille sur l'icône de l'app : messages non lus + demandes en attente (admin)
+  const compteurs = { messages: 0, demandes: 0 };
+  function majPastille() {
+    const total = compteurs.messages + (estAdmin() ? compteurs.demandes : 0);
+    try {
+      if (total > 0 && navigator.setAppBadge) navigator.setAppBadge(total).catch(() => {});
+      else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+    } catch { /* non offert sur cet appareil */ }
+  }
+  const effacerPastille = majPastille;
 
   /* ---------------- Accueil ---------------- */
   async function initAccueil() {
@@ -1909,6 +1920,8 @@
     const b = $("#badge-attente");
     b.textContent = count || "";
     b.hidden = !count;
+    compteurs.demandes = count || 0;
+    majPastille();
   }
 
   let comptesAdmin = [];
@@ -1927,6 +1940,7 @@
     $("#nb-refuse").textContent = compte("refuse");
     $("#nb-bloque").textContent = compte("bloque");
     const b = $("#badge-attente"); b.textContent = compte("en_attente") || ""; b.hidden = !compte("en_attente");
+    compteurs.demandes = compte("en_attente"); majPastille();
     const liste = comptesAdmin.filter((p) => p.statut === filtreAdmin);
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
     el.innerHTML = liste.length ? liste.map((p, i) => `

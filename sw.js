@@ -1,6 +1,6 @@
 // Police Management — service minimal : réseau d'abord (toujours revalidé), copie locale en secours hors ligne.
 // Les appels à Supabase et aux autres sites ne sont jamais mis en cache.
-const CACHE = "police-management-202610182025";
+const CACHE = "police-management-202610182319";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(
   caches.keys().then((cles) => Promise.all(cles.filter((c) => c !== CACHE).map((c) => caches.delete(c)))).then(() => self.clients.claim())
@@ -32,7 +32,9 @@ self.addEventListener("push", (e) => {
       renotify: !!d.tag,
       data: { url: d.url || "#accueil" },
     }),
-    self.navigator && self.navigator.setAppBadge ? self.navigator.setAppBadge().catch(() => {}) : Promise.resolve(),
+    self.navigator && self.navigator.setAppBadge
+      ? (d.pastille > 0 ? self.navigator.setAppBadge(d.pastille) : self.navigator.setAppBadge()).catch(() => {})
+      : Promise.resolve(),
   ]));
 });
 self.addEventListener("notificationclick", (e) => {
