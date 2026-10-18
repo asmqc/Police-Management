@@ -249,9 +249,14 @@
     <!-- Vue Horaire -->
     <section id="vue-horaire" class="vue" hidden>
       <div class="vue-tete">
-        <h2>Mon horaire</h2>
+        <h2 id="hr-titre">Mon horaire</h2>
         <p class="ref" id="hr-resume">Horaire rotatif</p>
       </div>
+      <div id="hr-qui-bloc" class="hr-qui" hidden>
+        <label for="hr-qui" class="ref">Afficher</label>
+        <select id="hr-qui"><option value="">Mon horaire</option></select>
+      </div>
+      <p id="hr-lecture-vide" class="vide" hidden>Ce collègue n'a pas encore configuré sa rotation.</p>
 
       <div id="hr-vide" class="panneau" hidden>
         <p class="aide">Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.</p>
@@ -270,11 +275,25 @@
         </div>
         <div class="hr-grille" id="hr-grille"></div>
         <div class="hr-legende" id="hr-legende"></div>
-        <p class="aide">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
-        <div class="hr-actions">
+        <p class="aide" id="hr-astuce">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
+        <div class="hr-actions hr-mes-actions">
           <button class="btn-secondaire" id="hr-config">Modifier ma rotation</button>
           <button class="btn-secondaire" id="hr-ics">Ajouter à mon calendrier (.ics)</button>
         </div>
+      </div>
+
+      <div id="hr-partage" class="hr-partage" hidden>
+        <h3 class="intertitre">Partager mon horaire</h3>
+        <form id="hr-form-partage" class="panneau" novalidate>
+          <p class="aide">Votre collègue doit avoir un compte approuvé sur Police Extrême. Il verra votre horaire en lecture seule, avec vos notes. Vous pouvez retirer le partage quand vous voulez.</p>
+          <div class="fc-ligne">
+            <input id="hr-partage-courriel" type="email" placeholder="Courriel du collègue" autocomplete="off" aria-label="Courriel du collègue">
+            <button type="submit" class="btn-ok">Partager</button>
+          </div>
+          <ul class="liste-partages" id="hr-partages-donnes"></ul>
+        </form>
+        <h3 class="intertitre">Partagés avec moi</h3>
+        <div class="panneau"><ul class="liste-partages" id="hr-partages-recus"></ul></div>
       </div>
 
       <form id="hr-form" class="panneau formulaire" novalidate hidden>
@@ -489,10 +508,11 @@
       <button class="btn-icone fermer" id="hr-jour-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="hr-jour-titre"></h3>
       <p class="aide" id="hr-jour-prevu"></p>
-      <div class="hr-choix" id="hr-jour-choix"></div>
-      <label class="ref" for="hr-jour-note">Note (facultatif)</label>
-      <input id="hr-jour-note" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
-      <div class="fc-ligne">
+      <div id="hr-jour-lecture" class="hr-jour-lecture" hidden></div>
+      <div class="hr-choix hr-edition" id="hr-jour-choix"></div>
+      <label class="ref hr-edition" for="hr-jour-note">Note (facultatif)</label>
+      <input id="hr-jour-note" class="hr-edition" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
+      <div class="fc-ligne hr-edition">
         <button class="btn-principal" id="hr-jour-ok" style="margin:0">Enregistrer</button>
         <button class="btn-secondaire" id="hr-jour-retirer">Revenir à la rotation</button>
       </div>

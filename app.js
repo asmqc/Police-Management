@@ -335,11 +335,13 @@
   const jourUTC = (iso) => { const [a, m, j] = iso.split("-").map(Number); return Date.UTC(a, m - 1, j) / MS_JOUR; };
   const isoDe = (n) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
   const aujourdhuiISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-  const hr = { config: null, exceptions: {}, mois: null, brouillon: null, jourChoisi: null };
+  // hr.config / hr.exceptions = mon horaire ; hr.vue = horaire d'un collègue affiché en lecture seule
+  const hr = { config: null, exceptions: {}, mois: null, brouillon: null, jourChoisi: null, vue: null, partages: [] };
+  const affichee = () => hr.vue || hr;
 
-  function quartDu(iso) {
-    const e = hr.exceptions[iso];
-    const c = hr.config;
+  function quartDu(iso, src = affichee()) {
+    const e = (src.exceptions || {})[iso];
+    const c = src.config;
     let prevu = null;
     if (c && c.cycle && c.cycle.length && c.debut) {
       const n = jourUTC(iso) - jourUTC(c.debut);
@@ -347,7 +349,7 @@
     }
     return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e };
   }
-  const heuresDe = (code) => { const h = (hr.config && hr.config.heures && hr.config.heures[code]) || HEURES_DEFAUT[code]; return h ? `${h[0]} – ${h[1]}` : ""; };
+  const heuresDe = (code, src = affichee()) => { const h = (src.config && src.config.heures && src.config.heures[code]) || HEURES_DEFAUT[code]; return h ? `${h[0]} – ${h[1]}` : ""; };
 
   async function initHoraire() {
     if (!hr.chargé) {
@@ -359,7 +361,62 @@
     }
     if (!hr.mois) { const d = new Date(); hr.mois = [d.getFullYear(), d.getMonth()]; }
     rendreHoraire();
+    chargerPartages();
   }
+
+  /* Partage de l'horaire */
+  async function chargerPartages() {
+    const { data, error } = await sb.rpc("mes_partages");
+    if (error) return;
+    hr.partages = data || [];
+    const donnes = hr.partages.filter((x) => x.sens === "donne");
+    const recus = hr.partages.filter((x) => x.sens === "recu");
+    $("#hr-partages-donnes").innerHTML = donnes.length ? donnes.map((x) => `
+      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <button class="btn-danger petit" data-retirer="${x.id}">Retirer</button></li>`).join("")
+      : `<li class="vide-petit">Votre horaire n'est partagé avec personne.</li>`;
+    $("#hr-partages-recus").innerHTML = recus.length ? recus.map((x) => `
+      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <span class="fc-ligne"><button class="btn-secondaire petit" data-voir="${x.id}">Voir</button><button class="lien" data-quitter="${x.id}">Ne plus recevoir</button></span></li>`).join("")
+      : `<li class="vide-petit">Personne ne vous a encore partagé son horaire.</li>`;
+    const sel = $("#hr-qui");
+    sel.innerHTML = `<option value="">Mon horaire</option>` + recus.map((x) => `<option value="${x.id}">${esc(x.nom || x.email)}</option>`).join("");
+    sel.value = hr.vue ? hr.vue.id : "";
+    $("#hr-qui-bloc").hidden = !recus.length;
+    $$("[data-retirer]").forEach((b) => b.addEventListener("click", () => retirerPartage(etat.profil.id, b.dataset.retirer, "Partage retiré")));
+    $$("[data-quitter]").forEach((b) => b.addEventListener("click", () => retirerPartage(b.dataset.quitter, etat.profil.id, "Vous ne recevez plus cet horaire")));
+    $$("[data-voir]").forEach((b) => b.addEventListener("click", () => { $("#hr-qui").value = b.dataset.voir; afficherHoraireDe(b.dataset.voir); window.scrollTo(0, 0); $("#vue-horaire").scrollTo(0, 0); }));
+  }
+  async function retirerPartage(proprietaire, destinataire, message) {
+    const { error } = await sb.from("partages_horaire").delete().eq("proprietaire", proprietaire).eq("destinataire", destinataire);
+    if (error) return toast(traduireErreur(error));
+    if (hr.vue && (hr.vue.id === proprietaire)) { hr.vue = null; rendreHoraire(); }
+    toast(message);
+    chargerPartages();
+  }
+  async function afficherHoraireDe(id) {
+    if (!id) { hr.vue = null; rendreHoraire(); return; }
+    const pers = hr.partages.find((x) => x.id === id && x.sens === "recu");
+    const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", id).maybeSingle();
+    if (error) return toast(traduireErreur(error));
+    hr.vue = { id, nom: pers ? pers.nom || pers.email : "Collègue", config: data && data.config && data.config.cycle ? data.config : null, exceptions: (data && data.exceptions) || {} };
+    rendreHoraire();
+  }
+  $("#hr-qui").addEventListener("change", (e) => afficherHoraireDe(e.target.value));
+  $("#hr-form-partage").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const champ = $("#hr-partage-courriel");
+    const courriel = champ.value.trim();
+    if (!courriel || !champ.checkValidity()) { champ.focus(); return toast("Entrez le courriel d'un collègue inscrit à Police Extrême"); }
+    const btn = $("#hr-form-partage button");
+    btn.disabled = true;
+    const { data, error } = await sb.rpc("partager_horaire", { p_email: courriel });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    champ.value = "";
+    toast(`Horaire partagé avec ${data}`);
+    chargerPartages();
+  });
 
   async function sauverHoraire() {
     const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, maj_le: new Date().toISOString() });
@@ -367,11 +424,19 @@
   }
 
   function rendreHoraire() {
+    const src = affichee();
+    const lecture = !!hr.vue;
+    if (lecture) $("#hr-form").hidden = true;
     const enConfig = !$("#hr-form").hidden;
-    $("#hr-vide").hidden = !!hr.config || enConfig;
-    $("#hr-principal").hidden = !hr.config || enConfig;
-    if (!hr.config) { $("#hr-resume").textContent = "Aucune rotation configurée"; return; }
-    $("#hr-resume").textContent = `Cycle de ${hr.config.cycle.length} jours`;
+    $("#hr-titre").textContent = lecture ? `Horaire de ${hr.vue.nom}` : "Mon horaire";
+    $("#hr-vide").hidden = lecture || !!hr.config || enConfig;
+    $("#hr-principal").hidden = !src.config || enConfig;
+    $("#hr-lecture-vide").hidden = !(lecture && !src.config);
+    $("#hr-partage").hidden = lecture || enConfig;
+    $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
+    $("#hr-astuce").textContent = lecture ? "Lecture seule. Touchez une journée pour voir le détail." : "Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.";
+    if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
+    $("#hr-resume").textContent = `${lecture ? "Partagé avec vous · " : ""}Cycle de ${src.config.cycle.length} jours`;
     const auj = aujourdhuiISO();
     // Aujourd'hui
     const q = quartDu(auj);
@@ -462,6 +527,14 @@
   function ouvrirJour(iso) {
     hr.jourChoisi = iso;
     const q = quartDu(iso);
+    const lecture = !!hr.vue;
+    $$(".hr-edition").forEach((el) => (el.hidden = lecture));
+    $("#hr-jour-lecture").hidden = !lecture;
+    if (lecture) {
+      $("#hr-jour-lecture").innerHTML = `<span class="chip-grand q q-${esc(q.code || "C")}">${esc(q.code ? QUARTS[q.code].nom : "—")}</span>
+        ${["J", "S", "N"].includes(q.code) ? `<span class="ref">${esc(heuresDe(q.code))}</span>` : ""}
+        ${q.note ? `<p>${esc(q.note)}</p>` : ""}`;
+    }
     $("#hr-jour-titre").textContent = new Date(iso + "T12:00:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     $("#hr-jour-prevu").textContent = `Selon la rotation : ${q.prevu ? QUARTS[q.prevu].nom + (heuresDe(q.prevu) && q.prevu !== "C" ? " (" + heuresDe(q.prevu) + ")" : "") : "—"}`;
     $("#hr-jour-choix").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<button type="button" class="q q-${k}" data-q="${k}" aria-pressed="${String(q.code === k)}">${k} · ${esc(v.nom)}</button>`).join("");
@@ -476,10 +549,10 @@
   $("#hr-jour-ok").addEventListener("click", async () => {
     const iso = hr.jourChoisi;
     const choix = ($("#hr-jour-choix button[aria-pressed='true']") || {}).dataset;
-    const type = choix ? choix.q : quartDu(iso).prevu;
+    const type = choix ? choix.q : quartDu(iso, hr).prevu;
     const note = $("#hr-jour-note").value.trim();
     const avant = hr.exceptions[iso];
-    if (type === quartDu(iso).prevu && !note) delete hr.exceptions[iso];
+    if (type === quartDu(iso, hr).prevu && !note) delete hr.exceptions[iso];
     else hr.exceptions[iso] = { type, note };
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
     catch (e) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; toast(traduireErreur(e)); }
@@ -498,7 +571,7 @@
     const lignes = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Police Extreme//Horaire//FR", "CALSCALE:GREGORIAN", "X-WR-CALNAME:Horaire Police Extrême"];
     const maintenant = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
     for (let i = 0; i < 183; i++) {
-      const iso = isoDe(n0 + i), q = quartDu(iso);
+      const iso = isoDe(n0 + i), q = quartDu(iso, hr);
       if (!q.code || q.code === "C") continue;
       const date = iso.replace(/-/g, "");
       const titre = (QUARTS[q.code] ? QUARTS[q.code].nom : q.code) + (q.note ? " — " + q.note : "");
