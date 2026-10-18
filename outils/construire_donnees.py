@@ -120,7 +120,12 @@ def municipalites_rest():
     base = SOURCES["sda_rest"]
     req = urllib.request.Request(base + "?f=json", headers=UA)
     meta = json.loads(urllib.request.urlopen(req, timeout=60).read())
-    couche = next(l for l in meta["layers"] if "unicipalit" in l["name"] and not l.get("subLayerIds"))
+    diag["rest_couches"] = [(l["id"], l["name"]) for l in meta["layers"]]
+    simples = [l for l in meta["layers"] if not l.get("subLayerIds")]
+    def ok(n):
+        n = n.lower()
+        return "municip" in n and "gional" not in n and "mrc" not in n and "arrondissement" not in n
+    couche = next(l for l in simples if ok(l["name"]))
     diag["rest_couche"] = couche
     morceaux, offset = [], 0
     while True:
@@ -148,9 +153,11 @@ def municipalites_statcan():
 
 
 mun = None
-for nom_source, fonction in (("SDA", municipalites_sda), ("Statistique Canada", municipalites_statcan)):
+for nom_source, fonction in (("SDA", municipalites_sda), ("REST MRNF", municipalites_rest), ("Statistique Canada", municipalites_statcan)):
     try:
         mun = fonction()
+        if len(mun) < 900:
+            raise ValueError(f"seulement {len(mun)} entités : ce n'est pas la couche des municipalités")
         diag["source_municipalites"] = nom_source
         print("municipalités :", nom_source, len(mun))
         break
