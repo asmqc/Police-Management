@@ -45,6 +45,6 @@ jobs:
           fi
           git checkout --orphan exploration
           git rm -rfq --cached .
-          git add exploration/
+          git add -f exploration/
           git commit -qm "Diagnostic"
           git push -f origin exploration
