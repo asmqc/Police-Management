@@ -83,8 +83,8 @@
   $("#form-demande").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     const champs = { nom: $("#dm-nom"), matricule: $("#dm-matricule"), corps: $("#dm-corps"), courriel: $("#dm-courriel"), mdp: $("#dm-mdp") };
-    if (!$("#bloc-poste").hidden && !$("#dm-poste").value) { $("#dm-poste").focus(); return messageAuth("Choisissez votre poste dans la liste.", "erreur"); }
-    if ($("#dm-poste").value === "__autre" && !$("#dm-unite").value.trim()) { $("#dm-unite").focus(); return messageAuth("Précisez votre unité.", "erreur"); }
+    if ($("#dm-corps").value && !$("#dm-poste").value) { $("#dm-poste").focus(); return messageAuth("Choisissez votre unité ou votre poste dans la liste.", "erreur"); }
+    if ($("#dm-poste").value === AUTRE && !$("#dm-unite").value.trim()) { $("#dm-unite").focus(); return messageAuth("Précisez votre unité ou votre poste.", "erreur"); }
     for (const [k, el] of Object.entries(champs)) {
       if (!el.value.trim()) { el.focus(); return messageAuth("Remplissez tous les champs obligatoires.", "erreur"); }
       if (k === "courriel" && !el.checkValidity()) { el.focus(); return messageAuth("Le courriel n'est pas valide.", "erreur"); }
@@ -121,60 +121,72 @@
     );
   });
 
-  /* Listes déroulantes du formulaire d'inscription */
+  /* Menu « Unité / poste » du formulaire d'inscription, selon le corps de police choisi */
   const SQ = "Sûreté du Québec";
-  async function remplirCorpsInscription() {
-    const sel = $("#dm-corps");
-    let liste = [];
-    try {
-      const { data, error } = await sb.rpc("liste_corps_police");
-      if (error) throw error;
-      liste = data || [];
-    } catch { return; } // on garde les choix de base
-    const groupes = { municipal: "Corps de police municipaux", autochtone: "Corps de police autochtones" };
-    let html = `<option value="">Choisir…</option><option>${SQ}</option>`;
-    for (const [type, titre] of Object.entries(groupes)) {
-      const noms = liste.filter((c) => c.type === type).map((c) => c.nom);
-      if (noms.length) html += `<optgroup label="${esc(titre)}">${noms.map((n) => `<option>${esc(n)}</option>`).join("")}</optgroup>`;
+  const UNITES_MUNICIPALES = ["Patrouille", "Enquêtes", "Sécurité routière", "Groupe d'intervention", "Soutien opérationnel"];
+  const AUTRE = "__autre";
+  let listeCorps = null, groupesSQ = null;
+
+  async function corpsParType(type) {
+    if (!listeCorps) {
+      try {
+        const { data, error } = await sb.rpc("liste_corps_police");
+        if (error) throw error;
+        listeCorps = data || [];
+      } catch { listeCorps = []; }
     }
-    html += `<optgroup label="Autres"><option>Contrôle routier Québec</option><option>GRC</option><option>Autre</option></optgroup>`;
-    const avant = sel.value;
-    sel.innerHTML = html;
-    sel.value = avant;
+    return listeCorps.filter((c) => c.type === type).map((c) => c.nom);
   }
-
-  let postesSQ;
-  async function remplirPostesSQ() {
-    if (postesSQ) return;
-    postesSQ = true;
+  async function postesSQ() {
+    if (groupesSQ) return groupesSQ;
     const parRegion = {};
-    try {
-      const [postes, aut] = await Promise.all([charger("sq_postes.geojson"), charger("sq_autoroutier.geojson")]);
-      for (const f of postes.features) (parRegion[f.properties.NOM_REG] ||= new Set()).add(f.properties.NOM_UNIT);
-      for (const f of aut.features) (parRegion["Postes autoroutiers"] ||= new Set()).add(f.properties.NOM_UNIT);
-    } catch { postesSQ = false; }
-    const regions = Object.keys(parRegion).filter((r) => r && r !== "s.o.").sort((a, b) => (a === "Postes autoroutiers") - (b === "Postes autoroutiers") || a.localeCompare(b, "fr"));
-    $("#dm-poste").innerHTML = `<option value="">Choisir votre poste…</option>` +
-      regions.map((r) => `<optgroup label="${esc(r)}">${[...parRegion[r]].sort((a, b) => a.localeCompare(b, "fr")).map((u) => `<option>${esc(u)}</option>`).join("")}</optgroup>`).join("") +
-      `<optgroup label="Autres unités"><option>Grand quartier général (Montréal)</option><option>Quartier général de district</option><option value="__autre">Autre unité (préciser)</option></optgroup>`;
+    const [postes, aut] = await Promise.all([charger("sq_postes.geojson"), charger("sq_autoroutier.geojson")]);
+    for (const f of postes.features) (parRegion[f.properties.NOM_REG] ||= new Set()).add(f.properties.NOM_UNIT);
+    for (const f of aut.features) (parRegion["Postes autoroutiers"] ||= new Set()).add(f.properties.NOM_UNIT);
+    delete parRegion["s.o."];
+    const regions = Object.keys(parRegion).sort((a, b) => (a === "Postes autoroutiers") - (b === "Postes autoroutiers") || a.localeCompare(b, "fr"));
+    return (groupesSQ = regions.map((r) => [r, [...parRegion[r]].sort((a, b) => a.localeCompare(b, "fr"))]));
   }
+  const opt = (v) => `<option>${esc(v)}</option>`;
+  const optAutre = `<option value="${AUTRE}">Autre (préciser)</option>`;
 
-  function majChampPoste() {
+  async function majChampPoste() {
     const corps = $("#dm-corps").value;
-    const estSQ = corps === SQ;
-    $("#bloc-poste").hidden = !estSQ;
-    const autre = estSQ && $("#dm-poste").value === "__autre";
-    $("#bloc-unite").hidden = !corps || (estSQ && !autre);
-    $("#dm-unite-label").textContent = autre ? "Précisez votre unité" : "Unité / poste (facultatif)";
-    if (estSQ) remplirPostesSQ();
+    const sel = $("#dm-poste");
+    let html = "";
+    try {
+      if (!corps) html = "";
+      else if (corps === SQ) {
+        html = (await postesSQ()).map(([r, us]) => `<optgroup label="${esc(r)}">${us.map(opt).join("")}</optgroup>`).join("") +
+          `<optgroup label="Autres unités">${opt("Grand quartier général")}${optAutre}</optgroup>`;
+      } else if (corps === "Autre corps de police municipal") {
+        const noms = (await corpsParType("municipal")).filter((n) => ![...$("#dm-corps").options].some((o) => o.value === n));
+        html = noms.map(opt).join("") + optAutre;
+      } else if (corps === "Corps de police autochtone") {
+        html = (await corpsParType("autochtone")).map(opt).join("") + optAutre;
+      } else if (corps === "Contrôle routier Québec" || corps === "Autre") {
+        html = optAutre;
+      } else {
+        html = UNITES_MUNICIPALES.map(opt).join("") + optAutre;
+      }
+    } catch { html = optAutre; }
+    const titre = !corps ? "Choisir le corps d'abord"
+      : corps === "Autre corps de police municipal" ? "Choisir le service…"
+      : corps === "Corps de police autochtone" ? "Choisir le corps…" : "Choisir…";
+    sel.innerHTML = `<option value="">${titre}</option>` + html;
+    sel.disabled = !corps;
+    if (html === optAutre) sel.value = AUTRE;
+    majChampAutre();
+  }
+  function majChampAutre() {
+    $("#bloc-unite").hidden = $("#dm-poste").value !== AUTRE;
   }
   function uniteChoisie() {
-    if ($("#dm-corps").value === SQ && $("#dm-poste").value && $("#dm-poste").value !== "__autre") return $("#dm-poste").value;
-    return $("#dm-unite").value.trim();
+    const v = $("#dm-poste").value;
+    return v === AUTRE ? $("#dm-unite").value.trim() : v;
   }
   $("#dm-corps").addEventListener("change", majChampPoste);
-  $("#dm-poste").addEventListener("change", majChampPoste);
-  remplirCorpsInscription();
+  $("#dm-poste").addEventListener("change", majChampAutre);
 
   function formNouveauMdp() {
     montrer("#ecran-auth");
