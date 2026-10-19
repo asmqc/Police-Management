@@ -353,7 +353,7 @@
     $("#menu-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
     compterMessages();
     ecouterMessages();
@@ -420,6 +420,8 @@
     if (nom === "accueil") initAccueil();
     if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); majReglagePartage(); majReglagesHoraire(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
+    if (nom === "forum") initForum();
+    if (nom === "idees") initIdees();
   }
   // Menu de la photo de profil
   function ouvrirMenu() {
@@ -873,6 +875,7 @@
       }
     } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
     compterMessages();
+    afficherAnnonces();
     // Demandes en attente (admin)
     const ad = $("#ac-admin");
     if (p.role === "admin") {
@@ -1623,6 +1626,286 @@
     if (error) return toast(traduireErreur(error));
     $("#adm-modele-nom").value = ""; toast("Modèle publié pour tous"); rendreModelesAdmin();
   });
+
+
+  /* ---------------- Communauté : Forum par corps de police ---------------- */
+  const quand = (d) => {
+    const x = new Date(d), s = (Date.now() - x) / 1000;
+    if (s < 60) return "à l'instant";
+    if (s < 3600) return `il y a ${Math.floor(s / 60)} min`;
+    if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
+    return x.toLocaleDateString("fr-CA", { day: "numeric", month: "short", year: x.getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  };
+  const forum = { sujets: [], ouvert: null };
+  async function initForum() {
+    $("#forum-corps").textContent = (etat.profil.corps_police || "Votre corps de police") + (estAdmin() ? " · vue administrateur : tous les corps" : "");
+    montrerFil(false);
+    const { data, error } = await sb.rpc("forum_liste");
+    if (error) { $("#forum-sujets").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    forum.sujets = data || [];
+    $("#forum-sujets").innerHTML = forum.sujets.length ? forum.sujets.map((x) => `
+      <button type="button" class="forum-ligne" data-sujet="${x.id}">
+        <b>${esc(x.titre)}</b>
+        <span class="forum-extrait">${esc(x.contenu.slice(0, 140))}</span>
+        <small>${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}${estAdmin() ? " · " + esc(x.corps) : ""}</small>
+        <i>${x.nb_reponses} réponse${x.nb_reponses > 1 ? "s" : ""}</i>
+      </button>`).join("") : `<p class="vide">Aucune discussion pour le moment. Lancez la première !</p>`;
+    $$("[data-sujet]").forEach((b) => b.addEventListener("click", () => ouvrirSujet(b.dataset.sujet)));
+  }
+  function montrerFil(v) { $("#forum-liste-vue").hidden = v; $("#forum-fil-vue").hidden = !v; }
+  $("#forum-nouveau").addEventListener("click", () => { $("#forum-form").hidden = false; $("#forum-nouveau").hidden = true; $("#forum-titre").focus(); });
+  $("#forum-annuler").addEventListener("click", () => { $("#forum-form").hidden = true; $("#forum-nouveau").hidden = false; });
+  $("#forum-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titre = $("#forum-titre").value.trim(), contenu = $("#forum-contenu").value.trim();
+    if (titre.length < 3) return toast("Donnez un titre d'au moins 3 caractères");
+    if (!contenu) return toast("Écrivez votre message");
+    const { error } = await sb.from("forum_sujets").insert({ titre, contenu, corps: (etat.profil.corps_police || "").trim() || "Sans corps" });
+    if (error) return toast(traduireErreur(error));
+    $("#forum-titre").value = ""; $("#forum-contenu").value = "";
+    $("#forum-form").hidden = true; $("#forum-nouveau").hidden = false;
+    toast("Sujet publié"); initForum();
+  });
+  async function ouvrirSujet(id) {
+    const x = forum.sujets.find((y) => y.id === id);
+    if (!x) return;
+    forum.ouvert = x;
+    montrerFil(true);
+    $("#vue-forum").scrollTo(0, 0);
+    $("#forum-sujet").innerHTML = `<h3>${esc(x.titre)}</h3><small class="ref">${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}</small>
+      <div class="msg-texte">${esc(x.contenu)}</div>
+      <div class="fc-ligne">${x.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-sujet>Supprimer le sujet</button>` : ""}${!x.est_moi ? `<button class="lien" data-signaler="sujet" data-cible="${x.id}">Signaler à l'administrateur</button>` : ""}</div>`;
+    const sup = $("[data-suppr-sujet]", $("#forum-sujet"));
+    if (sup) sup.addEventListener("click", async () => {
+      if (!sup.dataset.arme) { sup.dataset.arme = "1"; sup.textContent = "Toucher encore pour supprimer"; return; }
+      const { error } = await sb.from("forum_sujets").delete().eq("id", x.id);
+      if (error) return toast(traduireErreur(error));
+      toast("Sujet supprimé"); initForum();
+    });
+    brancherSignalements($("#forum-sujet"), x.contenu);
+    await chargerReponses();
+  }
+  async function chargerReponses() {
+    const x = forum.ouvert;
+    const { data, error } = await sb.rpc("forum_reponses_liste", { p_sujet: x.id });
+    if (error) return toast(traduireErreur(error));
+    $("#forum-reponses").innerHTML = (data || []).length ? data.map((r) => `
+      <div class="forum-rep ${r.est_moi ? "moi" : ""}"><small><b>${esc(r.auteur_nom)}</b> · ${esc(quand(r.cree_le))}</small><div class="msg-texte">${esc(r.contenu)}</div>
+        <div class="fc-ligne">${r.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-rep="${r.id}">Supprimer</button>` : ""}${!r.est_moi ? `<button class="lien" data-signaler="reponse" data-cible="${r.id}" data-extrait="${esc(r.contenu.slice(0, 200))}">Signaler</button>` : ""}</div></div>`).join("")
+      : `<p class="aide">Aucune réponse pour le moment.</p>`;
+    $$("[data-suppr-rep]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error } = await sb.from("forum_reponses").delete().eq("id", b.dataset.supprRep);
+      if (error) return toast(traduireErreur(error));
+      chargerReponses();
+    }));
+    brancherSignalements($("#forum-reponses"));
+  }
+  function brancherSignalements(racine, extraitParDefaut = "") {
+    $$("[data-signaler]", racine).forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer le signalement"; return; }
+      b.disabled = true;
+      const { error } = await sb.from("signalements").insert({ type: b.dataset.signaler, cible: b.dataset.cible, extrait: (b.dataset.extrait || extraitParDefaut).slice(0, 300) });
+      if (error) { b.disabled = false; return toast(traduireErreur(error)); }
+      b.textContent = "Signalé ✓";
+      toast("L'administrateur a été avisé et examinera la publication");
+    }));
+  }
+  $("#forum-retour").addEventListener("click", () => initForum());
+  $("#forum-rep-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const contenu = $("#forum-rep").value.trim();
+    if (!contenu || !forum.ouvert) return;
+    const { error } = await sb.from("forum_reponses").insert({ sujet_id: forum.ouvert.id, contenu });
+    if (error) return toast(traduireErreur(error));
+    $("#forum-rep").value = "";
+    chargerReponses();
+  });
+  $("#forum-rep").addEventListener("input", (e) => { e.target.style.height = "auto"; e.target.style.height = Math.min(140, e.target.scrollHeight) + "px"; });
+
+  /* ---------------- Communauté : Idées et sondages ---------------- */
+  const STATUTS_IDEE = { proposee: "Proposée", planifiee: "Planifiée", realisee: "Réalisée ✅", refusee: "Non retenue" };
+  let ongletIdees = "demandes";
+  function initIdees() {
+    $$("[data-idees]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.idees === ongletIdees)));
+    $("#idees-demandes").hidden = ongletIdees !== "demandes";
+    $("#idees-sondages").hidden = ongletIdees !== "sondages";
+    $("#sondage-form").hidden = !estAdmin();
+    if (estAdmin() && !$("#sondage-options").children.length) { ajouterOptionSondage(); ajouterOptionSondage(); }
+    if (ongletIdees === "demandes") chargerIdees(); else chargerSondages();
+  }
+  $$("[data-idees]").forEach((b) => b.addEventListener("click", () => { ongletIdees = b.dataset.idees; initIdees(); }));
+  async function chargerIdees() {
+    const { data, error } = await sb.rpc("idees_liste");
+    if (error) { $("#idees-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    $("#idees-liste").innerHTML = (data || []).length ? data.map((i) => `
+      <div class="idee">
+        <button type="button" class="idee-vote ${i.j_ai_vote ? "vote" : ""}" data-voter="${i.id}" data-a="${i.j_ai_vote}" aria-pressed="${i.j_ai_vote}" aria-label="Voter pour cette idée">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 14 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>${i.nb_votes}</b></button>
+        <div class="idee-txt"><b>${esc(i.titre)}</b>${i.description ? `<span>${esc(i.description)}</span>` : ""}
+          <small>${esc(i.auteur_nom)} · ${esc(quand(i.cree_le))} · <span class="statut-idee ${esc(i.statut)}">${esc(STATUTS_IDEE[i.statut])}</span></small>
+          ${estAdmin() ? `<span class="fc-ligne"><select data-statut-idee="${i.id}" aria-label="Statut">${Object.entries(STATUTS_IDEE).map(([k, v]) => `<option value="${k}" ${k === i.statut ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></span>` : ""}
+          ${i.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-idee="${i.id}">Supprimer</button>` : ""}
+        </div>
+      </div>`).join("") : `<p class="vide">Aucune demande pour le moment. Proposez la première !</p>`;
+    $$("[data-voter]").forEach((b) => b.addEventListener("click", async () => {
+      b.disabled = true;
+      const r = b.dataset.a === "true"
+        ? await sb.from("idees_votes").delete().eq("idee_id", b.dataset.voter).eq("user_id", etat.profil.id)
+        : await sb.from("idees_votes").insert({ idee_id: b.dataset.voter });
+      if (r.error) toast(traduireErreur(r.error));
+      chargerIdees();
+    }));
+    $$("[data-statut-idee]").forEach((sel) => sel.addEventListener("change", async () => {
+      const { error } = await sb.from("idees").update({ statut: sel.value }).eq("id", sel.dataset.statutIdee);
+      if (error) return toast(traduireErreur(error));
+      toast("Statut mis à jour"); chargerIdees();
+    }));
+    $$("[data-suppr-idee]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error } = await sb.from("idees").delete().eq("id", b.dataset.supprIdee);
+      if (error) return toast(traduireErreur(error));
+      chargerIdees();
+    }));
+  }
+  $("#idee-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titre = $("#idee-titre").value.trim();
+    if (titre.length < 3) return toast("Décrivez votre idée en au moins 3 caractères");
+    const { error } = await sb.from("idees").insert({ titre, description: $("#idee-desc").value.trim() || null });
+    if (error) return toast(traduireErreur(error));
+    $("#idee-titre").value = ""; $("#idee-desc").value = "";
+    toast("Idée proposée : les autres membres peuvent voter"); chargerIdees();
+  });
+  async function chargerSondages() {
+    const { data, error } = await sb.rpc("sondages_liste");
+    if (error) { $("#sondages-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    $("#sondages-liste").innerHTML = (data || []).length ? data.map((sd) => {
+      const total = Number(sd.total) || 0, a_vote = sd.mon_choix !== null && sd.mon_choix !== undefined;
+      return `<div class="panneau sondage"><b>${esc(sd.question)}</b><small class="ref">${total} vote${total > 1 ? "s" : ""}${sd.ferme ? " · terminé" : ""}</small>
+        ${sd.options.map((o, i) => {
+          const n = Number(sd.votes[i]) || 0, pc = total ? Math.round((n / total) * 100) : 0;
+          return `<button type="button" class="sondage-option ${sd.mon_choix === i ? "choisie" : ""}" data-sondage="${sd.id}" data-choix="${i}" ${sd.ferme ? "disabled" : ""} style="--pc:${a_vote || sd.ferme ? pc : 0}%">
+            <span>${esc(o)}</span>${a_vote || sd.ferme ? `<b>${pc} %</b>` : ""}</button>`;
+        }).join("")}
+        ${estAdmin() ? `<div class="fc-ligne"><button class="lien" data-fermer-sondage="${sd.id}" data-ferme="${sd.ferme}">${sd.ferme ? "Rouvrir" : "Terminer le sondage"}</button><button class="lien rouge" data-suppr-sondage="${sd.id}">Supprimer</button></div>` : ""}</div>`;
+    }).join("") : `<p class="vide">Aucun sondage en cours.</p>`;
+    $$("[data-sondage]").forEach((b) => b.addEventListener("click", async () => {
+      await sb.from("sondages_votes").delete().eq("sondage_id", b.dataset.sondage).eq("user_id", etat.profil.id);
+      const { error } = await sb.from("sondages_votes").insert({ sondage_id: b.dataset.sondage, choix: Number(b.dataset.choix) });
+      if (error) toast(traduireErreur(error)); else toast("Vote enregistré");
+      chargerSondages();
+    }));
+    $$("[data-fermer-sondage]").forEach((b) => b.addEventListener("click", async () => {
+      const { error } = await sb.from("sondages").update({ ferme: b.dataset.ferme !== "true" }).eq("id", b.dataset.fermerSondage);
+      if (error) return toast(traduireErreur(error));
+      chargerSondages();
+    }));
+    $$("[data-suppr-sondage]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error } = await sb.from("sondages").delete().eq("id", b.dataset.supprSondage);
+      if (error) return toast(traduireErreur(error));
+      chargerSondages();
+    }));
+  }
+  function ajouterOptionSondage() {
+    const n = $("#sondage-options").children.length;
+    if (n >= 6) return toast("6 options au maximum");
+    const i = document.createElement("input");
+    i.maxLength = 80; i.placeholder = `Option ${n + 1}`; i.className = "sondage-opt";
+    $("#sondage-options").appendChild(i);
+  }
+  $("#sondage-ajout-option").addEventListener("click", ajouterOptionSondage);
+  $("#sondage-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const question = $("#sondage-question").value.trim();
+    const options = $$(".sondage-opt").map((i) => i.value.trim()).filter(Boolean);
+    if (question.length < 3) return toast("Écrivez la question");
+    if (options.length < 2) return toast("Il faut au moins 2 options");
+    const { error } = await sb.from("sondages").insert({ question, options });
+    if (error) return toast(traduireErreur(error));
+    $("#sondage-question").value = ""; $("#sondage-options").innerHTML = ""; ajouterOptionSondage(); ajouterOptionSondage();
+    toast("Sondage publié"); chargerSondages();
+  });
+
+  /* ---------------- Communauté : Annonces de l'administrateur ---------------- */
+  async function urlsAnnonces(chemins) {
+    const c = chemins.filter(Boolean);
+    if (!c.length) return {};
+    const { data } = await sb.storage.from("annonces").createSignedUrls(c, 3600);
+    return Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
+  }
+  async function afficherAnnonces() {
+    const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(10);
+    const el = $("#ac-annonces");
+    let vues = []; try { vues = JSON.parse(localStorage.getItem("pm-annonces-masquees") || "[]"); } catch { /* facultatif */ }
+    const liste = (data || []).filter((a) => !vues.includes(a.id));
+    el.hidden = !liste.length;
+    if (!liste.length) return;
+    const urls = await urlsAnnonces(liste.map((a) => a.image_path));
+    el.innerHTML = liste.map((a) => `<article class="annonce">
+      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="" loading="lazy">` : ""}
+      <div><small>Annonce · ${esc(quand(a.cree_le))}</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div>
+      <button class="btn-icone annonce-fermer" data-masquer-annonce="${a.id}" aria-label="Masquer cette annonce">✕</button></article>`).join("");
+    $$("[data-masquer-annonce]", el).forEach((b) => b.addEventListener("click", () => {
+      try { localStorage.setItem("pm-annonces-masquees", JSON.stringify([...vues, b.dataset.masquerAnnonce].slice(-50))); } catch { /* facultatif */ }
+      afficherAnnonces();
+    }));
+  }
+  $("#adm-annonce-image").addEventListener("change", (e) => { const f = e.target.files[0]; $("#adm-annonce-fichier").textContent = f ? `Image : ${f.name}` : ""; });
+  $("#adm-annonce-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titre = $("#adm-annonce-titre").value.trim();
+    if (!titre) return $("#adm-annonce-titre").focus();
+    const btn = $("#adm-annonce-form .btn-principal"); btn.disabled = true;
+    let image_path = null;
+    const f = $("#adm-annonce-image").files[0];
+    if (f) {
+      if (f.size > 5 * 1024 * 1024) { btn.disabled = false; return toast("Image trop lourde (5 Mo maximum)"); }
+      image_path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${(f.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`;
+      const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
+      if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
+    }
+    const { error } = await sb.from("annonces").insert({ titre, texte: $("#adm-annonce-texte").value.trim() || null, image_path });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    $("#adm-annonce-titre").value = ""; $("#adm-annonce-texte").value = ""; $("#adm-annonce-image").value = ""; $("#adm-annonce-fichier").textContent = "";
+    toast("Annonce publiée : les membres sont avisés"); rendreAnnoncesAdmin();
+  });
+  async function rendreAnnoncesAdmin() {
+    const { data } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(30);
+    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}</small></span>
+      <span class="fc-ligne"><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
+      <button class="btn-danger petit" data-suppr-annonce="${a.id}" data-image="${esc(a.image_path || "")}">Supprimer</button></span></li>`).join("") : `<li class="vide-petit">Aucune annonce publiée.</li>`;
+    $$("[data-basculer-annonce]").forEach((b) => b.addEventListener("click", async () => {
+      const { error } = await sb.from("annonces").update({ actif: b.dataset.actif !== "true" }).eq("id", b.dataset.basculerAnnonce);
+      if (error) return toast(traduireErreur(error));
+      rendreAnnoncesAdmin();
+    }));
+    $$("[data-suppr-annonce]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      if (b.dataset.image) await sb.storage.from("annonces").remove([b.dataset.image]);
+      const { error } = await sb.from("annonces").delete().eq("id", b.dataset.supprAnnonce);
+      if (error) return toast(traduireErreur(error));
+      toast("Annonce supprimée"); rendreAnnoncesAdmin();
+    }));
+  }
+  async function rendreSignalements() {
+    const { data } = await sb.from("signalements").select("*").eq("traite", false).order("cree_le", { ascending: false });
+    const n = (data || []).length;
+    $("#adm-sig-nb").textContent = n || ""; $("#adm-sig-nb").hidden = !n;
+    $("#adm-signalements").innerHTML = n ? data.map((x) => `<li><span><b>${x.type === "sujet" ? "Sujet" : "Réponse"} signalé${x.type === "reponse" ? "e" : ""}</b><small>« ${esc(x.extrait || "")} » · ${esc(dateFr(x.cree_le))}</small></span>
+      <span class="fc-ligne"><button class="btn-danger petit" data-retirer-pub="${x.id}" data-type="${x.type}" data-cible="${x.cible}">Retirer la publication</button>
+      <button class="btn-secondaire petit" data-traiter="${x.id}">Rien à faire</button></span></li>`).join("") : `<li class="vide-petit">Aucun signalement à traiter.</li>`;
+    const traiter = (id) => sb.from("signalements").update({ traite: true }).eq("id", id);
+    $$("[data-traiter]").forEach((b) => b.addEventListener("click", async () => { await traiter(b.dataset.traiter); rendreSignalements(); }));
+    $$("[data-retirer-pub]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error } = await sb.from(b.dataset.type === "sujet" ? "forum_sujets" : "forum_reponses").delete().eq("id", b.dataset.cible);
+      if (error) return toast(traduireErreur(error));
+      await traiter(b.dataset.retirerPub); toast("Publication retirée"); rendreSignalements();
+    }));
+  }
 
   // Configuration de la rotation
   let modelesAdmin = [];
@@ -2929,6 +3212,8 @@
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
     rendreModelesAdmin();
+    rendreAnnoncesAdmin();
+    rendreSignalements();
   }
 
   async function decider(btn, id, statut) {

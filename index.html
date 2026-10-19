@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191214">
+  <link rel="stylesheet" href="styles.css?v=202610191220">
 </head>
 <body>
   <!-- Chargement -->
@@ -211,6 +211,8 @@
         </div>
       </div>
 
+      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
+
       <button class="ac-quart" id="ac-quart" data-aller="horaire"></button>
 
       <button class="ac-admin ac-msg" id="ac-msg" data-aller="messages" hidden></button>
@@ -240,6 +242,14 @@
           <button class="tuile" data-aller="horaire">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <span class="tuile-txt"><b>Mon horaire</b><small>Quarts et partages</small></span>
+          </button>
+          <button class="tuile" data-aller="forum">
+            <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
+            <span class="tuile-txt"><b>Forum</b><small>Discussions de votre corps de police</small></span>
+          </button>
+          <button class="tuile" data-aller="idees">
+            <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="tuile-txt"><b>Idées</b><small>Proposer et voter, sondages</small></span>
           </button>
           <button class="tuile" data-aller="compte">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -772,6 +782,61 @@
       </div>
     </section>
 
+    <section id="vue-forum" class="vue" hidden>
+      <div id="forum-liste-vue" class="forum-bloc">
+        <div class="vue-tete">
+          <h2>Forum</h2>
+          <p class="ref" id="forum-corps"></p>
+        </div>
+        <p class="aide">Échangez avec les collègues de votre corps de police sur les infractions, l'émission de constats et le travail sur la route. Restez professionnel : pas de renseignements personnels ni de dossiers en cours.</p>
+        <button type="button" class="btn-principal forum-nouveau" id="forum-nouveau">+ Nouveau sujet</button>
+        <form id="forum-form" class="panneau formulaire" novalidate hidden>
+          <input id="forum-titre" maxlength="120" placeholder="Titre du sujet" aria-label="Titre du sujet">
+          <textarea id="forum-contenu" rows="4" maxlength="4000" placeholder="Votre message" aria-label="Message"></textarea>
+          <div class="fc-ligne"><button class="btn-principal" type="submit" style="margin:0">Publier</button><button type="button" class="lien" id="forum-annuler">Annuler</button></div>
+        </form>
+        <div class="forum-sujets" id="forum-sujets"></div>
+      </div>
+      <div id="forum-fil-vue" class="forum-bloc" hidden>
+        <button type="button" class="lien forum-retour" id="forum-retour">‹ Tous les sujets</button>
+        <article class="panneau forum-sujet" id="forum-sujet"></article>
+        <div class="forum-reponses" id="forum-reponses"></div>
+        <form id="forum-rep-form" class="chat-saisie forum-saisie" novalidate>
+          <textarea id="forum-rep" rows="1" maxlength="4000" placeholder="Répondre…" aria-label="Votre réponse"></textarea>
+          <button class="chat-envoyer" type="submit" aria-label="Publier la réponse"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" fill="currentColor"/></svg></button>
+        </form>
+      </div>
+    </section>
+
+    <section id="vue-idees" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Idées</h2>
+        <p class="ref">Nouveautés et sondages</p>
+      </div>
+      <div class="segmente idees-onglets" role="radiogroup">
+        <button type="button" role="radio" data-idees="demandes" aria-checked="true">Demandes</button>
+        <button type="button" role="radio" data-idees="sondages" aria-checked="false">Sondages</button>
+      </div>
+      <div id="idees-demandes">
+        <form id="idee-form" class="panneau formulaire" novalidate>
+          <input id="idee-titre" maxlength="120" placeholder="Votre idée en une phrase" aria-label="Votre idée">
+          <textarea id="idee-desc" rows="2" maxlength="2000" placeholder="Détails (facultatif)" aria-label="Détails"></textarea>
+          <button class="btn-principal" type="submit" style="margin:0">Proposer une nouveauté</button>
+        </form>
+        <div class="idees-liste" id="idees-liste"></div>
+      </div>
+      <div id="idees-sondages" hidden>
+        <form id="sondage-form" class="panneau formulaire" novalidate hidden>
+          <b>Nouveau sondage</b>
+          <input id="sondage-question" maxlength="200" placeholder="Question" aria-label="Question">
+          <div id="sondage-options"></div>
+          <button type="button" class="lien" id="sondage-ajout-option">+ Ajouter une option</button>
+          <button class="btn-principal" type="submit" style="margin:0">Publier le sondage</button>
+        </form>
+        <div class="idees-liste" id="sondages-liste"></div>
+      </div>
+    </section>
+
     <section id="vue-admin" class="vue" hidden>
       <div class="vue-tete">
         <h2>Administration</h2>
@@ -785,6 +850,21 @@
         <button data-filtre="non_confirme" aria-selected="false">Courriel non confirmé <b id="nb-non-confirme">0</b></button>
       </div>
       <div id="admin-liste" class="admin-liste"></div>
+
+      <h3 class="intertitre">Annonces</h3>
+      <form class="panneau formulaire" id="adm-annonce-form" novalidate>
+        <p class="aide">Les annonces s'affichent en haut de l'accueil de tous les membres, qui reçoivent aussi une notification.</p>
+        <input id="adm-annonce-titre" maxlength="120" placeholder="Titre" aria-label="Titre de l'annonce">
+        <textarea id="adm-annonce-texte" rows="2" maxlength="1000" placeholder="Texte (facultatif)" aria-label="Texte de l'annonce"></textarea>
+        <label class="btn-secondaire petit" for="adm-annonce-image">Ajouter une image (facultatif)</label>
+        <input type="file" id="adm-annonce-image" accept="image/jpeg,image/png,image/webp" hidden>
+        <small class="aide" id="adm-annonce-fichier"></small>
+        <button class="btn-principal" type="submit" style="margin:0">Publier l'annonce</button>
+      </form>
+      <ul class="liste-partages" id="adm-annonces"></ul>
+
+      <h3 class="intertitre">Signalements <span class="badge-ligne" id="adm-sig-nb" hidden></span></h3>
+      <ul class="liste-partages" id="adm-signalements"></ul>
 
       <h3 class="intertitre">Modèles d'horaire</h3>
       <div class="panneau">
@@ -914,6 +994,8 @@
         <div><b id="menu-nom"></b><small id="menu-sous"></small></div>
       </div>
       <button role="menuitem" data-menu="compte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mon compte</span></button>
+      <button role="menuitem" data-menu="forum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Forum</span></button>
+      <button role="menuitem" data-menu="idees"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Idées</span></button>
       <button role="menuitem" data-menu="corps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Territoires</span></button>
       <button role="menuitem" data-menu="admin" id="menu-admin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0M4 20c1-3.5 4.3-5 8-5s7 1.5 8 5M18 4l1.5 1.5L22 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Administration</span><b class="badge-ligne" id="badge-attente" hidden></b></button>
       <button role="menuitem" data-menu="aide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 11l4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>App (installer)</span></button>
@@ -923,9 +1005,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191214"></script>
+  <script src="config.js?v=202610191220"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191214"></script>
+  <script src="app.js?v=202610191220"></script>
 </body>
 </html>

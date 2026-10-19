@@ -122,6 +122,23 @@ Deno.serve(async (req) => {
       return Response.json({ envoye: n });
     }
 
+    if (e.type === "forum_reponse") {
+      const n = await envoyer([e.destinataire], { titre: `Nouvelle réponse : ${e.sujet}`, corps: `${e.auteur} a répondu à votre sujet dans le forum.`, url: "#forum", tag: `forum-${e.id}` });
+      return Response.json({ envoye: n });
+    }
+
+    if (e.type === "signalement") {
+      const { data: admins } = await admin.from("profiles").select("id").eq("role", "admin").eq("statut", "approuve");
+      const n = await envoyer((admins ?? []).map((x) => x.id), { titre: "Publication signalée", corps: e.extrait ? `« ${String(e.extrait).slice(0, 120)} »` : "Une publication du forum a été signalée.", url: "#admin", tag: `signalement-${e.id}` });
+      return Response.json({ envoye: n });
+    }
+
+    if (e.type === "annonce") {
+      const { data: membres } = await admin.from("profiles").select("id").eq("statut", "approuve");
+      const n = await envoyer((membres ?? []).map((x) => x.id), { titre: e.titre, corps: e.texte ? String(e.texte).slice(0, 180) : "Nouvelle annonce dans Police Management.", url: "#accueil", tag: `annonce-${e.id}` });
+      return Response.json({ envoye: n });
+    }
+
     if (e.type === "approbation") {
       const n = await envoyer([e.id], { titre: "Accès approuvé", corps: "Votre accès à Police Management est ouvert.", url: "#accueil", tag: "approbation" });
       return Response.json({ envoye: n });

@@ -1120,3 +1120,61 @@ select { appearance: none; -webkit-appearance: none; padding-right: 38px;
 .rg-ligne select { max-width: 46%; }
 #rg-conjoint-nom { margin-top: -4px; }
 .hr-plier summary .badge-ligne { display: inline-grid; vertical-align: 2px; margin-left: 6px; }
+
+/* =====================================================================
+   Communauté : annonces, forum, idées, sondages
+   ===================================================================== */
+.ac-annonces { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.ac-annonces::-webkit-scrollbar { display: none; }
+.annonce { scroll-snap-align: start; position: relative; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; background: var(--surface); border-radius: var(--r); padding: 12px 40px 12px 12px; box-shadow: var(--ombre-carte); border: 1px solid var(--bord-carte); border-left: 4px solid var(--ambre-vif); }
+.annonce:not(:has(img)) { grid-template-columns: 1fr; padding-left: 16px; }
+.annonce img { width: 76px; height: 76px; object-fit: cover; border-radius: 12px; }
+.annonce div { display: grid; gap: 2px; min-width: 0; }
+.annonce small { color: var(--ambre); font-weight: 700; font-size: .76rem; }
+.annonce p { margin: 0; color: var(--fg-doux); font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.annonce-fermer { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; color: var(--fg-doux); }
+.tuile[data-aller="forum"] .tuile-ico { background: color-mix(in srgb, #0E7C86 20%, var(--surface)); }
+.tuile[data-aller="idees"] .tuile-ico { background: color-mix(in srgb, var(--ambre-vif) 25%, var(--surface)); }
+
+.forum-bloc { display: grid; gap: 12px; }
+.forum-nouveau { margin: 0; justify-self: start; }
+.forum-sujets, .forum-reponses, .idees-liste { display: grid; gap: 10px; }
+.forum-ligne { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--bord-carte); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--ombre-carte); color: var(--fg); transition: transform .12s var(--ease); }
+.forum-ligne:active { transform: scale(.98); }
+.forum-ligne b { grid-column: 1; font-size: 1.02rem; }
+.forum-ligne .forum-extrait { grid-column: 1; color: var(--fg-doux); font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.forum-ligne small { grid-column: 1; color: var(--fg-doux); font-size: .8rem; }
+.forum-ligne i { grid-column: 2; grid-row: 1 / 4; align-self: center; font-style: normal; font-weight: 700; font-size: .8rem; color: var(--marque); background: color-mix(in srgb, var(--marque) 12%, transparent); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.forum-retour { justify-self: start; text-decoration: none; font-weight: 600; }
+.forum-sujet { gap: 8px; }
+.forum-sujet h3 { font-size: 1.4rem; }
+.forum-rep { background: var(--surface); border-radius: 14px; padding: 12px 14px; display: grid; gap: 4px; border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); }
+.forum-rep.moi { border-left: 4px solid var(--marque); }
+.forum-rep small { color: var(--fg-doux); }
+.forum-rep .lien, .forum-sujet .lien { padding: 2px 0; font-size: .86rem; }
+.forum-saisie { border-radius: 16px; border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); position: sticky; bottom: 0; }
+
+.idees-onglets { grid-template-columns: 1fr 1fr; }
+#idees-demandes, #idees-sondages { display: grid; gap: 12px; }
+#idees-demandes[hidden], #idees-sondages[hidden] { display: none; }
+.idee { display: grid; grid-template-columns: auto 1fr; gap: 12px; background: var(--surface); border-radius: var(--r); padding: 14px; border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); }
+.idee-vote { display: grid; justify-items: center; align-content: center; gap: 0; width: 52px; min-height: 56px; border-radius: 14px; border: 1.5px solid var(--ligne); background: var(--surface); color: var(--fg-doux); }
+.idee-vote b { font: 700 1.1rem var(--f-titre); color: var(--fg); }
+.idee-vote.vote { background: var(--marque); border-color: var(--marque); color: #fff; }
+.idee-vote.vote b { color: #fff; }
+.idee-txt { display: grid; gap: 3px; min-width: 0; }
+.idee-txt span { color: var(--fg-doux); font-size: .92rem; }
+.idee-txt small { color: var(--fg-doux); font-size: .8rem; }
+.idee-txt select { width: auto; padding: 6px 30px 6px 10px; font-size: .86rem; }
+.idee-txt .lien { justify-self: start; padding: 2px 0; font-size: .86rem; }
+.statut-idee { font-weight: 700; }
+.statut-idee.planifiee { color: var(--bleu); } .statut-idee.realisee { color: var(--vert); } .statut-idee.refusee { color: var(--fg-doux); }
+.sondage { gap: 8px; }
+.sondage-option { position: relative; overflow: hidden; display: flex; justify-content: space-between; gap: 10px; text-align: left; border: 1.5px solid var(--ligne); border-radius: 12px; padding: 11px 14px; background: var(--surface); color: var(--fg); font-weight: 600; }
+.sondage-option::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--pc); background: color-mix(in srgb, var(--marque) 16%, transparent); transition: width .4s var(--ease); }
+.sondage-option > * { position: relative; }
+.sondage-option.choisie { border-color: var(--marque); }
+.sondage-option:disabled { cursor: default; }
+#sondage-options { display: grid; gap: 6px; }
+.lien.rouge { color: var(--rouge); }
+.intertitre .badge-ligne { display: inline-grid; vertical-align: 3px; margin-left: 6px; font-family: var(--f-texte); }
