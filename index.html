@@ -8,8 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="format-detection" content="telephone=no">
   <title>Police Management</title>
-  <meta name="description" content="Outil de référence réservé aux policiers du Québec : Code de la sécurité routière, bornes kilométriques et territoires des corps de police.">
-  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Police Management : l'horaire, la route et les lois réunis pour les policiers du Québec. Rotation et échanges de quarts, carte des postes et bornes kilométriques, CSR et calculateur de vitesse. Accès vérifié, données hébergées au Canada.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Police Management">
+  <meta property="og:description" content="L'horaire, la route et les lois, réunis pour les policiers du Québec.">
+  <meta property="og:image" content="https://asmqc.github.io/Police-Management/assets/icone-512.png">
   <meta name="theme-color" content="#0E1B2C">
   <meta name="apple-mobile-web-app-title" content="Police Management">
   <link rel="icon" href="assets/favicon.png" type="image/png">
@@ -19,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191312">
+  <link rel="stylesheet" href="styles.css?v=202610191325">
 </head>
 <body>
   <!-- Chargement -->
@@ -28,7 +31,161 @@
   </div>
 
   <!-- Connexion / demande d'accès -->
+  <!-- Site officiel (visiteurs non connectés) -->
+  <div id="ecran-site" class="site" hidden>
+    <header class="site-barre">
+      <a class="site-logo" href="#haut" data-site-lien><img src="assets/logo.png" alt="" width="34" height="34"><span>Police <b>Management</b></span></a>
+      <nav class="site-liens" aria-label="Sections du site">
+        <a href="#site-fonctions" data-site-lien>Fonctionnalités</a>
+        <a href="#site-horaire" data-site-lien>Horaire</a>
+        <a href="#site-securite" data-site-lien>Sécurité</a>
+        <a href="#site-corps" data-site-lien>Corps de police</a>
+        <a href="#site-contact" data-site-lien>Contact</a>
+      </nav>
+      <div class="site-actions">
+        <button type="button" class="site-btn site-btn-ligne" data-site-auth="connexion">Se connecter</button>
+        <button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès</button>
+      </div>
+    </header>
+
+    <main class="site-contenu" id="haut">
+      <section class="site-hero">
+        <div class="site-hero-txt">
+          <p class="site-pastille"><span></span>Réservé aux policiers du Québec · accès vérifié</p>
+          <h1>L'horaire, la route et les lois, réunis pour les policiers du Québec.</h1>
+          <p class="site-intro">Rotation et échanges de quarts, carte des postes avec les bornes kilométriques, Code de la sécurité routière et calculateur de vitesse, forum de votre corps de police. Une seule app, rapide à consulter en service, qui s'installe sur le téléphone ou l'ordinateur.</p>
+          <div class="site-cta">
+            <button type="button" class="site-btn site-btn-plein grand" data-site-auth="demande">Demander l'accès</button>
+            <button type="button" class="site-btn site-btn-ligne grand" data-site-auth="connexion">J'ai déjà un compte</button>
+          </div>
+          <ul class="site-garanties">
+            <li>Données hébergées au Canada</li>
+            <li>Conforme à la Loi 25</li>
+            <li>Aucune publicité, aucun profilage</li>
+          </ul>
+        </div>
+        <div class="site-hero-visuel" aria-hidden="true">
+          <figure class="site-tel incline-g"><img src="assets/site/horaire.webp" alt=""></figure>
+          <figure class="site-tel avant"><img src="assets/site/accueil.webp" alt=""></figure>
+        </div>
+      </section>
+
+      <section class="site-section" id="site-fonctions">
+        <p class="site-sur">Fonctionnalités</p>
+        <h2>Tout ce qu'il faut pour un quart de travail</h2>
+        <div class="site-grille">
+          <article><b>Horaire et rotation</b><p>Vues jour, semaine, mois et liste. Rotation automatique, exceptions, temps supplémentaire détaillé et 2ᵉ calendrier pour votre conjoint·e.</p></article>
+          <article><b>Échanges de quarts</b><p>Offrez un quart à votre poste : le premier collègue qui le prend l'obtient, et les deux horaires se mettent à jour.</p></article>
+          <article><b>Carte des postes</b><p>Postes de la SQ, corps municipaux et autochtones, bornes kilométriques, sorties d'autoroute, codes municipaux et caméras du MTMD.</p></article>
+          <article><b>Calculateur de vitesse</b><p>Amende (art. 516 CSR), frais, contribution, réclamation totale et points d'inaptitude, en zone normale, de travaux ou scolaire.</p></article>
+          <article><b>Lois du Québec</b><p>CSR, véhicules hors route, transport rémunéré, assurance automobile et sécurité nautique fédérale, avec recherche par article ou mot-clé.</p></article>
+          <article><b>Forum de votre corps</b><p>Échangez avec vos collègues sur les infractions et l'émission de constats. Chaque publication peut être signalée à l'administrateur.</p></article>
+          <article><b>Idées et sondages</b><p>Proposez des nouveautés, votez pour celles des autres et répondez aux sondages de l'administration.</p></article>
+          <article><b>Rappels et notifications</b><p>Rappel avant chaque quart, rappels d'événements, messages et annonces, même quand l'app est fermée.</p></article>
+          <article><b>Six styles d'interface</b><p>Moderne clair ou sombre, Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police.</p></article>
+        </div>
+      </section>
+
+      <section class="site-bande" id="site-horaire">
+        <div>
+          <p class="site-sur">Horaire</p>
+          <h2>Votre horaire, toujours à jour</h2>
+          <p>Configurez votre rotation une seule fois : l'app calcule vos quarts pour les mois à venir. Ajoutez vacances, cour, formation ou temps supplémentaire en un toucher, avec les champs de la feuille de TS.</p>
+          <ul class="site-liste">
+            <li>Rotation partagée avec votre poste, sans vos notes ni vos événements</li>
+            <li>Statistiques d'heures et rapport de temps supplémentaire en PDF</li>
+            <li>Export vers le calendrier du téléphone ou d'Outlook</li>
+          </ul>
+        </div>
+        <figure class="site-tel"><img src="assets/site/horaire.webp" alt="Vue semaine de l'horaire avec les quarts de jour et de nuit"></figure>
+      </section>
+
+      <section class="site-bande inverse" id="site-carte">
+        <div>
+          <p class="site-sur">Carte</p>
+          <h2>Chaque poste, chaque borne, à portée de main</h2>
+          <p>Entrez une route et un kilométrage, ou touchez la carte : Police Management indique le corps de police responsable, le poste, le code municipal, le district judiciaire et la borne la plus proche.</p>
+          <ul class="site-liste">
+            <li>Carte adaptée à votre corps de police et à votre territoire</li>
+            <li>Repères personnels, visibles par vous seulement</li>
+            <li>Votre position reste sur votre appareil</li>
+          </ul>
+        </div>
+        <figure class="site-tel"><img src="assets/site/carte.webp" alt="Carte avec les couches de la Sûreté du Québec"></figure>
+      </section>
+
+      <section class="site-bande" id="site-lois">
+        <div>
+          <p class="site-sur">Lois et routière</p>
+          <h2>Le bon article et le bon montant, tout de suite</h2>
+          <p>Cherchez un article par numéro ou par mot-clé, copiez-le, ouvrez le texte officiel. Pour la vitesse, entrez la limite et la vitesse mesurée : amende, frais, points et grand excès sont calculés.</p>
+        </div>
+        <div class="site-duo">
+          <figure class="site-tel"><img src="assets/site/vitesse.webp" alt="Calculateur de vitesse"></figure>
+          <figure class="site-tel decale"><img src="assets/site/lois.webp" alt="Recherche dans la Loi sur les véhicules hors route"></figure>
+        </div>
+      </section>
+
+      <section class="site-section site-sombre" id="site-securite">
+        <p class="site-sur">Sécurité et confidentialité</p>
+        <h2>Construite pour des données sensibles</h2>
+        <div class="site-grille deux">
+          <article><b>Accès vérifié</b><p>Chaque demande d'accès est examinée par l'administrateur avant l'ouverture du compte. Le courriel doit être confirmé pour la carte et les lois.</p></article>
+          <article><b>Hébergé au Canada</b><p>Les comptes et les horaires sont hébergés à Montréal (région ca-central-1), chiffrés en transit et au repos.</p></article>
+          <article><b>Corps de police séparés</b><p>Chaque corps ne voit que son forum, ses idées et ses annonces. Le partage d'horaire entre corps se fait seulement si vous le choisissez.</p></article>
+          <article><b>Conforme à la Loi 25</b><p>Consentement explicite conservé comme preuve, droits d'accès, de rectification et de suppression, aucune vente de données.</p></article>
+        </div>
+        <ul class="site-jamais">
+          <li><span>Publicité</span><b>Aucune</b></li>
+          <li><span>Outils d'analyse</span><b>Aucun</b></li>
+          <li><span>Vente de données</span><b>Jamais</b></li>
+          <li><span>Position GPS transmise</span><b>Jamais</b></li>
+        </ul>
+      </section>
+
+      <section class="site-bande inverse" id="site-corps">
+        <div>
+          <p class="site-sur">Corps de police</p>
+          <h2>Pensée pour la Sûreté du Québec, ouverte à tous les corps</h2>
+          <p>Postes MRC et autoroutiers, horaire hybride autoroutier et territoires de desserte de la SQ sont intégrés. Les corps de police municipaux et autochtones ont leur propre espace : territoire sur la carte, forum, idées et annonces.</p>
+          <div class="site-cta"><button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès pour mon corps</button></div>
+        </div>
+        <figure class="site-tel"><img src="assets/site/forum.webp" alt="Forum d'un corps de police"></figure>
+      </section>
+
+      <section class="site-section" id="site-installer">
+        <p class="site-sur">Installation</p>
+        <h2>Une vraie app, sans magasin d'applications</h2>
+        <div class="site-grille trois">
+          <article><b>iPhone et iPad</b><p>Dans Safari, touchez Partager, puis « Sur l'écran d'accueil ».</p></article>
+          <article><b>Android</b><p>Dans Chrome, touchez le menu ⋮, puis « Installer l'application ».</p></article>
+          <article><b>Ordinateur</b><p>Dans Chrome ou Edge, cliquez sur l'icône d'installation dans la barre d'adresse.</p></article>
+        </div>
+      </section>
+
+      <section class="site-section site-contact" id="site-contact">
+        <h2>Une question ?</h2>
+        <p>Écrivez-nous ou rejoignez le Discord de soutien. Les membres approuvés peuvent aussi écrire directement à l'administrateur dans l'app.</p>
+        <div class="site-cta">
+          <a class="site-btn site-btn-plein" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener">Rejoindre le Discord</a>
+          <a class="site-btn site-btn-ligne" href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-pied">
+      <div><img src="assets/logo.png" alt="" width="28" height="28"><span>Police <b>Management</b></span></div>
+      <nav aria-label="Liens utiles">
+        <a href="politique.html">Politique de confidentialité</a>
+        <a href="confidentialite.html">Confidentialité de l'app iPhone</a>
+        <button type="button" class="lien" data-site-auth="connexion">Se connecter</button>
+      </nav>
+      <p>Outil indépendant de référence. Police Management n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. Les textes officiels prévalent.</p>
+    </footer>
+  </div>
+
   <main id="ecran-auth" class="auth" hidden>
+    <button type="button" class="auth-retour" id="auth-retour">‹ Retour au site</button>
     <section class="auth-carte">
       <header class="auth-entete">
         <img src="assets/logo.png" alt="Logo Police Management" class="logo" width="64" height="64">
@@ -1086,9 +1243,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191312"></script>
+  <script src="config.js?v=202610191325"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191312"></script>
+  <script src="app.js?v=202610191325"></script>
 </body>
 </html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Politique de confidentialité — Police Management</title>
+<meta name="description" content="Politique de confidentialité de l'application Police Management, conforme à la Loi 25 du Québec, et façon de signaler un problème.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#4F46E5;
+    --secondary:#7C3AED;
+    --ink:#0B1020;
+    --ink-soft:#4B5064;
+    --bg:#FFFFFF;
+    --bg-soft:#F6F6FB;
+    --border:#E7E7F1;
+    --card:#FFFFFF;
+    --radius:20px;
+    --max:820px;
+    --shadow:0 10px 30px -12px rgba(15,15,40,.18);
+  }
+  html.dark{
+    --ink:#F4F4FB;
+    --ink-soft:#B7B9CC;
+    --bg:#0A0B14;
+    --bg-soft:#111226;
+    --border:#22243B;
+    --card:#12142A;
+    --shadow:0 10px 30px -12px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.65;
+    transition:background .25s ease,color .25s ease;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--primary);text-decoration:none}
+  .wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+
+  header{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:saturate(180%) blur(14px);
+    background:color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom:1px solid var(--border);
+  }
+  nav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;max-width:1160px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.01em;color:var(--ink)}
+  .brand svg{width:30px;height:30px;flex:none}
+  .nav-links{display:flex;gap:28px;align-items:center}
+  .nav-links a{font-size:14px;font-weight:600;color:var(--ink-soft);transition:color .15s}
+  .nav-links a:hover,.nav-links a.active{color:var(--primary)}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;border:1px solid var(--border);
+    background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);
+  }
+  .icon-btn svg{width:18px;height:18px}
+  @media (max-width:820px){ .nav-links{display:none} }
+
+  .content{padding:48px 0 80px}
+  h1{font-size:1.9rem;margin:0 0 6px;letter-spacing:-.02em}
+  .updated{color:var(--ink-soft);font-size:.95rem;margin:0 0 28px}
+  h2{font-size:1.2rem;margin:36px 0 10px;letter-spacing:-.01em}
+  .lede{color:var(--ink-soft)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border:1px solid var(--border);vertical-align:top}
+  th{background:var(--bg-soft)}
+  ul{padding-left:20px}
+  li{margin-bottom:4px}
+  footer{margin-top:48px;color:var(--ink-soft);font-size:.9rem;border-top:1px solid var(--border);padding-top:16px}
+
+  /* Report card */
+  .report-card{
+    background:linear-gradient(135deg,#312E81,var(--primary),var(--secondary));
+    color:#fff;border-radius:var(--radius);padding:28px 30px;margin-bottom:8px;
+    box-shadow:var(--shadow);
+  }
+  .report-card h2{margin-top:0;color:#fff}
+  .report-card p{color:rgba(255,255,255,.88);margin:0 0 20px;font-size:15px}
+  .report-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;
+    font-weight:700;font-size:14px;cursor:pointer;border:1px solid transparent;white-space:nowrap;
+  }
+  .btn svg{width:16px;height:16px}
+  .btn-white{background:#fff;color:var(--primary)}
+  .btn-outline{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff}
+
+  .officer-card{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin:14px 0 0;
+  }
+</style>
+</head>
+<body><p style="margin:0;padding:10px 16px;background:#FFF7E6;border-bottom:1px solid #F2B33D;font:600 14px/1.4 system-ui,sans-serif;color:#3A2A05;text-align:center">Cette politique s'applique à l'app iPhone Police Management. Pour le site web et l'app web, voir la <a href="politique.html" style="color:#2467C4">politique de confidentialité du site</a>.</p>
+
+<header>
+  <nav>
+    <a href="./" class="brand">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5l-8-3Z" fill="url(#g1)"/><defs><linearGradient id="g1" x1="4" y1="2" x2="20" y2="22"><stop stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs></svg>
+      Police Management
+    </a>
+    <div class="nav-links">
+      <a href="./">Fonctionnalités</a>
+      <a href="./">Sécurité</a>
+      <a href="./">Corps de police</a>
+      <a href="confidentialite.html" class="active">Confidentialité</a>
+      <a href="./">Contact</a>
+    </div>
+    <button class="icon-btn" id="themeToggle" aria-label="Basculer le mode sombre">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.4M12 19.6V22M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2 12h2.4M19.6 12H22M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg>
+    </button>
+  </nav>
+</header>
+
+<div class="content">
+  <div class="wrap">
+
+    <div class="report-card">
+      <h2>🛠️ Signaler un problème</h2>
+      <p>Un bogue, une erreur dans les données ou une question sur tes renseignements personnels? Écris-nous directement — on te répond rapidement.</p>
+      <div class="report-actions">
+        <a class="btn btn-white" href="mailto:police.management@hotmail.com?subject=Probl%C3%A8me%20signal%C3%A9%20%E2%80%94%20Police%20Management&body=Bonjour%2C%0A%0ADécris ici le problème rencontré (ce qui s'est passé, l'écran concerné, ton appareil/version si possible) :%0A%0A">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+          Envoyer un courriel
+        </a>
+        <a class="btn btn-outline" href="https://discord.gg/mcTzBhRKP" target="_blank" rel="noopener">Discord de soutien</a>
+      </div>
+    </div>
+
+    <header style="border-bottom:1px solid var(--border);margin:40px 0 24px;padding-bottom:8px">
+      <h1>Politique de confidentialité — Police Management</h1>
+      <p class="updated">Dernière mise à jour : 19 septembre 2026 (version 2026.09.19)</p>
+    </header>
+
+    <p class="lede">Police Management est une application de coordination du travail destinée au personnel policier du Canada. Elle ne vise aucun corps de police en particulier. La présente politique est rédigée conformément à la <strong>Loi modernisant des dispositions législatives en matière de protection des renseignements personnels (« Loi 25 », Québec)</strong> et décrit quels renseignements l'application traite, comment ils sont protégés et quels sont vos droits.</p>
+
+    <h2>1. Responsable de la protection des renseignements personnels</h2>
+    <p>Conformément à la Loi 25, <strong>Anthony Smith, propriétaire-administrateur de l'application</strong>, agit comme responsable de la protection des renseignements personnels. L'application est exploitée à titre indépendant et n'est affiliée à aucune entreprise ni à aucun corps de police. Pour toute question, demande d'exercice de droits ou plainte relative à vos renseignements personnels : <a href="mailto:hockey007smith@hotmail.ca">hockey007smith@hotmail.ca</a> ou le serveur Discord de soutien : <a href="https://discord.gg/bgrJVwPqyV">https://discord.gg/bgrJVwPqyV</a>.</p>
+    <p class="officer-card" style="font-size:14px">💬 Pour un <strong>problème technique</strong> ou une question générale sur l'application (pas une demande légale liée à vos renseignements), utilise plutôt le bouton <strong>« Signaler un problème »</strong> en haut de cette page (<a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>).</p>
+
+    <h2>2. Consentement</h2>
+    <p>Lors de la création de votre compte, votre consentement à la collecte et à l'utilisation de vos renseignements est recueilli de façon <strong>manifeste, libre et éclairée</strong> (case à cocher explicite, jamais pré-cochée). La date de votre consentement et la version de la politique acceptée sont conservées comme preuve. Toute mise à jour importante de cette politique redemande ce consentement à tous les comptes existants avant de pouvoir continuer à utiliser l'application. Vous pouvez <strong>retirer votre consentement à tout moment</strong> en supprimant votre compte (section 10).</p>
+
+    <h2>3. Renseignements recueillis et finalités</h2>
+    <table>
+      <thead><tr><th>Renseignement</th><th>Finalité</th></tr></thead>
+      <tbody>
+        <tr><td>Profil : prénom, nom, courriel, matricule, grade, corps de police, unité/poste, équipe, photo de profil facultative</td><td>Créer et gérer votre compte, contrôler l'accès</td></tr>
+        <tr><td>Horaire, rotation et catégories de quart, et sa sauvegarde privée complète (avec notes personnelles)</td><td>Afficher votre calendrier et, si vous le partagez, l'horaire d'équipe; la sauvegarde privée vous suit entre vos appareils, invisible à tout le monde y compris l'administrateur</td></tr>
+        <tr><td>Échanges de quarts (offres et prises entre collègues d'un même poste) : nom chiffré, date, catégorie et horaire</td><td>Permettre les échanges de quart entre collègues du même poste</td></tr>
+        <tr><td>Publications au Forum : titre, texte et nom d'auteur des sujets et réponses</td><td>Permettre les échanges entre membres d'un même corps de police</td></tr>
+        <tr><td>Idées, sondages et votes (texte, nom d'auteur le cas échéant, choix de vote)</td><td>Recueillir, soutenir et prioriser les suggestions d'amélioration</td></tr>
+        <tr><td>Commentaires envoyés à l'administrateur, réponses reçues et messages directs de l'administrateur</td><td>Soutien et suivi de compte</td></tr>
+        <tr><td>Décision de l'administrateur sur votre inscription (statut, message facultatif en cas de refus)</td><td>Gestion de l'accès — un refus supprime immédiatement et définitivement le compte; vous pouvez ensuite vous réinscrire avec la même identité iCloud</td></tr>
+        <tr><td>Clé publique de chiffrement (Curve25519)</td><td>Chiffrement de bout en bout des contenus partagés</td></tr>
+        <tr><td>Mot de passe applicatif</td><td>Sécuriser l'accès — conservé uniquement sous forme de hachage cryptographique salé</td></tr>
+        <tr><td>Horodatage de dernière activité</td><td>Indicateur en ligne / hors ligne, visible uniquement par l'administrateur</td></tr>
+      </tbody>
+    </table>
+    <p>L'application n'utilise <strong>aucun</strong> outil publicitaire, <strong>aucun</strong> service d'analyse ou de mesure, <strong>aucun</strong> profilage, et ne vend ni ne communique vos renseignements à des tiers à des fins commerciales.</p>
+
+    <h2>4. Hébergement à l'extérieur du Québec</h2>
+    <p>Vos renseignements sont hébergés chez <strong>Apple (iCloud/CloudKit)</strong>, sur des serveurs situés <strong>à l'extérieur du Québec, notamment aux États-Unis</strong>. Apple offre des mesures de protection reconnues (chiffrement en transit et au repos, certifications de sécurité, engagements contractuels de protection des données). En créant un compte, vous consentez à cette communication hors Québec.</p>
+    <p>Aucun renseignement personnel n'est traité par Google ou tout autre tiers publicitaire. Le site web de l'application (pages statiques, sans compte ni collecte) est hébergé sur <strong>GitHub Pages</strong>.</p>
+
+    <h2>5. Paramètres de confidentialité par défaut</h2>
+    <p>Conformément à la Loi 25, les réglages offrant le <strong>plus haut niveau de confidentialité sont activés par défaut</strong> : aucune collecte d'analyse ou de mesure, aucun traçage publicitaire, photo de profil et partage d'horaire facultatifs, notifications facultatives.</p>
+
+    <h2>6. Cloisonnement par corps de police</h2>
+    <p>Les données sont cloisonnées : les membres d'un corps de police ne voient que les renseignements, l'horaire partagé, les échanges de quart, le forum et les idées de leur propre corps (et, pour l'horaire et les échanges, de leur propre poste). Aucun corps de police ne peut consulter les données d'un autre.</p>
+
+    <h2>7. Localisation, biométrie et calendrier</h2>
+    <ul>
+      <li><strong>Localisation</strong> : votre position GPS est utilisée uniquement sur votre appareil, pour vous situer sur la carte et trouver le repère le plus proche. Elle n'est <strong>ni enregistrée ni transmise</strong>. Vous pouvez couper toute utilisation de la position dans l'application (Réglages → Confidentialité), en plus de l'autorisation gérée par iOS.</li>
+      <li><strong>Face ID / biométrie</strong> : l'authentification biométrique est effectuée entièrement par iOS sur votre appareil; l'application n'a jamais accès à vos données biométriques.</li>
+      <li><strong>Calendrier</strong> : l'export de vos quarts vers le Calendrier d'Apple sert uniquement à créer ces événements sur votre appareil; aucune donnée de calendrier n'est lue ni transmise.</li>
+    </ul>
+
+    <h2>8. Sécurité</h2>
+    <p>Les données sont chiffrées <strong>en transit et au repos</strong> par Apple. De plus, l'application chiffre elle-même (<strong>AES-256-GCM</strong>) avant l'envoi : la photo de profil, l'horaire partagé avec votre poste (et sa sauvegarde privée), les échanges de quarts, les publications du forum, les sondages, les idées, ainsi que les commentaires envoyés à l'administrateur et leurs réponses. Une clé publique (<strong>Curve25519</strong>) est associée à votre compte pour le chiffrement de bout en bout des contenus partagés. Le mot de passe applicatif n'est jamais conservé en clair : seul un <strong>hachage SHA-256 salé</strong> est stocké. L'accès à l'application peut être verrouillé par Face ID.</p>
+
+    <h2>9. Qui voit quoi</h2>
+    <ul>
+      <li>Les membres de votre <strong>poste</strong>, au sein de votre corps de police, voient votre nom, votre équipe, votre horaire partagé (sans vos notes ni vos événements personnels) et les quarts que vous offrez en échange (et qui les a pris).</li>
+      <li>Les membres de votre <strong>corps de police</strong> voient vos publications au <strong>Forum</strong> et vos <strong>idées/demandes</strong> (avec votre nom d'auteur), ainsi que les votes de façon agrégée. Aucun autre corps de police n'y a accès (cloisonnement).</li>
+      <li>L'<strong>administrateur</strong> voit les profils, l'état des comptes, les commentaires et leurs réponses, les publications du forum et les idées.</li>
+      <li>Personne d'autre n'a accès à vos renseignements.</li>
+    </ul>
+
+    <h2>10. Conservation, suppression et retrait du consentement</h2>
+    <ul>
+      <li>Vos renseignements sont conservés tant que votre compte est actif.</li>
+      <li>Vous pouvez <strong>supprimer votre compte</strong> à tout moment dans l'application (Réglages → Modifier mon profil → Supprimer mon compte) : profil, photo, horaire partagé et sa sauvegarde privée sont alors effacés définitivement. La suppression de votre compte vaut retrait de votre consentement.</li>
+      <li>Une inscription refusée par l'administrateur, ou un compte qu'il supprime, est aussi effacé immédiatement et définitivement — vous pouvez ensuite vous réinscrire.</li>
+      <li>Vous pouvez supprimer vos propres publications au forum et vos idées; l'administrateur peut également les retirer.</li>
+      <li>Les commentaires déjà envoyés à l'administrateur peuvent subsister; vous pouvez en demander la suppression au responsable.</li>
+    </ul>
+
+    <h2>11. Vos droits (Loi 25)</h2>
+    <p>Vous pouvez demander en tout temps :</p>
+    <ul>
+      <li>l'<strong>accès</strong> à vos renseignements personnels;</li>
+      <li>leur <strong>rectification</strong> s'ils sont inexacts ou incomplets;</li>
+      <li>leur <strong>suppression</strong> ou la <strong>cessation de leur diffusion</strong> (désindexation);</li>
+      <li>leur <strong>communication dans un format technologique structuré</strong> (portabilité).</li>
+    </ul>
+    <p>Adressez votre demande au responsable via le canal indiqué à la section 1. Une réponse vous sera donnée <strong>dans les 30 jours</strong>. Si vous êtes insatisfait du traitement de votre demande, vous pouvez porter plainte à la <strong>Commission d'accès à l'information du Québec</strong> : <a href="https://www.cai.gouv.qc.ca">www.cai.gouv.qc.ca</a>.</p>
+
+    <h2>12. Incidents de confidentialité</h2>
+    <p>Tout incident de confidentialité (accès, utilisation ou communication non autorisés d'un renseignement personnel) est consigné dans un <strong>registre des incidents</strong>. Si un incident présente un <strong>risque de préjudice sérieux</strong>, la Commission d'accès à l'information et les personnes concernées en seront avisées avec diligence, et des mesures raisonnables seront prises pour réduire le risque.</p>
+
+    <h2>13. Avertissement d'usage</h2>
+    <p>L'application rappelle à chaque ouverture qu'aucune information confidentielle, aucune photo de banque de données policière ni aucune donnée sur des civils ne doit y être partagée. Les contenus publiés relèvent de la responsabilité de leur auteur.</p>
+
+    <h2>14. Contenu de référence (lois)</h2>
+    <p>Les textes de loi consultables dans l'application proviennent de sources officielles gouvernementales et sont fournis à titre de référence. En cas de doute, le texte officiel en vigueur prévaut.</p>
+
+    <h2>15. Modifications</h2>
+    <p>La présente politique est publiée sur le site web de l'application. Toute modification y sera publiée et signalée dans l'application. En cas de changement important aux finalités ou aux renseignements recueillis, un nouveau consentement sera demandé à tous les comptes existants.</p>
+
+    <footer>
+      © 2026 Police Management — Anthony Smith. Application indépendante non affiliée à un corps de police.
+    </footer>
+  </div>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const stored = localStorage.getItem('pm-theme');
+  if (stored === 'dark' || (!stored && matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.classList.add('dark');
+  }
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    root.classList.toggle('dark');
+    localStorage.setItem('pm-theme', root.classList.contains('dark') ? 'dark' : 'light');
+  });
+</script>
+
+</body>
+</html>

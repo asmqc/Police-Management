@@ -88,8 +88,32 @@
     toastMinuteur = setTimeout(() => (t.hidden = true), 3200);
   }
   function montrer(ecran) {
-    ["#ecran-chargement", "#ecran-auth", "#ecran-attente", "#ecran-mdp-temp", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
+    ["#ecran-chargement", "#ecran-site", "#ecran-auth", "#ecran-attente", "#ecran-mdp-temp", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
+    document.body.classList.toggle("mode-site", ecran === "#ecran-site");
   }
+  // Site officiel : affiché aux visiteurs non connectés; « Se connecter » et « Demander l'accès » ouvrent l'écran d'authentification
+  function montrerAccueilPublic() {
+    const h = (location.hash || "").replace("#", "");
+    if (etat.forcerAuth) { montrer("#ecran-auth"); return; }
+    if (h === "connexion" || h === "demande") { montrer("#ecran-auth"); ongletAuth(h); return; }
+    // App installée sur l'écran d'accueil : directement à la connexion
+    if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) { montrer("#ecran-auth"); ongletAuth("connexion"); return; }
+    montrer("#ecran-site");
+  }
+  function ouvrirAuth(onglet) {
+    montrer("#ecran-auth"); ongletAuth(onglet);
+    history.replaceState(null, "", "#" + onglet);
+    window.scrollTo(0, 0);
+    setTimeout(() => (onglet === "connexion" ? $("#cx-courriel") : $("#dm-nom")).focus(), 100);
+  }
+  document.querySelectorAll("[data-site-auth]").forEach((b) => b.addEventListener("click", () => ouvrirAuth(b.dataset.siteAuth)));
+  document.getElementById("auth-retour").addEventListener("click", () => { history.replaceState(null, "", location.pathname); montrer("#ecran-site"); window.scrollTo(0, 0); });
+  document.querySelectorAll("[data-site-lien]").forEach((a) => a.addEventListener("click", (e) => {
+    const cible = document.querySelector(a.getAttribute("href"));
+    if (!cible) return;
+    e.preventDefault();
+    cible.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
   function messageAuth(texte, type = "") {
     const m = $("#auth-message");
     m.textContent = texte;
@@ -156,7 +180,9 @@
     const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
     if (h.get("error_code") === "otp_expired" || h.get("error")) {
       history.replaceState(null, "", location.pathname + location.search);
+      etat.forcerAuth = true;
       setTimeout(() => {
+        montrer("#ecran-auth"); ongletAuth("connexion");
         messageAuth("Ce lien de confirmation a expiré. Écrivez votre courriel ci-dessus et touchez « Renvoyer le courriel de confirmation ». Votre accès s'ouvrira aussi dès que l'administrateur aura approuvé votre demande.", "erreur");
         $("#btn-renvoyer").hidden = false;
       }, 0);
@@ -357,7 +383,7 @@
   async function demarrer(manuel = false) {
     const { data } = await sb.auth.getSession();
     etat.session = data.session;
-    if (!etat.session) { montrer("#ecran-auth"); return; }
+    if (!etat.session) { montrerAccueilPublic(); return; }
     try {
       etat.profil = await chargerProfil();
     } catch (e) {
@@ -406,7 +432,7 @@
       etat.session = session;
       verifierCourriel().then(() => { if (courrielVerifie() && VUES_VERROU.includes(etat.vue)) afficherVue(etat.vue); });
     }
-    if (evenement === "SIGNED_OUT") { etat.session = null; montrer("#ecran-auth"); }
+    if (evenement === "SIGNED_OUT") { etat.session = null; montrerAccueilPublic(); }
   });
 
   /* ---------------- Confirmation du courriel ----------------

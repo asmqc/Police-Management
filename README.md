@@ -15,6 +15,10 @@
 
 ---
 
+## Site officiel
+
+Les visiteurs non connectés voient le **site officiel** de Police Management (présentation, fonctionnalités, sécurité, corps de police, installation, contact), avec **Se connecter** et **Demander l'accès** en haut. La connexion ouvre l'app à la même adresse; une app installée sur l'écran d'accueil s'ouvre directement sur la connexion. La politique de l'app iPhone est publiée à [`confidentialite.html`](confidentialite.html), celle du site à [`politique.html`](politique.html).
+
 ## Fonctionnalités
 
 ### Accueil
