@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191248">
+  <link rel="stylesheet" href="styles.css?v=202610191302">
 </head>
 <body>
   <!-- Chargement -->
@@ -365,6 +365,8 @@
         <div class="legende" id="legende">
           <button class="legende-tete" id="legende-bascule" aria-expanded="true">Couches</button>
           <div class="legende-corps" id="legende-corps">
+            <p class="legende-profil" id="legende-profil" hidden></p>
+            <label id="ligne-mien" hidden><input type="checkbox" id="c-mien" checked> <i class="pastille mien"></i><span id="txt-mien">Mon territoire</span></label>
             <label><input type="checkbox" id="c-sq" checked> <i class="pastille sq"></i>Postes SQ (MRC)</label>
             <label><input type="checkbox" id="c-mun" checked> <i class="pastille mun"></i>Corps de police municipaux</label>
             <label><input type="checkbox" id="c-aut" checked> <i class="trait aut"></i>Patrouille autoroutière SQ</label>
@@ -1069,9 +1071,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191248"></script>
+  <script src="config.js?v=202610191302"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191248"></script>
+  <script src="app.js?v=202610191302"></script>
 </body>
 </html>

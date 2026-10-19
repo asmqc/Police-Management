@@ -1281,3 +1281,12 @@ body.est-admin .nav-ico { width: 46px; }
 .adm-cible select { width: 62%; min-width: 0; text-overflow: ellipsis; }
 .groupe-corps b { white-space: nowrap; }
 .groupe-corps span { min-width: 0; }
+
+/* Carte personnalisée selon le corps de police */
+.pastille.mien { background: color-mix(in srgb, var(--marque) 15%, transparent); border: 2px dashed var(--marque); border-radius: 3px; }
+.legende-profil { margin: 0 0 2px; font-size: .76rem; font-weight: 700; color: var(--marque); }
+.legende-autres { border-top: 1px solid var(--ligne); padding-top: 6px; }
+.legende-autres > summary { cursor: pointer; font-weight: 700; font-size: .82rem; color: var(--fg-doux); }
+.legende-autres-corps { display: grid; gap: 6px; padding-top: 6px; }
+.legende-reinit { justify-self: start; padding: 2px 0; font-size: .78rem; }
+.legende-corps { max-height: min(60vh, 460px); overflow-y: auto; }

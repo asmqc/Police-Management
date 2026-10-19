@@ -488,7 +488,7 @@
     history.replaceState(null, "", "#" + nom);
     if (verrou) { afficherVerrou(nom); return; }
     if (nom === "csr") initCsr();
-    if (nom === "carte") initCarte();
+    if (nom === "carte") { initCarte(); personnaliserCarte(); }
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
@@ -2082,6 +2082,131 @@
   function ouvrirDepuisAdmin(id) { msg.ouvrir = id; afficherVue("messages"); }
   $("#adm-conv-nouveau").addEventListener("change", (e) => { if (e.target.value) ouvrirDepuisAdmin(e.target.value); e.target.value = ""; });
 
+
+  /* ---------------- Carte personnalisée selon le corps de police ----------------
+     Couches utiles en premier et activées par défaut, autres couches regroupées,
+     territoire du policier surligné, choix mémorisés par corps. L'administrateur suit le corps choisi en haut. */
+  const COUCHES = ["mien", "sq", "mun", "aut", "km", "sorties", "bur", "limites", "cam", "autres", "reperes"];
+  const PROFILS_CARTE = {
+    sq: { utiles: ["mien", "sq", "aut", "km", "bur", "sorties", "mun", "reperes"], defauts: { mien: 1, sq: 1, mun: 1, aut: 1, km: 1, reperes: 1 } },
+    municipal: { utiles: ["mien", "mun", "limites", "km", "cam", "autres", "reperes"], defauts: { mien: 1, mun: 1, limites: 1, km: 1, cam: 1, autres: 1, reperes: 1 } },
+    autochtone: { utiles: ["mien", "mun", "limites", "km", "autres", "reperes"], defauts: { mien: 1, mun: 1, limites: 1, km: 1, autres: 1, reperes: 1 } },
+    autre: { utiles: ["sq", "mun", "aut", "km", "reperes"], defauts: { sq: 1, mun: 1, aut: 1, km: 1, reperes: 1 } },
+  };
+  function profilCarte() {
+    const admin = estAdmin() && etat.corpsAdmin;
+    const corps = (admin ? etat.corpsAdmin : (etat.profil && etat.profil.corps_police) || "").trim();
+    const unite = admin ? "" : ((etat.profil && etat.profil.unite) || "").trim();
+    if (/s[ûu]ret[ée] du qu[ée]bec/i.test(corps)) return { type: "sq", corps: "Sûreté du Québec", unite };
+    const c = (etat.corps || []).find((x) => norm(x.nom) === norm(corps));
+    if (c) return { type: c.type === "autochtone" ? "autochtone" : "municipal", corps: c.nom, unite, c };
+    return { type: "autre", corps, unite };
+  }
+  const cleCouches = (pr) => `pm-couches:${pr.type}:${pr.corps}`;
+  function lireCouches(pr) { try { return JSON.parse(localStorage.getItem(cleCouches(pr))); } catch { return null; } }
+  function sauverCouches() {
+    if (!etat.profilCarte) return;
+    const etatC = Object.fromEntries(COUCHES.map((k) => [k, $("#c-" + k) && $("#c-" + k).checked ? 1 : 0]));
+    try { localStorage.setItem(cleCouches(etat.profilCarte), JSON.stringify(etatC)); } catch { /* facultatif */ }
+  }
+  function appliquerCouches(valeurs) {
+    for (const k of COUCHES) {
+      const cb = $("#c-" + k);
+      if (!cb) continue;
+      const v = !!valeurs[k];
+      if (cb.checked !== v) { cb.checked = v; cb.dispatchEvent(new Event("change")); }
+    }
+  }
+  function ordonnerLegende(pr) {
+    const corpsEl = $("#legende-corps");
+    let autres = $(".legende-autres", corpsEl);
+    if (!autres) {
+      autres = document.createElement("details");
+      autres.className = "legende-autres";
+      autres.innerHTML = `<summary>Autres couches</summary><div class="legende-autres-corps"></div>`;
+      corpsEl.appendChild(autres);
+    }
+    const boite = $(".legende-autres-corps", autres);
+    const ligne = (k) => $("#c-" + k) && $("#c-" + k).closest("label");
+    const utiles = PROFILS_CARTE[pr.type].utiles;
+    utiles.forEach((k) => { const l = ligne(k); if (l) corpsEl.insertBefore(l, autres); });
+    COUCHES.filter((k) => !utiles.includes(k)).forEach((k) => { const l = ligne(k); if (l) boite.appendChild(l); });
+    autres.hidden = !boite.children.length;
+    let reinit = $(".legende-reinit", corpsEl);
+    if (!reinit) {
+      reinit = document.createElement("button");
+      reinit.type = "button"; reinit.className = "lien legende-reinit"; reinit.textContent = "Couches par défaut de mon corps";
+      reinit.addEventListener("click", () => { try { localStorage.removeItem(cleCouches(etat.profilCarte)); } catch { /* facultatif */ } appliquerCouches(PROFILS_CARTE[etat.profilCarte.type].defauts); toast("Couches par défaut rétablies"); });
+      corpsEl.appendChild(reinit);
+    }
+    const p = $("#legende-profil");
+    p.hidden = pr.type === "autre";
+    p.textContent = pr.type === "autre" ? "" : `Couches pour : ${pr.corps}${pr.unite ? " · " + pr.unite : ""}`;
+  }
+  // Territoire du policier (poste SQ ou corps municipal/autochtone), surligné en violet
+  async function dessinerMonTerritoire(pr, centrer) {
+    const carte = etat.carte;
+    if (!etat.couches.mien) etat.couches.mien = L.layerGroup();
+    const g = etat.couches.mien;
+    g.clearLayers();
+    let titre = "", bornes = null;
+    const style = { color: getComputedStyle(document.documentElement).getPropertyValue("--marque").trim() || "#6A3FE0", weight: 3, dashArray: "6 5", fillOpacity: 0.06 };
+    try {
+      if (pr.type === "sq" && pr.unite) {
+        const bureaux = await charger("sq_bureaux.geojson");
+        const f = bureaux.features.find((x) => norm(nomBureau(x.properties.NOM_ENT || "")) === norm(pr.unite) || norm(x.properties.NOM_UNIT || "") === norm(pr.unite))
+          || bureaux.features.find((x) => norm(nomBureau(x.properties.NOM_ENT || "")).includes(norm(pr.unite)));
+        if (f) {
+          const pp = f.properties, unite = pp.NOM_UNIT;
+          titre = nomBureau(pp.NOM_ENT);
+          const fichier = pp.CAT_UNIT === "Poste autoroutier" ? "sq_autoroutier.geojson" : "sq_postes.geojson";
+          const fc = await charger(fichier);
+          const terr = fc.features.filter((x) => x.properties.NOM_UNIT === unite);
+          if (terr.length) { const l = L.geoJSON({ type: "FeatureCollection", features: terr }, { interactive: false, style: pp.CAT_UNIT === "Poste autoroutier" ? { ...style, weight: 7, dashArray: null, opacity: 0.8 } : style }).addTo(g); bornes = l.getBounds(); }
+          const [lon, lat] = f.geometry.coordinates;
+          L.circleMarker([lat, lon], { radius: 7, color: "#fff", weight: 2.5, fillColor: style.color, fillOpacity: 1 }).bindTooltip(titre).addTo(g);
+          bornes = bornes ? bornes.extend([lat, lon]) : L.latLngBounds([[lat, lon]]);
+        }
+      } else if ((pr.type === "municipal" || pr.type === "autochtone") && pr.c) {
+        titre = pr.c.nom;
+        const toutes = await charger("municipalites_hors_sq.geojson");
+        const noms = new Set((pr.c.municipalites || []).map(norm));
+        const fs = toutes.features.filter((x) => noms.has(norm(x.properties.nom)));
+        if (fs.length) { const l = L.geoJSON({ type: "FeatureCollection", features: fs }, { interactive: false, style }).addTo(g); bornes = l.getBounds(); }
+      }
+    } catch { /* données pas encore chargées */ }
+    $("#ligne-mien").hidden = !g.getLayers().length;
+    $("#txt-mien").textContent = titre ? `Mon territoire · ${titre}` : "Mon territoire";
+    if ($("#c-mien").checked && g.getLayers().length) g.addTo(carte); else carte.removeLayer(g);
+    if (centrer && bornes && bornes.isValid()) carte.fitBounds(bornes.pad(0.2), { maxZoom: 12 });
+    // Raccourci en tête du menu des postes
+    await etat.choixUnitePret;
+    const sel = $("#choix-unite");
+    $$("optgroup[data-mien]", sel).forEach((o) => o.remove());
+    let val = null;
+    if (pr.type === "sq" && titre) { const bureaux = await charger("sq_bureaux.geojson"); const i = bureaux.features.findIndex((x) => nomBureau(x.properties.NOM_ENT || "") === titre); if (i >= 0) val = "b:" + i; }
+    else if (pr.c) val = "c:" + pr.c.nom;
+    if (val && sel.options.length > 1) {
+      const og = document.createElement("optgroup");
+      og.label = "Mon corps de police"; og.dataset.mien = "1";
+      og.innerHTML = `<option value="${esc(val)}">★ ${esc(titre || pr.corps)}</option>`;
+      sel.insertBefore(og, sel.options[1].parentElement === sel ? sel.options[1] : sel.options[1].parentElement);
+    }
+  }
+  async function personnaliserCarte() {
+    if (!etat.carte) return;
+    if (!etat.corps || !etat.corps.length) await chargerCorps();
+    const pr = profilCarte();
+    const cle = `${pr.type}|${pr.corps}|${pr.unite}`;
+    if (etat.cleCarte === cle) return;
+    etat.cleCarte = cle; etat.profilCarte = pr;
+    ordonnerLegende(pr);
+    appliquerCouches(lireCouches(pr) || PROFILS_CARTE[pr.type].defauts);
+    await dessinerMonTerritoire(pr, true); // recentre sur le territoire à l'ouverture et à chaque changement de corps
+  }
+  $("#c-mien").addEventListener("change", (e) => { if (!etat.couches || !etat.couches.mien) return; e.target.checked ? etat.couches.mien.addTo(etat.carte) : etat.carte.removeLayer(etat.couches.mien); });
+  $("#legende-corps").addEventListener("change", (e) => { if (e.target.matches("input[type=checkbox]")) setTimeout(sauverCouches, 0); });
+
   // Configuration de la rotation
   let modelesAdmin = [];
   async function chargerModelesAdmin() {
@@ -3069,7 +3194,7 @@
 
     bascule("#c-sq", "sq", true); bascule("#c-mun", "mun"); bascule("#c-aut", "aut"); bascule("#c-km", "km"); bascule("#c-sorties", "sorties"); bascule("#c-bur", "bur"); bascule("#c-limites", "limites"); bascule("#c-cam", "cam");
     etat.surligne = L.layerGroup().addTo(carte);
-    remplirChoixUnite();
+    etat.choixUnitePret = remplirChoixUnite();
     $("#legende-bascule").addEventListener("click", (e) => {
       const ouvert = e.currentTarget.getAttribute("aria-expanded") === "true";
       e.currentTarget.setAttribute("aria-expanded", String(!ouvert));

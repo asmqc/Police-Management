@@ -38,6 +38,7 @@
 - **Couches** : postes SQ, corps municipaux, patrouille autoroutière, bornes km, sorties d'autoroute, bureaux SQ, limites et codes municipaux, caméras de circulation (Québec 511), autres postes de police (SPVM, GRC, régies, Nunavik… — OpenStreetMap).
 - **District judiciaire** dans la fiche de chaque lieu.
 - **Mes repères** : repères personnels privés (bouton « Repère »), avec itinéraire et suppression.
+- **Carte personnalisée selon le corps de police** : couches utiles en premier et activées par défaut (SQ : postes, patrouille autoroutière, bureaux; municipal ou autochtone : limites et codes municipaux, caméras, autres postes), autres couches regroupées, territoire du policier surligné en violet et carte centrée dessus, choix des couches mémorisés. L'administrateur voit la carte du corps choisi en haut.
 
 ### Territoires
 - Recherche d'une municipalité pour savoir qui la couvre : Sûreté du Québec (et quel poste), corps municipal ou corps autochtone.
