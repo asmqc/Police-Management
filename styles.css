@@ -715,3 +715,187 @@ img { -webkit-user-drag: none; }
 .verrou button { width: 100%; }
 .verrou .message { text-align: left; color: var(--fg); }
 .etiquette-alerte { color: var(--rouge); font-weight: 700; }
+
+/* =====================================================================
+   Modernisation (octobre 2026)
+   Tableau de bord de patrouille de nuit : surfaces douces sans bordures,
+   champs remplis, contrôles en pastilles, transitions qui répondent aux gestes.
+   Élément signature : la barre gyrophare rouge et bleue de la carte « quart du jour ».
+   ===================================================================== */
+:root {
+  --bg: #EFF2F7;
+  --surface-2: #E8ECF3;
+  --ligne: #DCE2EB;
+  --champ: #EBEFF5;
+  --ombre-carte: 0 1px 2px rgba(14, 27, 44, .05), 0 4px 14px rgba(14, 27, 44, .06);
+  --ombre: 0 18px 48px rgba(14, 27, 44, .18), 0 2px 6px rgba(14, 27, 44, .08);
+  --bord-carte: transparent;
+  --gyro-rouge: #E5333F;
+  --gyro-bleu: #2F6BFF;
+  --r: 16px;
+  --r-ctrl: 12px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #070F1A; --surface: #0F1B2B; --surface-2: #172638; --ligne: #1F3047; --champ: #14243A;
+    --ombre-carte: none; --bord-carte: rgba(255, 255, 255, .06);
+    --ombre: 0 18px 48px rgba(0, 0, 0, .6);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #070F1A; --surface: #0F1B2B; --surface-2: #172638; --ligne: #1F3047; --champ: #14243A;
+  --ombre-carte: none; --bord-carte: rgba(255, 255, 255, .06);
+  --ombre: 0 18px 48px rgba(0, 0, 0, .6);
+}
+
+/* Titres de section : plus de majuscules espacées */
+.intertitre { text-transform: none; letter-spacing: 0; font-size: 1.3rem; font-weight: 700; color: var(--fg); margin-top: 18px; }
+.intertitre.danger { color: var(--rouge); }
+.vue-tete h2 { font-size: 2rem; letter-spacing: -.005em; }
+.formulaire label, .km-champ label, .vitesse-saisie label, .zone-danger label {
+  text-transform: none; letter-spacing: 0; font-size: .86rem; font-weight: 600;
+}
+.fc-section h4, .legende-tete { text-transform: none; letter-spacing: 0; font-size: 1.1rem; }
+
+/* Cartes : sans bordure, ombre légère (bordure fine en sombre) */
+.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte {
+  border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); border-radius: var(--r);
+}
+.reponse { border-left: 5px solid var(--c, var(--sq)); }
+.ac-admin.urgent { border: 1px solid color-mix(in srgb, var(--rouge) 45%, transparent); }
+.ac-msg.urgent { border: 1px solid color-mix(in srgb, var(--bleu) 45%, transparent); }
+.zone-danger { border: 1px solid color-mix(in srgb, var(--rouge) 35%, transparent); }
+.vt-carte.gev { border-color: var(--rouge); }
+.vide { border-radius: var(--r); border-color: var(--ligne); background: transparent; }
+
+/* Listes groupées (style réglages du téléphone) */
+.liste-articles, .liste-reglages, .liste-conv, .liste-sq, .liste-messages, .table-defile {
+  border: 1px solid var(--bord-carte); border-radius: var(--r); box-shadow: var(--ombre-carte); background: var(--ligne);
+}
+.liste-reglages button, .conv, .message-ligne, .liste-articles li button { padding-block: 14px; transition: background-color .15s; }
+
+/* Champs remplis */
+input, select, textarea {
+  background-color: var(--champ); border: 1.5px solid transparent; border-radius: var(--r-ctrl); padding: 12px 14px;
+  transition: border-color .15s, box-shadow .15s, background-color .15s;
+}
+input:focus, select:focus, textarea:focus { background-color: var(--surface); border-color: var(--focus); box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 18%, transparent); }
+.legende input, .interrupteur input { padding: 0; }
+.recherche input { background-color: var(--surface); box-shadow: var(--ombre-carte); border-color: var(--bord-carte); border-radius: 14px; padding-block: 14px; }
+.recherche input:focus { border-color: var(--focus); }
+select { appearance: none; -webkit-appearance: none; padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18'%3E%3Cpath d='m6 9 6 6 6-6' fill='none' stroke='%23778aa3' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; }
+
+/* Boutons : coins plus ronds, retour tactile */
+.btn-principal, .btn-secondaire, .btn-danger, .btn-ok { border-radius: var(--r-ctrl); min-height: 46px; transition: transform .12s var(--ease), filter .15s, background-color .15s; }
+.btn-principal { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 8px color-mix(in srgb, var(--ambre-vif) 35%, transparent); font-weight: 700; }
+.btn-secondaire { background: var(--surface-2); border-color: transparent; }
+.btn-principal:active, .btn-secondaire:active, .btn-danger:active, .btn-ok:active, .tuile:active, .ac-quart:active, .ac-admin:active, .conv:active, .puces button:active { transform: scale(.97); }
+.btn-secondaire.petit, .btn-ok.petit, .btn-danger.petit { min-height: 38px; border-radius: 10px; }
+
+/* Contrôles segmentés : piste + pastille */
+.onglets-auth, .onglets-csr, .onglets-aide, .segmente { background: var(--surface-2); border: 0; border-radius: 14px; padding: 4px; gap: 4px; overflow: visible; }
+.onglets-auth button, .onglets-csr button, .onglets-aide button, .segmente button { border-radius: 10px; background: transparent; transition: background-color .2s var(--ease), color .2s, box-shadow .2s; }
+.segmente button + button { border-left: 0; }
+.onglets-auth button[aria-selected="true"], .onglets-csr button[aria-selected="true"], .onglets-aide button[aria-selected="true"], .segmente button[aria-checked="true"] {
+  background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(14, 27, 44, .12), 0 2px 8px rgba(14, 27, 44, .08);
+}
+.puces button, .filtres button { border-color: transparent; background: var(--surface); box-shadow: var(--ombre-carte); transition: transform .12s var(--ease); }
+.filtres button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.filtres button[aria-selected="true"] b { color: var(--ambre-vif); }
+:root[data-theme="dark"] .filtres button[aria-selected="true"] b { color: var(--ambre); }
+
+/* Barre du haut : marine avec un fin liseré ambre */
+.barre { box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .06); }
+
+/* Barre d'onglets : verre dépoli plus marqué */
+.nav { background: color-mix(in srgb, var(--surface) 72%, transparent); border-top-color: color-mix(in srgb, var(--ligne) 55%, transparent); }
+
+/* Accueil : tuiles */
+.tuile { padding: 16px; gap: 14px; min-height: 124px; transition: transform .12s var(--ease), box-shadow .2s; }
+.tuile:hover { border-color: var(--bord-carte); box-shadow: 0 2px 4px rgba(14, 27, 44, .06), 0 10px 24px rgba(14, 27, 44, .1); }
+.tuile-ico { width: 44px; height: 44px; border-radius: 13px; }
+.tuile-txt b { font-size: 1.02rem; }
+.accueil-tete h2 { font-size: 2.1rem; letter-spacing: -.01em; }
+.accueil-tete .ref { font-family: var(--f-texte); font-size: .9rem; font-weight: 600; color: var(--ambre); }
+
+/* Élément signature : carte du quart, barre gyrophare */
+.ac-quart, .hr-aujourdhui {
+  position: relative; overflow: hidden; border-radius: 20px; padding: 22px 20px 20px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--gyro-rouge) 22%, transparent), transparent 55%),
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--gyro-bleu) 26%, transparent), transparent 55%),
+    linear-gradient(180deg, #13243A, #0B1626);
+  box-shadow: 0 10px 30px rgba(8, 16, 30, .28);
+  transition: transform .12s var(--ease);
+}
+.ac-quart::before, .hr-aujourdhui::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 4px;
+  background: linear-gradient(90deg, var(--gyro-rouge) 0 50%, var(--gyro-bleu) 50% 100%);
+  box-shadow: 0 0 18px 2px color-mix(in srgb, var(--gyro-bleu) 50%, transparent);
+}
+.ac-quart .pastille-q, .hr-aujourdhui .pastille-q { width: 68px; height: 68px; border-radius: 18px; font-size: 2.1rem; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
+.ac-quart small, .hr-aujourdhui small { text-transform: none; letter-spacing: 0; font-size: .82rem; font-weight: 600; color: #A9B8CC; }
+.ac-quart strong { font-size: 1.7rem; letter-spacing: -.005em; }
+.ac-quart .heures, .hr-aujourdhui .heures { font-family: var(--f-titre); font-size: 1.25rem; font-weight: 700; letter-spacing: .02em; }
+
+/* Horaire et calendrier */
+.hr-grille button { border: 0; border-radius: 12px; box-shadow: var(--ombre-carte); }
+:root[data-theme="dark"] .hr-grille button { box-shadow: inset 0 0 0 1px var(--bord-carte); }
+.hr-semaine div { border-radius: 12px; }
+.hr-mois-tete .btn-icone { border: 0; box-shadow: var(--ombre-carte); border-radius: 12px; }
+
+/* Feuilles et fenêtres : glissent depuis le bas, fond flouté */
+.voile { background: rgba(6, 12, 20, .42); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: voile-entree .2s ease-out; }
+.voile-menu { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.fiche-compte { border-radius: 24px 24px 0 0; animation: feuille-entree .32s var(--ease); }
+.fiche-compte::before { content: ""; justify-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--ligne); margin: -8px 0 -4px; }
+@media (min-width: 700px) { .fiche-compte { border-radius: 24px; } .fiche-compte::before { display: none; } }
+.menu-feuille { border-radius: 18px; animation: menu-entree .18s var(--ease); transform-origin: top right; }
+@keyframes voile-entree { from { opacity: 0; } }
+@keyframes feuille-entree { from { transform: translateY(40px); opacity: .4; } }
+@keyframes menu-entree { from { transform: scale(.94); opacity: 0; } }
+
+/* Changement de page : léger fondu (réponse au toucher d'un onglet) */
+.vue:not([hidden]) { animation: vue-entree .24s var(--ease); }
+.vue-carte:not([hidden]), .vue-chat:not([hidden]) { animation-name: vue-fondu; }
+@keyframes vue-entree { from { opacity: 0; transform: translateY(8px); } }
+@keyframes vue-fondu { from { opacity: 0; } }
+
+/* Carte : panneaux flottants en verre */
+.legende, .fiche { border-radius: 18px; background: color-mix(in srgb, var(--surface) 88%, transparent); -webkit-backdrop-filter: saturate(160%) blur(14px); backdrop-filter: saturate(160%) blur(14px); border: 1px solid var(--bord-carte); }
+.fiche { animation: feuille-entree .28s var(--ease); }
+.km-barre { border-bottom-color: transparent; box-shadow: 0 1px 0 var(--ligne); }
+.leaflet-bar { border: 0 !important; box-shadow: var(--ombre-carte) !important; border-radius: 12px !important; overflow: hidden; }
+
+/* Toast : pastille flottante */
+.toast { border-radius: 999px; padding: 12px 20px; font-weight: 600; background: color-mix(in srgb, var(--encre) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: toast-entree .3s var(--ease); }
+:root[data-theme="dark"] .toast { background: #22344D; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast { background: #22344D; } }
+@keyframes toast-entree { from { transform: translate(-50%, 16px); opacity: 0; } }
+
+/* Messagerie */
+.bulle { border-radius: 20px; }
+.bulle.moi { background: linear-gradient(180deg, #7A52EC, #6A3FE0); }
+.bulle.eux { border-color: var(--bord-carte); box-shadow: var(--ombre-carte); }
+.chat-saisie textarea { border-radius: 22px; }
+
+/* Connexion : carte plus aérée */
+.auth-carte { border-radius: 24px; padding: 28px 24px; }
+
+/* Étiquettes de statut : pastilles arrondies */
+.pastille-statut, .type { border-radius: 999px; padding: 3px 10px; letter-spacing: .04em; }
+
+@media (prefers-reduced-motion: reduce) { .vue:not([hidden]), .fiche-compte, .menu-feuille, .voile, .toast, .fiche { animation: none !important; } }
+.fc-donnees dt, .vt-chiffres small, .extrait-bloc small, .article .fil, .fiche .ligne-info > span:first-child, .table-vitesse th, .hr-semaine div small, .hr-grille .jsem {
+  text-transform: none; letter-spacing: 0;
+}
+.fc-donnees dt, .fiche .ligne-info > span:first-child { font-size: .84rem; }
+.vt-chiffres small { font-size: .78rem; font-weight: 600; }
+.vt-chiffres div { border-radius: 12px; }
+.fc-tete { margin-bottom: 4px; }
+:root[data-theme="dark"] :is(.onglets-auth, .onglets-csr, .onglets-aide) button[aria-selected="true"], :root[data-theme="dark"] .segmente button[aria-checked="true"] { background: #2A4060; box-shadow: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.onglets-auth, .onglets-csr, .onglets-aide) button[aria-selected="true"], :root:not([data-theme="light"]) .segmente button[aria-checked="true"] { background: #2A4060; box-shadow: none; } }
+.accueil-tete h2 { font-size: clamp(1.6rem, 7.4vw, 2.1rem); }

@@ -72,6 +72,12 @@
 - Blocage et déblocage d'un compte.
 - Suppression définitive d'un compte (données et photo effacées de Supabase).
 
+### Design
+- Interface moderne façon application : surfaces douces, champs remplis, contrôles en pastilles, en-tête et barre d'onglets en verre dépoli.
+- Carte « quart du jour » avec barre gyrophare rouge et bleue.
+- Transitions entre les pages, fenêtres qui glissent depuis le bas, retour tactile sur chaque bouton (désactivés si « Réduire les animations » est activé sur l'appareil).
+- Thème clair, sombre ou automatique (Réglages).
+
 ### Installation comme une application
 La tuile **App** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
 
