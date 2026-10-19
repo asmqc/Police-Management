@@ -83,6 +83,21 @@ Deno.serve(async (req) => {
       return Response.json({ envoye: n });
     }
 
+    if (e.type === "rappel") {
+      // Rappel d'un événement du calendrier (envoyé par la tâche planifiée de la base de données)
+      const d = new Date(e.debut);
+      const fuseau = { timeZone: "America/Toronto" } as const;
+      const jour = d.toLocaleDateString("fr-CA", { ...fuseau, weekday: "long", day: "numeric", month: "long" });
+      const quand = e.journee ? `${jour} · toute la journée` : `${jour} · ${d.toLocaleTimeString("fr-CA", { ...fuseau, hour: "2-digit", minute: "2-digit" })}`;
+      const n = await envoyer([e.destinataire], {
+        titre: e.titre,
+        corps: quand + (e.lieu ? ` · ${e.lieu}` : ""),
+        url: "#horaire",
+        tag: `rappel-${e.id}-${e.debut}`,
+      });
+      return Response.json({ envoye: n });
+    }
+
     if (e.type === "approbation") {
       const n = await envoyer([e.id], { titre: "Accès approuvé", corps: "Votre accès à Police Management est ouvert.", url: "#accueil", tag: "approbation" });
       return Response.json({ envoye: n });

@@ -40,14 +40,18 @@
 - Recherche d'une municipalité pour savoir qui la couvre : Sûreté du Québec (et quel poste), corps municipal ou corps autochtone.
 - Liste des 105 postes de la SQ par région, et des corps municipaux et autochtones.
 
-### Horaire rotatif
-- Modèles prêts (4-4, 4-4 jour/nuit, 2-2-3, 7-7, 3-3, 5-2, jour-soir-nuit) ou rotation personnalisée.
-- Calendrier mensuel en couleurs, quart du jour et 7 prochains jours.
-- Exceptions : vacances, maladie, formation, cour, temps supplémentaire, échanges, avec notes.
-- Export vers le calendrier du téléphone ou d'Outlook (fichier `.ics`).
+### Horaire et calendrier (façon Calendrier d'Apple)
+- **Vues Jour, Semaine, Mois et Liste**, bouton « Aujourd'hui », glissement du doigt pour changer de période, ligne rouge de l'heure actuelle.
+- **Rotation intégrée** : le quart de chaque journée (chiffres en couleur, bandes horaires dans les vues Jour et Semaine, y compris la fin d'un quart de nuit).
+- **Événements personnels** : titre, lieu, toute la journée, début et fin, répétition (chaque jour, semaine, 2 semaines, mois, année, avec date de fin), notes.
+- **Calendriers** en couleur (Personnel, Travail, Famille, Cour, Formation, Autre), affichés ou masqués, comme la rotation.
+- **Rappels** en notification (à l'heure, 5 min à 1 semaine avant ; la veille à 9 h pour une journée entière), envoyés chaque minute par une tâche planifiée Supabase (`pg_cron`).
+- **Recherche** dans les événements (titre, lieu, notes), vue Liste des 4 prochains mois.
+- Modèles de rotation prêts (4-4, 4-4 jour/nuit, 2-2-3, 7-7, 3-3, 5-2, jour-soir-nuit) ou personnalisés ; exceptions (vacances, maladie, formation, cour, temps supplémentaire, échanges) avec notes.
+- Export vers le calendrier du téléphone ou d'Outlook (fichier `.ics`, quarts et événements des 6 prochains mois).
 - **Mon poste** : les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité). Activé par défaut ; chaque policier peut le désactiver dans **Réglages › Confidentialité**.
 - **Partage** avec un collègue d'un autre poste, retirable en tout temps.
-- Seule la rotation est visible par les collègues : les vacances, maladies, cours, formations et notes restent privés (vérifié par la base de données).
+- Les collègues voient seulement la rotation : les événements, vacances, maladies, cours, formations et notes restent privés (vérifié par la base de données).
 
 ### Messages (BÊTA)
 - Conversations style texto entre l'administrateur et chaque policier, avec bulles, date, heure et indicateur « Lu ».
@@ -99,7 +103,7 @@ Les gabarits des courriels (aux couleurs de Police Management) sont dans [`supab
 |---|---|
 | Site | GitHub Pages (branche `main`, dossier racine) |
 | Contenu public : CSR, carte, postes SQ, corps de police, caméras | Dossier `data/` de ce dépôt |
-| Comptes, demandes d'accès, photos de profil, horaires, partages et messages | Supabase (projet de l'app, région Canada) |
+| Comptes, demandes d'accès, photos de profil, horaires, événements, partages et messages | Supabase (projet de l'app, région Canada) |
 | Actions sensibles (mot de passe temporaire, blocage, suppression) | Fonction sécurisée Supabase `admin-comptes` (code dans `supabase/functions/`) |
 
 Les règles d'accès de la base (RLS) protègent les renseignements personnels : chaque policier ne voit que son propre compte et son propre horaire, sauf les horaires qu'un collègue a choisi de lui partager. Seul l'administrateur voit la liste des comptes.

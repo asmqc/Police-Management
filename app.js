@@ -880,7 +880,7 @@
       hr.exceptions = (data && data.exceptions) || {};
       hr.chargé = true;
     }
-    if (!hr.mois) { const d = new Date(); hr.mois = [d.getFullYear(), d.getMonth()]; }
+    await chargerEvenements();
     rendreHoraire();
     chargerPartages();
   }
@@ -970,7 +970,7 @@
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
     $("#hr-partage").hidden = lecture || enConfig;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
-    $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.";
+    $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour voir son agenda, ajouter un événement ou noter une exception (vacances, maladie, cour, formation, échange, temps supplémentaire). Glissez vers la gauche ou la droite pour changer de période.";
     if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
     $("#hr-resume").textContent = `${lecture ? "Rotation seulement · " : ""}Cycle de ${src.config.cycle.length} jours`;
     const auj = aujourdhuiISO();
@@ -989,28 +989,397 @@
       const d = new Date(iso + "T12:00:00");
       return `<div class="q q-${esc(qq.code || "C")} ${i === 0 ? "auj" : ""}"><small>${esc(d.toLocaleDateString("fr-CA", { weekday: "short" }).replace(".", ""))}</small><b>${esc(qq.code || "–")}</b><small>${d.getDate()}</small></div>`;
     }).join("");
-    // Mois
-    const [a, m] = hr.mois;
-    $("#hr-mois").textContent = new Date(a, m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
-    const premier = new Date(a, m, 1);
-    const decalage = (premier.getDay() + 6) % 7; // lundi = 0
-    const debutGrille = jourUTC(`${a}-${String(m + 1).padStart(2, "0")}-01`) - decalage;
-    const nbSemaines = Math.ceil((decalage + new Date(a, m + 1, 0).getDate()) / 7);
-    let html = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((j) => `<span class="jsem">${j}</span>`).join("");
-    for (let i = 0; i < nbSemaines * 7; i++) {
-      const iso = isoDe(debutGrille + i), qq = quartDu(iso);
-      const dansMois = Number(iso.slice(5, 7)) === m + 1;
-      html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${qq.exception ? "exc" : ""}" aria-label="${esc(iso)} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun")}">
-        <span class="num">${Number(iso.slice(8))}</span>${qq.code ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}</span>` : ""}</button>`;
-    }
-    $("#hr-grille").innerHTML = html;
-    $$("#hr-grille button").forEach((b) => b.addEventListener("click", () => ouvrirJour(b.dataset.jour)));
-    $("#hr-legende").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("");
+    rendreCalendrier();
   }
 
-  $("#hr-prec").addEventListener("click", () => { const [a, m] = hr.mois; hr.mois = m ? [a, m - 1] : [a - 1, 11]; rendreHoraire(); });
-  $("#hr-suiv").addEventListener("click", () => { const [a, m] = hr.mois; hr.mois = m === 11 ? [a + 1, 0] : [a, m + 1]; rendreHoraire(); });
-  $("#hr-auj").addEventListener("click", () => { const d = new Date(); hr.mois = [d.getFullYear(), d.getMonth()]; rendreHoraire(); });
+
+  /* ---------------- Calendrier façon Apple : vues Jour, Semaine, Mois, Liste, événements privés ---------------- */
+  const CALENDRIERS = {
+    perso: { nom: "Personnel", c: "#2F6BFF" }, travail: { nom: "Travail", c: "#E0A21B" }, famille: { nom: "Famille", c: "#1E9E5A" },
+    cour: { nom: "Cour", c: "#D93644" }, formation: { nom: "Formation", c: "#7B4FC9" }, autre: { nom: "Autre", c: "#64748B" },
+  };
+  const REPETITIONS = { aucune: "Jamais", jour: "Chaque jour", semaine: "Chaque semaine", "2semaines": "Toutes les 2 semaines", mois: "Chaque mois", annee: "Chaque année" };
+  const RAPPELS = [["", "Aucun", "Aucun"], ["0", "Au moment de l'événement", "Le jour même (9 h)"], ["5", "5 minutes avant"], ["15", "15 minutes avant"], ["30", "30 minutes avant"],
+    ["60", "1 heure avant"], ["120", "2 heures avant"], ["1440", "1 jour avant", "La veille (9 h)"], ["2880", "2 jours avant", "2 jours avant (9 h)"], ["10080", "1 semaine avant", "1 semaine avant (9 h)"]];
+  const lireLocal = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+  const ecrireLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage indisponible */ } };
+  const cal = { vue: lireLocal("pm-cal-vue", "mois"), date: aujourdhuiISO(), sel: aujourdhuiISO(), evs: [], chargé: false, masques: new Set(lireLocal("pm-cal-masques", [])), edition: null };
+  const H_HEURE = 48; // hauteur d'une heure dans les vues Jour et Semaine
+  const isoLoc = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const ajoutJours = (iso, n) => isoDe(jourUTC(iso) + n);
+  const minuit = (iso) => new Date(iso + "T00:00:00");
+  const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const heureCourte = (d) => `${d.getHours()} h${d.getMinutes() ? " " + String(d.getMinutes()).padStart(2, "0") : ""}`; // 17 h, 9 h 30
+  const lundiDe = (iso) => ajoutJours(iso, -((minuit(iso).getDay() + 6) % 7));
+  const avecEvenements = () => !hr.vue; // les événements restent privés : jamais affichés pour un collègue
+
+  async function chargerEvenements(forcer = false) {
+    if (cal.chargé && !forcer) return;
+    const { data, error } = await sb.from("evenements").select("*").order("debut");
+    if (error) { toast(traduireErreur(error)); return; }
+    cal.evs = data || [];
+    cal.chargé = true;
+  }
+
+  // Toutes les occurrences (répétitions comprises) qui touchent l'intervalle [deb, fin[
+  function occurrences(deb, fin) {
+    const res = [];
+    if (!avecEvenements()) return res;
+    for (const ev of cal.evs) {
+      if (cal.masques.has(ev.calendrier)) continue;
+      const d0 = new Date(ev.debut), duree = new Date(ev.fin) - d0;
+      const limite = ev.repetition_fin ? new Date(ev.repetition_fin + "T23:59:59") : null;
+      const ajouter = (d) => { const f = new Date(d.getTime() + duree); if (d < fin && (f > deb || (duree === 0 && d >= deb))) res.push({ ev, debut: d, fin: f }); };
+      if (ev.repetition === "aucune") { ajouter(d0); continue; }
+      const parMois = ev.repetition === "mois" ? 1 : ev.repetition === "annee" ? 12 : 0;
+      const pasJours = { jour: 1, semaine: 7, "2semaines": 14 }[ev.repetition] || 0;
+      let k = parMois
+        ? Math.max(0, Math.floor(((deb.getFullYear() - d0.getFullYear()) * 12 + deb.getMonth() - d0.getMonth()) / parMois) - 1 - Math.ceil(duree / (28 * MS_JOUR * parMois)))
+        : Math.max(0, Math.floor((deb - d0 - duree) / (pasJours * MS_JOUR)) - 1);
+      for (let i = 0; i < 1000; i++, k++) {
+        const d = new Date(d0);
+        if (parMois) { d.setMonth(d0.getMonth() + k * parMois); if (d.getDate() !== d0.getDate()) continue; } // 31 du mois, 29 février : sauté comme dans Calendrier
+        else d.setDate(d0.getDate() + k * pasJours);
+        if (d >= fin || (limite && d > limite)) break;
+        ajouter(d);
+      }
+    }
+    return res.sort((a, b) => isoLoc(a.debut).localeCompare(isoLoc(b.debut)) || (b.ev.journee - a.ev.journee) || (a.debut - b.debut));
+  }
+  const occDuJour = (iso) => occurrences(minuit(iso), minuit(ajoutJours(iso, 1)));
+  const couleurEv = (ev) => (CALENDRIERS[ev.calendrier] || CALENDRIERS.perso).c;
+  const rotationVisible = () => !cal.masques.has("rotation");
+  function plageTexte(o, iso) {
+    if (o.ev.journee) return "Toute la journée";
+    const memeDebut = isoLoc(o.debut) === iso, memeFin = isoLoc(new Date(o.fin - 1)) === iso;
+    if (memeDebut && memeFin) return `${heureCourte(o.debut)} – ${heureCourte(o.fin)}`;
+    if (memeDebut) return `À partir de ${heureCourte(o.debut)}`;
+    if (memeFin) return `Jusqu'à ${heureCourte(o.fin)}`;
+    return "Toute la journée";
+  }
+
+  function rendreCalendrier() {
+    const lecture = !!hr.vue;
+    $$("[data-cal-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.calVue === cal.vue)));
+    $("#cal-ajout").hidden = lecture;
+    $("#cal-mois").hidden = cal.vue !== "mois";
+    $("#cal-temps").hidden = !["jour", "semaine"].includes(cal.vue);
+    $("#cal-liste").hidden = cal.vue !== "liste";
+    $("#hr-prec").hidden = $("#hr-suiv").hidden = cal.vue === "liste";
+    $("#cal-temps").classList.toggle("une-colonne", cal.vue === "jour");
+    if (cal.vue === "mois") rendreMois();
+    else if (cal.vue === "liste") rendreListe();
+    else rendreTemps();
+    $("#hr-legende").innerHTML = (rotationVisible() ? Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("") : "") +
+      (avecEvenements() ? Object.entries(CALENDRIERS).filter(([k]) => !cal.masques.has(k)).map(([, v]) => `<span><i style="background:${v.c};border-radius:50%"></i>${esc(v.nom)}</span>`).join("") : "");
+  }
+
+  // Vue Mois : grille avec le quart et des points de couleur, agenda du jour choisi en dessous (comme sur iPhone)
+  function rendreMois() {
+    const [a, m] = cal.date.split("-").map(Number);
+    $("#hr-mois").textContent = new Date(a, m - 1, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const debutGrille = lundiDe(`${a}-${String(m).padStart(2, "0")}-01`);
+    const nbJoursMois = new Date(a, m, 0).getDate();
+    const nbSemaines = Math.ceil((jourUTC(`${a}-${String(m).padStart(2, "0")}-01`) - jourUTC(debutGrille) + nbJoursMois) / 7);
+    const occs = occurrences(minuit(debutGrille), minuit(ajoutJours(debutGrille, nbSemaines * 7)));
+    const parJour = {};
+    for (const o of occs) {
+      for (let d = isoLoc(o.debut); d <= isoLoc(new Date(Math.max(o.fin - 1, o.debut))); d = ajoutJours(d, 1)) (parJour[d] = parJour[d] || []).push(o);
+    }
+    const auj = aujourdhuiISO();
+    let html = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((j) => `<span class="jsem">${j}</span>`).join("");
+    for (let i = 0; i < nbSemaines * 7; i++) {
+      const iso = ajoutJours(debutGrille, i), qq = quartDu(iso);
+      const dansMois = Number(iso.slice(5, 7)) === m;
+      const evs = parJour[iso] || [];
+      html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${iso === cal.sel ? "choisi" : ""} ${qq.exception && rotationVisible() ? "exc" : ""}" aria-label="${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun quart")}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}">
+        <span class="num">${Number(iso.slice(8))}</span>${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}</span>` : ""}
+        <span class="points">${evs.slice(0, 3).map((o) => `<i style="background:${couleurEv(o.ev)}"></i>`).join("")}</span></button>`;
+    }
+    $("#hr-grille").innerHTML = html;
+    $$("#hr-grille button").forEach((b) => b.addEventListener("click", () => { cal.sel = b.dataset.jour; rendreMois(); }));
+    rendreAgenda(cal.sel);
+  }
+
+  function rendreAgenda(iso) {
+    const lecture = !!hr.vue, qq = quartDu(iso), occs = occDuJour(iso);
+    const travail = ["J", "S", "N"].includes(qq.code);
+    $("#cal-agenda").innerHTML = `
+      <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
+      ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
+        <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code))}</span>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        ${lecture ? "" : `<i>Modifier</i>`}</button>` : ""}
+      ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
+        <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
+      ${!occs.length && avecEvenements() ? `<p class="aide">Aucun événement.</p>` : ""}
+      ${lecture ? "" : `<button type="button" class="btn-secondaire petit ag-ajout" data-ajout="${iso}">+ Ajouter un événement</button>`}`;
+    brancherCal($("#cal-agenda"));
+  }
+
+  // Vues Jour et Semaine : grille horaire avec les quarts en bandes et les événements positionnés
+  function rendreTemps() {
+    const jours = cal.vue === "jour" ? [cal.date] : Array.from({ length: 7 }, (_, i) => ajoutJours(lundiDe(cal.date), i));
+    const premier = minuit(jours[0]), dernier = minuit(jours[jours.length - 1]);
+    $("#hr-mois").textContent = cal.vue === "jour"
+      ? premier.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" })
+      : `${premier.toLocaleDateString("fr-CA", { day: "numeric", month: premier.getMonth() === dernier.getMonth() ? undefined : "short" })} – ${dernier.toLocaleDateString("fr-CA", { day: "numeric", month: "short", year: "numeric" })}`;
+    const auj = aujourdhuiISO(), lecture = !!hr.vue;
+    $("#cal-entetes").innerHTML = `<span></span>` + jours.map((iso) => {
+      const d = minuit(iso);
+      return `<button type="button" data-allerjour="${iso}" class="${iso === auj ? "auj" : ""}"><small>${esc(d.toLocaleDateString("fr-CA", { weekday: "short" }).replace(".", ""))}</small><b>${d.getDate()}</b></button>`;
+    }).join("");
+    $("#cal-jourentier").innerHTML = `<span class="ref">jour</span>` + jours.map((iso) => {
+      const qq = quartDu(iso);
+      const entiers = occDuJour(iso).filter((o) => o.ev.journee || (o.fin - o.debut >= MS_JOUR));
+      return `<div>${qq.code && rotationVisible() ? `<button type="button" class="chip q q-${esc(qq.code)}" data-quart="${iso}" title="${esc(QUARTS[qq.code].nom)}">${esc(cal.vue === "jour" ? QUARTS[qq.code].nom : qq.code)}</button>` : ""}
+        ${entiers.map((o) => `<button type="button" class="ev-entier" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">${esc(o.ev.titre)}</button>`).join("")}</div>`;
+    }).join("");
+    $("#cal-heures").innerHTML = Array.from({ length: 24 }, (_, h) => `<span>${h ? `${h} h` : ""}</span>`).join("");
+    $("#cal-colonnes").innerHTML = jours.map((iso) => {
+      const debutJ = minuit(iso), finJ = minuit(ajoutJours(iso, 1));
+      let bandes = "";
+      if (rotationVisible()) {
+        // Quart du jour, et la fin d'un quart de nuit commencé la veille
+        for (const [jourQ, decal] of [[iso, 0], [ajoutJours(iso, -1), -1]]) {
+          const qq = quartDu(jourQ);
+          if (!["J", "S", "N"].includes(qq.code)) continue;
+          const h = (affichee().config.heures || HEURES_DEFAUT)[qq.code] || HEURES_DEFAUT[qq.code];
+          const [h0, m0] = h[0].split(":").map(Number), [h1, m1] = h[1].split(":").map(Number);
+          let a = h0 * 60 + m0, b = h1 * 60 + m1;
+          if (b <= a) b += 1440;
+          a += decal * 1440; b += decal * 1440;
+          const top = Math.max(a, 0), bas = Math.min(b, 1440);
+          if (bas <= top) continue;
+          bandes += `<div class="cal-bande q q-${qq.code}" style="top:${top * H_HEURE / 60}px;height:${(bas - top) * H_HEURE / 60}px"><span>${esc(QUARTS[qq.code].nom)} ${esc(h[0])}–${esc(h[1])}</span></div>`;
+        }
+      }
+      // Événements avec heure : colonnes côte à côte quand ils se chevauchent
+      const occs = occurrences(debutJ, finJ).filter((o) => !o.ev.journee && o.fin - o.debut < MS_JOUR);
+      const blocs = occs.map((o) => ({ o, a: Math.max(0, (o.debut - debutJ) / 60000), b: Math.min(1440, (o.fin - debutJ) / 60000) }));
+      const voies = []; let groupe = [], finGroupe = -1, html = "";
+      const vider = () => { const n = Math.max(1, ...groupe.map((x) => x.voie + 1)); groupe.forEach((x) => (x.n = n)); groupe = []; };
+      for (const x of blocs) {
+        if (x.a >= finGroupe && groupe.length) { vider(); voies.length = 0; }
+        let v = voies.findIndex((f) => f <= x.a); if (v < 0) { v = voies.length; voies.push(0); }
+        voies[v] = Math.max(x.b, x.a + 20); x.voie = v; groupe.push(x); finGroupe = Math.max(finGroupe, voies[v]);
+      }
+      if (groupe.length) vider();
+      for (const x of blocs) {
+        const haut = Math.max(22, (x.b - x.a) * H_HEURE / 60);
+        html += `<button type="button" class="cal-ev" data-ev="${x.o.ev.id}" data-occ="${x.o.debut.toISOString()}" style="--c:${couleurEv(x.o.ev)};top:${x.a * H_HEURE / 60}px;height:${haut}px;left:calc(${(x.voie / x.n) * 100}% + 2px);width:calc(${100 / x.n}% - 4px)">
+          <b>${esc(x.o.ev.titre)}</b>${haut > 34 ? `<small>${esc(heureCourte(x.o.debut))}${x.o.ev.lieu ? " · " + esc(x.o.ev.lieu) : ""}</small>` : ""}</button>`;
+      }
+      const maintenant = iso === auj ? `<div class="cal-maintenant" style="top:${(new Date().getHours() * 60 + new Date().getMinutes()) * H_HEURE / 60}px"></div>` : "";
+      return `<div class="cal-col ${iso === auj ? "auj" : ""}" data-col="${iso}">${bandes}${html}${maintenant}</div>`;
+    }).join("");
+    brancherCal($("#cal-temps"));
+    if (!lecture) $$("#cal-colonnes .cal-col").forEach((col) => col.addEventListener("click", (e) => {
+      if (e.target !== col && !e.target.classList.contains("cal-bande")) return;
+      const y = e.clientY - col.getBoundingClientRect().top;
+      const h = Math.min(23, Math.max(0, Math.floor(y / H_HEURE)));
+      editerEvenement(null, { iso: col.dataset.col, heure: `${String(h).padStart(2, "0")}:00` });
+    }));
+    // Défile vers le début de la journée (ou l'heure actuelle)
+    const cible = jours.includes(auj) ? Math.max(0, new Date().getHours() - 2) : 7;
+    requestAnimationFrame(() => { $("#cal-defile").scrollTop = cible * H_HEURE; });
+  }
+
+  // Vue Liste : événements à venir, ou résultats de recherche
+  function rendreListe() {
+    $("#hr-mois").textContent = "À venir";
+    const q = $("#cal-recherche").value.trim().toLowerCase();
+    const auj = aujourdhuiISO();
+    let occs;
+    if (q) {
+      $("#hr-mois").textContent = "Recherche";
+      occs = occurrences(minuit(ajoutJours(auj, -365)), minuit(ajoutJours(auj, 366)))
+        .filter((o) => [o.ev.titre, o.ev.lieu, o.ev.notes].some((t) => (t || "").toLowerCase().includes(q)));
+    } else occs = occurrences(minuit(auj), minuit(ajoutJours(auj, 120)));
+    occs = occs.slice(0, 250);
+    if (!avecEvenements()) { $("#cal-liste-contenu").innerHTML = `<p class="vide">Les événements de vos collègues restent privés.</p>`; return; }
+    if (!occs.length) {
+      $("#cal-liste-contenu").innerHTML = `<p class="vide">${q ? "Aucun événement ne correspond à cette recherche." : "Aucun événement dans les 4 prochains mois. Touchez + pour en ajouter un."}</p>`;
+      return;
+    }
+    let html = "", jourCourant = "";
+    for (const o of occs) {
+      const iso = isoLoc(o.debut);
+      if (iso !== jourCourant) {
+        if (jourCourant) html += `</div>`;
+        jourCourant = iso;
+        const qq = quartDu(iso);
+        html += `<h4 class="liste-jour ${iso === auj ? "auj" : ""}">${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: iso.slice(0, 4) === auj.slice(0, 4) ? undefined : "numeric" }))}
+          ${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}</span>` : ""}</h4><div class="liste-groupe">`;
+      }
+      html += `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
+        <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`;
+    }
+    $("#cal-liste-contenu").innerHTML = html + "</div>";
+    brancherCal($("#cal-liste-contenu"));
+  }
+  $("#cal-recherche").addEventListener("input", () => rendreListe());
+
+  function brancherCal(racine) {
+    $$("[data-ev]", racine).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); if (!hr.vue) editerEvenement(cal.evs.find((x) => x.id === b.dataset.ev)); }));
+    $$("[data-ajout]", racine).forEach((b) => b.addEventListener("click", () => editerEvenement(null, { iso: b.dataset.ajout })));
+    $$("[data-quart]", racine).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ouvrirJour(b.dataset.quart); }));
+    $$("[data-allerjour]", racine).forEach((b) => b.addEventListener("click", () => { cal.date = cal.sel = b.dataset.allerjour; changerVue("jour"); }));
+  }
+
+  function changerVue(v) { cal.vue = v; ecrireLocal("pm-cal-vue", v); rendreCalendrier(); }
+  $$("[data-cal-vue]").forEach((b) => b.addEventListener("click", () => { if (cal.vue === "mois" || cal.vue === "liste") cal.date = cal.sel; changerVue(b.dataset.calVue); }));
+  function deplacer(sens) {
+    if (cal.vue === "mois") { const d = minuit(cal.date.slice(0, 8) + "01"); d.setMonth(d.getMonth() + sens); cal.date = isoLoc(d); const [a, m] = cal.sel.split("-"); if (`${a}-${m}` !== cal.date.slice(0, 7)) cal.sel = cal.date; }
+    else if (cal.vue === "semaine") cal.date = cal.sel = ajoutJours(cal.date, 7 * sens);
+    else if (cal.vue === "jour") cal.date = cal.sel = ajoutJours(cal.date, sens);
+    rendreCalendrier();
+  }
+  $("#hr-prec").addEventListener("click", () => deplacer(-1));
+  $("#hr-suiv").addEventListener("click", () => deplacer(1));
+  $("#hr-auj").addEventListener("click", () => { cal.date = cal.sel = aujourdhuiISO(); if (cal.vue === "liste") $("#cal-recherche").value = ""; rendreCalendrier(); });
+  $("#cal-ajout").addEventListener("click", () => editerEvenement(null, { iso: cal.vue === "liste" ? aujourdhuiISO() : cal.sel }));
+  // Glisser pour changer de période
+  {
+    let x0 = null, y0 = 0;
+    $("#cal-zone").addEventListener("touchstart", (e) => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive: true });
+    $("#cal-zone").addEventListener("touchend", (e) => {
+      if (x0 === null || cal.vue === "liste") return;
+      const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) deplacer(dx < 0 ? 1 : -1);
+    }, { passive: true });
+  }
+
+  // Calendriers affichés
+  function rendreCalendriersChoix() {
+    const lignes = [["rotation", "Rotation (quarts de travail)", "var(--ambre-vif)"], ...Object.entries(CALENDRIERS).map(([k, v]) => [k, v.nom, v.c])];
+    $("#cals-liste").innerHTML = lignes.map(([k, nom, c]) => `<label class="ev-ligne interrupteur" for="cal-m-${k}">
+      <span class="interrupteur-txt"><span class="cal-pastille" style="background:${c}"></span>${esc(nom)}</span>
+      <input type="checkbox" id="cal-m-${k}" data-masque="${k}" role="switch" ${cal.masques.has(k) ? "" : "checked"}><span class="interrupteur-piste" aria-hidden="true"></span></label>`).join("");
+    $$("[data-masque]").forEach((c) => c.addEventListener("change", () => {
+      if (c.checked) cal.masques.delete(c.dataset.masque); else cal.masques.add(c.dataset.masque);
+      ecrireLocal("pm-cal-masques", [...cal.masques]);
+      rendreCalendrier();
+    }));
+  }
+  $("#cal-calendriers").addEventListener("click", () => { rendreCalendriersChoix(); $("#cals-voile").hidden = false; });
+  $("#cals-fermer").addEventListener("click", () => ($("#cals-voile").hidden = true));
+  $("#cals-voile").addEventListener("click", (e) => { if (e.target.id === "cals-voile") e.target.hidden = true; });
+
+  // Éditeur d'événement
+  $("#ev-repetition").innerHTML = Object.entries(REPETITIONS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
+  $("#ev-calendrier").innerHTML = Object.entries(CALENDRIERS).map(([k, v]) => `<option value="${k}">● ${esc(v.nom)}</option>`).join("");
+  function majRappels() {
+    const journee = $("#ev-journee").checked, val = $("#ev-rappel").value;
+    $("#ev-rappel").innerHTML = RAPPELS.filter((r) => !journee || ["", "0", "1440", "2880", "10080"].includes(r[0]))
+      .map((r) => `<option value="${r[0]}">${esc(journee && r[2] ? r[2] : r[1])}</option>`).join("");
+    if ([...$("#ev-rappel").options].some((o) => o.value === val)) $("#ev-rappel").value = val;
+  }
+  function majChampsEv() {
+    const j = $("#ev-journee").checked;
+    $("#ev-debut-h").hidden = $("#ev-fin-h").hidden = j;
+    $("#ev-bloc-rep-fin").hidden = $("#ev-repetition").value === "aucune";
+    $("#ev-calendrier").style.color = couleurEv({ calendrier: $("#ev-calendrier").value });
+    majRappels();
+  }
+  $("#ev-journee").addEventListener("change", majChampsEv);
+  $("#ev-repetition").addEventListener("change", majChampsEv);
+  $("#ev-calendrier").addEventListener("change", majChampsEv);
+  // La fin suit le début quand on déplace le début (même durée), comme dans Calendrier
+  let dureeEv = 3600000;
+  const lireDebut = () => new Date(`${$("#ev-debut-d").value}T${$("#ev-journee").checked ? "00:00" : $("#ev-debut-h").value || "00:00"}`);
+  const lireFin = () => new Date(`${$("#ev-fin-d").value}T${$("#ev-journee").checked ? "00:00" : $("#ev-fin-h").value || "00:00"}`);
+  ["#ev-debut-d", "#ev-debut-h"].forEach((id) => $(id).addEventListener("change", () => {
+    const d = lireDebut(); if (isNaN(d)) return;
+    const f = new Date(d.getTime() + dureeEv);
+    $("#ev-fin-d").value = isoLoc(f); $("#ev-fin-h").value = hhmm(f);
+  }));
+  ["#ev-fin-d", "#ev-fin-h"].forEach((id) => $(id).addEventListener("change", () => { const x = lireFin() - lireDebut(); if (x >= 0) dureeEv = x; }));
+
+  function editerEvenement(ev, defaut = {}) {
+    cal.edition = ev || null;
+    $("#ev-entete").textContent = ev ? "Modifier l'événement" : "Nouvel événement";
+    $("#ev-ok").textContent = ev ? "OK" : "Ajouter";
+    $("#ev-supprimer").hidden = !ev;
+    $("#ev-supprimer").textContent = ev && ev.repetition !== "aucune" ? "Supprimer toute la série" : "Supprimer l'événement";
+    $("#ev-aide").textContent = ev && ev.repetition !== "aucune"
+      ? "Événement répété : les changements s'appliquent à toute la série. Privé : vos collègues ne voient jamais vos événements."
+      : "Privé : vos collègues ne voient jamais vos événements, seulement votre rotation.";
+    let debut, fin;
+    if (ev) { debut = new Date(ev.debut); fin = new Date(ev.fin); if (ev.journee) fin = new Date(fin.getTime() - MS_JOUR); }
+    else {
+      const iso = defaut.iso || aujourdhuiISO();
+      let h = defaut.heure;
+      if (!h) { const n = new Date(); h = `${String(Math.min(23, n.getHours() + 1)).padStart(2, "0")}:00`; }
+      debut = new Date(`${iso}T${h}`); fin = new Date(debut.getTime() + 3600000);
+    }
+    $("#ev-titre").value = ev ? ev.titre : "";
+    $("#ev-lieu").value = ev ? ev.lieu || "" : "";
+    $("#ev-journee").checked = ev ? ev.journee : false;
+    $("#ev-debut-d").value = isoLoc(debut); $("#ev-debut-h").value = hhmm(debut);
+    $("#ev-fin-d").value = isoLoc(fin); $("#ev-fin-h").value = hhmm(fin);
+    dureeEv = Math.max(0, fin - debut) || 3600000;
+    $("#ev-repetition").value = ev ? ev.repetition : "aucune";
+    $("#ev-rep-fin").value = ev && ev.repetition_fin ? ev.repetition_fin : "";
+    $("#ev-calendrier").value = ev ? ev.calendrier : (lireLocal("pm-cal-dernier", "perso"));
+    majChampsEv();
+    $("#ev-rappel").value = ev ? (ev.rappel_min == null ? "" : String(ev.rappel_min)) : "";
+    $("#ev-notes").value = ev ? ev.notes || "" : "";
+    $("#ev-supprimer").dataset.arme = "";
+    $("#ev-voile").hidden = false;
+    if (!ev) setTimeout(() => $("#ev-titre").focus(), 250);
+  }
+  const fermerEv = () => { $("#ev-voile").hidden = true; cal.edition = null; };
+  $("#ev-annuler").addEventListener("click", fermerEv);
+  $("#ev-voile").addEventListener("click", (e) => { if (e.target.id === "ev-voile") fermerEv(); });
+  $("#ev-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titre = $("#ev-titre").value.trim();
+    if (!titre) { $("#ev-titre").focus(); return toast("Donnez un titre à l'événement"); }
+    const journee = $("#ev-journee").checked;
+    let debut = lireDebut(), fin = lireFin();
+    if (isNaN(debut) || isNaN(fin)) return toast("Choisissez la date de début et de fin");
+    if (journee) fin = new Date(minuit(isoLoc(fin)).getTime() + MS_JOUR); // fin exclusive : lendemain à minuit
+    if (fin < debut) return toast("La fin doit être après le début");
+    const rep = $("#ev-repetition").value;
+    const donnees = {
+      titre, lieu: $("#ev-lieu").value.trim() || null, notes: $("#ev-notes").value.trim() || null,
+      debut: debut.toISOString(), fin: fin.toISOString(), journee, calendrier: $("#ev-calendrier").value,
+      repetition: rep, repetition_fin: rep !== "aucune" && $("#ev-rep-fin").value ? $("#ev-rep-fin").value : null,
+      rappel_min: $("#ev-rappel").value === "" ? null : Number($("#ev-rappel").value), modifie_le: new Date().toISOString(),
+    };
+    const btn = $("#ev-ok"); btn.disabled = true;
+    const req = cal.edition ? sb.from("evenements").update(donnees).eq("id", cal.edition.id).select().single() : sb.from("evenements").insert(donnees).select().single();
+    const { data, error } = await req;
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    if (cal.edition) cal.evs = cal.evs.map((x) => (x.id === data.id ? data : x)); else cal.evs.push(data);
+    ecrireLocal("pm-cal-dernier", donnees.calendrier);
+    const nouveau = !cal.edition;
+    fermerEv();
+    if (nouveau) cal.sel = isoLoc(debut);
+    rendreCalendrier();
+    toast(nouveau ? (donnees.rappel_min != null ? "Événement ajouté, avec rappel" : "Événement ajouté") : "Événement modifié");
+    if (donnees.rappel_min != null && !(await verifierAbonnementSilencieux())) setTimeout(() => toast("Activez les notifications dans Réglages pour recevoir le rappel"), 2600);
+  });
+  $("#ev-supprimer").addEventListener("click", async () => {
+    const b = $("#ev-supprimer");
+    if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Toucher encore pour confirmer"; b.classList.add("plein"); return; }
+    b.classList.remove("plein");
+    const ev = cal.edition; if (!ev) return;
+    const { error } = await sb.from("evenements").delete().eq("id", ev.id);
+    if (error) return toast(traduireErreur(error));
+    cal.evs = cal.evs.filter((x) => x.id !== ev.id);
+    fermerEv(); rendreCalendrier(); toast("Événement supprimé");
+  });
+  async function verifierAbonnementSilencieux() {
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+      const reg = await navigator.serviceWorker.getRegistration();
+      return !!(reg && (await reg.pushManager.getSubscription()));
+    } catch { return false; }
+  }
 
   // Configuration de la rotation
   function ouvrirConfig() {
@@ -1120,6 +1489,18 @@
         lignes.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${isoDe(n0 + i + 1).replace(/-/g, "")}`);
       }
       lignes.push(`SUMMARY:${titre.replace(/[,;\\]/g, (c) => "\\" + c)}`, "END:VEVENT");
+    }
+    // Événements personnels des 6 prochains mois (répétitions comprises)
+    const fmt = (d) => d.toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const echap = (t) => String(t).replace(/[,;\\]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+    for (const o of occurrences(minuit(aujourdhuiISO()), minuit(isoDe(n0 + 183)))) {
+      lignes.push("BEGIN:VEVENT", `UID:${o.ev.id}-${o.debut.getTime()}@police-management`, `DTSTAMP:${maintenant}`);
+      if (o.ev.journee) lignes.push(`DTSTART;VALUE=DATE:${isoLoc(o.debut).replace(/-/g, "")}`, `DTEND;VALUE=DATE:${isoLoc(o.fin).replace(/-/g, "")}`);
+      else lignes.push(`DTSTART:${fmt(o.debut)}`, `DTEND:${fmt(o.fin)}`);
+      lignes.push(`SUMMARY:${echap(o.ev.titre)}`);
+      if (o.ev.lieu) lignes.push(`LOCATION:${echap(o.ev.lieu)}`);
+      if (o.ev.notes) lignes.push(`DESCRIPTION:${echap(o.ev.notes)}`);
+      lignes.push("END:VEVENT");
     }
     lignes.push("END:VCALENDAR");
     const blob = new Blob([lignes.join("\r\n")], { type: "text/calendar" });

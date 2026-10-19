@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610190138">
+  <link rel="stylesheet" href="styles.css?v=202610190151">
 </head>
 <body>
   <!-- Chargement -->
@@ -462,13 +462,37 @@
         <div class="hr-aujourdhui" id="hr-aujourdhui"></div>
         <div class="hr-semaine" id="hr-semaine" aria-label="Les 7 prochains jours"></div>
 
-        <div class="hr-mois-tete">
-          <button class="btn-icone" id="hr-prec" aria-label="Mois précédent">‹</button>
-          <h3 id="hr-mois"></h3>
-          <button class="btn-icone" id="hr-suiv" aria-label="Mois suivant">›</button>
-          <button class="btn-secondaire petit" id="hr-auj">Aujourd'hui</button>
+        <div class="segmente cal-vues" role="radiogroup" aria-label="Affichage du calendrier">
+          <button type="button" role="radio" data-cal-vue="jour" aria-checked="false">Jour</button>
+          <button type="button" role="radio" data-cal-vue="semaine" aria-checked="false">Semaine</button>
+          <button type="button" role="radio" data-cal-vue="mois" aria-checked="true">Mois</button>
+          <button type="button" role="radio" data-cal-vue="liste" aria-checked="false">Liste</button>
         </div>
-        <div class="hr-grille" id="hr-grille"></div>
+        <div class="hr-mois-tete cal-tete">
+          <button class="btn-icone" id="hr-prec" aria-label="Période précédente">‹</button>
+          <h3 id="hr-mois"></h3>
+          <button class="btn-icone" id="hr-suiv" aria-label="Période suivante">›</button>
+          <button class="btn-secondaire petit" id="hr-auj">Aujourd'hui</button>
+          <button class="btn-icone cal-outil" id="cal-calendriers" aria-label="Calendriers affichés"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Nouvel événement"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+        </div>
+        <div id="cal-zone" class="cal-zone">
+          <div id="cal-mois">
+            <div class="hr-grille" id="hr-grille"></div>
+            <div class="cal-agenda" id="cal-agenda" aria-live="polite"></div>
+          </div>
+          <div id="cal-temps" class="cal-temps" hidden>
+            <div class="cal-entetes" id="cal-entetes"></div>
+            <div class="cal-jourentier" id="cal-jourentier"></div>
+            <div class="cal-defile" id="cal-defile">
+              <div class="cal-grille-temps"><div class="cal-heures" id="cal-heures"></div><div class="cal-colonnes" id="cal-colonnes"></div></div>
+            </div>
+          </div>
+          <div id="cal-liste" class="cal-liste" hidden>
+            <div class="recherche"><input type="search" id="cal-recherche" placeholder="Rechercher un événement" aria-label="Rechercher un événement" autocomplete="off"></div>
+            <div id="cal-liste-contenu"></div>
+          </div>
+        </div>
         <div class="hr-legende" id="hr-legende"></div>
         <p class="aide" id="hr-astuce">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
         <div class="hr-actions hr-mes-actions">
@@ -747,6 +771,45 @@
     </section>
   </div>
 
+  <div id="ev-voile" class="voile" hidden>
+    <form class="fiche-compte ev-feuille" id="ev-form" role="dialog" aria-modal="true" aria-labelledby="ev-entete" novalidate>
+      <div class="ev-tete">
+        <button type="button" class="lien" id="ev-annuler">Annuler</button>
+        <h3 id="ev-entete">Nouvel événement</h3>
+        <button type="submit" class="lien ev-ok" id="ev-ok">Ajouter</button>
+      </div>
+      <div class="ev-groupe">
+        <input id="ev-titre" placeholder="Titre" maxlength="120" aria-label="Titre" autocomplete="off">
+        <input id="ev-lieu" placeholder="Lieu" maxlength="200" aria-label="Lieu" autocomplete="off">
+      </div>
+      <div class="ev-groupe">
+        <label class="ev-ligne interrupteur" for="ev-journee"><span class="interrupteur-txt">Toute la journée</span><input type="checkbox" id="ev-journee" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <div class="ev-ligne"><span>Début</span><span class="ev-dt"><input type="date" id="ev-debut-d" aria-label="Date de début"><input type="time" id="ev-debut-h" aria-label="Heure de début" step="300"></span></div>
+        <div class="ev-ligne"><span>Fin</span><span class="ev-dt"><input type="date" id="ev-fin-d" aria-label="Date de fin"><input type="time" id="ev-fin-h" aria-label="Heure de fin" step="300"></span></div>
+      </div>
+      <div class="ev-groupe">
+        <label class="ev-ligne"><span>Répétition</span><select id="ev-repetition"></select></label>
+        <label class="ev-ligne" id="ev-bloc-rep-fin" hidden><span>Fin de la répétition</span><input type="date" id="ev-rep-fin" aria-label="Fin de la répétition"></label>
+      </div>
+      <div class="ev-groupe">
+        <label class="ev-ligne"><span>Calendrier</span><select id="ev-calendrier"></select></label>
+        <label class="ev-ligne"><span>Rappel</span><select id="ev-rappel"></select></label>
+      </div>
+      <div class="ev-groupe"><textarea id="ev-notes" placeholder="Notes" rows="3" maxlength="2000" aria-label="Notes"></textarea></div>
+      <p class="aide" id="ev-aide">Privé : vos collègues ne voient jamais vos événements, seulement votre rotation.</p>
+      <button type="button" class="btn-danger" id="ev-supprimer" hidden>Supprimer l'événement</button>
+    </form>
+  </div>
+
+  <div id="cals-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="cals-titre">
+      <button class="btn-icone fermer" id="cals-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="cals-titre">Calendriers</h3>
+      <p class="aide">Choisissez ce qui s'affiche dans votre horaire.</p>
+      <div class="ev-groupe" id="cals-liste"></div>
+    </section>
+  </div>
+
   <div id="menu-voile" class="voile voile-menu" hidden>
     <section class="menu-feuille" role="menu" aria-label="Menu">
       <div class="menu-tete">
@@ -763,9 +826,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610190138"></script>
+  <script src="config.js?v=202610190151"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610190138"></script>
+  <script src="app.js?v=202610190151"></script>
 </body>
 </html>
