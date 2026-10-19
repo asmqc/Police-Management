@@ -23,8 +23,9 @@
 - Raccourcis vers chaque outil : article du CSR, table des vitesses, borne kilométrique, « Où suis-je ? », territoires, horaire, compte, app (installation).
 - Pour l'administrateur : nombre de demandes d'accès en attente.
 
-### Code de la sécurité routière (CSR)
-- Les 1 225 articles du RLRQ, c. C-24.2.
+### Lois (CSR et autres lois)
+- **Québec** : Code de la sécurité routière (1 225 articles, RLRQ, c. C-24.2), Loi sur les véhicules hors route, Loi concernant le transport rémunéré de personnes par automobile, Loi sur l'assurance automobile.
+- **Fédéral, sécurité nautique** : Règlement sur les petits bâtiments, compétence des conducteurs d'embarcations de plaisance, restrictions visant l'utilisation des bâtiments, Loi de 2001 sur la marine marchande du Canada.
 - **Table des vitesses** : calculateur (amende, frais, contribution, réclamation totale, points d'inaptitude, grand excès, zones de travaux et scolaires) et table complète par tranche de 5 km/h.
 - Recherche par numéro (ex. `443.1`) ou par mots-clés (ex. `cellulaire`), avec raccourcis pour les recherches fréquentes.
 - Lien direct vers le texte officiel de chaque article sur LégisQuébec.
@@ -34,7 +35,9 @@
 - **Ma position** : la même information, à partir du GPS du téléphone.
 - **Code municipal** : le code géographique de la municipalité (ex. 58227), prêt à copier.
 - **Menu des postes et corps de police** : adresse, centre de services, région, district et liste des municipalités desservies avec leurs codes. Le territoire est surligné sur la carte.
-- **Couches** : postes SQ, corps municipaux, patrouille autoroutière, bornes km, sorties d'autoroute, bureaux SQ, limites et codes municipaux, caméras de circulation (Québec 511).
+- **Couches** : postes SQ, corps municipaux, patrouille autoroutière, bornes km, sorties d'autoroute, bureaux SQ, limites et codes municipaux, caméras de circulation (Québec 511), autres postes de police (SPVM, GRC, régies, Nunavik… — OpenStreetMap).
+- **District judiciaire** dans la fiche de chaque lieu.
+- **Mes repères** : repères personnels privés (bouton « Repère »), avec itinéraire et suppression.
 
 ### Territoires
 - Recherche d'une municipalité pour savoir qui la couvre : Sûreté du Québec (et quel poste), corps municipal ou corps autochtone.
@@ -49,9 +52,21 @@
 - **Recherche** dans les événements (titre, lieu, notes), vue Liste des 4 prochains mois.
 - Modèles de rotation prêts (4-4, 4-4 jour/nuit, 2-2-3, 7-7, 3-3, 5-2, jour-soir-nuit) ou personnalisés ; exceptions (vacances, maladie, formation, cour, temps supplémentaire, échanges) avec notes.
 - Export vers le calendrier du téléphone ou d'Outlook (fichier `.ics`, quarts et événements des 6 prochains mois).
+- **Échanges de quarts** : offrir un quart des 14 prochains jours à son poste; la première prise gagne, les deux horaires se mettent à jour et les deux policiers sont avisés.
+- **Deuxième calendrier (conjoint·e)** : rotation et exceptions du conjoint, privées (Réglages › Horaire).
+- **Temps supplémentaire** : heures et détails de la feuille de TS (code gain, activité, nature, projet, PSA, no de dossier, UO imputée, repas…).
+- **Statistiques d'heures** (mois et année) et **rapport de temps supplémentaire** à imprimer ou enregistrer en PDF.
+- **Rappel avant mes quarts** (15 min à 2 h), envoyé par une tâche planifiée Supabase.
+- **Modèles d'horaire** publiés par l'administrateur, **horaire hybride autoroutier** (9 h en semaine, 12 h la fin de semaine), catégories Obligation familiale, Férié et Maladie longue durée.
 - **Mon poste** : les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité). Activé par défaut ; chaque policier peut le désactiver dans **Réglages › Confidentialité**.
 - **Partage** avec un collègue d'un autre poste, retirable en tout temps.
 - Les collègues voient seulement la rotation : les événements, vacances, maladies, cours, formations et notes restent privés (vérifié par la base de données).
+
+### Communauté
+- **Forum** réservé à chaque corps de police : sujets, réponses (avis à l'auteur), suppression de ses publications, signalement à l'administrateur.
+- **Idées** : propositions de nouveautés avec votes et statut (Proposée, Planifiée, Réalisée, Non retenue).
+- **Sondages** créés par l'administrateur (2 à 6 options, résultats en pourcentage).
+- **Annonces** de l'administrateur en haut de l'accueil, avec image facultative et notification à tous.
 
 ### Messages (BÊTA)
 - Conversations style texto entre l'administrateur et chaque policier, avec bulles, date, heure et indicateur « Lu ».
@@ -81,6 +96,14 @@
 - Carte « quart du jour » avec barre gyrophare rouge et bleue.
 - Transitions entre les pages, fenêtres qui glissent depuis le bas, retour tactile sur chaque bouton (désactivés si « Réduire les animations » est activé sur l'appareil).
 - Thème clair, sombre ou automatique (Réglages).
+
+### Styles d'interface
+Moderne (clair, sombre ou automatique), Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police (Réglages › Apparence).
+
+### Confidentialité (Loi 25)
+- [Politique de confidentialité](politique.html) du site web; consentement explicite à l'inscription, avec date et version conservées, et nouvelle acceptation si la politique change.
+- Données hébergées au Canada (Supabase, région Montréal), protégées par la sécurité au niveau des lignes de la base de données.
+- Réglages › Aide et soutien : nouveautés de l'app, message à l'administrateur, Discord, courriel du soutien.
 
 ### Installation comme une application
 La tuile **App** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
@@ -118,6 +141,11 @@ Les règles d'accès de la base (RLS) protègent les renseignements personnels :
 | `corps_police.json` | Corps de police municipaux et autochtones, et municipalités desservies |
 | `municipalites.geojson`, `municipalites.json`, `municipalites_hors_sq.geojson` | Limites et codes géographiques des municipalités |
 | `cameras.geojson` | Caméras de circulation du MTMD |
+| `lois/*.json` | Autres lois et règlements (VHR, transport rémunéré, assurance automobile, sécurité nautique) |
+| `postes_autres.geojson` | Autres postes de police au Québec (OpenStreetMap, ODbL) |
+| `districts_judiciaires.json` | District judiciaire de chaque municipalité |
+
+Les trois derniers proviennent de l'app iOS (`outils/importer_ios.py`).
 
 ### Mise à jour automatique
 
