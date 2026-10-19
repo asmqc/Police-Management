@@ -120,6 +120,10 @@ La tuile **App** de l'accueil explique comment installer Police Management sur i
 
 ---
 
+## Avertissement
+
+À chaque ouverture de l'app et à chaque retour dans l'app (après plus de 15 secondes ailleurs), un écran **Avertissement** rappelle que l'application est indépendante, que le propriétaire n'est pas responsable des informations confidentielles qui pourraient y être partagées, qu'aucune photo du CRPQ ni donnée sur des civils n'est tolérée et que les montants doivent être vérifiés. « J'accepte » ou « Je refuse » (déconnexion). L'administrateur modifie le texte dans Admin › Outils.
+
 ## Accès
 
 La connexion est obligatoire. Chaque nouvelle personne remplit une demande d'accès (nom, matricule, corps de police, unité) et reste **en attente** jusqu'à l'approbation de l'administrateur (anthony.smith@surete.qc.ca).

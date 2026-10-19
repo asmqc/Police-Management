@@ -414,7 +414,7 @@
     if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
-    else setTimeout(montrerNouveautesUneFois, 1200);
+    chargerAvertissement().finally(afficherAvertissement);
     const depart = (location.hash || "").replace("#", "");
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
@@ -474,6 +474,7 @@
     etat.profil.consentement_version = VERSION_POLITIQUE; etat.profil.consentement_le = new Date().toISOString();
     $("#consent-voile").hidden = true;
     toast("Merci. Votre consentement est enregistré.");
+    afficherAvertissement();
   });
   $("#consent-non").addEventListener("click", async () => { $("#consent-voile").hidden = true; await sb.auth.signOut(); });
   function majConsentementReglages() {
@@ -499,11 +500,54 @@
   }
   function montrerNouveautesUneFois() {
     let vu = null; try { vu = localStorage.getItem("pm-nouv-vu"); } catch { return; }
-    if (vu !== NOUVEAUTES[0].date && $("#consent-voile").hidden) ouvrirNouveautes();
+    if (vu !== NOUVEAUTES[0].date && $("#consent-voile").hidden && $("#avert-voile").hidden) ouvrirNouveautes();
   }
   $$("[data-action='nouveautes']").forEach((b) => b.addEventListener("click", ouvrirNouveautes));
   $("#nouv-fermer").addEventListener("click", () => ($("#nouv-voile").hidden = true));
   $("#nouv-voile").addEventListener("click", (e) => { if (e.target.id === "nouv-voile") e.target.hidden = true; });
+
+
+  /* ---------------- Avertissement : à chaque ouverture et à chaque retour dans l'app ---------------- */
+  const AVERT_DEFAUT = "Application indépendante : elle n'est affiliée à aucune entreprise ni à aucun corps de police.\nElle peut être utilisée par tous les policiers des corps de police du Canada.\nNe partagez aucune information confidentielle dans cette application.\nLe propriétaire de l'application n'est pas responsable des informations confidentielles qui pourraient y être partagées.\nAucune photo du CRPQ ni aucune donnée sur des civils ne sera tolérée dans l'application.\nLois et table des vitesses : les montants peuvent être inexacts ou non à jour. Vérifiez toujours que les articles et les barèmes sont les bons avant de vous y fier.";
+  let texteAvert = AVERT_DEFAUT;
+  async function chargerAvertissement() {
+    const { data } = await sb.from("parametres_app").select("avertissement").eq("id", 1).maybeSingle();
+    if (data && data.avertissement) texteAvert = data.avertissement;
+  }
+  function afficherAvertissement() {
+    if (!etat.profil || etat.profil.statut !== "approuve" || $("#ecran-app").hidden) return;
+    if (!$("#consent-voile").hidden) return; // le consentement passe d'abord; l'avertissement suit
+    try { if (Date.now() - Number(sessionStorage.getItem("pm-averti") || 0) < 15000) return; } catch { /* facultatif */ } // simple rechargement juste après l'acceptation
+    $("#avert-lignes").innerHTML = texteAvert.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => `<li>${esc(l)}</li>`).join("");
+    $("#avert-voile").hidden = false;
+    setTimeout(() => $("#avert-ok").focus(), 50);
+  }
+  $("#avert-ok").addEventListener("click", () => {
+    $("#avert-voile").hidden = true;
+    try { sessionStorage.setItem("pm-averti", String(Date.now())); } catch { /* facultatif */ }
+    montrerNouveautesUneFois();
+  });
+  $("#avert-non").addEventListener("click", async () => { $("#avert-voile").hidden = true; await sb.auth.signOut(); });
+  // Retour dans l'app après l'avoir quittée (autre app, autre onglet, écran verrouillé)
+  let quitteLe = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { quitteLe = Date.now(); return; }
+    if (quitteLe && Date.now() - quitteLe > 15000) chargerAvertissement().finally(afficherAvertissement); // 15 s : évite de l'afficher après un simple choix de photo
+  });
+  // Administration : modifier le message
+  async function rendreAvertAdmin() {
+    await chargerAvertissement();
+    $("#adm-avert").value = texteAvert;
+  }
+  $("#adm-avert-defaut").addEventListener("click", () => { $("#adm-avert").value = AVERT_DEFAUT; toast("Texte par défaut remis : touchez « Publier le message »"); });
+  $("#adm-avert-ok").addEventListener("click", async () => {
+    const t = $("#adm-avert").value.trim();
+    if (!t) return toast("Le message ne peut pas être vide");
+    const { error } = await sb.from("parametres_app").update({ avertissement: t, modifie_le: new Date().toISOString() }).eq("id", 1);
+    if (error) return toast(traduireErreur(error));
+    texteAvert = t;
+    toast("Message d'avertissement publié pour tous");
+  });
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
@@ -3549,6 +3593,7 @@
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
     rendreModelesAdmin();
+    rendreAvertAdmin();
     rendreAnnoncesAdmin();
     rendreSignalements();
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();

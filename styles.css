@@ -1443,3 +1443,18 @@ html:has(body.mode-site), body.mode-site { height: auto; }
   .site-duo .site-tel { width: 46%; }
   .site-duo .decale { margin-top: 28px; }
 }
+
+/* Avertissement à chaque entrée dans l'app */
+.avert { position: fixed; inset: 0; z-index: 2900; display: grid; place-items: center; padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  background: radial-gradient(80% 60% at 50% 0%, rgba(242,179,61,.18), transparent 60%), rgba(6, 12, 20, .82); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: voile-entree .2s ease-out; }
+.avert-carte { width: min(100%, 520px); max-height: 100%; overflow-y: auto; background: var(--surface); color: var(--fg); border-radius: 24px; padding: 28px 22px 20px; display: grid; gap: 14px; justify-items: center; box-shadow: var(--ombre); animation: feuille-entree .3s var(--ease); }
+.avert-icone { color: #F2A93B; filter: drop-shadow(0 6px 16px rgba(242,169,59,.45)); animation: avert-pulse 1.6s ease-in-out 2; }
+@keyframes avert-pulse { 50% { transform: scale(1.08); } }
+.avert-carte h2 { font-size: 1.9rem; }
+.avert-lignes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; width: 100%; }
+.avert-lignes li { position: relative; padding-left: 32px; line-height: 1.45; }
+.avert-lignes li::before { content: "!"; position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: #F2A93B; color: #1A1204; font-weight: 800; font-size: .85rem; display: grid; place-items: center; }
+.avert-carte .btn-principal { width: 100%; margin: 6px 0 0; }
+#adm-avert { font-size: .95rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .avert, .avert-carte, .avert-icone { animation: none !important; } }
+.avert-carte .lien { justify-self: center; }
