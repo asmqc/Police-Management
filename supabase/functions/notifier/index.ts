@@ -134,7 +134,9 @@ Deno.serve(async (req) => {
     }
 
     if (e.type === "annonce") {
-      const { data: membres } = await admin.from("profiles").select("id").eq("statut", "approuve");
+      let req = admin.from("profiles").select("id").eq("statut", "approuve");
+      if (e.corps) req = req.eq("corps_police", e.corps); // annonce visant un seul corps de police
+      const { data: membres } = await req;
       const n = await envoyer((membres ?? []).map((x) => x.id), { titre: e.titre, corps: e.texte ? String(e.texte).slice(0, 180) : "Nouvelle annonce dans Police Management.", url: "#accueil", tag: `annonce-${e.id}` });
       return Response.json({ envoye: n });
     }

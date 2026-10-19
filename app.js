@@ -384,6 +384,8 @@
     if (p.doit_changer_mdp) { montrer("#ecran-mdp-temp"); $("#mt-mdp").focus(); return; }
     majBarreCompte();
     $("#menu-admin").hidden = p.role !== "admin";
+    $("#nav-admin").hidden = p.role !== "admin";
+    if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
     else setTimeout(montrerNouveautesUneFois, 1200);
@@ -660,6 +662,7 @@
   async function initMessages() {
     ecouterMessages();
     if (estAdmin()) {
+      if (msg.ouvrir) { const id = msg.ouvrir; msg.ouvrir = null; return ouvrirConversation(id, true); }
       if (msg.autre && !$("#chat-vue").hidden) return ouvrirConversation(msg.autre.id, false);
       afficherListeConversations();
     } else {
@@ -1681,7 +1684,7 @@
   async function rendreModelesAdmin() {
     if (!estAdmin()) return;
     const liste = await chargerModelesAdmin();
-    $("#adm-modeles").innerHTML = liste.length ? liste.map((m) => `<li><span><b>${esc(m.nom)}</b><small>Cycle de ${m.cycle.length} jours${m.hybride ? " · hybride" : ""} · ${esc(m.cycle.join(""))}</small></span>
+    $("#adm-modeles").innerHTML = liste.length ? liste.map((m) => `<li><span><b>${esc(m.nom)}</b><small>${esc(m.corps || "Tous les corps")} · cycle de ${m.cycle.length} jours${m.hybride ? " · hybride" : ""} · ${esc(m.cycle.join(""))}</small></span>
       <button class="btn-danger petit" data-suppr-modele="${m.id}">Retirer</button></li>`).join("") : `<li class="vide-petit">Aucun modèle publié.</li>`;
     $$("[data-suppr-modele]").forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
@@ -1696,7 +1699,7 @@
     if (!nom) return $("#adm-modele-nom").focus();
     await chargerMonHoraire();
     if (!hr.config) return toast("Configurez d'abord votre propre rotation dans Horaire, puis publiez-la ici");
-    const { error } = await sb.from("modeles_rotation").insert({ nom, cycle: hr.config.cycle, heures: hr.config.heures || null, hybride: !!hr.config.hybride });
+    const { error } = await sb.from("modeles_rotation").insert({ nom, cycle: hr.config.cycle, heures: hr.config.heures || null, hybride: !!hr.config.hybride, corps: $("#adm-modele-corps").value || null });
     if (error) return toast(traduireErreur(error));
     $("#adm-modele-nom").value = ""; toast("Modèle publié pour tous"); rendreModelesAdmin();
   });
@@ -1712,11 +1715,11 @@
   };
   const forum = { sujets: [], ouvert: null };
   async function initForum() {
-    $("#forum-corps").textContent = (etat.profil.corps_police || "Votre corps de police") + (estAdmin() ? " · vue administrateur : tous les corps" : "");
+    $("#forum-corps").textContent = estAdmin() ? (etat.corpsAdmin ? `${etat.corpsAdmin} · vue administrateur` : "Tous les corps · vue administrateur") : (etat.profil.corps_police || "Votre corps de police");
     montrerFil(false);
     const { data, error } = await sb.rpc("forum_liste");
     if (error) { $("#forum-sujets").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
-    forum.sujets = data || [];
+    forum.sujets = (data || []).filter((x) => corpsVisible(x.corps));
     $("#forum-sujets").innerHTML = forum.sujets.length ? forum.sujets.map((x) => `
       <button type="button" class="forum-ligne" data-sujet="${x.id}">
         <b>${esc(x.titre)}</b>
@@ -1734,7 +1737,7 @@
     const titre = $("#forum-titre").value.trim(), contenu = $("#forum-contenu").value.trim();
     if (titre.length < 3) return toast("Donnez un titre d'au moins 3 caractères");
     if (!contenu) return toast("Écrivez votre message");
-    const { error } = await sb.from("forum_sujets").insert({ titre, contenu, corps: (etat.profil.corps_police || "").trim() || "Sans corps" });
+    const { error } = await sb.from("forum_sujets").insert({ titre, contenu, corps: (estAdmin() && etat.corpsAdmin) || (etat.profil.corps_police || "").trim() || "Sans corps" });
     if (error) return toast(traduireErreur(error));
     $("#forum-titre").value = ""; $("#forum-contenu").value = "";
     $("#forum-form").hidden = true; $("#forum-nouveau").hidden = false;
@@ -1810,14 +1813,15 @@
   }
   $$("[data-idees]").forEach((b) => b.addEventListener("click", () => { ongletIdees = b.dataset.idees; initIdees(); }));
   async function chargerIdees() {
-    const { data, error } = await sb.rpc("idees_liste");
+    const { data: brut, error } = await sb.rpc("idees_liste_v2");
+    const data = (brut || []).filter((i) => corpsVisible(i.corps));
     if (error) { $("#idees-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     $("#idees-liste").innerHTML = (data || []).length ? data.map((i) => `
       <div class="idee">
         <button type="button" class="idee-vote ${i.j_ai_vote ? "vote" : ""}" data-voter="${i.id}" data-a="${i.j_ai_vote}" aria-pressed="${i.j_ai_vote}" aria-label="Voter pour cette idée">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 14 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>${i.nb_votes}</b></button>
         <div class="idee-txt"><b>${esc(i.titre)}</b>${i.description ? `<span>${esc(i.description)}</span>` : ""}
-          <small>${esc(i.auteur_nom)} · ${esc(quand(i.cree_le))} · <span class="statut-idee ${esc(i.statut)}">${esc(STATUTS_IDEE[i.statut])}</span></small>
+          <small>${esc(i.auteur_nom)} · ${esc(quand(i.cree_le))} · <span class="statut-idee ${esc(i.statut)}">${esc(STATUTS_IDEE[i.statut])}</span>${estAdmin() && !etat.corpsAdmin ? ` · ${esc(i.corps)}` : ""}</small>
           ${estAdmin() ? `<span class="fc-ligne"><select data-statut-idee="${i.id}" aria-label="Statut">${Object.entries(STATUTS_IDEE).map(([k, v]) => `<option value="${k}" ${k === i.statut ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></span>` : ""}
           ${i.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-idee="${i.id}">Supprimer</button>` : ""}
         </div>
@@ -1846,17 +1850,18 @@
     e.preventDefault();
     const titre = $("#idee-titre").value.trim();
     if (titre.length < 3) return toast("Décrivez votre idée en au moins 3 caractères");
-    const { error } = await sb.from("idees").insert({ titre, description: $("#idee-desc").value.trim() || null });
+    const { error } = await sb.from("idees").insert({ titre, description: $("#idee-desc").value.trim() || null, ...(estAdmin() && etat.corpsAdmin ? { corps: etat.corpsAdmin } : {}) });
     if (error) return toast(traduireErreur(error));
     $("#idee-titre").value = ""; $("#idee-desc").value = "";
     toast("Idée proposée : les autres membres peuvent voter"); chargerIdees();
   });
   async function chargerSondages() {
-    const { data, error } = await sb.rpc("sondages_liste");
+    const { data: brut, error } = await sb.rpc("sondages_liste_v2");
+    const data = (brut || []).filter((x) => !x.corps || corpsVisible(x.corps));
     if (error) { $("#sondages-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     $("#sondages-liste").innerHTML = (data || []).length ? data.map((sd) => {
       const total = Number(sd.total) || 0, a_vote = sd.mon_choix !== null && sd.mon_choix !== undefined;
-      return `<div class="panneau sondage"><b>${esc(sd.question)}</b><small class="ref">${total} vote${total > 1 ? "s" : ""}${sd.ferme ? " · terminé" : ""}</small>
+      return `<div class="panneau sondage"><b>${esc(sd.question)}</b><small class="ref">${total} vote${total > 1 ? "s" : ""}${sd.ferme ? " · terminé" : ""}${estAdmin() ? ` · ${esc(sd.corps || "tous les corps")}` : ""}</small>
         ${sd.options.map((o, i) => {
           const n = Number(sd.votes[i]) || 0, pc = total ? Math.round((n / total) * 100) : 0;
           return `<button type="button" class="sondage-option ${sd.mon_choix === i ? "choisie" : ""}" data-sondage="${sd.id}" data-choix="${i}" ${sd.ferme ? "disabled" : ""} style="--pc:${a_vote || sd.ferme ? pc : 0}%">
@@ -1896,7 +1901,7 @@
     const options = $$(".sondage-opt").map((i) => i.value.trim()).filter(Boolean);
     if (question.length < 3) return toast("Écrivez la question");
     if (options.length < 2) return toast("Il faut au moins 2 options");
-    const { error } = await sb.from("sondages").insert({ question, options });
+    const { error } = await sb.from("sondages").insert({ question, options, corps: etat.corpsAdmin || null });
     if (error) return toast(traduireErreur(error));
     $("#sondage-question").value = ""; $("#sondage-options").innerHTML = ""; ajouterOptionSondage(); ajouterOptionSondage();
     toast("Sondage publié"); chargerSondages();
@@ -1913,7 +1918,7 @@
     const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(10);
     const el = $("#ac-annonces");
     let vues = []; try { vues = JSON.parse(localStorage.getItem("pm-annonces-masquees") || "[]"); } catch { /* facultatif */ }
-    const liste = (data || []).filter((a) => !vues.includes(a.id));
+    const liste = (data || []).filter((a) => !vues.includes(a.id) && (!a.corps || corpsVisible(a.corps)));
     el.hidden = !liste.length;
     if (!liste.length) return;
     const urls = await urlsAnnonces(liste.map((a) => a.image_path));
@@ -1940,15 +1945,16 @@
       const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     }
-    const { error } = await sb.from("annonces").insert({ titre, texte: $("#adm-annonce-texte").value.trim() || null, image_path });
+    const { error } = await sb.from("annonces").insert({ titre, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null });
     btn.disabled = false;
     if (error) return toast(traduireErreur(error));
     $("#adm-annonce-titre").value = ""; $("#adm-annonce-texte").value = ""; $("#adm-annonce-image").value = ""; $("#adm-annonce-fichier").textContent = "";
     toast("Annonce publiée : les membres sont avisés"); rendreAnnoncesAdmin();
   });
   async function rendreAnnoncesAdmin() {
-    const { data } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(30);
-    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}</small></span>
+    const { data: brut } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(60);
+    const data = (brut || []).filter((a) => !a.corps || corpsVisible(a.corps));
+    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · ${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}</small></span>
       <span class="fc-ligne"><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
       <button class="btn-danger petit" data-suppr-annonce="${a.id}" data-image="${esc(a.image_path || "")}">Supprimer</button></span></li>`).join("") : `<li class="vide-petit">Aucune annonce publiée.</li>`;
     $$("[data-basculer-annonce]").forEach((b) => b.addEventListener("click", async () => {
@@ -1981,11 +1987,106 @@
     }));
   }
 
+
+  /* ---------------- Administration : corps de police affiché, sous-onglets, messagerie par corps ---------------- */
+  const corpsDe = (p) => ((p && (p.corps_police || p.corps)) || "").trim() || "Sans corps";
+  etat.corpsAdmin = (() => { try { return localStorage.getItem("pm-corps-admin") || ""; } catch { return ""; } })();
+  const corpsVisible = (c) => !estAdmin() || !etat.corpsAdmin || (c || "Sans corps") === etat.corpsAdmin;
+  const estSQ = () => /s[ûu]ret[ée] du qu[ée]bec/i.test((etat.profil && etat.profil.corps_police) || "");
+  function corpsConnus() {
+    const noms = new Set(["Sûreté du Québec"]);
+    (etat.corps || []).forEach((c) => noms.add(c.nom));
+    (comptesAdmin || []).forEach((p) => noms.add(corpsDe(p)));
+    ((msg && msg.comptes) || []).forEach((p) => noms.add(corpsDe(p)));
+    return [...noms].filter(Boolean).sort((a, b) => a.localeCompare(b, "fr"));
+  }
+  function remplirCorpsAdmin() {
+    if (!estAdmin()) return;
+    const sel = $("#corps-admin");
+    const avecComptes = new Set((comptesAdmin || []).map(corpsDe));
+    const noms = corpsConnus();
+    const opt = (n) => `<option value="${esc(n)}">${esc(n)}</option>`;
+    sel.innerHTML = `<option value="">Tous les corps</option>` +
+      `<optgroup label="Avec des membres">${noms.filter((n) => avecComptes.has(n)).map(opt).join("")}</optgroup>` +
+      `<optgroup label="Autres corps">${noms.filter((n) => !avecComptes.has(n)).map(opt).join("")}</optgroup>`;
+    sel.value = etat.corpsAdmin;
+    if (sel.value !== etat.corpsAdmin) { etat.corpsAdmin = ""; sel.value = ""; }
+    sel.hidden = false;
+    document.body.classList.add("est-admin");
+    $("#adm-corps-titre").textContent = etat.corpsAdmin || "Tous les corps de police";
+    const cible = (id, defaut) => { const s2 = $(id); const v = s2.value; s2.innerHTML = `<option value="">Tous les corps</option>` + noms.map(opt).join(""); s2.value = v || defaut; };
+    cible("#adm-annonce-corps", etat.corpsAdmin);
+    cible("#adm-modele-corps", etat.corpsAdmin);
+  }
+  $("#corps-admin").addEventListener("change", (e) => {
+    etat.corpsAdmin = e.target.value;
+    try { localStorage.setItem("pm-corps-admin", etat.corpsAdmin); } catch { /* facultatif */ }
+    $("#adm-annonce-corps").value = etat.corpsAdmin; $("#adm-modele-corps").value = etat.corpsAdmin;
+    toast(etat.corpsAdmin ? `Affichage : ${etat.corpsAdmin}` : "Affichage : tous les corps");
+    afficherVue(etat.vue);
+  });
+
+  let ongletAdmin = "demandes";
+  $$("[data-adm-onglet]").forEach((b) => b.addEventListener("click", () => {
+    ongletAdmin = b.dataset.admOnglet;
+    $$("[data-adm-onglet]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    $$("[data-adm-panneau]").forEach((p) => (p.hidden = p.dataset.admPanneau !== ongletAdmin));
+    if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
+  }));
+
+  async function rendreMessagerieAdmin() {
+    if (!estAdmin()) return;
+    const moi = etat.profil.id;
+    const comptes = await comptesApprouves();
+    // Nouvelle conversation : policiers approuvés, regroupés par corps
+    const parCorps = {};
+    comptes.filter((c) => c.statut === "approuve" && corpsVisible(corpsDe(c))).forEach((c) => (parCorps[corpsDe(c)] = parCorps[corpsDe(c)] || []).push(c));
+    $("#adm-conv-nouveau").innerHTML = `<option value="">+ Écrire à un policier…</option>` + Object.keys(parCorps).sort((a, b) => a.localeCompare(b, "fr")).map((k) =>
+      `<optgroup label="${esc(k)}">${parCorps[k].sort((a, b) => nomCompte(a).localeCompare(nomCompte(b), "fr")).map((c) => `<option value="${c.id}">${esc((c.grade ? c.grade + " " : "") + nomCompte(c))}${c.unite ? " · " + esc(c.unite) : ""}</option>`).join("")}</optgroup>`).join("");
+    const { data, error } = await sb.from("messages").select("id, expediteur, destinataire, contenu, cree_le, lu_le").order("cree_le", { ascending: false }).limit(2000);
+    const el = $("#adm-conv");
+    if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    const convs = new Map();
+    for (const m of data || []) {
+      const autre = m.expediteur === moi ? m.destinataire : m.expediteur;
+      if (!autre) continue;
+      if (!convs.has(autre)) convs.set(autre, { autre, dernier: m, nonLus: 0 });
+      if (m.destinataire === moi && !m.lu_le) convs.get(autre).nonLus++;
+    }
+    const groupes = {};
+    for (const c of convs.values()) {
+      const p = comptes.find((x) => x.id === c.autre) || { nom_complet: "Compte supprimé", corps_police: "" };
+      c.p = p;
+      const k = corpsDe(p);
+      if (!corpsVisible(k)) continue;
+      (groupes[k] = groupes[k] || []).push(c);
+    }
+    const cles = Object.keys(groupes).sort((a, b) => a.localeCompare(b, "fr"));
+    const toutes = cles.flatMap((k) => groupes[k]);
+    const urls = await urlsAvatars(toutes.map((c) => c.p.avatar_path));
+    let i = 0;
+    el.innerHTML = cles.length ? cles.map((k) => {
+      const nl = groupes[k].reduce((t, c) => t + c.nonLus, 0);
+      return `<h4 class="groupe-corps"><span>${esc(k)}</span>${nl ? `<b class="nl">${nl} non lu${nl > 1 ? "s" : ""}</b>` : `<b>${groupes[k].length}</b>`}</h4>
+      <ul class="liste-conv">${groupes[k].map((c) => {
+        const deMoi = c.dernier.expediteur === moi;
+        return `<li><button class="conv ${c.nonLus ? "non-lu" : ""}" data-adm-conv="${c.autre}">
+          ${htmlAvatar(c.p, urls[i++])}
+          <span class="conv-txt"><span class="conv-haut"><b>${esc((c.p.grade ? c.p.grade + " " : "") + nomCompte(c.p))}</b><small>${esc(jourFr(c.dernier.cree_le) === "Aujourd'hui" ? heureFr(c.dernier.cree_le) : jourFr(c.dernier.cree_le))}</small></span>
+          <span class="conv-apercu">${deMoi ? "Vous : " : ""}${esc(c.dernier.contenu.slice(0, 90))}</span></span>
+          ${c.nonLus ? `<b class="conv-badge">${c.nonLus}</b>` : ""}</button></li>`;
+      }).join("")}</ul>`;
+    }).join("") : `<p class="vide">Aucune conversation${etat.corpsAdmin ? " pour ce corps de police" : ""}. Choisissez un policier ci-dessus pour lui écrire.</p>`;
+    $$("[data-adm-conv]", el).forEach((b) => b.addEventListener("click", () => ouvrirDepuisAdmin(b.dataset.admConv)));
+  }
+  function ouvrirDepuisAdmin(id) { msg.ouvrir = id; afficherVue("messages"); }
+  $("#adm-conv-nouveau").addEventListener("change", (e) => { if (e.target.value) ouvrirDepuisAdmin(e.target.value); e.target.value = ""; });
+
   // Configuration de la rotation
   let modelesAdmin = [];
   async function chargerModelesAdmin() {
     const { data } = await sb.from("modeles_rotation").select("*").order("nom");
-    modelesAdmin = data || [];
+    modelesAdmin = (data || []).filter((m) => (estAdmin() ? !m.corps || corpsVisible(m.corps) : (!m.hybride || estSQ())));
     const g = $("#hr-modeles-admin");
     g.innerHTML = modelesAdmin.map((m) => `<option value="m:${m.id}">${esc(m.nom)}</option>`).join("");
     g.hidden = !modelesAdmin.length;
@@ -1995,6 +2096,8 @@
     const c = cibleEdition().config;
     hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) }, hybride: !!(c && c.hybride) };
     $("#hr-hybride").checked = hr.brouillon.hybride;
+    // Quarts de 12 h la fin de semaine : horaire hybride autoroutier de la Sûreté du Québec seulement
+    $(".hr-hybride").hidden = !(estSQ() || hr.cible === "conjoint" || hr.brouillon.hybride);
     chargerModelesAdmin().then(() => { if (c && c.modele && String(c.modele).startsWith("m:")) $("#hr-modele").value = c.modele; });
     $("#hr-modele").value = c ? (c.modele || "perso") : "4-4J";
     $("#hr-debut").value = hr.brouillon.debut;
@@ -3222,6 +3325,7 @@
     b.textContent = count || "";
     b.hidden = !count;
     $("#badge-menu").textContent = count || ""; $("#badge-menu").hidden = !count;
+    $("#badge-nav-admin").textContent = count || ""; $("#badge-nav-admin").hidden = !count;
     compteurs.demandes = count || 0;
     majPastille();
   }
@@ -3236,23 +3340,31 @@
     const { data, error } = await sb.rpc("admin_comptes");
     if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     comptesAdmin = data || [];
-    const compte = (st) => comptesAdmin.filter((p) => p.statut === st).length;
+    remplirCorpsAdmin();
+    const tousComptes = comptesAdmin;
+    const vus = tousComptes.filter((p) => corpsVisible(corpsDe(p)));
+    const compte = (st) => vus.filter((p) => p.statut === st).length;
+    const enAttenteTous = tousComptes.filter((p) => p.statut === "en_attente").length;
     $("#nb-attente").textContent = compte("en_attente");
     $("#nb-approuve").textContent = compte("approuve");
     $("#nb-refuse").textContent = compte("refuse");
     $("#nb-bloque").textContent = compte("bloque");
-    const b = $("#badge-attente"); b.textContent = compte("en_attente") || ""; b.hidden = !compte("en_attente");
-    compteurs.demandes = compte("en_attente"); majPastille();
-    $("#badge-menu").textContent = compte("en_attente") || ""; $("#badge-menu").hidden = !compte("en_attente");
+    const b = $("#badge-attente"); b.textContent = enAttenteTous || ""; b.hidden = !enAttenteTous;
+    compteurs.demandes = enAttenteTous; majPastille();
+    $("#badge-menu").textContent = enAttenteTous || ""; $("#badge-menu").hidden = !enAttenteTous;
+    $("#badge-nav-admin").textContent = enAttenteTous || ""; $("#badge-nav-admin").hidden = !enAttenteTous;
+    $("#adm-onglet-nb").textContent = compte("en_attente") || ""; $("#adm-onglet-nb").hidden = !compte("en_attente");
     // Confirmation du courriel (colonne lue directement : l'administrateur voit tous les profils)
     const { data: verif } = await sb.from("profiles").select("id, courriel_verifie_le");
     const verifies = new Map((verif || []).map((v) => [v.id, v.courriel_verifie_le]));
     comptesAdmin.forEach((p) => (p.courriel_verifie_le = verifies.get(p.id) || null));
     const nonConfirme = (p) => !p.courriel_verifie_le && (p.statut === "approuve" || p.statut === "en_attente");
-    $("#nb-non-confirme").textContent = comptesAdmin.filter(nonConfirme).length;
-    const liste = comptesAdmin.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : p.statut === filtreAdmin));
+    $("#nb-non-confirme").textContent = vus.filter(nonConfirme).length;
+    // Trié par corps de police, puis du plus récent au plus ancien
+    const liste = vus.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : p.statut === filtreAdmin))
+      .sort((x, y) => corpsDe(x).localeCompare(corpsDe(y), "fr") || String(y.cree_le).localeCompare(String(x.cree_le)));
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
-    el.innerHTML = liste.length ? liste.map((p, i) => `
+    el.innerHTML = liste.length ? liste.map((p, i) => `${i === 0 || corpsDe(liste[i - 1]) !== corpsDe(p) ? `<h4 class="groupe-corps"><span>${esc(corpsDe(p))}</span><b>${liste.filter((x) => corpsDe(x) === corpsDe(p)).length}</b></h4>` : ""}
       <div class="demande">
         <div class="personne">
           ${htmlAvatar(p, urls[i])}
@@ -3288,6 +3400,7 @@
     rendreModelesAdmin();
     rendreAnnoncesAdmin();
     rendreSignalements();
+    if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
   }
 
   async function decider(btn, id, statut) {

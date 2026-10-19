@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191226">
+  <link rel="stylesheet" href="styles.css?v=202610191248">
 </head>
 <body>
   <!-- Chargement -->
@@ -147,6 +147,7 @@
         <span class="marque petite">Police <span>Management</span></span>
       </div>
       <div class="barre-droite">
+        <select id="corps-admin" class="corps-admin" aria-label="Corps de police affiché (administrateur)" hidden><option value="">Tous les corps</option></select>
         <button class="btn-icone btn-rafraichir" id="btn-rafraichir" aria-label="Rafraîchir" title="Rafraîchir">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
@@ -198,6 +199,14 @@
           <i class="beta-nav" id="beta-nav">BÊTA</i>
         </span>
         <span class="nav-txt">Messages</span>
+      </button>
+      <button data-vue="admin" id="nav-admin" hidden>
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m9 12 2 2 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 3.5 5.7V12c0 4.9 3.6 8.4 8.5 9.6 4.9-1.2 8.5-4.7 8.5-9.6V5.7zm-1 13.4-3.7-3.7 1.4-1.4 2.3 2.3 4.6-4.6 1.4 1.4z" fill="currentColor"/></svg>
+          <b class="badge" id="badge-nav-admin" hidden></b>
+        </span>
+        <span class="nav-txt">Admin</span>
       </button>
     </nav>
 
@@ -611,7 +620,7 @@
         <label for="hr-debut">Premier jour du cycle</label>
         <input id="hr-debut" type="date" required>
         <p class="aide">C'est la date où commence la case n° 1 ci-dessous.</p>
-        <label class="interrupteur hr-hybride" for="hr-hybride"><span class="interrupteur-txt"><b>Horaire hybride autoroutier</b><small>Heures automatiques : quarts de 9 h en semaine, de 12 h la fin de semaine.</small></span><input type="checkbox" id="hr-hybride" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur hr-hybride" for="hr-hybride"><span class="interrupteur-txt"><b>Horaire hybride autoroutier (Sûreté du Québec)</b><small>Heures automatiques : quarts de 9 h en semaine, de 12 h la fin de semaine.</small></span><input type="checkbox" id="hr-hybride" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
 
         <label>Cycle (<span id="hr-longueur">0</span> jours) — touchez une case pour changer le quart</label>
         <div class="hr-cycle" id="hr-cycle"></div>
@@ -852,8 +861,15 @@
     <section id="vue-admin" class="vue" hidden>
       <div class="vue-tete">
         <h2>Administration</h2>
-        <p class="ref">Demandes d'accès et corps de police</p>
+        <p class="ref" id="adm-corps-titre">Tous les corps de police</p>
       </div>
+      <div class="segmente adm-onglets" role="tablist" aria-label="Sections de l'administration">
+        <button type="button" role="tab" data-adm-onglet="demandes" aria-checked="true">Demandes <b class="badge-ligne" id="adm-onglet-nb" hidden></b></button>
+        <button type="button" role="tab" data-adm-onglet="messagerie" aria-checked="false">Messagerie</button>
+        <button type="button" role="tab" data-adm-onglet="communaute" aria-checked="false">Communauté</button>
+        <button type="button" role="tab" data-adm-onglet="outils" aria-checked="false">Outils</button>
+      </div>
+      <div class="adm-panneau" data-adm-panneau="demandes">
       <div class="filtres" role="tablist">
         <button data-filtre="en_attente" aria-selected="true">En attente <b id="nb-attente">0</b></button>
         <button data-filtre="approuve" aria-selected="false">Approuvés <b id="nb-approuve">0</b></button>
@@ -863,9 +879,17 @@
       </div>
       <div id="admin-liste" class="admin-liste"></div>
 
+      </div>
+      <div class="adm-panneau" data-adm-panneau="messagerie" hidden>
+        <p class="aide">Toutes les conversations, classées par corps de police. Visible par l'administration seulement.</p>
+        <select id="adm-conv-nouveau" aria-label="Écrire à un policier"><option value="">+ Écrire à un policier…</option></select>
+        <div id="adm-conv"></div>
+      </div>
+      <div class="adm-panneau" data-adm-panneau="communaute" hidden>
       <h3 class="intertitre">Annonces</h3>
       <form class="panneau formulaire" id="adm-annonce-form" novalidate>
-        <p class="aide">Les annonces s'affichent en haut de l'accueil de tous les membres, qui reçoivent aussi une notification.</p>
+        <p class="aide">Les annonces s'affichent en haut de l'accueil des membres visés, qui reçoivent aussi une notification.</p>
+        <label class="ev-ligne adm-cible"><span>Destinataires</span><select id="adm-annonce-corps"></select></label>
         <input id="adm-annonce-titre" maxlength="120" placeholder="Titre" aria-label="Titre de l'annonce">
         <textarea id="adm-annonce-texte" rows="2" maxlength="1000" placeholder="Texte (facultatif)" aria-label="Texte de l'annonce"></textarea>
         <label class="btn-secondaire petit" for="adm-annonce-image">Ajouter une image (facultatif)</label>
@@ -878,10 +902,13 @@
       <h3 class="intertitre">Signalements <span class="badge-ligne" id="adm-sig-nb" hidden></span></h3>
       <ul class="liste-partages" id="adm-signalements"></ul>
 
+      </div>
+      <div class="adm-panneau" data-adm-panneau="outils" hidden>
       <h3 class="intertitre">Modèles d'horaire</h3>
       <div class="panneau">
         <p class="aide">Les modèles publiés ici apparaissent dans « Modèle de départ » quand un policier configure sa rotation. Pour en créer un, configurez la rotation dans votre propre Horaire, puis publiez-la ici.</p>
         <ul class="liste-partages" id="adm-modeles"></ul>
+        <label class="ev-ligne adm-cible"><span>Corps visé</span><select id="adm-modele-corps"></select></label>
         <form class="fc-ligne" id="adm-modele-form" novalidate>
           <input id="adm-modele-nom" maxlength="80" placeholder="Nom du modèle (ex. Poste MRC — 4-4 jour/nuit)">
           <button class="btn-ok" type="submit">Publier ma rotation</button>
@@ -892,6 +919,7 @@
       <p class="aide">La liste est dans le fichier <span class="ref">data/corps_police.json</span> sur GitHub. Elle sert au formulaire d'inscription, à la carte et à l'onglet Territoires. Écrivez le nom officiel de chaque municipalité. Les changements apparaissent dans l'app environ une minute après l'enregistrement sur GitHub.</p>
       <a class="btn-secondaire" id="lien-edition-corps" href="#" target="_blank" rel="noopener">Modifier la liste sur GitHub</a>
       <div id="admin-corps"></div>
+      </div>
     </section>
   </div>
 
@@ -1041,9 +1069,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191226"></script>
+  <script src="config.js?v=202610191248"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191226"></script>
+  <script src="app.js?v=202610191248"></script>
 </body>
 </html>

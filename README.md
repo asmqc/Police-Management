@@ -85,6 +85,11 @@
 - Suppression définitive de son propre compte.
 
 ### Administration
+- **Onglet Admin** dans la barre du bas (visible par l'administrateur seulement), en quatre sections : Demandes, Messagerie, Communauté, Outils.
+- **Sélecteur de corps de police** dans l'en-tête : l'administrateur se promène entre les corps (ou « Tous les corps ») ; demandes, messagerie, forum, idées, sondages, annonces et modèles suivent ce choix.
+- **Demandes d'accès classées par corps de police**, avec le nombre par corps.
+- **Messagerie de tous les corps sur une même page**, regroupée par corps, avec les messages non lus.
+- Chaque corps de police est séparé (forum, idées, sondages, annonces et modèles ciblés) ; le partage d'horaire volontaire reste possible entre corps. L'horaire hybride (12 h la fin de semaine) est réservé à la Sûreté du Québec.
 - Approbation ou refus des demandes d'accès.
 - Fiche complète de chaque compte : photo, coordonnées, dernière connexion.
 - Mot de passe temporaire (changement obligatoire à la connexion suivante).

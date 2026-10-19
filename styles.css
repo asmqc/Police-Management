@@ -1247,3 +1247,37 @@ html[data-style="mdt"] .vue-tete h2::before { content: "> "; }
 .nouv-liste ul { margin: 2px 0 0; padding-left: 20px; display: grid; gap: 4px; color: var(--fg-doux); }
 html[data-style="poste"] .barre .marque span { color: #F0C24B; }
 html[data-style="epure"] .barre .marque span { color: #E0B47A; }
+
+/* =====================================================================
+   Administrateur : corps affiché (en-tête), onglet Admin, sous-onglets, regroupement par corps
+   ===================================================================== */
+.corps-admin { width: auto; max-width: 150px; min-width: 0; height: 34px; padding: 0 28px 0 12px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  background-color: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.18); background-position: right 8px center; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+.corps-admin:focus { background-color: rgba(255,255,255,.18); color: #fff; }
+.corps-admin option, .corps-admin optgroup { color: #142235; background: #fff; }
+@media (max-width: 430px) {
+  body.est-admin .barre-marque .marque { display: none; }
+  .corps-admin { max-width: 128px; }
+}
+body.est-admin .nav-ico { width: 46px; }
+@media (max-width: 420px) { body.est-admin .nav button { font-size: .6rem; } body.est-admin .nav-ico { width: 42px; } }
+.adm-onglets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.adm-onglets button { font-size: .86rem; padding-inline: 2px; }
+.adm-onglets .badge-ligne { display: inline-grid; min-width: 18px; height: 18px; font-size: .66rem; vertical-align: 1px; margin-left: 2px; }
+.adm-panneau { display: grid; gap: 12px; }
+.adm-panneau[hidden] { display: none; }
+.adm-panneau > .intertitre:first-child { margin-top: 4px; }
+.groupe-corps { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 2px 0; font: 700 1.05rem var(--f-titre); color: var(--fg); }
+.groupe-corps span { display: inline-flex; align-items: center; gap: 8px; }
+.groupe-corps span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--ambre-vif); }
+.groupe-corps b { font: 700 .78rem var(--f-texte); color: var(--fg-doux); background: var(--surface-2); padding: 2px 10px; border-radius: 999px; }
+.groupe-corps b.nl { background: var(--rouge); color: #fff; }
+.admin-liste { gap: 10px; }
+.adm-cible { padding: 0; min-height: 0; }
+.adm-cible select { max-width: 60%; }
+#adm-conv { display: grid; gap: 8px; }
+.adm-panneau { grid-template-columns: minmax(0, 1fr); }
+.adm-panneau > * { min-width: 0; }
+.adm-cible select { width: 62%; min-width: 0; text-overflow: ellipsis; }
+.groupe-corps b { white-space: nowrap; }
+.groupe-corps span { min-width: 0; }
