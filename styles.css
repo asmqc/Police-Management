@@ -1062,3 +1062,20 @@ select { appearance: none; -webkit-appearance: none; padding-right: 38px;
 .ev-dt input[type="date"] { width: 9.6em; }
 .ev-dt input[type="time"] { width: 7.2em; }
 .ev-dt { gap: 4px; }
+
+/* Lois : choix de la loi */
+.loi-choix select { font-weight: 700; background-color: var(--surface); box-shadow: var(--ombre-carte); border-color: var(--bord-carte); }
+/* Carte : autres postes, repères personnels */
+.pastille.autres { background: #0E7C86; border-radius: 50%; border: 2px solid #fff; outline: 1px solid #0E7C86; }
+.pastille.repere { background: var(--marque); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+.icone-poste-autre { background: #0E7C86 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 5 6v5c0 4.2 3 7.6 7 9 4-1.4 7-4.8 7-9V6z' fill='white'/%3E%3C/svg%3E") center / 12px no-repeat; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 1px 6px rgba(0,0,0,.35); }
+.icone-repere { background: var(--marque); border: 2px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+.popup-poste { display: grid; gap: 4px; min-width: 200px; }
+.popup-poste small { color: var(--fg-doux); }
+.popup-poste .lien { justify-self: start; padding: 2px 0; }
+.btn-repere { position: absolute; z-index: 500; left: 10px; top: 86px; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 12px; padding: 8px 12px; font-weight: 700; font-size: .85rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); color: var(--fg); box-shadow: var(--ombre-carte); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.btn-repere[aria-pressed="true"] { background: var(--marque); color: #fff; }
+#carte.mode-repere { cursor: crosshair; }
+.form-repere { display: grid; gap: 8px; }
+.form-repere .btn-principal { margin: 0; }

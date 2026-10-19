@@ -1836,14 +1836,43 @@
     ["Délit de fuite", "accident"], ["Grand excès", "grand excès de vitesse"],
   ];
 
+  // Lois et règlements offerts (textes publics, dans data/)
+  const JUSTICE = "https://laws-lois.justice.gc.ca/fra/";
+  const LOIS = {
+    csr: { nom: "Code de la sécurité routière", court: "CSR", ref: "RLRQ, c. C-24.2", fichier: "csr.json", lien: (n) => `${LEGIS}#se:${n.replace(/\./g, "_")}`, site: "LégisQuébec" },
+    vhr: { nom: "Loi sur les véhicules hors route", court: "LVHR", ref: "RLRQ, c. V-1.3", fichier: "lois/vhr.json", lien: (n) => `https://www.legisquebec.gouv.qc.ca/fr/document/lc/V-1.3#se:${n.replace(/\./g, "_")}`, site: "LégisQuébec" },
+    transport: { nom: "Loi concernant le transport rémunéré de personnes par automobile", court: "LTRPA", ref: "RLRQ, c. T-11.2", fichier: "lois/transport.json", lien: (n) => `https://www.legisquebec.gouv.qc.ca/fr/document/lc/T-11.2#se:${n.replace(/\./g, "_")}`, site: "LégisQuébec" },
+    assurance: { nom: "Loi sur l'assurance automobile", court: "LAA", ref: "RLRQ, c. A-25", fichier: "lois/assurance.json", lien: (n) => `https://www.legisquebec.gouv.qc.ca/fr/document/lc/A-25#se:${n.replace(/\./g, "_")}`, site: "LégisQuébec" },
+    "petits-batiments": { nom: "Règlement sur les petits bâtiments", court: "RPB", ref: "DORS/2010-91", fichier: "lois/petits-batiments.json", lien: () => `${JUSTICE}reglements/DORS-2010-91/TexteComplet.html`, site: "Justice Canada" },
+    competence: { nom: "Règlement sur la compétence des conducteurs d'embarcations de plaisance", court: "RCCEP", ref: "DORS/99-53", fichier: "lois/competence.json", lien: () => `${JUSTICE}reglements/DORS-99-53/TexteComplet.html`, site: "Justice Canada" },
+    restrictions: { nom: "Règlement sur les restrictions visant l'utilisation des bâtiments", court: "RRVUB", ref: "DORS/2008-120", fichier: "lois/restrictions.json", lien: () => `${JUSTICE}reglements/DORS-2008-120/TexteComplet.html`, site: "Justice Canada" },
+    marine: { nom: "Loi de 2001 sur la marine marchande du Canada", court: "LMMC", ref: "L.C. 2001, ch. 26", fichier: "lois/marine.json", lien: () => `${JUSTICE}lois/c-10.15/TexteComplet.html`, site: "Justice Canada" },
+  };
+  etat.loi = (() => { try { const l = localStorage.getItem("pm-loi"); return LOIS[l] ? l : "csr"; } catch { return "csr"; } })();
+  $("#loi-choix").value = etat.loi;
+  $("#loi-choix").addEventListener("change", (e) => {
+    etat.loi = e.target.value;
+    try { localStorage.setItem("pm-loi", etat.loi); } catch { /* facultatif */ }
+    etat.csr = null; $("#csr-q").value = ""; $("#csr-article").hidden = true; $(".csr-corps").classList.remove("avec-article");
+    initCsr();
+  });
+  const loiCourante = () => LOIS[etat.loi] || LOIS.csr;
+
   async function initCsr() {
     if (etat.csr) return;
     etat.csr = [];
+    const loi = loiCourante();
+    $("#loi-titre").textContent = loi.nom;
+    $("#loi-ref").textContent = loi.ref;
+    $("#csr-q").placeholder = etat.loi === "csr" ? "Article (ex. 328) ou mots-clés (ex. cellulaire)" : "Numéro d'article ou mots-clés";
+    $("#csr-raccourcis").hidden = etat.loi !== "csr";
     $("#csr-raccourcis").innerHTML = RACCOURCIS.map(([l, q]) => `<button data-q="${esc(q)}">${esc(l)}</button>`).join("");
     $$("#csr-raccourcis button").forEach((b) => b.addEventListener("click", () => { $("#csr-q").value = b.dataset.q; chercherCsr(); }));
     $("#csr-etat").textContent = "Chargement du Code…";
     try {
-      const tous = await charger("csr.json");
+      const brut = await charger(loi.fichier);
+      const tous = Array.isArray(brut) ? brut : brut.articles;
+      if (!Array.isArray(brut) && brut.maj) $("#loi-ref").textContent = `${loi.ref} · texte du ${new Date(brut.maj + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}`;
       etat.csr = tous.map((a) => ({ ...a, _n: norm(a.numero + " " + (a.section || "") + " " + a.texte) }));
     } catch (e) {
       $("#csr-etat").textContent = traduireErreur(e);
@@ -1913,14 +1942,14 @@
   function ouvrirArticle(a, termes = []) {
     if (!a) return;
     const el = $("#csr-article");
-    const ancre = "#se:" + a.numero.replace(/\./g, "_");
+    const loi = loiCourante();
     el.innerHTML = `
       <p class="fil">${esc([a.titre, a.chapitre, a.section].filter(Boolean).join(" › "))}</p>
       <h3>${esc(a.numero)}</h3>
       <div class="texte">${surligner(a.texte, termes)}</div>
       <div class="outils-art">
         <button class="btn-secondaire" data-copier>Copier le texte</button>
-        <a class="btn-secondaire" href="${LEGIS}${ancre}" target="_blank" rel="noopener">Texte officiel (LégisQuébec)</a>
+        <a class="btn-secondaire" href="${esc(loi.lien(a.numero))}" target="_blank" rel="noopener">Texte officiel (${loi.site})</a>
         <button class="btn-secondaire" data-prec>‹ Précédent</button>
         <button class="btn-secondaire" data-suiv>Suivant ›</button>
       </div>`;
@@ -1928,7 +1957,7 @@
     $(".csr-corps").classList.add("avec-article");
     $$("#csr-liste button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.no === a.numero)));
     const i = etat.csr.indexOf(a);
-    $("[data-copier]", el).addEventListener("click", () => copier(`CSR, art. ${a.numero}\n${a.texte}`));
+    $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}`));
     $("[data-prec]", el).addEventListener("click", () => ouvrirArticle(etat.csr[i - 1], termes));
     $("[data-suiv]", el).addEventListener("click", () => ouvrirArticle(etat.csr[i + 1], termes));
     if (window.innerWidth < 900) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2071,6 +2100,11 @@
     if (res.muni) {
       lignes.push(["Code municipal", `<span class="code-mun">${esc(res.muni.code)}</span> <button class="lien" data-copier-code="${esc(res.muni.code)}">Copier</button>`]);
       lignes.push(["Municipalité", esc(res.muni.nom) + `<br><small>${esc([res.muni.mrc, res.muni.region].filter(Boolean).join(" · "))}</small>`]);
+      try {
+        const dj = await charger("districts_judiciaires.json");
+        const d = dj[String(res.muni.code).padStart(5, "0")];
+        if (d) lignes.push(["District judiciaire", esc(d)]);
+      } catch { /* facultatif */ }
     }
     if (res.autoroutier) lignes.push(["Autoroute", `Patrouille : ${esc(res.autoroutier.NOM_UNIT)}`]);
     if (res.borne) {
@@ -2209,6 +2243,80 @@
       if (!c) return;
       e.target.checked ? (c.addTo(carte), versArriere && c.bringToBack && c.bringToBack()) : carte.removeLayer(c);
     });
+    // Autres postes de police (municipaux, GRC, autochtones…) — OpenStreetMap, filtrés au Québec
+    etat.couches.autres = L.layerGroup();
+    const chargerAutres = async () => {
+      if (etat.couches.autres.getLayers().length) return;
+      const fc = await charger("postes_autres.geojson");
+      L.geoJSON(fc, {
+        pointToLayer: (f, ll) => L.marker(ll, { icon: L.divIcon({ className: "icone-poste-autre", html: "", iconSize: [20, 20] }), title: f.properties.nom }),
+        onEachFeature: (f, l) => l.bindPopup(() => {
+          const p = f.properties, [lon, lat] = f.geometry.coordinates;
+          return `<div class="popup-poste"><b>${esc(p.nom || "Poste de police")}</b>${p.exploitant && p.exploitant !== p.nom ? `<small>${esc(p.exploitant)}</small>` : ""}
+            ${p.adresse ? `<span>${esc(p.adresse)}${p.municipalite ? ", " + esc(p.municipalite) : ""}</span>` : ""}
+            ${p.telephone ? `<a href="tel:${esc(p.telephone.replace(/[^+\d]/g, ""))}">${esc(p.telephone)}</a>` : ""}
+            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">Itinéraire</a>
+            <small class="ref">Source : OpenStreetMap</small></div>`;
+        }),
+      }).addTo(etat.couches.autres);
+    };
+    $("#c-autres").addEventListener("change", (e) => { if (e.target.checked) { chargerAutres(); etat.couches.autres.addTo(carte); } else carte.removeLayer(etat.couches.autres); });
+
+    // Mes repères (privés, enregistrés dans mon compte)
+    etat.couches.reperes = L.layerGroup().addTo(carte);
+    etat.dessinerReperes = () => {
+      const g = etat.couches.reperes; g.clearLayers();
+      for (const r of etat.reperes || []) {
+        L.marker([r.lat, r.lon], { icon: L.divIcon({ className: "icone-repere", html: "", iconSize: [26, 26], iconAnchor: [13, 24] }), title: r.nom })
+          .bindPopup(() => {
+            const div = document.createElement("div");
+            div.className = "popup-poste";
+            div.innerHTML = `<b>${esc(r.nom)}</b>${r.note ? `<span>${esc(r.note)}</span>` : ""}<span class="ref">${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}</span>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}" target="_blank" rel="noopener">Itinéraire</a>
+              <button type="button" class="lien rouge" data-suppr>Supprimer ce repère</button>`;
+            div.querySelector("[data-suppr]").addEventListener("click", async () => {
+              const { error } = await sb.from("reperes_perso").delete().eq("id", r.id);
+              if (error) return toast(traduireErreur(error));
+              etat.reperes = etat.reperes.filter((x) => x.id !== r.id); etat.dessinerReperes(); toast("Repère supprimé");
+            });
+            return div;
+          }).addTo(g);
+      }
+    };
+    sb.from("reperes_perso").select("*").order("cree_le").then(({ data }) => { etat.reperes = data || []; etat.dessinerReperes(); });
+    $("#c-reperes").addEventListener("change", (e) => (e.target.checked ? etat.couches.reperes.addTo(carte) : carte.removeLayer(etat.couches.reperes)));
+    etat.modeRepere = false;
+    $("#btn-repere").addEventListener("click", () => {
+      etat.modeRepere = !etat.modeRepere;
+      $("#btn-repere").setAttribute("aria-pressed", String(etat.modeRepere));
+      $("#carte").classList.toggle("mode-repere", etat.modeRepere);
+      if (etat.modeRepere) toast("Touchez la carte à l'endroit du repère");
+    });
+    const formRepere = (lat, lon) => {
+      const f = $("#fiche-lieu");
+      f.innerHTML = `<button class="btn-icone fermer" aria-label="Fermer">✕</button>
+        <h4>Nouveau repère</h4>
+        <form class="form-repere" novalidate>
+          <input name="nom" maxlength="80" placeholder="Nom (ex. Point de contrôle, accès sentier)" required>
+          <input name="note" maxlength="500" placeholder="Note (facultatif)">
+          <p class="ref">${lat.toFixed(5)}, ${lon.toFixed(5)} · visible par vous seulement</p>
+          <button class="btn-principal" type="submit">Enregistrer le repère</button>
+        </form>`;
+      f.hidden = false;
+      $(".fermer", f).addEventListener("click", () => (f.hidden = true));
+      setTimeout(() => $("input[name=nom]", f).focus(), 100);
+      $("form", f).addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const nom = ev.target.nom.value.trim();
+        if (!nom) return ev.target.nom.focus();
+        const { data, error } = await sb.from("reperes_perso").insert({ nom, note: ev.target.note.value.trim() || null, lat, lon }).select().single();
+        if (error) return toast(traduireErreur(error));
+        (etat.reperes = etat.reperes || []).push(data); etat.dessinerReperes();
+        f.hidden = true; toast("Repère enregistré");
+      });
+    };
+    etat.formRepere = formRepere;
+
     bascule("#c-sq", "sq", true); bascule("#c-mun", "mun"); bascule("#c-aut", "aut"); bascule("#c-km", "km"); bascule("#c-sorties", "sorties"); bascule("#c-bur", "bur"); bascule("#c-limites", "limites"); bascule("#c-cam", "cam");
     etat.surligne = L.layerGroup().addTo(carte);
     remplirChoixUnite();
@@ -2227,7 +2335,13 @@
       const res = await identifier(lat, lon);
       ficheLieu(res, titre);
     };
-    carte.on("click", (e) => etat.placer(e.latlng.lat, e.latlng.lng, "Point sélectionné"));
+    carte.on("click", (e) => {
+      if (etat.modeRepere) {
+        etat.modeRepere = false; $("#btn-repere").setAttribute("aria-pressed", "false"); $("#carte").classList.remove("mode-repere");
+        return etat.formRepere(e.latlng.lat, e.latlng.lng);
+      }
+      etat.placer(e.latlng.lat, e.latlng.lng, "Point sélectionné");
+    });
     setTimeout(() => carte.invalidateSize(), 50);
   }
 
