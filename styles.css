@@ -1004,3 +1004,61 @@ select { appearance: none; -webkit-appearance: none; padding-right: 38px;
 .cal-tete #hr-auj { margin-left: auto; }
 .cal-tete #hr-prec[hidden] + h3 { padding-left: 2px; }
 .cal-tete h3 { text-transform: none; }
+
+/* =====================================================================
+   Mise en page : corrections (octobre 2026)
+   ===================================================================== */
+/* Horaire : page plus courte */
+#hr-principal { display: grid; gap: 14px; }
+#hr-principal[hidden] { display: none; }
+#hr-astuce { font-size: .84rem; margin-top: -4px; }
+.hr-mes-actions { gap: 8px; }
+.cals-sous { margin: 8px 0 0; font: 700 1.05rem var(--f-titre); }
+#cals-voile .hr-legende { gap: 8px 14px; font-size: .88rem; }
+.hr-plier { background: var(--surface); border-radius: var(--r); box-shadow: var(--ombre-carte); border: 1px solid var(--bord-carte); }
+.hr-plier > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 16px; }
+.hr-plier > summary::-webkit-details-marker { display: none; }
+.hr-plier > summary > span { flex: 1; display: grid; gap: 2px; }
+.hr-plier > summary small { color: var(--fg-doux); font-size: .86rem; }
+.hr-plier > summary::after { content: "›"; font-size: 1.5rem; color: var(--fg-doux); transition: transform .2s var(--ease); }
+.hr-plier[open] > summary::after { transform: rotate(90deg); }
+.hr-plier-corps { display: grid; gap: 10px; padding: 0 16px 16px; }
+.hr-plier-corps .intertitre { margin-top: 6px; font-size: 1.1rem; }
+.hr-plier-corps .intertitre:first-child { margin-top: 0; }
+.hr-plier-corps .panneau { box-shadow: none; background: var(--bg); border: 0; padding: 14px; }
+.hr-qui { background: var(--surface); border-radius: 14px; padding: 6px 6px 6px 14px; box-shadow: var(--ombre-carte); border: 1px solid var(--bord-carte); }
+.hr-qui select { background-color: transparent; }
+.hr-qui .ref { font-family: var(--f-texte); font-weight: 600; font-size: .86rem; }
+
+/* Administration : avatar en haut, boutons compacts */
+.demande .personne { align-items: flex-start; }
+.demande .boutons { gap: 6px; }
+.demande .boutons button { min-height: 38px; padding: 7px 14px; font-size: .92rem; border-radius: 10px; }
+.demande .meta { gap: 2px 12px; }
+
+/* Fiche de compte : la photo ne chevauche plus les données */
+.fc-tete { margin-bottom: 10px; align-items: center; }
+.fc-tete .avatar.grand { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--ambre-vif); }
+.fc-tete > div { display: grid; gap: 4px; min-width: 0; }
+.fc-tete .pastille-statut { justify-self: start; }
+
+/* Carte (téléphone) : la fiche laisse voir la carte */
+@media (max-width: 700px) {
+  .fiche { max-height: 52%; }
+}
+
+/* Feuille d'événement : date et heure côte à côte */
+.ev-dt { flex-wrap: nowrap; }
+.ev-dt input { padding: 8px 8px !important; font-size: 15px; min-width: 0; }
+.ev-dt input[type="date"] { width: 9.2em; }
+.ev-dt input[type="time"] { width: 6.6em; }
+.ev-ligne:has(.ev-dt) { padding-left: 14px; }
+
+/* Grand écran : contenu centré, plus d'air */
+@media (min-width: 900px) {
+  .vue { padding-inline: 32px; padding-top: 26px; }
+  .tuiles { gap: 14px; }
+}
+.ev-dt input[type="date"] { width: 9.6em; }
+.ev-dt input[type="time"] { width: 7.2em; }
+.ev-dt { gap: 4px; }

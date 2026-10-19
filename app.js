@@ -970,7 +970,7 @@
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
     $("#hr-partage").hidden = lecture || enConfig;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
-    $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour voir son agenda, ajouter un événement ou noter une exception (vacances, maladie, cour, formation, échange, temps supplémentaire). Glissez vers la gauche ou la droite pour changer de période.";
+    $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour voir son agenda ou noter une exception. Glissez pour changer de période.";
     if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
     $("#hr-resume").textContent = `${lecture ? "Rotation seulement · " : ""}Cycle de ${src.config.cycle.length} jours`;
     const auj = aujourdhuiISO();
@@ -1070,8 +1070,7 @@
     if (cal.vue === "mois") rendreMois();
     else if (cal.vue === "liste") rendreListe();
     else rendreTemps();
-    $("#hr-legende").innerHTML = (rotationVisible() ? Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("") : "") +
-      (avecEvenements() ? Object.entries(CALENDRIERS).filter(([k]) => !cal.masques.has(k)).map(([, v]) => `<span><i style="background:${v.c};border-radius:50%"></i>${esc(v.nom)}</span>`).join("") : "");
+    $("#hr-legende").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("");
   }
 
   // Vue Mois : grille avec le quart et des points de couleur, agenda du jour choisi en dessous (comme sur iPhone)

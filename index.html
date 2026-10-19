@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610190151">
+  <link rel="stylesheet" href="styles.css?v=202610190221">
 </head>
 <body>
   <!-- Chargement -->
@@ -460,7 +460,7 @@
 
       <div id="hr-principal" hidden>
         <div class="hr-aujourdhui" id="hr-aujourdhui"></div>
-        <div class="hr-semaine" id="hr-semaine" aria-label="Les 7 prochains jours"></div>
+        <div class="hr-semaine" id="hr-semaine" aria-label="Les 7 prochains jours" hidden></div>
 
         <div class="segmente cal-vues" role="radiogroup" aria-label="Affichage du calendrier">
           <button type="button" role="radio" data-cal-vue="jour" aria-checked="false">Jour</button>
@@ -493,15 +493,17 @@
             <div id="cal-liste-contenu"></div>
           </div>
         </div>
-        <div class="hr-legende" id="hr-legende"></div>
+
         <p class="aide" id="hr-astuce">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
         <div class="hr-actions hr-mes-actions">
-          <button class="btn-secondaire" id="hr-config">Modifier ma rotation</button>
-          <button class="btn-secondaire" id="hr-ics">Ajouter à mon calendrier (.ics)</button>
+          <button class="btn-secondaire petit" id="hr-config">Modifier ma rotation</button>
+          <button class="btn-secondaire petit" id="hr-ics">Exporter (.ics)</button>
         </div>
       </div>
 
-      <div id="hr-partage" class="hr-partage" hidden>
+      <details id="hr-partage" class="hr-partage hr-plier" hidden>
+        <summary><span><b>Mon poste et partages</b><small>Voir l'horaire de vos collègues, partager le vôtre</small></span></summary>
+        <div class="hr-plier-corps">
         <h3 class="intertitre" id="hr-poste-titre">Mon poste</h3>
         <div class="panneau">
           <p class="aide">Les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité). Seule la rotation est visible : vos vacances, congés personnels et notes restent privés. <span id="hr-partage-etat"></span> <button type="button" class="lien" data-menu="reglages">Réglages</button></p>
@@ -519,7 +521,7 @@
         <h3 class="intertitre">Partagés avec moi</h3>
         <div class="panneau"><ul class="liste-partages" id="hr-partages-recus"></ul></div>
       </div>
-
+      </details>
       <form id="hr-form" class="panneau formulaire" novalidate hidden>
         <h3 class="intertitre" style="margin:0">Ma rotation</h3>
         <label for="hr-modele">Modèle de départ</label>
@@ -807,6 +809,8 @@
       <h3 class="titre-voile" id="cals-titre">Calendriers</h3>
       <p class="aide">Choisissez ce qui s'affiche dans votre horaire.</p>
       <div class="ev-groupe" id="cals-liste"></div>
+      <h4 class="cals-sous">Légende des quarts</h4>
+      <div class="hr-legende" id="hr-legende"></div>
     </section>
   </div>
 
@@ -826,9 +830,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610190151"></script>
+  <script src="config.js?v=202610190221"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610190151"></script>
+  <script src="app.js?v=202610190221"></script>
 </body>
 </html>
