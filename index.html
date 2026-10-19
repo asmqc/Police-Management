@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191220">
+  <link rel="stylesheet" href="styles.css?v=202610191226">
 </head>
 <body>
   <!-- Chargement -->
@@ -96,6 +96,7 @@
         <input id="dm-courriel" type="email" autocomplete="email" required>
         <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>
         <input id="dm-mdp" type="password" autocomplete="new-password" minlength="10" required>
+        <label class="consentement" for="dm-consent"><input type="checkbox" id="dm-consent"> <span>J'ai lu et j'accepte la <a href="politique.html" target="_blank" rel="noopener">politique de confidentialité</a>. Je comprends que je ne dois inscrire aucune information confidentielle ni aucune donnée sur des citoyens.</span></label>
         <button type="submit" class="btn-principal">Envoyer la demande</button>
       </form>
 
@@ -403,6 +404,8 @@
           <button type="button" role="radio" data-theme-choix="dark" aria-checked="false">Sombre</button>
         </div>
         <p class="aide">Automatique suit le réglage de votre téléphone ou ordinateur (sombre la nuit, par exemple).</p>
+        <b class="rg-sous">Style d'interface</b>
+        <div class="styles-choix" id="styles-choix" role="radiogroup" aria-label="Style d'interface"></div>
       </div>
 
       <h3 class="intertitre">Notifications</h3>
@@ -431,6 +434,15 @@
           <input type="checkbox" id="rg-partage-poste" role="switch" checked>
           <span class="interrupteur-piste" aria-hidden="true"></span>
         </label>
+      </div>
+
+      <h3 class="intertitre">Aide et soutien</h3>
+      <div class="liste-reglages">
+        <button data-action="nouveautes"><span>Nouveautés de l'app</span><small>Ce qui a changé récemment</small><i>›</i></button>
+        <button data-menu="messages"><span>Écrire à l'administrateur</span><small>Question, problème ou suggestion</small><i>›</i></button>
+        <a class="rg-lien" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener"><span>Discord de soutien</span><small>Entraide entre membres</small><i>↗</i></a>
+        <a class="rg-lien" href="mailto:police.management@hotmail.com"><span>Courriel du soutien</span><small>police.management@hotmail.com</small><i>↗</i></a>
+        <a class="rg-lien" href="politique.html" target="_blank" rel="noopener"><span>Politique de confidentialité</span><small>Loi 25 · vos droits · <span id="rg-consentement"></span></small><i>↗</i></a>
       </div>
 
       <h3 class="intertitre">Compte et app</h3>
@@ -924,6 +936,30 @@
     </section>
   </div>
 
+  <div id="consent-voile" class="voile voile-consent" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
+      <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
+      <p>Police Management respecte la Loi 25 du Québec. Avant de continuer, prenez connaissance de la politique : quels renseignements sont recueillis, où ils sont hébergés (au Canada) et qui peut les voir.</p>
+      <ul class="consent-points">
+        <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
+        <li>Vos événements, notes, repères et 2ᵉ calendrier restent privés.</li>
+        <li>Vous pouvez supprimer votre compte et toutes vos données en tout temps.</li>
+      </ul>
+      <p class="aide">N'inscrivez aucune information confidentielle, aucun renseignement tiré d'une banque de données policière ni aucune donnée sur des citoyens.</p>
+      <a class="btn-secondaire" href="politique.html" target="_blank" rel="noopener">Lire la politique complète</a>
+      <button type="button" class="btn-principal" id="consent-ok" style="margin:0">J'accepte</button>
+      <button type="button" class="lien" id="consent-non">Je refuse (déconnexion)</button>
+    </section>
+  </div>
+
+  <div id="nouv-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="nouv-titre">
+      <button class="btn-icone fermer" id="nouv-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="nouv-titre">Nouveautés</h3>
+      <div id="nouv-liste" class="nouv-liste"></div>
+    </section>
+  </div>
+
   <div id="stats-voile" class="voile" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="stats-titre">
       <button class="btn-icone fermer" id="stats-fermer" aria-label="Fermer">✕</button>
@@ -1005,9 +1041,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191220"></script>
+  <script src="config.js?v=202610191226"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191220"></script>
+  <script src="app.js?v=202610191226"></script>
 </body>
 </html>

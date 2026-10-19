@@ -1178,3 +1178,72 @@ select { appearance: none; -webkit-appearance: none; padding-right: 38px;
 #sondage-options { display: grid; gap: 6px; }
 .lien.rouge { color: var(--rouge); }
 .intertitre .badge-ligne { display: inline-grid; vertical-align: 3px; margin-left: 6px; font-family: var(--f-texte); }
+
+/* =====================================================================
+   Styles d'interface (repris de l'app iOS) — palettes fixes, priment sur le thème clair/sombre
+   ===================================================================== */
+html:root[data-style="mdt"] {
+  --bg: #000; --surface: #07120A; --surface-2: #0D1E11; --champ: #0A170D; --ligne: #1E4D2A; --bord-carte: #1E4D2A;
+  --fg: #33FF66; --fg-doux: #22B24A; --encre: #000; --ambre: #33FF66; --ambre-vif: #33FF66; --sur-ambre: #001A06;
+  --marque: #33FF66; --focus: #33FF66; --bleu: #66E0FF; --vert: #33FF66; --rouge: #FF4D4D; --sq: #33FF66; --mun: #66E0FF;
+  --ombre-carte: none; --ombre: 0 0 0 1px #1E4D2A, 0 18px 48px rgba(0,0,0,.8); --r: 4px; --r-ctrl: 3px;
+  --f-texte: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace; --f-titre: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html:root[data-style="officiel"] {
+  --bg: #0B0B0B; --surface: #151412; --surface-2: #1F1C17; --champ: #1A1814; --ligne: #3A3222; --bord-carte: #3A3222;
+  --fg: #F3E7C9; --fg-doux: #B9A77F; --encre: #000; --ambre: #D4AF37; --ambre-vif: #D4AF37; --sur-ambre: #120E02;
+  --marque: #D4AF37; --focus: #D4AF37; --bleu: #E6C766; --ombre-carte: none; --ombre: 0 18px 48px rgba(0,0,0,.7); color-scheme: dark;
+}
+html:root[data-style="marine"] {
+  --bg: #071A33; --surface: #0E2747; --surface-2: #15335A; --champ: #112C50; --ligne: #22456F; --bord-carte: #22456F;
+  --fg: #EAF4FF; --fg-doux: #9DB8D6; --encre: #04122A; --ambre: #4FC3F7; --ambre-vif: #4FC3F7; --sur-ambre: #03202E;
+  --marque: #4FC3F7; --focus: #4FC3F7; --bleu: #7FD6FF; --ombre-carte: none; --ombre: 0 18px 48px rgba(0,0,0,.6); color-scheme: dark;
+}
+html:root[data-style="epure"] {
+  --bg: #F4EFE6; --surface: #FFFFFF; --surface-2: #EEE7DA; --champ: #F1EBE0; --ligne: #E2D8C6; --bord-carte: transparent;
+  --fg: #2B241D; --fg-doux: #6E6253; --encre: #3B2F24; --ambre: #8C5E28; --ambre-vif: #B07A3C; --sur-ambre: #FFFFFF;
+  --marque: #8C5E28; --focus: #8C5E28; --bleu: #2F5D8A; --ombre-carte: 0 1px 2px rgba(59,47,36,.06), 0 4px 14px rgba(59,47,36,.06); color-scheme: light;
+}
+html:root[data-style="poste"] {
+  --bg: #ECE9D8; --surface: #FFFFFF; --surface-2: #F1EFE2; --champ: #FFFFFF; --ligne: #ACA899; --bord-carte: #ACA899;
+  --fg: #000; --fg-doux: #4A4A4A; --encre: #0A246A; --ambre: #0A246A; --ambre-vif: #F0C24B; --sur-ambre: #000;
+  --marque: #316AC5; --focus: #316AC5; --bleu: #0046D5; --ombre-carte: 1px 1px 0 rgba(0,0,0,.15); --r: 4px; --r-ctrl: 3px;
+  --f-texte: Tahoma, Verdana, "Segoe UI", sans-serif; --f-titre: Tahoma, Verdana, "Segoe UI", sans-serif; color-scheme: light;
+}
+html[data-style="poste"] .barre { background: linear-gradient(180deg, #0A246A, #3A6EA5 55%, #0A246A); }
+html[data-style="poste"] input, html[data-style="poste"] select, html[data-style="poste"] textarea { border: 1px solid #7F9DB9; }
+html[data-style="poste"] .btn-secondaire, html[data-style="poste"] .btn-principal { border: 1px solid #003C74; }
+html[data-style="mdt"] .barre { box-shadow: inset 0 -1px 0 #1E4D2A; }
+html[data-style="mdt"] .marque span, html[data-style="officiel"] .marque span { color: var(--ambre-vif); }
+html[data-style="mdt"] .btn-principal, html[data-style="officiel"] .btn-principal { box-shadow: none; }
+html[data-style="mdt"] .toast, html[data-style="officiel"] .toast, html[data-style="marine"] .toast { background: var(--surface-2); color: var(--fg); border: 1px solid var(--ligne); }
+html[data-style="mdt"] .vue-tete h2::before { content: "> "; }
+
+.rg-sous { margin-top: 6px; }
+.segmente-theme.inactif { opacity: .45; pointer-events: none; }
+.styles-choix { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.styles-choix button { display: grid; gap: 2px; text-align: left; border: 2px solid var(--ligne); border-radius: 14px; padding: 10px; background: var(--surface); color: var(--fg); }
+.styles-choix button[aria-checked="true"] { border-color: var(--marque); box-shadow: 0 0 0 2px color-mix(in srgb, var(--marque) 25%, transparent); }
+.styles-choix small { color: var(--fg-doux); font-size: .76rem; }
+.style-apercu { display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: 14px 22px; gap: 3px; margin-bottom: 6px; border-radius: 8px; overflow: hidden; background: var(--c); padding: 3px; }
+.style-apercu i:nth-child(1) { grid-column: 1 / -1; background: var(--a); border-radius: 4px; }
+.style-apercu i:nth-child(2) { background: color-mix(in srgb, var(--a) 18%, var(--c)); border-radius: 4px; }
+.style-apercu i:nth-child(3) { background: var(--b); border-radius: 4px; }
+
+/* Consentement, soutien, nouveautés */
+.consentement { display: flex !important; gap: 10px; align-items: flex-start; text-transform: none !important; letter-spacing: 0 !important; font-weight: 500 !important; font-size: .88rem !important; color: var(--fg) !important; margin-top: 12px !important; }
+.consentement input { width: 20px; height: 20px; flex: none; margin-top: 2px; accent-color: var(--ambre); padding: 0; }
+.voile-consent { z-index: 3000; }
+.consent-points { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.liste-reglages .rg-lien { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t f" "s f"; gap: 2px 10px; align-items: center; text-decoration: none; color: var(--fg); background: var(--surface); padding: 14px; }
+.liste-reglages .rg-lien > span { grid-area: t; font-weight: 600; }
+.liste-reglages .rg-lien small { grid-area: s; color: var(--fg-doux); font-size: .84rem; }
+.liste-reglages .rg-lien small span { font-weight: 400; }
+.liste-reglages .rg-lien i { grid-area: f; font-style: normal; color: var(--fg-doux); }
+.nouv-liste { display: grid; gap: 14px; }
+.nouv-liste article { display: grid; gap: 4px; }
+.nouv-liste small { color: var(--ambre); font-weight: 700; }
+.nouv-liste ul { margin: 2px 0 0; padding-left: 20px; display: grid; gap: 4px; color: var(--fg-doux); }
+html[data-style="poste"] .barre .marque span { color: #F0C24B; }
+html[data-style="epure"] .barre .marque span { color: #E0B47A; }

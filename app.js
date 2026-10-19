@@ -23,9 +23,40 @@
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", sombre ? "#0A1420" : "#0E1B2C");
   }
+  // Styles d'interface (repris de l'app iOS)
+  const STYLES = [
+    { id: "moderne", nom: "Moderne", desc: "Clair ou sombre", c: ["#0E1B2C", "#F2B33D", "#EFF2F7"] },
+    { id: "mdt", nom: "Terminal MDT", desc: "Noir, vert, chasse fixe", c: ["#000000", "#33FF66", "#0A140C"] },
+    { id: "officiel", nom: "Terminal officiel", desc: "Noir et or", c: ["#0B0B0B", "#D4AF37", "#171512"] },
+    { id: "marine", nom: "Marine", desc: "Bleu marine, accents cyan", c: ["#071A33", "#4FC3F7", "#0E2747"] },
+    { id: "epure", nom: "Épuré clair", desc: "Sable et blanc", c: ["#3B2F24", "#B07A3C", "#F4EFE6"] },
+    { id: "poste", nom: "Poste de police", desc: "Logiciel de poste rétro", c: ["#0A246A", "#3A6EA5", "#ECE9D8"] },
+  ];
+  let styleChoisi = "moderne";
+  try { styleChoisi = localStorage.getItem("pm-style") || "moderne"; } catch { /* stockage indisponible */ }
+  function appliquerStyle(id) {
+    const st = STYLES.find((x) => x.id === id) || STYLES[0];
+    if (st.id === "moderne") document.documentElement.removeAttribute("data-style");
+    else document.documentElement.setAttribute("data-style", st.id);
+    if (st.id !== "moderne") { const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute("content", st.c[0]); }
+  }
+  appliquerStyle(styleChoisi);
   let themeChoisi = "auto";
   try { themeChoisi = localStorage.getItem("pm-theme") || "auto"; } catch { /* stockage indisponible */ }
   appliquerTheme(themeChoisi);
+  if (styleChoisi !== "moderne") appliquerStyle(styleChoisi);
+  function rendreStyles() {
+    const el = document.getElementById("styles-choix");
+    el.innerHTML = STYLES.map((st) => `<button type="button" role="radio" data-style-choix="${st.id}" aria-checked="${st.id === styleChoisi}">
+      <span class="style-apercu" style="--a:${st.c[0]};--b:${st.c[1]};--c:${st.c[2]}"><i></i><i></i><i></i></span><b>${st.nom}</b><small>${st.desc}</small></button>`).join("");
+    el.querySelectorAll("[data-style-choix]").forEach((b) => b.addEventListener("click", () => {
+      styleChoisi = b.dataset.styleChoix;
+      try { localStorage.setItem("pm-style", styleChoisi); } catch { /* stockage indisponible */ }
+      appliquerStyle(styleChoisi); appliquerTheme(themeChoisi); if (styleChoisi !== "moderne") appliquerStyle(styleChoisi);
+      rendreStyles();
+    }));
+    document.querySelector(".segmente-theme").classList.toggle("inactif", styleChoisi !== "moderne");
+  }
   function majChoixTheme() { document.querySelectorAll("[data-theme-choix]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.themeChoix === themeChoisi))); }
   document.querySelectorAll("[data-theme-choix]").forEach((b) => b.addEventListener("click", () => {
     themeChoisi = b.dataset.themeChoix;
@@ -150,6 +181,7 @@
       if (k === "courriel" && !el.checkValidity()) { el.focus(); return messageAuth("Le courriel n'est pas valide.", "erreur"); }
     }
     if (champs.mdp.value.length < 10) { champs.mdp.focus(); return messageAuth("Le mot de passe doit contenir au moins 10 caractères.", "erreur"); }
+    if (!$("#dm-consent").checked) { $("#dm-consent").focus(); return messageAuth("Pour envoyer la demande, acceptez la politique de confidentialité.", "erreur"); }
     const btn = $("#form-demande .btn-principal");
     btn.disabled = true;
     const { data, error } = await sb.auth.signUp({
@@ -163,6 +195,7 @@
           grade: champs.grade.value,
           corps_police: champs.corps.value,
           unite: uniteChoisie(),
+          consentement_version: VERSION_POLITIQUE,
         },
       },
     });
@@ -352,6 +385,8 @@
     majBarreCompte();
     $("#menu-admin").hidden = p.role !== "admin";
     montrer("#ecran-app");
+    if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
+    else setTimeout(montrerNouveautesUneFois, 1200);
     const depart = (location.hash || "").replace("#", "");
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
     chargerCorps();
@@ -403,6 +438,45 @@
     else toast("Pas encore confirmé. Ouvrez le lien reçu par courriel.");
   });
 
+  /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
+  const VERSION_POLITIQUE = "2026.10.19";
+  $("#consent-ok").addEventListener("click", async () => {
+    const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
+    if (error) return toast(traduireErreur(error));
+    etat.profil.consentement_version = VERSION_POLITIQUE; etat.profil.consentement_le = new Date().toISOString();
+    $("#consent-voile").hidden = true;
+    toast("Merci. Votre consentement est enregistré.");
+  });
+  $("#consent-non").addEventListener("click", async () => { $("#consent-voile").hidden = true; await sb.auth.signOut(); });
+  function majConsentementReglages() {
+    const p = etat.profil;
+    $("#rg-consentement").textContent = p && p.consentement_le ? `acceptée le ${new Date(p.consentement_le).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}` : "à accepter";
+  }
+  const NOUVEAUTES = [
+    { date: "2026-10-19", titre: "Fonctionnalités de l'app iPhone", points: [
+      "Lois : véhicules hors route, transport rémunéré, assurance automobile et sécurité nautique (fédéral).",
+      "Carte : autres postes de police (municipaux, GRC…), repères personnels et district judiciaire.",
+      "Horaire : échanges de quarts au poste, 2ᵉ calendrier (conjoint·e), temps supplémentaire détaillé, statistiques et rapport PDF, rappel avant les quarts, modèles d'horaire, horaire hybride.",
+      "Communauté : forum de votre corps de police, idées avec votes, sondages et annonces.",
+      "Styles d'interface : Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police."] },
+    { date: "2026-10-18", titre: "Calendrier façon Apple", points: [
+      "Vues Jour, Semaine, Mois et Liste, événements privés avec répétitions et rappels.",
+      "Design modernisé, confirmation du courriel, partage de la rotation au poste."] },
+  ];
+  function ouvrirNouveautes() {
+    $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
+      <b>${esc(n.titre)}</b><ul>${n.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></article>`).join("");
+    $("#nouv-voile").hidden = false;
+    try { localStorage.setItem("pm-nouv-vu", NOUVEAUTES[0].date); } catch { /* facultatif */ }
+  }
+  function montrerNouveautesUneFois() {
+    let vu = null; try { vu = localStorage.getItem("pm-nouv-vu"); } catch { return; }
+    if (vu !== NOUVEAUTES[0].date && $("#consent-voile").hidden) ouvrirNouveautes();
+  }
+  $$("[data-action='nouveautes']").forEach((b) => b.addEventListener("click", ouvrirNouveautes));
+  $("#nouv-fermer").addEventListener("click", () => ($("#nouv-voile").hidden = true));
+  $("#nouv-voile").addEventListener("click", (e) => { if (e.target.id === "nouv-voile") e.target.hidden = true; });
+
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
     etat.vue = nom;
@@ -418,7 +492,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); majReglagePartage(); majReglagesHoraire(); }
+    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
