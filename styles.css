@@ -1290,3 +1290,54 @@ body.est-admin .nav-ico { width: 46px; }
 .legende-autres-corps { display: grid; gap: 6px; padding-top: 6px; }
 .legende-reinit { justify-self: start; padding: 2px 0; font-size: .78rem; }
 .legende-corps { max-height: min(60vh, 460px); overflow-y: auto; }
+
+/* =====================================================================
+   Mise en page sur ordinateur et tablette : utiliser la largeur
+   ===================================================================== */
+.rg-grille { display: grid; gap: 14px; }
+.rg-bloc { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.rg-bloc > .intertitre { margin-top: 4px; }
+
+@media (min-width: 900px) {
+  :root { --contenu: 1080px; }
+  .vue > * { max-width: var(--contenu); }
+  .vue-tete h2 { font-size: 2.2rem; }
+  /* Réglages : deux colonnes */
+  .rg-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; align-items: start; }
+  /* Accueil : carte du quart et annonces côte à côte */
+  #vue-accueil { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; row-gap: 14px; align-content: start;
+    padding-inline: max(32px, calc((100% - var(--contenu)) / 2)); }
+  #vue-accueil > * { max-width: none; margin: 0; grid-column: 1 / -1; }
+  #vue-accueil > .ac-quart { grid-column: 1; grid-row: 2; }
+  #vue-accueil > .ac-annonces { grid-column: 2; grid-row: 2; align-self: stretch; }
+  #vue-accueil:has(> .ac-annonces[hidden]) > .ac-quart { grid-column: 1 / -1; }
+  #vue-accueil > .ac-msg { grid-column: 1; grid-row: 3; }
+  #vue-accueil > #ac-admin { grid-column: 2; grid-row: 3; }
+  #vue-accueil:has(> .ac-msg[hidden]) > #ac-admin, #vue-accueil:has(> #ac-admin[hidden]) > .ac-msg { grid-column: 1 / -1; }
+  .ac-annonces { grid-auto-columns: 100%; }
+  .ac-annonces .annonce { height: 100%; }
+  .ac-quart { min-height: 128px; }
+  .tuiles { gap: 14px; }
+  /* Horaire, vue Mois : calendrier à gauche, agenda du jour à droite */
+  #cal-mois { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 20px; align-items: start; }
+  #cal-mois .cal-agenda { position: sticky; top: 0; margin-top: 0; background: var(--surface); border-radius: var(--r); padding: 16px; border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); }
+  #cal-mois .cal-agenda .ag-quart, #cal-mois .cal-agenda .ag-ev { box-shadow: none; background: var(--bg); border-color: transparent; }
+  #cal-mois .cal-agenda .ag-ev { border-left: 5px solid var(--c); }
+  .hr-grille button { min-height: 76px; }
+  /* Administration : panneaux Communauté et Outils sur deux colonnes */
+  .adm-panneau[data-adm-panneau="communaute"], .adm-panneau[data-adm-panneau="outils"] { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; align-items: start; }
+  .adm-panneau[data-adm-panneau="communaute"] > .intertitre, .adm-panneau[data-adm-panneau="outils"] > .intertitre { grid-row: 1; }
+  .adm-panneau[data-adm-panneau="communaute"] > :nth-child(-n+3), .adm-panneau[data-adm-panneau="outils"] > :nth-child(-n+2) { grid-column: 1; }
+  .adm-panneau[data-adm-panneau="communaute"] > :nth-child(n+4), .adm-panneau[data-adm-panneau="outils"] > :nth-child(n+3) { grid-column: 2; }
+  /* Forum et idées : lecture plus confortable */
+  .forum-bloc, #idees-demandes, #idees-sondages { max-width: 900px; }
+}
+@media (min-width: 1400px) {
+  :root { --contenu: 1240px; }
+  .tuiles { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+/* Tablette (700 à 899 px) : tuiles sur trois colonnes, réglages encore sur une colonne */
+@media (min-width: 640px) and (max-width: 899px) {
+  .tuiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vue { padding-inline: max(24px, env(safe-area-inset-left)); }
+}
