@@ -70,7 +70,8 @@
     if (/Invalid login credentials/i.test(m)) return "Courriel ou mot de passe incorrect.";
     if (/banned/i.test(m)) return "Ce compte est bloqué. Communiquez avec l'administrateur.";
     if (/should be different/i.test(m)) return "Le nouveau mot de passe doit être différent de l'ancien.";
-    if (/Email not confirmed/i.test(m)) return "Confirmez d'abord votre courriel : ouvrez le lien reçu par courriel, puis reconnectez-vous.";
+    if (/Email not confirmed/i.test(m)) return "Votre courriel n'est pas encore confirmé. Ouvrez le lien reçu par courriel, ou touchez « Renvoyer » ci-dessous. L'approbation de l'administrateur confirme aussi votre courriel.";
+    if (/security purposes|rate limit/i.test(m)) return "Trop de demandes. Patientez une minute, puis réessayez.";
     if (/already registered|already been registered/i.test(m)) return "Ce courriel a déjà une demande. Utilisez « Connexion » ou « Mot de passe oublié ».";
     if (/Password should be at least/i.test(m)) return "Le mot de passe doit contenir au moins 10 caractères.";
     if (/rate limit|too many/i.test(m)) return "Trop de tentatives. Attendez quelques minutes, puis réessayez.";
@@ -104,7 +105,32 @@
     });
     btn.disabled = false;
     if (error) messageAuth(traduireErreur(error), "erreur");
+    $("#btn-renvoyer").hidden = !(error && /Email not confirmed/i.test(error.message || ""));
   });
+
+  // Lien de confirmation expiré ou perdu : on en renvoie un nouveau (l'approbation de l'administrateur confirme aussi le courriel)
+  $("#btn-renvoyer").addEventListener("click", async (ev) => {
+    const courriel = $("#cx-courriel").value.trim().toLowerCase();
+    if (!courriel) return messageAuth("Écrivez votre courriel dans le champ ci-dessus, puis appuyez de nouveau sur « Renvoyer ».", "erreur");
+    ev.currentTarget.disabled = true;
+    const { error } = await sb.auth.resend({ type: "signup", email: courriel, options: { emailRedirectTo: urlRetour() } });
+    ev.currentTarget.disabled = false;
+    if (error) return messageAuth(traduireErreur(error), "erreur");
+    $("#btn-renvoyer").hidden = true;
+    messageAuth("Nouveau courriel de confirmation envoyé. Vérifiez aussi vos courriels indésirables. Si vous ne le recevez pas, votre accès s'ouvrira quand même dès que l'administrateur aura approuvé votre demande.", "ok");
+  });
+
+  // Retour d'un lien expiré (Supabase ajoute #error_code=otp_expired à l'adresse)
+  {
+    const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
+    if (h.get("error_code") === "otp_expired" || h.get("error")) {
+      history.replaceState(null, "", location.pathname + location.search);
+      setTimeout(() => {
+        messageAuth("Ce lien de confirmation a expiré. Écrivez votre courriel ci-dessus et touchez « Renvoyer le courriel de confirmation ». Votre accès s'ouvrira aussi dès que l'administrateur aura approuvé votre demande.", "erreur");
+        $("#btn-renvoyer").hidden = false;
+      }, 0);
+    }
+  }
 
   $("#btn-oubli").addEventListener("click", async () => {
     const courriel = $("#cx-courriel").value.trim().toLowerCase();
@@ -306,6 +332,7 @@
       messageAuth(traduireErreur(e), "erreur");
       return;
     }
+    await verifierCourriel(); // lien du courriel ouvert : compte marqué confirmé, même en attente d'approbation
     const p = etat.profil;
     if (!p || p.statut !== "approuve") {
       const st = p ? p.statut : "en_attente";
@@ -337,15 +364,53 @@
   sb.auth.onAuthStateChange((evenement, session) => {
     if (evenement === "PASSWORD_RECOVERY") { etat.session = session; formNouveauMdp(); return; }
     if (evenement === "SIGNED_IN" && (!etat.session || etat.session.user.id !== session.user.id)) { etat.session = session; demarrer(); }
+    else if (evenement === "SIGNED_IN" && etat.profil && !etat.profil.courriel_verifie_le) {
+      // Lien de confirmation ouvert dans le même navigateur : on débloque sans recharger
+      etat.session = session;
+      verifierCourriel().then(() => { if (courrielVerifie() && VUES_VERROU.includes(etat.vue)) afficherVue(etat.vue); });
+    }
     if (evenement === "SIGNED_OUT") { etat.session = null; montrer("#ecran-auth"); }
+  });
+
+  /* ---------------- Confirmation du courriel ----------------
+     Un policier approuvé entre dans l'app même sans avoir confirmé son courriel,
+     mais la carte, le CSR et les territoires restent verrouillés jusqu'à la confirmation. */
+  const VUES_VERROU = ["csr", "carte", "corps"];
+  const courrielVerifie = () => !!(etat.profil && etat.profil.courriel_verifie_le);
+  async function verifierCourriel() {
+    if (!etat.profil || etat.profil.courriel_verifie_le) return;
+    const { data } = await sb.rpc("verifier_mon_courriel");
+    if (typeof data === "string" && data) { etat.profil.courriel_verifie_le = data; toast("Courriel confirmé. Tout est déverrouillé."); }
+  }
+  function afficherVerrou(nom) {
+    $("#verrou-titre").textContent = { csr: "CSR verrouillé", carte: "Carte verrouillée", corps: "Territoires verrouillés" }[nom];
+    $("#verrou-courriel").textContent = etat.profil.email;
+  }
+  $("#verrou-envoyer").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithOtp({ email: etat.profil.email, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });
+    if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
+    $("#verrou-etat").hidden = false;
+    $("#verrou-etat").textContent = `Lien envoyé à ${etat.profil.email}. Ouvrez-le sur cet appareil ou un autre, puis touchez « J'ai confirmé ». Vérifiez aussi vos courriels indésirables.`;
+    setTimeout(() => (btn.disabled = false), 60000);
+  });
+  $("#verrou-verifier").addEventListener("click", async () => {
+    const frais = await chargerProfil().catch(() => null);
+    if (frais) etat.profil = frais;
+    await verifierCourriel();
+    if (courrielVerifie()) afficherVue(etat.vue);
+    else toast("Pas encore confirmé. Ouvrez le lien reçu par courriel.");
   });
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
     etat.vue = nom;
     $$(".nav button").forEach((b) => (b.dataset.vue === nom ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
-    $$(".vue").forEach((v) => (v.hidden = v.id !== "vue-" + nom));
+    const verrou = VUES_VERROU.includes(nom) && !courrielVerifie();
+    $$(".vue").forEach((v) => (v.hidden = v.id !== (verrou ? "vue-verrou" : "vue-" + nom)));
     history.replaceState(null, "", "#" + nom);
+    if (verrou) { afficherVerrou(nom); return; }
     if (nom === "csr") initCsr();
     if (nom === "carte") initCarte();
     if (nom === "corps") initCorps();
@@ -2038,7 +2103,13 @@
     const b = $("#badge-attente"); b.textContent = compte("en_attente") || ""; b.hidden = !compte("en_attente");
     compteurs.demandes = compte("en_attente"); majPastille();
     $("#badge-menu").textContent = compte("en_attente") || ""; $("#badge-menu").hidden = !compte("en_attente");
-    const liste = comptesAdmin.filter((p) => p.statut === filtreAdmin);
+    // Confirmation du courriel (colonne lue directement : l'administrateur voit tous les profils)
+    const { data: verif } = await sb.from("profiles").select("id, courriel_verifie_le");
+    const verifies = new Map((verif || []).map((v) => [v.id, v.courriel_verifie_le]));
+    comptesAdmin.forEach((p) => (p.courriel_verifie_le = verifies.get(p.id) || null));
+    const nonConfirme = (p) => !p.courriel_verifie_le && (p.statut === "approuve" || p.statut === "en_attente");
+    $("#nb-non-confirme").textContent = comptesAdmin.filter(nonConfirme).length;
+    const liste = comptesAdmin.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : p.statut === filtreAdmin));
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
     el.innerHTML = liste.length ? liste.map((p, i) => `
       <div class="demande">
@@ -2052,16 +2123,24 @@
               <span>Matricule <b>${esc(p.matricule || "—")}</b></span>
               <span>${esc(p.corps_police || "—")}${p.unite ? " · " + esc(p.unite) : ""}</span>
               <span>Demande : ${esc(dateFr(p.cree_le))}</span>
+              ${nonConfirme(p) ? '<span class="etiquette-alerte">Courriel non confirmé</span>' : ""}
             </div>
           </div>
         </div>
         <div class="boutons">
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
             <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
+          ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Renvoyer le lien</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
         </div>
       </div>`).join("")
-      : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : "Aucun compte dans cette catégorie."}</p>`;
+      : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : filtreAdmin === "non_confirme" ? "Tout le monde a confirmé son courriel." : "Aucun compte dans cette catégorie."}</p>`;
+    $$("button[data-relance]", el).forEach((btn) => btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      const { error } = await sb.auth.signInWithOtp({ email: btn.dataset.relance, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });
+      if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
+      btn.textContent = "Lien envoyé";
+    }));
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
@@ -2121,7 +2200,7 @@
         ${ligne("Corps de police", esc(p.corps_police || "—"))}
         ${ligne("Unité / poste", esc(p.unite || "—"))}
         ${ligne("Demande", esc(dateFr(p.cree_le)))}
-        ${ligne("Courriel confirmé", p.courriel_confirme_le ? esc(dateFr(p.courriel_confirme_le)) : "Non")}
+        ${ligne("Courriel confirmé", p.courriel_verifie_le ? esc(dateFr(p.courriel_verifie_le)) : "Non")}
         ${ligne("Dernière connexion", esc(dateFr(p.derniere_connexion)))}
         ${ligne("Décision", esc(dateFr(p.decide_le)))}
         ${ligne("Compte modifié", esc(dateFr(p.modifie_le)))}

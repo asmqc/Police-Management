@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610182353">
+  <link rel="stylesheet" href="styles.css?v=202610190003">
 </head>
 <body>
   <!-- Chargement -->
@@ -100,6 +100,7 @@
       </form>
 
       <p id="auth-message" class="message" role="status" hidden></p>
+      <button type="button" id="btn-renvoyer" class="btn-secondaire" hidden>Renvoyer le courriel de confirmation</button>
     </section>
     <button class="lien lien-clair" id="btn-aide-auth">Comment installer l'app sur mon téléphone ou mon ordinateur</button>
     <p class="pied-auth">Outil indépendant de référence. Il ne remplace pas les textes officiels.</p>
@@ -682,6 +683,18 @@
     </section>
 
     <!-- Vue admin -->
+    <section id="vue-verrou" class="vue" hidden>
+      <div class="verrou">
+        <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10.5" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+        <h2 id="verrou-titre">Section verrouillée</h2>
+        <p>Confirmez votre courriel pour ouvrir la carte, le CSR et les territoires. Le reste de l'app est déjà accessible.</p>
+        <p class="ref" id="verrou-courriel"></p>
+        <button type="button" class="btn-principal" id="verrou-envoyer">M'envoyer le lien de confirmation</button>
+        <button type="button" class="btn-secondaire" id="verrou-verifier">J'ai confirmé</button>
+        <p class="message ok" id="verrou-etat" hidden></p>
+      </div>
+    </section>
+
     <section id="vue-admin" class="vue" hidden>
       <div class="vue-tete">
         <h2>Administration</h2>
@@ -692,6 +705,7 @@
         <button data-filtre="approuve" aria-selected="false">Approuvés <b id="nb-approuve">0</b></button>
         <button data-filtre="refuse" aria-selected="false">Refusés <b id="nb-refuse">0</b></button>
         <button data-filtre="bloque" aria-selected="false">Bloqués <b id="nb-bloque">0</b></button>
+        <button data-filtre="non_confirme" aria-selected="false">Courriel non confirmé <b id="nb-non-confirme">0</b></button>
       </div>
       <div id="admin-liste" class="admin-liste"></div>
 
@@ -749,9 +763,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610182353"></script>
+  <script src="config.js?v=202610190003"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610182353"></script>
+  <script src="app.js?v=202610190003"></script>
 </body>
 </html>

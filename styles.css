@@ -706,3 +706,12 @@ img { -webkit-user-drag: none; }
 .interrupteur input:checked + .interrupteur-piste { background: var(--vert); }
 .interrupteur input:checked + .interrupteur-piste::after { transform: translateX(20px); }
 .interrupteur input:focus-visible + .interrupteur-piste { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Section verrouillée (courriel non confirmé) */
+.verrou { max-width: 460px !important; margin: auto; text-align: center; display: grid; gap: 12px; justify-items: center; padding: 28px 20px; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); }
+.verrou svg { color: var(--ambre); }
+.verrou h2 { font-size: 1.6rem; }
+.verrou p { margin: 0; color: var(--fg-doux); }
+.verrou button { width: 100%; }
+.verrou .message { text-align: left; color: var(--fg); }
+.etiquette-alerte { color: var(--rouge); font-weight: 700; }

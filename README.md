@@ -81,6 +81,10 @@ La tuile **App** de l'accueil explique comment installer Police Management sur i
 
 La connexion est obligatoire. Chaque nouvelle personne remplit une demande d'accès (nom, matricule, corps de police, unité) et reste **en attente** jusqu'à l'approbation de l'administrateur (anthony.smith@surete.qc.ca).
 
+**Confirmation du courriel.** Un policier approuvé peut entrer dans l'app même si son courriel n'est pas confirmé, mais la **carte**, le **CSR** et les **territoires** restent verrouillés jusqu'à la confirmation. L'écran verrouillé permet de recevoir un nouveau lien en tout temps : un lien expiré ne bloque donc jamais personne. La confirmation est vérifiée par la base de données (méthode de connexion inscrite par Supabase dans le jeton de session). L'onglet **Courriel non confirmé** de l'administration liste les retardataires et permet de leur renvoyer le lien.
+
+Les gabarits des courriels (aux couleurs de Police Management) sont dans [`supabase/courriels/`](supabase/courriels/) : à coller dans Supabase › Authentication › Emails (« Confirm signup » et « Magic Link »).
+
 ---
 
 ## Fonctionnement
