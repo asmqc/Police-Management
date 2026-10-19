@@ -262,6 +262,20 @@
     "Sécurité routière et contrôle autoroutier", "Enquêtes sur les collisions (reconstitution)", "Protection de personnalités",
     "Normes professionnelles", "Formation", "Soutien administratif",
   ];
+  // Agents de la paix et autres organisations : unités proposées à l'inscription (même liste dans l'app iPhone/iPad)
+  const ORGANISATIONS = {
+    "Gendarmerie royale du Canada (GRC)": ["Quartier général de la Division C (Montréal)", "Détachement", "Police fédérale — crimes graves et crime organisé", "Police fédérale — crimes financiers", "Intégrité des frontières", "Sécurité nationale", "Protection de personnalités", "Renseignement criminel", "Soutien opérationnel"],
+    "Agence des services frontaliers du Canada (ASFC)": ["Point d'entrée terrestre", "Aéroport", "Port maritime", "Courrier et fret", "Exécution de la loi et renseignement", "Enquêtes criminelles", "Détention de l'immigration"],
+    "Service correctionnel du Canada": ["Établissement à sécurité maximale", "Établissement à sécurité moyenne", "Établissement à sécurité minimale", "Établissement à niveaux de sécurité multiples", "Centre régional de réception", "Centre correctionnel communautaire", "Libérations conditionnelles"],
+    "Police militaire des Forces armées canadiennes": ["Police militaire d'une base ou d'une escadre", "Service national des enquêtes des Forces canadiennes", "Groupe de la Police militaire des Forces canadiennes"],
+    "Constables spéciaux — Sécurité publique Québec": ["Palais de justice", "Assemblée nationale", "Édifices gouvernementaux", "Transport de détenus"],
+    "Services correctionnels du Québec": ["Établissement de détention de Montréal (Bordeaux)", "Établissement de détention de Rivière-des-Prairies", "Établissement Leclerc de Laval", "Établissement de détention de Québec", "Établissement de détention de Trois-Rivières", "Établissement de détention de Sherbrooke", "Établissement de détention de Hull", "Établissement de détention de Saint-Jérôme", "Établissement de détention de Sorel-Tracy", "Établissement de détention de Rimouski", "Établissement de détention de Roberval", "Établissement de détention d'Amos", "Établissement de détention de Baie-Comeau", "Établissement de détention de Sept-Îles", "Établissement de détention de New Carlisle", "Établissement de détention de Percé", "Établissement de détention de Havre-Aubert", "Services correctionnels dans la communauté (probation)"],
+    "Protection de la faune du Québec": ["Bureau régional de protection de la faune", "Unité spécialisée", "Formation"],
+    "Bureau des enquêtes indépendantes (BEI)": ["Enquêtes", "Direction"],
+    "Unité permanente anticorruption (UPAC)": ["Enquêtes", "Vérification", "Prévention"],
+    "Constables spéciaux — transport et municipal": ["Société de transport de Montréal (STM)", "Réseau de transport de la Capitale (RTC)", "Société de transport de Laval (STL)", "Réseau de transport de Longueuil (RTL)", "exo", "Sécurité municipale (ville)"],
+    "Contrôle routier Québec": ["Contrôle sur route", "Poste de contrôle routier", "Enquêtes"],
+  };
   const nomBureau = (n) => n.replace(/\s+/g, " ").trim()
     .replace(/^Bureau du /, "").replace(/^Bureau des /, "").replace(/^Bureau de l'/, "").replace(/^Bureau de la /, "")
     .replace(/^./, (c) => c.toUpperCase());
@@ -311,7 +325,9 @@
         html = noms.map(opt).join("") + optAutre;
       } else if (corps === "Corps de police autochtone") {
         html = (await corpsParType("autochtone")).map(opt).join("") + optAutre;
-      } else if (corps === "Contrôle routier Québec" || corps === "Autre") {
+      } else if (ORGANISATIONS[corps]) {
+        html = ORGANISATIONS[corps].map(opt).join("") + optAutre;
+      } else if (corps === "Autre") {
         html = optAutre;
       } else {
         html = UNITES_MUNICIPALES.map(opt).join("") + optAutre;
@@ -2066,6 +2082,7 @@
   function corpsConnus() {
     const noms = new Set(["Sûreté du Québec"]);
     (etat.corps || []).forEach((c) => noms.add(c.nom));
+    Object.keys(ORGANISATIONS).forEach((n) => noms.add(n));
     (comptesAdmin || []).forEach((p) => noms.add(corpsDe(p)));
     ((msg && msg.comptes) || []).forEach((p) => noms.add(corpsDe(p)));
     return [...noms].filter(Boolean).sort((a, b) => a.localeCompare(b, "fr"));

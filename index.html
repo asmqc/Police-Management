@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191405">
+  <link rel="stylesheet" href="styles.css?v=202610192216">
 </head>
 <body>
   <!-- Chargement -->
@@ -217,7 +217,9 @@
         <select id="dm-grade" required>
           <option value="">Choisir…</option>
           <optgroup label="Grades policiers"><option>Agent</option><option>Sergent</option><option>Sergent-enquêteur</option><option>Sergent-détective</option><option>Lieutenant</option><option>Lieutenant-détective</option><option>Capitaine</option><option>Commandant</option><option>Inspecteur</option><option>Inspecteur-chef</option><option>Directeur adjoint</option><option>Directeur</option></optgroup>
-          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Constable spécial</option><option>Contrôleur routier</option><option>Personnel civil</option><option>Autre</option></optgroup>
+          <optgroup label="Grades GRC"><option>Gendarme</option><option>Caporal</option><option>Sergent d'état-major</option><option>Surintendant</option></optgroup>
+          <optgroup label="Agents de la paix"><option>Constable spécial</option><option>Contrôleur routier</option><option>Agent des services correctionnels</option><option>Agent de libération conditionnelle</option><option>Agent de probation</option><option>Agent des services frontaliers</option><option>Agent de protection de la faune</option><option>Policier militaire</option><option>Enquêteur</option></optgroup>
+          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Personnel civil</option><option>Autre</option></optgroup>
         </select>
         <div class="rangee">
           <div>
@@ -235,7 +237,7 @@
           <label for="dm-unite">Précisez l'unité ou le poste</label>
           <input id="dm-unite" type="text">
         </div>
-        <label for="dm-corps">Corps de police</label>
+        <label for="dm-corps">Corps de police ou organisation</label>
         <select id="dm-corps" required>
           <option value="">Choisir…</option>
           <option>Sûreté du Québec</option>
@@ -246,7 +248,19 @@
           <option>Service de police de la Ville de Gatineau</option>
           <option>Autre corps de police municipal</option>
           <option>Corps de police autochtone</option>
-          <option>Contrôle routier Québec</option>
+          <optgroup label="Agents de la paix et autres organisations">
+            <option>Gendarmerie royale du Canada (GRC)</option>
+            <option>Agence des services frontaliers du Canada (ASFC)</option>
+            <option>Service correctionnel du Canada</option>
+            <option>Police militaire des Forces armées canadiennes</option>
+            <option>Constables spéciaux — Sécurité publique Québec</option>
+            <option>Services correctionnels du Québec</option>
+            <option>Protection de la faune du Québec</option>
+            <option>Bureau des enquêtes indépendantes (BEI)</option>
+            <option>Unité permanente anticorruption (UPAC)</option>
+            <option>Constables spéciaux — transport et municipal</option>
+            <option>Contrôle routier Québec</option>
+          </optgroup>
           <option>Autre</option>
         </select>
         <label for="dm-courriel">Courriel professionnel</label>
@@ -904,7 +918,9 @@
           <select id="mc-grade">
           <option value="">Choisir…</option>
           <optgroup label="Grades policiers"><option>Agent</option><option>Sergent</option><option>Sergent-enquêteur</option><option>Sergent-détective</option><option>Lieutenant</option><option>Lieutenant-détective</option><option>Capitaine</option><option>Commandant</option><option>Inspecteur</option><option>Inspecteur-chef</option><option>Directeur adjoint</option><option>Directeur</option></optgroup>
-          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Constable spécial</option><option>Contrôleur routier</option><option>Personnel civil</option><option>Autre</option></optgroup>
+          <optgroup label="Grades GRC"><option>Gendarme</option><option>Caporal</option><option>Sergent d'état-major</option><option>Surintendant</option></optgroup>
+          <optgroup label="Agents de la paix"><option>Constable spécial</option><option>Contrôleur routier</option><option>Agent des services correctionnels</option><option>Agent de libération conditionnelle</option><option>Agent de probation</option><option>Agent des services frontaliers</option><option>Agent de protection de la faune</option><option>Policier militaire</option><option>Enquêteur</option></optgroup>
+          <optgroup label="Autres statuts"><option>Policier temporaire</option><option>Agent auxiliaire</option><option>Cadet</option><option>Personnel civil</option><option>Autre</option></optgroup>
         </select>
           <div class="rangee">
             <div>
@@ -920,7 +936,7 @@
             <label for="mc-unite">Précisez l'unité ou le poste</label>
             <input id="mc-unite" type="text">
           </div>
-          <label for="mc-corps">Corps de police</label>
+          <label for="mc-corps">Corps de police ou organisation</label>
           <select id="mc-corps">
             <option value="">Choisir…</option>
             <option>Sûreté du Québec</option>
@@ -931,7 +947,19 @@
             <option>Service de police de la Ville de Gatineau</option>
             <option>Autre corps de police municipal</option>
             <option>Corps de police autochtone</option>
-            <option>Contrôle routier Québec</option>
+            <optgroup label="Agents de la paix et autres organisations">
+              <option>Gendarmerie royale du Canada (GRC)</option>
+              <option>Agence des services frontaliers du Canada (ASFC)</option>
+              <option>Service correctionnel du Canada</option>
+              <option>Police militaire des Forces armées canadiennes</option>
+              <option>Constables spéciaux — Sécurité publique Québec</option>
+              <option>Services correctionnels du Québec</option>
+              <option>Protection de la faune du Québec</option>
+              <option>Bureau des enquêtes indépendantes (BEI)</option>
+              <option>Unité permanente anticorruption (UPAC)</option>
+              <option>Constables spéciaux — transport et municipal</option>
+              <option>Contrôle routier Québec</option>
+            </optgroup>
             <option>Autre</option>
           </select>
           <button type="submit" class="btn-principal">Enregistrer les modifications</button>
@@ -1260,9 +1288,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191405"></script>
+  <script src="config.js?v=202610192216"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191405"></script>
+  <script src="app.js?v=202610192216"></script>
 </body>
 </html>
