@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Politique de confidentialité — Police Management</title>
-  <meta name="description" content="Politique de confidentialité du site web Police Management, conforme à la Loi 25 du Québec.">
+  <meta name="description" content="Politique de confidentialité de Police Management (site web, application web et application iPhone/iPad), conforme à la Loi 25 du Québec et aux principes de la LPRPDE.">
   <link rel="icon" href="assets/icone-192.png">
   <style>
     :root { --bg: #EFF2F7; --surface: #fff; --fg: #142235; --doux: #556479; --ligne: #DCE2EB; --ambre: #C98A12; --encre: #0E1B2C; --lien: #2467C4; color-scheme: light; }
@@ -15,16 +15,21 @@
     header a { color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
     header a span { color: #F2B33D; }
     header img { width: 34px; height: 34px; border-radius: 9px; }
-    main { max-width: 780px; margin: 0 auto; padding: 24px 16px 60px; }
+    main { max-width: 820px; margin: 0 auto; padding: 24px 16px 60px; }
     h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 6px; }
-    h2 { font-size: 1.2rem; margin: 30px 0 8px; }
+    h2 { font-size: 1.2rem; margin: 26px 0 8px; }
+    h3 { font-size: 1rem; margin: 18px 0 6px; }
     .maj { color: var(--doux); margin: 0 0 18px; }
     section { background: var(--surface); border-radius: 16px; padding: 4px 20px 16px; margin: 14px 0; border: 1px solid var(--ligne); }
-    table { width: 100%; border-collapse: collapse; font-size: .94rem; }
+    .resume { border-left: 5px solid var(--ambre); }
+    .table { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .94rem; min-width: 520px; }
     th, td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--ligne); }
     th { color: var(--doux); font-weight: 600; }
     a { color: var(--lien); }
     ul { padding-left: 20px; }
+    nav.sommaire ol { columns: 2; column-gap: 28px; padding-left: 20px; margin: 8px 0; }
+    @media (max-width: 600px) { nav.sommaire ol { columns: 1; } }
     .retour { display: inline-block; margin-top: 18px; font-weight: 700; }
   </style>
 </head>
@@ -32,101 +37,205 @@
 <header><a href="./"><img src="assets/icone-192.png" alt="">Police <span>Management</span></a></header>
 <main>
   <h1>Politique de confidentialité</h1>
-  <p class="maj">Site web et application web Police Management — version <b>2026.10.19</b>, en vigueur le 19 octobre 2026.</p>
-  <p>Police Management est un outil de référence et de coordination du travail destiné au personnel policier du Québec. Il est exploité à titre indépendant et n'est affilié à aucun corps de police. La présente politique est rédigée conformément à la <b>Loi sur la protection des renseignements personnels dans le secteur privé</b>, telle que modifiée par la <b>Loi 25</b>. Elle décrit quels renseignements le site traite, comment ils sont protégés et quels sont vos droits.</p>
+  <p class="maj">Site web, application web et application iPhone et iPad Police Management — version <b>2026.10.20</b>, en vigueur le 20 octobre 2026.</p>
 
-  <section>
-    <h2>1. Responsable de la protection des renseignements personnels</h2>
-    <p><b>Anthony Smith</b>, propriétaire et administrateur de Police Management, agit comme responsable de la protection des renseignements personnels. Pour toute question, demande d'exercice de vos droits ou plainte : <a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a> ou le serveur Discord de soutien : <a href="https://discord.gg/bgrJVwPqyV" rel="noopener">discord.gg/bgrJVwPqyV</a>.</p>
-  </section>
-
-  <section>
-    <h2>2. Consentement</h2>
-    <p>Votre consentement est demandé de façon manifeste, libre et éclairée lors de votre demande d'accès (case à cocher, jamais cochée d'avance). La date de votre consentement et la version de la politique acceptée sont conservées comme preuve. Si la politique change de façon importante, l'application vous demande de l'accepter de nouveau. Vous pouvez retirer votre consentement en tout temps en supprimant votre compte (section 9).</p>
-  </section>
-
-  <section>
-    <h2>3. Renseignements recueillis et finalités</h2>
-    <table>
-      <tr><th>Renseignement</th><th>Finalité</th></tr>
-      <tr><td>Profil : nom, courriel, matricule, grade, corps de police, unité ou poste, photo facultative</td><td>Créer et gérer votre compte, vérifier que vous êtes policier, contrôler l'accès</td></tr>
-      <tr><td>Rotation, exceptions (vacances, maladie, temps supplémentaire et ses détails), notes, 2ᵉ calendrier facultatif (conjoint·e)</td><td>Afficher votre horaire, calculer vos heures, produire vos rapports</td></tr>
-      <tr><td>Événements personnels et rappels</td><td>Afficher votre calendrier et vous envoyer les rappels demandés</td></tr>
-      <tr><td>Repères personnels sur la carte</td><td>Retrouver vos lieux de travail sur la carte</td></tr>
-      <tr><td>Échanges de quarts (date, quart, heures, note)</td><td>Permettre les échanges entre collègues d'un même poste</td></tr>
-      <tr><td>Messages avec l'administrateur</td><td>Soutien et suivi de compte</td></tr>
-      <tr><td>Forum, idées, sondages et votes</td><td>Échanges entre membres d'un même corps de police, amélioration de l'application</td></tr>
-      <tr><td>Abonnement aux notifications (adresse technique de l'appareil)</td><td>Envoyer les notifications que vous avez activées</td></tr>
-      <tr><td>Dernière connexion, confirmation du courriel, date du consentement</td><td>Sécurité du compte et preuve de consentement</td></tr>
-    </table>
-    <p>Police Management n'utilise <b>aucun</b> outil publicitaire, <b>aucun</b> service d'analyse ou de mesure d'audience, <b>aucun</b> profilage, et ne vend ni ne communique vos renseignements à des fins commerciales.</p>
-  </section>
-
-  <section>
-    <h2>4. Où sont conservés vos renseignements</h2>
+  <section class="resume">
+    <h2>En bref</h2>
     <ul>
-      <li>Les comptes et toutes les données ci-dessus sont hébergés par <b>Supabase</b>, dans la région <b>Canada (Montréal, ca-central-1)</b>. Les données sont chiffrées en transit (HTTPS) et au repos.</li>
-      <li>Le site lui-même (pages, textes de loi, carte) est servi par <b>GitHub Pages</b>; aucune donnée de compte n'y est conservée.</li>
-      <li>Le fond de carte est chargé depuis les serveurs d'<b>OpenStreetMap</b>, qui reçoivent votre adresse IP comme pour toute page web.</li>
-      <li>Les notifications passent par le service de votre navigateur ou de votre téléphone (Apple, Google, Mozilla ou Microsoft), qui ne reçoit que le texte de la notification.</li>
+      <li>Police Management est un outil indépendant de référence et d'horaire pour le personnel policier et les agents de la paix. Il n'est affilié à aucun corps de police ni organisme public.</li>
+      <li>Nous recueillons seulement ce qui sert à faire fonctionner votre compte : votre identité professionnelle, votre horaire, vos événements et vos messages.</li>
+      <li>Vos données sont hébergées au <b>Canada, à Montréal</b>. Aucune publicité, aucun outil de mesure d'audience, aucun profilage, aucune vente de données.</li>
+      <li>Votre position GPS reste sur votre appareil. Elle n'est ni enregistrée ni transmise.</li>
+      <li>Vous pouvez consulter, corriger, exporter ou supprimer vos renseignements en tout temps. Pour toute question : <a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>.</li>
     </ul>
   </section>
 
-  <section>
-    <h2>5. Paramètres de confidentialité par défaut</h2>
-    <p>Les réglages offrant le plus haut niveau de confidentialité sont activés par défaut : photo facultative, notifications désactivées tant que vous ne les activez pas, événements, notes, repères et 2ᵉ calendrier toujours privés. Seul le partage de votre <b>rotation</b> (jours, soirs, nuits et congés de rotation) avec les membres de votre poste est activé, parce qu'il sert au fonctionnement du poste; vous pouvez le désactiver dans Réglages › Confidentialité.</p>
+  <nav class="sommaire" aria-label="Sommaire">
+    <ol>
+      <li><a href="#responsable">Responsable</a></li>
+      <li><a href="#portee">Portée et lois applicables</a></li>
+      <li><a href="#consentement">Consentement</a></li>
+      <li><a href="#renseignements">Renseignements et finalités</a></li>
+      <li><a href="#technologies">Technologies et localisation</a></li>
+      <li><a href="#acces">Qui voit quoi</a></li>
+      <li><a href="#fournisseurs">Fournisseurs et hébergement</a></li>
+      <li><a href="#securite">Sécurité</a></li>
+      <li><a href="#conservation">Conservation et destruction</a></li>
+      <li><a href="#droits">Vos droits</a></li>
+      <li><a href="#incidents">Incidents de confidentialité</a></li>
+      <li><a href="#usage">Règles d'usage</a></li>
+      <li><a href="#mineurs">Personnes mineures</a></li>
+      <li><a href="#modifications">Modifications</a></li>
+    </ol>
+  </nav>
+
+  <section id="responsable">
+    <h2>1. Responsable de la protection des renseignements personnels</h2>
+    <p>Police Management est exploité à titre personnel par <b>Anthony Smith</b>, au Québec. Il agit comme <b>responsable de la protection des renseignements personnels</b> au sens de l'article 3.1 de la Loi sur la protection des renseignements personnels dans le secteur privé.</p>
+    <ul>
+      <li>Courriel : <a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a></li>
+      <li>Soutien : serveur Discord <a href="https://discord.gg/bgrJVwPqyV" rel="noopener">discord.gg/bgrJVwPqyV</a> (pour vos demandes concernant vos renseignements, utilisez de préférence le courriel)</li>
+    </ul>
+    <p>Nos pratiques de gouvernance (rôles, calendrier de conservation, traitement des plaintes et des incidents) sont décrites dans la page <a href="gouvernance.html">Gouvernance des renseignements personnels</a>.</p>
   </section>
 
-  <section>
+  <section id="portee">
+    <h2>2. Portée et lois applicables</h2>
+    <p>La présente politique s'applique au site web, à l'application web et à l'application iPhone et iPad Police Management. Ces trois accès utilisent le même compte et la même base de données.</p>
+    <p>Le service s'adresse aux policiers, aux agents de la paix (par exemple constables spéciaux, agents des services correctionnels, agents des services frontaliers, agents de protection de la faune, contrôleurs routiers) et au personnel civil qui les soutient, au Québec et ailleurs au Canada.</p>
+    <p>Nous appliquons la <b>Loi sur la protection des renseignements personnels dans le secteur privé</b> du Québec, telle que modifiée par la <b>Loi 25</b>. Lorsqu'elle s'applique, nous respectons aussi la <b>Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE)</b> du Canada et ses principes d'équité dans le traitement de l'information.</p>
+  </section>
+
+  <section id="consentement">
+    <h2>3. Consentement</h2>
+    <ul>
+      <li>Votre consentement est demandé de façon <b>manifeste, libre et éclairée</b> lorsque vous créez votre compte, sur le site ou dans l'app : case à cocher jamais cochée d'avance, politique accessible avant d'accepter.</li>
+      <li>Les fonctions facultatives (notifications, photo de profil, position GPS, 2ᵉ calendrier, partage de votre horaire avec une autre personne) ne sont utilisées que si vous les activez vous-même.</li>
+      <li>La date de votre consentement et la version de la politique acceptée sont conservées comme preuve.</li>
+      <li>Lorsque la politique change de façon importante, l'application vous demande de l'accepter de nouveau avant de continuer.</li>
+      <li>Vous pouvez retirer votre consentement en tout temps : désactivez une option facultative dans les réglages, ou supprimez votre compte. Le retrait peut empêcher l'utilisation des fonctions qui en dépendent.</li>
+    </ul>
+  </section>
+
+  <section id="renseignements">
+    <h2>4. Renseignements recueillis et finalités</h2>
+    <p>Nous recueillons les renseignements directement auprès de vous, sauf les journaux techniques, qui sont produits automatiquement par nos fournisseurs.</p>
+    <div class="table"><table>
+      <tr><th>Renseignement</th><th>Finalité</th></tr>
+      <tr><td>Nom, courriel, mot de passe (conservé seulement sous forme chiffrée irréversible), grade, matricule, corps de police ou organisation, unité ou poste</td><td>Créer et gérer votre compte, vérifier que vous faites partie du personnel visé, contrôler l'accès, séparer les données par corps de police</td></tr>
+      <tr><td>Photo de profil (facultative)</td><td>Vous identifier auprès de l'administrateur et dans la messagerie</td></tr>
+      <tr><td>Rotation, exceptions (vacances, maladie, formation, cour, temps supplémentaire et ses détails), notes, heures</td><td>Afficher votre horaire, calculer vos heures, produire vos rapports</td></tr>
+      <tr><td>2ᵉ calendrier facultatif (nom ou surnom et horaire d'un conjoint ou d'une conjointe)</td><td>Afficher les deux horaires côte à côte. Obtenez l'accord de cette personne avant d'inscrire son horaire.</td></tr>
+      <tr><td>Événements personnels et rappels</td><td>Afficher votre calendrier et vous envoyer les rappels demandés</td></tr>
+      <tr><td>Repères personnels sur la carte</td><td>Retrouver vos lieux de travail</td></tr>
+      <tr><td>Échanges de quarts (date, quart, heures, note)</td><td>Permettre les échanges entre collègues d'un même poste</td></tr>
+      <tr><td>Messages avec l'administrateur</td><td>Soutien, suivi de compte</td></tr>
+      <tr><td>Publications au forum, idées, sondages, votes, signalements</td><td>Échanges entre membres d'un même corps de police, modération, amélioration du service</td></tr>
+      <tr><td>Abonnement aux notifications (adresse technique de l'appareil)</td><td>Envoyer les notifications que vous avez activées</td></tr>
+      <tr><td>Date de dernière connexion, confirmation du courriel, date et version du consentement</td><td>Sécurité du compte, preuve de consentement</td></tr>
+      <tr><td>Journaux techniques : adresse IP, date et heure, type d'appareil ou de navigateur</td><td>Sécurité, prévention des abus, diagnostic des pannes (produits par nos fournisseurs d'hébergement)</td></tr>
+    </table></div>
+    <p>Nous n'utilisons vos renseignements à aucune autre fin sans votre consentement, sauf si la loi le permet ou l'exige.</p>
+  </section>
+
+  <section id="technologies">
+    <h2>5. Technologies, témoins et localisation</h2>
+    <ul>
+      <li><b>Aucun</b> outil publicitaire, <b>aucun</b> service d'analyse ou de mesure d'audience, <b>aucun</b> témoin (cookie) de tiers, <b>aucun</b> profilage. Aucune décision n'est prise de façon entièrement automatisée : l'approbation des comptes est faite par une personne.</li>
+      <li><b>Site et application web :</b> le navigateur garde votre session de connexion et quelques préférences (thème, style, dernière loi consultée, vue du calendrier).</li>
+      <li><b>Application iPhone et iPad :</b> votre session est gardée dans le trousseau (Keychain) de l'appareil. Une copie des données publiques (lois, carte) est gardée dans l'appareil pour fonctionner sans réseau.</li>
+      <li><b>Localisation :</b> cette fonction est désactivée par défaut. Elle s'active seulement quand vous touchez « Ma position », et l'app vous demande d'abord l'autorisation. La position sert, sur votre appareil seulement, à trouver la borne kilométrique, la municipalité et le poste les plus proches. Elle n'est <b>ni enregistrée ni transmise</b> à Police Management.</li>
+    </ul>
+  </section>
+
+  <section id="acces">
     <h2>6. Qui voit quoi</h2>
     <ul>
-      <li><b>Vous seul</b> : vos événements, notes, exceptions, détails de temps supplémentaire, repères personnels et 2ᵉ calendrier.</li>
-      <li><b>Les membres de votre poste</b> : votre rotation (sans exceptions ni notes, si le partage est activé) et les quarts que vous offrez en échange.</li>
-      <li><b>Un collègue d'un autre poste</b> : votre rotation, seulement si vous la lui partagez vous-même.</li>
-      <li><b>Les membres de votre corps de police</b> : vos publications au forum, avec votre grade et votre nom. Les idées et sondages sont visibles par tous les membres; les votes ne sont affichés qu'en total.</li>
-      <li><b>L'administrateur</b> : les profils et l'état des comptes, les messages qui lui sont adressés, les publications du forum et les signalements.</li>
+      <li><b>Vous seul :</b> vos événements, notes, exceptions, détails de temps supplémentaire, repères personnels et 2ᵉ calendrier.</li>
+      <li><b>Les membres de votre poste :</b> votre rotation, seulement si le partage est activé, sans les exceptions ni les notes. Le partage est activé par défaut parce qu'il sert au fonctionnement du poste, et vous pouvez le désactiver dans Réglages › Confidentialité. Les membres de votre poste voient aussi les quarts que vous offrez en échange.</li>
+      <li><b>Une personne d'un autre poste ou d'un autre corps :</b> votre rotation, seulement si vous la lui partagez vous-même.</li>
+      <li><b>Les membres de votre corps de police ou de votre organisation :</b> vos publications au forum, avec votre grade et votre nom. Les votes aux idées et aux sondages ne sont affichés qu'en total.</li>
+      <li><b>L'administrateur :</b> les profils et l'état des comptes, les messages qui lui sont adressés, les publications et les signalements, pour gérer les accès, offrir le soutien et modérer.</li>
     </ul>
     <p>Ces règles sont appliquées par la base de données elle-même (sécurité au niveau des lignes), et non seulement par l'affichage.</p>
+    <p>Nous ne vendons, ne louons et ne communiquons aucun renseignement à des fins commerciales. Un renseignement peut être communiqué sans votre consentement seulement dans les cas prévus par la loi, par exemple pour répondre à une ordonnance d'un tribunal.</p>
   </section>
 
-  <section>
-    <h2>7. Localisation</h2>
-    <p>Votre position GPS est utilisée seulement dans votre navigateur, quand vous touchez « Ma position », pour trouver le poste, le code municipal et la borne la plus proche. Elle n'est ni enregistrée ni transmise.</p>
-  </section>
-
-  <section>
-    <h2>8. Stockage dans le navigateur</h2>
-    <p>Le site garde dans votre navigateur votre session de connexion et quelques préférences (thème, style d'interface, dernière loi consultée, vue du calendrier). Aucun témoin publicitaire ni de mesure n'est utilisé.</p>
-  </section>
-
-  <section>
-    <h2>9. Conservation, suppression et retrait du consentement</h2>
+  <section id="fournisseurs">
+    <h2>7. Fournisseurs, hébergement et communication à l'extérieur du Québec</h2>
+    <div class="table"><table>
+      <tr><th>Fournisseur</th><th>Rôle</th><th>Lieu</th></tr>
+      <tr><td><b>Supabase</b></td><td>Base de données, comptes, fichiers (photos, images des annonces), envoi des courriels de confirmation, fonctions serveur. Contient tous les renseignements du compte.</td><td>Données hébergées au <b>Canada (Montréal)</b>. L'entreprise est située aux États-Unis, et son personnel peut y accéder de façon limitée pour l'exploitation et le soutien.</td></tr>
+      <tr><td><b>GitHub</b> (Microsoft)</td><td>Hébergement du site et des données publiques (lois, carte). Aucune donnée de compte. Reçoit l'adresse IP des visiteurs, comme tout site web.</td><td>États-Unis</td></tr>
+      <tr><td><b>OpenStreetMap</b></td><td>Fond de carte du site web. Reçoit l'adresse IP et la zone affichée.</td><td>Royaume-Uni et Europe</td></tr>
+      <tr><td><b>Apple</b></td><td>App Store, carte de l'app (Plans), notifications sur les appareils Apple. Ne reçoit aucune donnée de compte de notre part.</td><td>États-Unis</td></tr>
+      <tr><td><b>Google, Mozilla, Microsoft</b></td><td>Notifications du navigateur, si vous les activez. Reçoivent seulement le texte de la notification.</td><td>États-Unis</td></tr>
+      <tr><td><b>Discord</b></td><td>Soutien, seulement si vous choisissez de nous y écrire</td><td>États-Unis</td></tr>
+    </table></div>
+    <p>Avant de communiquer des renseignements à l'extérieur du Québec, nous avons réalisé une <b>évaluation des facteurs relatifs à la vie privée</b> (art. 17). Elle a conclu que ces renseignements bénéficient d'une protection adéquate, compte tenu :</p>
     <ul>
-      <li>Vos renseignements sont conservés tant que votre compte existe.</li>
-      <li>Vous pouvez <b>supprimer votre compte</b> en tout temps (Mon compte › Supprimer mon compte) : profil, photo, horaire, événements, repères et votes sont effacés définitivement. Cela vaut retrait de votre consentement.</li>
-      <li>Vous pouvez supprimer vos propres publications au forum et vos idées; l'administrateur peut aussi retirer une publication.</li>
-      <li>Les journaux techniques d'envoi des rappels (identifiant du compte et heure d'envoi seulement, pour éviter les doublons) sont effacés avec votre compte ou l'événement concerné.</li>
+      <li>de leur sensibilité et de la minimisation des données transmises;</li>
+      <li>de l'hébergement des données de compte à Montréal;</li>
+      <li>du chiffrement;</li>
+      <li>des engagements contractuels de ces fournisseurs.</li>
+    </ul>
+    <p>Ces renseignements peuvent toutefois être soumis aux lois du pays où ils se trouvent.</p>
+  </section>
+
+  <section id="securite">
+    <h2>8. Sécurité</h2>
+    <ul>
+      <li>Chiffrement en transit (HTTPS/TLS) et au repos.</li>
+      <li>Mots de passe conservés seulement sous forme chiffrée irréversible.</li>
+      <li>Approbation de chaque compte par l'administrateur.</li>
+      <li>Sécurité au niveau des lignes dans la base de données.</li>
+      <li>Données séparées par corps de police.</li>
+      <li>Fichiers privés accessibles seulement par des liens temporaires.</li>
+      <li>Accès administrateur limité au responsable et protégé par l'authentification à deux facteurs.</li>
+      <li>Avertissement à chaque ouverture de l'app.</li>
+    </ul>
+    <p>Aucun système n'est parfaitement sûr. Choisissez un mot de passe unique d'au moins 10 caractères, et ne le partagez pas.</p>
+  </section>
+
+  <section id="conservation">
+    <h2>9. Conservation et destruction</h2>
+    <div class="table"><table>
+      <tr><th>Renseignement</th><th>Durée</th></tr>
+      <tr><td>Compte approuvé et toutes ses données</td><td>Tant que le compte existe. Un compte inactif depuis plus de 24 mois peut être supprimé, après un avis par courriel.</td></tr>
+      <tr><td>Demande d'accès refusée</td><td>Détruite automatiquement 90 jours après le refus</td></tr>
+      <tr><td>Publications et idées</td><td>Jusqu'à leur suppression par vous ou par l'administrateur, ou jusqu'à la suppression du compte</td></tr>
+      <tr><td>Journaux techniques des rappels</td><td>Effacés avec le compte ou l'événement concerné</td></tr>
+      <tr><td>Journaux techniques des fournisseurs</td><td>Selon leur durée de conservation, à des fins de sécurité</td></tr>
+      <tr><td>Registre des incidents de confidentialité</td><td>Au moins 5 ans, comme l'exige la loi</td></tr>
+    </table></div>
+    <p>Vous pouvez <b>supprimer votre compte</b> en tout temps : sur le site (Mon compte › Supprimer mon compte) ou dans l'app iPhone et iPad (Accueil › votre avatar › Supprimer mon compte). Votre profil, votre photo, votre horaire, vos événements, vos repères, vos votes et vos publications sont alors <b>effacés définitivement</b>. Les messages que vous avez envoyés à l'administrateur peuvent rester dans sa boîte, sans lien avec votre compte, à moins que vous ne demandiez leur suppression.</p>
+  </section>
+
+  <section id="droits">
+    <h2>10. Vos droits</h2>
+    <p>Vous pouvez demander en tout temps :</p>
+    <ul>
+      <li>l'<b>accès</b> à vos renseignements et des renseignements sur la façon dont ils sont utilisés;</li>
+      <li>leur <b>rectification</b>, si un renseignement est inexact, incomplet ou équivoque. Plusieurs se modifient vous-même dans Mon compte;</li>
+      <li>leur <b>suppression</b>, ou le <b>retrait de votre consentement</b>;</li>
+      <li>la <b>cessation de leur diffusion</b>, ou la désindexation d'un lien;</li>
+      <li>leur communication dans un <b>format technologique structuré et couramment utilisé</b> (portabilité), par exemple JSON ou CSV.</li>
+    </ul>
+    <p>Écrivez au responsable (section 1). Nous vérifions votre identité, puis nous répondons <b>dans les 30 jours</b>, sans frais. En cas de refus, nous vous en donnons les motifs par écrit et nous vous informons de vos recours.</p>
+    <p>Vous pouvez porter plainte :</p>
+    <ul>
+      <li>auprès de nous d'abord, à la même adresse;</li>
+      <li>auprès de la <a href="https://www.cai.gouv.qc.ca" rel="noopener">Commission d'accès à l'information du Québec</a>;</li>
+      <li>si vous êtes à l'extérieur du Québec, auprès du <a href="https://www.priv.gc.ca" rel="noopener">Commissariat à la protection de la vie privée du Canada</a> ou de l'autorité de votre province.</li>
     </ul>
   </section>
 
-  <section>
-    <h2>10. Vos droits</h2>
-    <p>Vous pouvez demander en tout temps l'<b>accès</b> à vos renseignements, leur <b>rectification</b>, leur <b>suppression</b> ou la <b>cessation de leur diffusion</b>, et leur communication dans un <b>format technologique structuré</b> (portabilité). Écrivez au responsable (section 1); une réponse vous sera donnée dans les 30 jours. Vous pouvez porter plainte à la <a href="https://www.cai.gouv.qc.ca" rel="noopener">Commission d'accès à l'information du Québec</a>.</p>
-  </section>
-
-  <section>
+  <section id="incidents">
     <h2>11. Incidents de confidentialité</h2>
-    <p>Tout incident de confidentialité est consigné dans un registre. S'il présente un risque de préjudice sérieux, la Commission d'accès à l'information et les personnes concernées sont avisées avec diligence.</p>
+    <p>Tout incident de confidentialité est consigné dans un registre. Nous prenons sans délai les mesures pour réduire le risque de préjudice et éviter qu'il se reproduise. S'il présente un risque de préjudice sérieux, nous avisons avec diligence la Commission d'accès à l'information et les personnes concernées. Lorsque la LPRPDE s'applique, nous avisons aussi le Commissariat à la protection de la vie privée du Canada en cas de risque réel de préjudice grave.</p>
   </section>
 
-  <section>
-    <h2>12. Avertissement d'usage</h2>
-    <p>N'inscrivez dans Police Management aucune information confidentielle, aucun renseignement tiré d'une banque de données policière et aucune donnée sur des citoyens. Les contenus publiés relèvent de la responsabilité de leur auteur. Les textes de loi sont fournis à titre de référence : le texte officiel prévaut.</p>
+  <section id="usage">
+    <h2>12. Règles d'usage</h2>
+    <p>N'inscrivez dans Police Management :</p>
+    <ul>
+      <li>aucune information confidentielle ou opérationnelle;</li>
+      <li>aucun renseignement tiré d'une banque de données policière (par exemple le CRPQ);</li>
+      <li>aucune donnée sur des citoyens, des victimes, des suspects ou des personnes détenues.</li>
+    </ul>
+    <p>Les contenus publiés relèvent de la responsabilité de leur auteur. Tout contenu contraire à ces règles peut être retiré, et le compte bloqué.</p>
+    <p>Les textes de loi sont fournis à titre de référence : le texte officiel prévaut.</p>
   </section>
 
-  <section>
-    <h2>13. Modifications</h2>
-    <p>Toute modification est publiée sur cette page. Si elle touche les renseignements recueillis ou leurs finalités, l'application vous demande de l'accepter à votre prochaine ouverture.</p>
+  <section id="mineurs">
+    <h2>13. Personnes mineures</h2>
+    <p>Le service s'adresse aux personnes de 18 ans et plus. Nous ne recueillons pas sciemment de renseignements sur des personnes mineures. Si vous croyez qu'une personne mineure nous en a transmis, écrivez-nous : nous les supprimerons.</p>
+  </section>
+
+  <section id="modifications">
+    <h2>14. Modifications</h2>
+    <p>Toute modification est publiée sur cette page, avec un nouveau numéro de version. Si elle touche les renseignements recueillis, leurs finalités ou leurs destinataires, l'application vous demande de l'accepter à votre prochaine ouverture.</p>
+    <p>Versions précédentes : 2026.10.19 (site web), 2026.09.01 (ancienne app iPhone).</p>
   </section>
 
   <a class="retour" href="./">‹ Retour à Police Management</a>

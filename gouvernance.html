@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gouvernance des renseignements personnels — Police Management</title>
+  <meta name="description" content="Politiques et pratiques de gouvernance des renseignements personnels de Police Management (Loi 25, art. 3.2).">
+  <link rel="icon" href="assets/icone-192.png">
+  <style>
+    :root { --bg: #EFF2F7; --surface: #fff; --fg: #142235; --doux: #556479; --ligne: #DCE2EB; --ambre: #C98A12; --encre: #0E1B2C; --lien: #2467C4; color-scheme: light; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #070F1A; --surface: #0F1B2B; --fg: #E6ECF4; --doux: #93A3B8; --ligne: #1F3047; --ambre: #F2B33D; --lien: #5B9BF0; color-scheme: dark; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    header { background: var(--encre); color: #fff; padding: 18px 16px; }
+    header a { color: #fff; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    header a span { color: #F2B33D; }
+    header img { width: 34px; height: 34px; border-radius: 9px; }
+    main { max-width: 820px; margin: 0 auto; padding: 24px 16px 60px; }
+    h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 6px; }
+    h2 { font-size: 1.2rem; margin: 26px 0 8px; }
+    .maj { color: var(--doux); margin: 0 0 18px; }
+    section { background: var(--surface); border-radius: 16px; padding: 4px 20px 16px; margin: 14px 0; border: 1px solid var(--ligne); }
+    .table { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .94rem; min-width: 480px; }
+    th, td { text-align: left; vertical-align: top; padding: 8px 6px; border-top: 1px solid var(--ligne); }
+    th { color: var(--doux); font-weight: 600; }
+    a { color: var(--lien); }
+    ul, ol { padding-left: 20px; }
+    .retour { display: inline-block; margin-top: 18px; font-weight: 700; margin-right: 18px; }
+  </style>
+</head>
+<body>
+<header><a href="./"><img src="assets/icone-192.png" alt="">Police <span>Management</span></a></header>
+<main>
+  <h1>Gouvernance des renseignements personnels</h1>
+  <p class="maj">Politiques et pratiques de Police Management, publiées en application de l'article 3.2 de la Loi sur la protection des renseignements personnels dans le secteur privé. Version 2026.10.20, approuvée par le responsable de la protection des renseignements personnels.</p>
+
+  <section>
+    <h2>1. Rôles et responsabilités</h2>
+    <p><b>Anthony Smith</b>, propriétaire et exploitant, est le <b>responsable de la protection des renseignements personnels</b> (art. 3.1). Il :</p>
+    <ul>
+      <li>veille au respect de la loi et des présentes pratiques;</li>
+      <li>approuve la politique de confidentialité et les évaluations des facteurs relatifs à la vie privée (ÉFVP);</li>
+      <li>répond aux demandes d'exercice de droits et aux plaintes;</li>
+      <li>tient le registre des incidents de confidentialité;</li>
+      <li>est le seul à détenir les accès administrateur à l'hébergement (Supabase, GitHub, Apple Developer). Ces accès sont protégés par l'authentification à deux facteurs.</li>
+    </ul>
+    <p>Aucun employé ni sous-traitant n'a accès aux renseignements personnels, sauf les fournisseurs techniques décrits dans la <a href="politique.html#fournisseurs">politique de confidentialité</a>, dans la mesure nécessaire à leurs services.</p>
+    <p>Contact : <a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a></p>
+  </section>
+
+  <section>
+    <h2>2. Cycle de vie des renseignements</h2>
+    <div class="table"><table>
+      <tr><th>Étape</th><th>Pratique</th></tr>
+      <tr><td>Collecte</td><td>Seulement les renseignements nécessaires aux finalités annoncées, directement auprès de la personne, avec un consentement manifeste, libre et éclairé, dont la preuve (date et version) est conservée</td></tr>
+      <tr><td>Utilisation</td><td>Limitée aux finalités annoncées. Aucune publicité, aucun profilage, aucune décision entièrement automatisée.</td></tr>
+      <tr><td>Communication</td><td>Aucune vente ni communication commerciale. Communication sans consentement seulement dans les cas prévus par la loi; chacune serait consignée.</td></tr>
+      <tr><td>Conservation</td><td>Selon le calendrier ci-dessous</td></tr>
+      <tr><td>Destruction</td><td>Suppression définitive dans la base de données et le stockage de fichiers. Destruction automatique des demandes refusées.</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>3. Calendrier de conservation</h2>
+    <div class="table"><table>
+      <tr><th>Renseignements</th><th>Durée</th><th>Mode de destruction</th></tr>
+      <tr><td>Compte approuvé et ses données</td><td>Tant que le compte existe</td><td>Suppression par la personne ou par l'administrateur sur demande</td></tr>
+      <tr><td>Compte inactif</td><td>Revue après 24 mois d'inactivité</td><td>Avis par courriel, puis suppression sans réponse dans les 30 jours</td></tr>
+      <tr><td>Demande d'accès refusée</td><td>90 jours après le refus</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Demande d'exercice de droits ou plainte, et sa réponse</td><td>2 ans après la réponse</td><td>Suppression des courriels et des notes</td></tr>
+      <tr><td>Registre des incidents</td><td>5 ans après la connaissance de l'incident</td><td>Suppression de l'entrée</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>4. Demandes d'exercice de droits</h2>
+    <ol>
+      <li><b>Réception :</b> par courriel, avec un accusé de réception.</li>
+      <li><b>Vérification de l'identité :</b> la demande doit venir de l'adresse liée au compte, ou d'une confirmation équivalente.</li>
+      <li><b>Réponse dans les 30 jours, sans frais :</b> accès, rectification, suppression, cessation de diffusion ou portabilité (format JSON ou CSV).</li>
+      <li><b>Refus :</b> le cas échéant, il est motivé par écrit et indique le recours possible devant la Commission d'accès à l'information.</li>
+      <li><b>Trace :</b> chaque demande est consignée (date, nature, réponse).</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>5. Traitement des plaintes</h2>
+    <p>Toute plainte concernant la protection des renseignements personnels est reçue par courriel, puis examinée par le responsable, qui répond dans les 30 jours. Le traitement est consigné. La personne est informée qu'elle peut aussi s'adresser :</p>
+    <ul>
+      <li>à la <a href="https://www.cai.gouv.qc.ca" rel="noopener">Commission d'accès à l'information</a>;</li>
+      <li>hors Québec, au <a href="https://www.priv.gc.ca" rel="noopener">Commissariat à la protection de la vie privée du Canada</a>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. Incidents de confidentialité</h2>
+    <ol>
+      <li><b>Contenir :</b> révoquer les accès, corriger la faille, joindre le fournisseur au besoin.</li>
+      <li><b>Évaluer le risque de préjudice sérieux :</b> sensibilité des renseignements, conséquences appréhendées, probabilité d'une utilisation préjudiciable.</li>
+      <li><b>Consigner tout incident au registre</b>, même sans risque sérieux.</li>
+      <li><b>Aviser en cas de risque sérieux :</b> la Commission d'accès à l'information et les personnes concernées, avec diligence. Le Commissariat à la protection de la vie privée du Canada est aussi avisé lorsque la LPRPDE s'applique.</li>
+      <li><b>Réviser</b> les mesures de protection.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>7. Évaluations des facteurs relatifs à la vie privée</h2>
+    <p>Une ÉFVP est réalisée avant tout projet de système d'information touchant des renseignements personnels, et avant toute communication de renseignements à l'extérieur du Québec (art. 3.3 et 17).</p>
+    <p>La dernière ÉFVP a été réalisée le 20 octobre 2026. Elle couvre :</p>
+    <ul>
+      <li>le passage de l'hébergement Apple iCloud à Supabase (données hébergées à Montréal);</li>
+      <li>l'application iPhone et iPad;</li>
+      <li>les notifications;</li>
+      <li>l'ouverture aux agents de la paix.</li>
+    </ul>
+    <p>Elle conclut à une protection adéquate et à des risques résiduels faibles. Elle est mise à jour à chaque changement important : nouveau fournisseur, nouvelle catégorie de renseignements ou nouvelle finalité.</p>
+  </section>
+
+  <section>
+    <h2>8. Protection dès la conception et par défaut</h2>
+    <ul>
+      <li>Paramètres les plus protecteurs par défaut :
+        <ul>
+          <li>notifications, photo, position GPS et 2ᵉ calendrier désactivés tant que la personne ne les active pas;</li>
+          <li>événements, notes et repères toujours privés;</li>
+          <li>seul le partage de la rotation au poste est activé, et il peut être désactivé.</li>
+        </ul>
+      </li>
+      <li>Règles d'accès appliquées par la base de données, séparation par corps de police et approbation humaine de chaque compte.</li>
+      <li>Aucun outil d'analyse, de mesure ou de publicité, dans le site comme dans l'app.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>9. Formation et révision</h2>
+    <p>Le responsable se tient informé des exigences légales, notamment par les publications de la Commission d'accès à l'information et du Commissariat à la protection de la vie privée du Canada. Les présentes pratiques sont révisées au moins une fois par année, et à chaque changement important.</p>
+  </section>
+
+  <a class="retour" href="politique.html">‹ Politique de confidentialité</a>
+  <a class="retour" href="./">Retour à Police Management</a>
+</main>
+</body>
+</html>

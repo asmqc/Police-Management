@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610192216">
+  <link rel="stylesheet" href="styles.css?v=202610192222">
 </head>
 <body>
   <!-- Chargement -->
@@ -60,7 +60,7 @@
           </div>
           <ul class="site-garanties">
             <li>Données hébergées au Canada</li>
-            <li>Conforme à la Loi 25</li>
+            <li>Conçu selon la Loi 25</li>
             <li>Aucune publicité, aucun profilage</li>
           </ul>
         </div>
@@ -133,7 +133,7 @@
           <article><b>Accès vérifié</b><p>Chaque demande d'accès est examinée par l'administrateur avant l'ouverture du compte. Le courriel doit être confirmé pour la carte et les lois.</p></article>
           <article><b>Hébergé au Canada</b><p>Les comptes et les horaires sont hébergés à Montréal (région ca-central-1), chiffrés en transit et au repos.</p></article>
           <article><b>Corps de police séparés</b><p>Chaque corps ne voit que son forum, ses idées et ses annonces. Le partage d'horaire entre corps se fait seulement si vous le choisissez.</p></article>
-          <article><b>Conforme à la Loi 25</b><p>Consentement explicite conservé comme preuve, droits d'accès, de rectification et de suppression, aucune vente de données.</p></article>
+          <article><b>Conçu selon la Loi 25</b><p>Consentement explicite conservé comme preuve, droits d'accès, de rectification, de suppression et de portabilité, aucune vente de données. <a href="politique.html">Politique</a> · <a href="gouvernance.html">Gouvernance</a></p></article>
         </div>
         <ul class="site-jamais">
           <li><span>Publicité</span><b>Aucune</b></li>
@@ -177,7 +177,7 @@
       <div><img src="assets/logo.png" alt="" width="28" height="28"><span>Police <b>Management</b></span></div>
       <nav aria-label="Liens utiles">
         <a href="politique.html">Politique de confidentialité</a>
-        <a href="confidentialite.html">Confidentialité de l'app iPhone</a>
+        <a href="gouvernance.html">Gouvernance des renseignements personnels</a>
         <button type="button" class="lien" data-site-auth="connexion">Se connecter</button>
       </nav>
       <p>Outil indépendant de référence. Police Management n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. Les textes officiels prévalent.</p>
@@ -267,7 +267,7 @@
         <input id="dm-courriel" type="email" autocomplete="email" required>
         <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>
         <input id="dm-mdp" type="password" autocomplete="new-password" minlength="10" required>
-        <label class="consentement" for="dm-consent"><input type="checkbox" id="dm-consent"> <span>J'ai lu et j'accepte la <a href="politique.html" target="_blank" rel="noopener">politique de confidentialité</a>. Je comprends que je ne dois inscrire aucune information confidentielle ni aucune donnée sur des citoyens.</span></label>
+        <label class="consentement" for="dm-consent"><input type="checkbox" id="dm-consent"> <span>J'ai lu et j'accepte la <a href="politique.html" target="_blank" rel="noopener">politique de confidentialité</a>. Je confirme avoir 18 ans ou plus et je comprends que je ne dois inscrire aucune information confidentielle ni aucune donnée sur des citoyens.</span></label>
         <button type="submit" class="btn-principal">Envoyer la demande</button>
       </form>
 
@@ -635,6 +635,7 @@
         <a class="rg-lien" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener"><span>Discord de soutien</span><small>Entraide entre membres</small><i>↗</i></a>
         <a class="rg-lien" href="mailto:police.management@hotmail.com"><span>Courriel du soutien</span><small>police.management@hotmail.com</small><i>↗</i></a>
         <a class="rg-lien" href="politique.html" target="_blank" rel="noopener"><span>Politique de confidentialité</span><small>Loi 25 · vos droits · <span id="rg-consentement"></span></small><i>↗</i></a>
+        <a class="rg-lien" href="gouvernance.html" target="_blank" rel="noopener"><span>Gouvernance des renseignements personnels</span><small>Conservation · plaintes · incidents</small><i>↗</i></a>
       </div>
       </div>
 
@@ -1186,9 +1187,11 @@
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec. Avant de continuer, prenez connaissance de la politique : quels renseignements sont recueillis, où ils sont hébergés (au Canada) et qui peut les voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.20) pour couvrir l'app iPhone et iPad et les agents de la paix. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
+        <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
+        <li>Votre position GPS reste sur votre appareil : elle n'est ni enregistrée ni transmise.</li>
         <li>Vos événements, notes, repères et 2ᵉ calendrier restent privés.</li>
         <li>Vous pouvez supprimer votre compte et toutes vos données en tout temps.</li>
       </ul>
@@ -1288,9 +1291,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610192216"></script>
+  <script src="config.js?v=202610192222"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610192216"></script>
+  <script src="app.js?v=202610192222"></script>
 </body>
 </html>
