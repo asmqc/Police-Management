@@ -1079,3 +1079,44 @@ select { appearance: none; -webkit-appearance: none; padding-right: 38px;
 #carte.mode-repere { cursor: crosshair; }
 .form-repere { display: grid; gap: 8px; }
 .form-repere .btn-principal { margin: 0; }
+
+/* =====================================================================
+   Horaire avancé : catégories, conjoint·e, heures, temps supp., statistiques, échanges
+   ===================================================================== */
+.q-O { --q: #4DB6AC; --qt: #0B2B28; }
+.q-H { --q: #BA68C8; --qt: #fff; }
+.q-L { --q: #8D6E63; --qt: #fff; }
+.hr-cible { grid-template-columns: 1fr 1fr; }
+.hr-hybride { margin: 6px 0 2px; }
+.hr-jour-heures { display: grid; gap: 6px; }
+.hr-jour-heures .fc-ligne { flex-wrap: nowrap; }
+.hr-jour-heures input { flex: 1; min-width: 0; font-family: var(--f-mono); }
+.hr-ts { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
+.hr-ts > summary { cursor: pointer; font-weight: 700; }
+.hr-ts .aide { margin: 6px 0 8px; font-size: .84rem; }
+.ts-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ts-grille label { display: grid; gap: 2px; font-size: .78rem; font-weight: 600; color: var(--fg-doux); }
+.ts-grille input { padding: 8px 10px; background-color: var(--surface); }
+.ts-grille label:last-child { grid-column: 1 / -1; }
+.ag-offrir { justify-self: start; margin-top: -4px; padding: 2px 4px; font-size: .9rem; }
+.stats-mode { grid-template-columns: 1fr 1fr; }
+.stats-totaux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stats-totaux > div { background: color-mix(in srgb, var(--marque) 10%, var(--surface)); border-radius: 16px; padding: 14px; display: grid; gap: 2px; }
+.stats-totaux > div.ts { background: color-mix(in srgb, #EF6C00 12%, var(--surface)); }
+.stats-totaux small { font-weight: 600; color: var(--fg-doux); }
+.stats-totaux b { font: 700 1.8rem/1.1 var(--f-titre); color: var(--marque); }
+.stats-totaux .ts b { color: #EF6C00; }
+.stats-totaux span { font-size: .8rem; color: var(--fg-doux); }
+.stats-cats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.stats-cats span { border-radius: 12px; padding: 10px 12px; display: grid; gap: 1px; font-size: .84rem; background: color-mix(in srgb, var(--q) 24%, var(--surface)); color: var(--fg); }
+.stats-table td, .stats-table th { text-align: right; font-family: var(--f-texte); }
+.stats-table td:first-child, .stats-table th:first-child { text-align: left; text-transform: capitalize; }
+.stats-table tfoot td { font-weight: 700; border-top: 2px solid var(--ligne); }
+.offre-choix { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.offre-choix button { border: 2px solid transparent; border-radius: 12px; padding: 10px; text-align: left; display: grid; gap: 2px; font-size: .86rem; }
+.offre-choix button[aria-pressed="true"] { border-color: var(--fg); box-shadow: 0 0 0 2px var(--surface) inset; }
+#offre-voile .btn-principal { margin: 0; }
+.rg-ligne { padding: 0; min-height: 0; }
+.rg-ligne select { max-width: 46%; }
+#rg-conjoint-nom { margin-top: -4px; }
+.hr-plier summary .badge-ligne { display: inline-grid; vertical-align: 2px; margin-left: 6px; }

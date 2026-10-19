@@ -98,6 +98,30 @@ Deno.serve(async (req) => {
       return Response.json({ envoye: n });
     }
 
+    if (e.type === "echange_offre") {
+      // Un collègue offre un quart : avis aux membres approuvés du même poste
+      const { data: o } = await admin.from("profiles").select("nom_complet, grade, unite, corps_police").eq("id", e.offreur).maybeSingle();
+      if (!o?.unite) return Response.json({ envoye: 0 });
+      const { data: poste } = await admin.from("profiles").select("id, unite, corps_police").eq("statut", "approuve").neq("id", e.offreur);
+      const norm = (t: string | null) => (t ?? "").trim().toLowerCase();
+      const ids = (poste ?? []).filter((p) => norm(p.unite) === norm(o.unite) && norm(p.corps_police) === norm(o.corps_police)).map((p) => p.id);
+      const jour = new Date(e.jour + "T12:00:00Z").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+      const quart = ({ J: "Jour", S: "Soir", N: "Nuit", X: "Temps supplémentaire" } as Record<string, string>)[e.code] ?? e.code;
+      const n = await envoyer(ids, {
+        titre: "Quart offert au poste",
+        corps: `${[o.grade, o.nom_complet].filter(Boolean).join(" ")} offre son quart : ${quart}, ${jour}${e.debut ? ` (${e.debut}–${e.fin})` : ""}`,
+        url: "#horaire",
+        tag: `echange-${e.id}`,
+      });
+      return Response.json({ envoye: n });
+    }
+
+    if (e.type === "echange_pris") {
+      const jour = new Date(e.jour + "T12:00:00Z").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+      const n = await envoyer([e.destinataire], { titre: "Votre quart a été pris", corps: `${e.preneur} prend votre quart du ${jour}. Votre horaire est à jour.`, url: "#horaire", tag: `echange-${e.id}` });
+      return Response.json({ envoye: n });
+    }
+
     if (e.type === "approbation") {
       const n = await envoyer([e.id], { titre: "Accès approuvé", corps: "Votre accès à Police Management est ouvert.", url: "#accueil", tag: "approbation" });
       return Response.json({ envoye: n });

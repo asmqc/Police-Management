@@ -19,7 +19,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610191203">
+  <link rel="stylesheet" href="styles.css?v=202610191214">
 </head>
 <body>
   <!-- Chargement -->
@@ -403,6 +403,17 @@
         </div>
       </div>
 
+      <h3 class="intertitre">Horaire</h3>
+      <div class="panneau">
+        <label class="ev-ligne rg-ligne" for="rg-rappel-quart"><span class="interrupteur-txt"><b>Rappel avant mes quarts</b><small>Notification avant le début de chaque quart (jour, soir, nuit, temps supplémentaire).</small></span>
+          <select id="rg-rappel-quart">
+            <option value="">Aucun</option><option value="15">15 min avant</option><option value="30">30 min avant</option><option value="45">45 min avant</option>
+            <option value="60">1 h avant</option><option value="90">1 h 30 avant</option><option value="120">2 h avant</option>
+          </select></label>
+        <label class="interrupteur" for="rg-conjoint"><span class="interrupteur-txt"><b>Deuxième calendrier (conjoint·e)</b><small>Ajoute la rotation de votre conjoint·e dans Horaire. Jamais partagé avec personne.</small></span><input type="checkbox" id="rg-conjoint" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <input id="rg-conjoint-nom" maxlength="40" placeholder="Nom affiché (ex. Marie)" hidden>
+      </div>
+
       <h3 class="intertitre">Confidentialité</h3>
       <div class="panneau">
         <label class="interrupteur" for="rg-partage-poste">
@@ -471,10 +482,14 @@
         <label for="hr-qui" class="ref">Afficher</label>
         <select id="hr-qui"><option value="">Mon horaire</option></select>
       </div>
+      <div class="segmente hr-cible" id="hr-cible" role="radiogroup" aria-label="Calendrier affiché" hidden>
+        <button type="button" role="radio" data-cible="moi" aria-checked="true">Mon horaire</button>
+        <button type="button" role="radio" data-cible="conjoint" aria-checked="false" id="hr-cible-conj">Conjoint·e</button>
+      </div>
       <p id="hr-lecture-vide" class="vide" hidden>Ce collègue n'a pas encore configuré sa rotation.</p>
 
       <div id="hr-vide" class="panneau" hidden>
-        <p class="aide">Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.</p>
+        <p class="aide" id="hr-vide-aide">Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.</p>
         <button class="btn-principal" id="hr-commencer">Configurer ma rotation</button>
       </div>
 
@@ -517,6 +532,8 @@
         <p class="aide" id="hr-astuce">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
         <div class="hr-actions hr-mes-actions">
           <button class="btn-secondaire petit" id="hr-config">Modifier ma rotation</button>
+          <button class="btn-secondaire petit" id="hr-stats">Statistiques d'heures</button>
+          <button class="btn-secondaire petit hr-moi-seul" id="hr-offrir">Offrir un quart</button>
           <button class="btn-secondaire petit" id="hr-ics">Exporter (.ics)</button>
         </div>
       </div>
@@ -542,6 +559,18 @@
         <div class="panneau"><ul class="liste-partages" id="hr-partages-recus"></ul></div>
       </div>
       </details>
+      <details id="hr-echanges" class="hr-plier" hidden>
+        <summary><span><b>Échanges de quarts <span class="badge-ligne" id="hr-echanges-nb" hidden></span></b><small>Offrir un quart à votre poste ou prendre celui d'un collègue</small></span></summary>
+        <div class="hr-plier-corps">
+          <p class="aide">La première personne qui prend un quart l'obtient. Les deux horaires se mettent à jour automatiquement et l'offreur est avisé.</p>
+          <h3 class="intertitre">Offerts à mon poste</h3>
+          <ul class="liste-partages" id="ech-offerts"></ul>
+          <h3 class="intertitre">Mes offres</h3>
+          <ul class="liste-partages" id="ech-miens"></ul>
+          <button type="button" class="btn-secondaire petit" id="ech-offrir">Offrir un de mes quarts</button>
+        </div>
+      </details>
+
       <form id="hr-form" class="panneau formulaire" novalidate hidden>
         <h3 class="intertitre" style="margin:0">Ma rotation</h3>
         <label for="hr-modele">Modèle de départ</label>
@@ -555,10 +584,12 @@
           <option value="5-2">5 jours / 2 congés (semaine)</option>
           <option value="JSN">Jour, soir, nuit (5-2 en rotation sur 3 semaines)</option>
           <option value="perso">Personnalisé</option>
+          <optgroup label="Modèles de l'administration" id="hr-modeles-admin" hidden></optgroup>
         </select>
         <label for="hr-debut">Premier jour du cycle</label>
         <input id="hr-debut" type="date" required>
         <p class="aide">C'est la date où commence la case n° 1 ci-dessous.</p>
+        <label class="interrupteur hr-hybride" for="hr-hybride"><span class="interrupteur-txt"><b>Horaire hybride autoroutier</b><small>Heures automatiques : quarts de 9 h en semaine, de 12 h la fin de semaine.</small></span><input type="checkbox" id="hr-hybride" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
 
         <label>Cycle (<span id="hr-longueur">0</span> jours) — touchez une case pour changer le quart</label>
         <div class="hr-cycle" id="hr-cycle"></div>
@@ -567,7 +598,7 @@
           <button type="button" class="btn-secondaire petit" id="hr-retrait-jour">− Retirer le dernier</button>
         </div>
 
-        <label>Heures des quarts</label>
+        <label id="hr-heures-titre">Heures des quarts</label>
         <div class="hr-heures" id="hr-heures"></div>
 
         <button type="submit" class="btn-principal">Enregistrer ma rotation</button>
@@ -755,6 +786,16 @@
       </div>
       <div id="admin-liste" class="admin-liste"></div>
 
+      <h3 class="intertitre">Modèles d'horaire</h3>
+      <div class="panneau">
+        <p class="aide">Les modèles publiés ici apparaissent dans « Modèle de départ » quand un policier configure sa rotation. Pour en créer un, configurez la rotation dans votre propre Horaire, puis publiez-la ici.</p>
+        <ul class="liste-partages" id="adm-modeles"></ul>
+        <form class="fc-ligne" id="adm-modele-form" novalidate>
+          <input id="adm-modele-nom" maxlength="80" placeholder="Nom du modèle (ex. Poste MRC — 4-4 jour/nuit)">
+          <button class="btn-ok" type="submit">Publier ma rotation</button>
+        </form>
+      </div>
+
       <h3 class="intertitre">Corps de police</h3>
       <p class="aide">La liste est dans le fichier <span class="ref">data/corps_police.json</span> sur GitHub. Elle sert au formulaire d'inscription, à la carte et à l'onglet Territoires. Écrivez le nom officiel de chaque municipalité. Les changements apparaissent dans l'app environ une minute après l'enregistrement sur GitHub.</p>
       <a class="btn-secondaire" id="lien-edition-corps" href="#" target="_blank" rel="noopener">Modifier la liste sur GitHub</a>
@@ -786,10 +827,42 @@
       <div class="hr-choix hr-edition" id="hr-jour-choix"></div>
       <label class="ref hr-edition" for="hr-jour-note">Note (facultatif)</label>
       <input id="hr-jour-note" class="hr-edition" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
+      <div class="hr-edition hr-jour-heures" id="hr-jour-heures">
+        <label class="ref" for="hr-jour-debut">Heures (facultatif)</label>
+        <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
+      </div>
+      <details class="hr-edition hr-ts" id="hr-jour-ts">
+        <summary>Détails de temps supplémentaire</summary>
+        <p class="aide">Champs facultatifs repris de la feuille de temps supplémentaire (SQ). Ils servent au rapport mensuel.</p>
+        <div class="ts-grille" id="hr-ts-champs"></div>
+      </details>
       <div class="fc-ligne hr-edition">
         <button class="btn-principal" id="hr-jour-ok" style="margin:0">Enregistrer</button>
         <button class="btn-secondaire" id="hr-jour-retirer">Revenir à la rotation</button>
       </div>
+      <button type="button" class="lien hr-edition" id="hr-jour-offrir" hidden>Offrir ce quart à mon poste</button>
+    </section>
+  </div>
+
+  <div id="stats-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="stats-titre">
+      <button class="btn-icone fermer" id="stats-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="stats-titre">Statistiques d'heures</h3>
+      <div class="segmente stats-mode" role="radiogroup"><button type="button" role="radio" data-stats="mois" aria-checked="true">Mois</button><button type="button" role="radio" data-stats="annee" aria-checked="false">Année</button></div>
+      <div class="hr-mois-tete"><button class="btn-icone" id="stats-prec" aria-label="Précédent">‹</button><h3 id="stats-periode"></h3><button class="btn-icone" id="stats-suiv" aria-label="Suivant">›</button></div>
+      <div id="stats-contenu"></div>
+      <button type="button" class="btn-secondaire" id="stats-rapport">Rapport de temps supplémentaire (PDF)</button>
+    </section>
+  </div>
+
+  <div id="offre-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="offre-titre">
+      <button class="btn-icone fermer" id="offre-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="offre-titre">Offrir un quart à mon poste</h3>
+      <p class="aide">Choisissez un quart des 14 prochains jours. Vos collègues du poste reçoivent un avis.</p>
+      <div class="offre-choix" id="offre-choix"></div>
+      <input id="offre-note" maxlength="200" placeholder="Note (facultatif), ex. échange contre un jour de fin de semaine">
+      <button type="button" class="btn-principal" id="offre-ok">Offrir ce quart</button>
     </section>
   </div>
 
@@ -850,9 +923,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610191203"></script>
+  <script src="config.js?v=202610191214"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610191203"></script>
+  <script src="app.js?v=202610191214"></script>
 </body>
 </html>

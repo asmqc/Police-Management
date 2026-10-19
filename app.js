@@ -418,7 +418,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); majReglagePartage(); }
+    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); majReglagePartage(); majReglagesHoraire(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
   }
   // Menu de la photo de profil
@@ -456,6 +456,7 @@
   const QUARTS = {
     J: { nom: "Jour" }, S: { nom: "Soir" }, N: { nom: "Nuit" }, C: { nom: "Congé" },
     V: { nom: "Vacances" }, M: { nom: "Maladie" }, F: { nom: "Formation" }, T: { nom: "Cour" }, X: { nom: "Temps supp." },
+    O: { nom: "Obligation familiale" }, H: { nom: "Férié" }, L: { nom: "Maladie longue durée" },
   };
   const QUARTS_CYCLE = ["J", "S", "N", "C"];
   const HEURES_DEFAUT = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
@@ -468,8 +469,10 @@
   const isoDe = (n) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
   const aujourdhuiISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
   // hr.config / hr.exceptions = mon horaire ; hr.vue = horaire d'un collègue affiché en lecture seule
-  const hr = { config: null, exceptions: {}, mois: null, brouillon: null, jourChoisi: null, vue: null, partages: [] };
-  const affichee = () => hr.vue || hr;
+  const hr = { config: null, exceptions: {}, mois: null, brouillon: null, jourChoisi: null, vue: null, partages: [], conj: null, cible: "moi" };
+  // hr.conj = 2e calendrier (conjoint·e), privé ; hr.cible = calendrier en cours d'édition
+  const cibleEdition = () => (hr.cible === "conjoint" && hr.conj ? hr.conj : hr);
+  const affichee = () => hr.vue || cibleEdition();
 
   function quartDu(iso, src = affichee()) {
     const e = (src.exceptions || {})[iso];
@@ -481,15 +484,34 @@
     }
     return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e };
   }
-  const heuresDe = (code, src = affichee()) => { const h = (src.config && src.config.heures && src.config.heures[code]) || HEURES_DEFAUT[code]; return h ? `${h[0]} – ${h[1]}` : ""; };
+  // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
+  function heuresJour(code, iso, src = affichee()) {
+    const e = iso && (src.exceptions || {})[iso];
+    if (e && e.debut && e.fin) return [e.debut, e.fin];
+    if (!["J", "S", "N"].includes(code)) return null;
+    const c = src.config || {};
+    if (c.hybride && iso) {
+      const fds = [0, 6].includes(new Date(iso + "T12:00").getDay());
+      return { J: fds ? ["06:30", "18:30"] : ["06:30", "15:30"], N: fds ? ["18:30", "06:30"] : ["22:30", "07:30"], S: ["14:30", "23:30"] }[code];
+    }
+    return (c.heures && c.heures[code]) || HEURES_DEFAUT[code];
+  }
+  const heuresDe = (code, src = affichee(), iso = null) => { const h = heuresJour(code, iso, src); return h ? `${h[0]} – ${h[1]}` : ""; };
+  const dureeH = (h) => { if (!h) return 0; const [a, b] = h.map((t) => { const [x, y] = t.split(":").map(Number); return x * 60 + y; }); let d = b - a; if (d <= 0) d += 1440; return d / 60; };
+  function chargerDonneesHoraire(data) {
+    hr.config = data && data.config && data.config.cycle ? data.config : null;
+    hr.exceptions = (data && data.exceptions) || {};
+    const c = data && data.conjoint;
+    hr.conj = c ? { nom: c.nom || "Conjoint·e", config: c.config && c.config.cycle ? c.config : null, exceptions: c.exceptions || {} } : null;
+    if (!hr.conj) hr.cible = "moi";
+    hr.chargé = true;
+  }
 
   async function chargerMonHoraire() {
     if (hr.chargé) return;
-    const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", etat.profil.id).maybeSingle();
+    const { data, error } = await sb.from("horaires").select("config, exceptions, conjoint").eq("user_id", etat.profil.id).maybeSingle();
     if (error) throw error;
-    hr.config = data && data.config && data.config.cycle ? data.config : null;
-    hr.exceptions = (data && data.exceptions) || {};
-    hr.chargé = true;
+    chargerDonneesHoraire(data);
   }
 
   /* ---------------- Messagerie (BÊTA) : conversations entre l'administrateur et chaque policier ---------------- */
@@ -844,9 +866,9 @@
       } else {
         const auj = aujourdhuiISO(), q = quartDu(auj, hr);
         const demain = quartDu(isoDe(jourUTC(auj) + 1), hr);
-        const travail = ["J", "S", "N"].includes(q.code);
+        const travail = !!heuresJour(q.code, auj, hr);
         carte.innerHTML = `<span class="pastille-q q q-${esc(q.code || "C")}">${esc(q.code || "–")}</span>
-          <span><small>Aujourd'hui</small><strong>${esc(q.code ? QUARTS[q.code].nom : "—")}${travail && heuresDe(q.code, hr) ? ` <span class="heures">${esc(heuresDe(q.code, hr))}</span>` : ""}</strong>
+          <span><small>Aujourd'hui</small><strong>${esc(q.code ? QUARTS[q.code].nom : "—")}${travail ? ` <span class="heures">${esc(heuresDe(q.code, hr, auj))}</span>` : ""}</strong>
           <em>Demain : ${esc(demain.code ? QUARTS[demain.code].nom : "—")}${q.note ? " · " + esc(q.note) : ""}</em></span>`;
       }
     } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
@@ -874,15 +896,14 @@
 
   async function initHoraire() {
     if (!hr.chargé) {
-      const { data, error } = await sb.from("horaires").select("config, exceptions").eq("user_id", etat.profil.id).maybeSingle();
+      const { data, error } = await sb.from("horaires").select("config, exceptions, conjoint").eq("user_id", etat.profil.id).maybeSingle();
       if (error) return toast(traduireErreur(error));
-      hr.config = data && data.config && data.config.cycle ? data.config : null;
-      hr.exceptions = (data && data.exceptions) || {};
-      hr.chargé = true;
+      chargerDonneesHoraire(data);
     }
     await chargerEvenements();
     rendreHoraire();
     chargerPartages();
+    chargerEchanges();
   }
 
   /* Partage de l'horaire */
@@ -917,7 +938,8 @@
       (duPoste.length ? `<optgroup label="Mon poste">${duPoste.map((x) => `<option value="${x.id}">${esc(x.nom)}</option>`).join("")}</optgroup>` : "") +
       (autres.length ? `<optgroup label="Partagés avec moi">${autres.map((x) => `<option value="${x.id}">${esc(x.nom || x.email)}</option>`).join("")}</optgroup>` : "");
     sel.value = hr.vue ? hr.vue.id : "";
-    $("#hr-qui-bloc").hidden = !(duPoste.length || autres.length);
+    hr.quiVisible = !!(duPoste.length || autres.length);
+    $("#hr-qui-bloc").hidden = !hr.quiVisible || hr.cible === "conjoint";
     $$("[data-retirer]").forEach((b) => b.addEventListener("click", () => retirerPartage(etat.profil.id, b.dataset.retirer, "Partage retiré")));
     $$("[data-quitter]").forEach((b) => b.addEventListener("click", () => retirerPartage(b.dataset.quitter, etat.profil.id, "Vous ne recevez plus cet horaire")));
     $$("[data-voir]").forEach((b) => b.addEventListener("click", () => { $("#hr-qui").value = b.dataset.voir; afficherHoraireDe(b.dataset.voir); window.scrollTo(0, 0); $("#vue-horaire").scrollTo(0, 0); }));
@@ -955,32 +977,42 @@
   });
 
   async function sauverHoraire() {
-    const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, maj_le: new Date().toISOString() });
+    const conjoint = hr.conj ? { nom: hr.conj.nom, config: hr.conj.config || null, exceptions: hr.conj.exceptions || {} } : null;
+    const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, conjoint, maj_le: new Date().toISOString() });
     if (error) throw error;
   }
 
   function rendreHoraire() {
     const src = affichee();
     const lecture = !!hr.vue;
+    const conj = !lecture && hr.cible === "conjoint" && !!hr.conj;
     if (lecture) $("#hr-form").hidden = true;
     const enConfig = !$("#hr-form").hidden;
-    $("#hr-titre").textContent = lecture ? `Horaire de ${hr.vue.nom}` : "Mon horaire";
-    $("#hr-vide").hidden = lecture || !!hr.config || enConfig;
+    $("#hr-titre").textContent = lecture ? `Horaire de ${hr.vue.nom}` : conj ? `Horaire de ${hr.conj.nom}` : "Mon horaire";
+    $("#hr-cible").hidden = lecture || !hr.conj;
+    $$("[data-cible]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cible === (conj ? "conjoint" : "moi"))));
+    if (hr.conj) $("#hr-cible-conj").textContent = hr.conj.nom;
+    $("#hr-qui-bloc").hidden = conj || !hr.quiVisible;
+    $("#hr-echanges").hidden = lecture || conj || enConfig;
+    $$(".hr-moi-seul").forEach((el) => (el.hidden = conj));
+    $("#hr-vide-aide").textContent = conj ? `Entrez la rotation de ${hr.conj.nom} une seule fois : vous verrez ses quarts à côté des vôtres. Ce calendrier reste privé.` : "Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.";
+    $("#hr-commencer").textContent = conj ? `Configurer la rotation de ${hr.conj.nom}` : "Configurer ma rotation";
+    $("#hr-vide").hidden = lecture || !!affichee().config || enConfig;
     $("#hr-principal").hidden = !src.config || enConfig;
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
-    $("#hr-partage").hidden = lecture || enConfig;
+    $("#hr-partage").hidden = lecture || conj || enConfig;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
     $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour voir son agenda ou noter une exception. Glissez pour changer de période.";
     if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
-    $("#hr-resume").textContent = `${lecture ? "Rotation seulement · " : ""}Cycle de ${src.config.cycle.length} jours`;
+    $("#hr-resume").textContent = `${lecture ? "Rotation seulement · " : conj ? "Calendrier 2 · privé · " : ""}Cycle de ${src.config.cycle.length} jours${src.config.hybride ? " · hybride" : ""}`;
     const auj = aujourdhuiISO();
     // Aujourd'hui
     const q = quartDu(auj);
-    const travail = ["J", "S", "N", "X", "T", "F"].includes(q.code);
+    const travail = !!heuresJour(q.code, auj);
     $("#hr-aujourdhui").innerHTML = `
       <span class="pastille-q q q-${esc(q.code || "C")}">${esc(q.code || "–")}</span>
       <small>Aujourd'hui · ${esc(new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</small>
-      <div><strong>${esc(QUARTS[q.code] ? QUARTS[q.code].nom : "—")}</strong> ${travail && heuresDe(q.code) ? `<span class="heures">${esc(heuresDe(q.code))}</span>` : ""}</div>
+      <div><strong>${esc(QUARTS[q.code] ? QUARTS[q.code].nom : "—")}</strong> ${travail ? `<span class="heures">${esc(heuresDe(q.code, undefined, auj))}</span>` : ""}</div>
       ${q.note ? `<span class="note">${esc(q.note)}</span>` : ""}`;
     // 7 prochains jours
     const n0 = jourUTC(auj);
@@ -1011,7 +1043,7 @@
   const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   const heureCourte = (d) => `${d.getHours()} h${d.getMinutes() ? " " + String(d.getMinutes()).padStart(2, "0") : ""}`; // 17 h, 9 h 30
   const lundiDe = (iso) => ajoutJours(iso, -((minuit(iso).getDay() + 6) % 7));
-  const avecEvenements = () => !hr.vue; // les événements restent privés : jamais affichés pour un collègue
+  const avecEvenements = () => !hr.vue && hr.cible !== "conjoint"; // événements privés : jamais affichés pour un collègue ni dans le calendrier du conjoint
 
   async function chargerEvenements(forcer = false) {
     if (cal.chargé && !forcer) return;
@@ -1102,13 +1134,14 @@
 
   function rendreAgenda(iso) {
     const lecture = !!hr.vue, qq = quartDu(iso), occs = occDuJour(iso);
-    const travail = ["J", "S", "N"].includes(qq.code);
+    const travail = !!heuresJour(qq.code, iso);
+    const peutOffrir = !lecture && hr.cible !== "conjoint" && ["J", "S", "N", "X"].includes(qq.code) && iso >= aujourdhuiISO();
     $("#cal-agenda").innerHTML = `
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code))}</span>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
-        ${lecture ? "" : `<i>Modifier</i>`}</button>` : ""}
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
         <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
       ${!occs.length && avecEvenements() ? `<p class="aide">Aucun événement.</p>` : ""}
@@ -1142,8 +1175,8 @@
         // Quart du jour, et la fin d'un quart de nuit commencé la veille
         for (const [jourQ, decal] of [[iso, 0], [ajoutJours(iso, -1), -1]]) {
           const qq = quartDu(jourQ);
-          if (!["J", "S", "N"].includes(qq.code)) continue;
-          const h = (affichee().config.heures || HEURES_DEFAUT)[qq.code] || HEURES_DEFAUT[qq.code];
+          const h = heuresJour(qq.code, jourQ);
+          if (!h) continue;
           const [h0, m0] = h[0].split(":").map(Number), [h1, m1] = h[1].split(":").map(Number);
           let a = h0 * 60 + m0, b = h1 * 60 + m1;
           if (b <= a) b += 1440;
@@ -1223,6 +1256,7 @@
     $$("[data-ev]", racine).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); if (!hr.vue) editerEvenement(cal.evs.find((x) => x.id === b.dataset.ev)); }));
     $$("[data-ajout]", racine).forEach((b) => b.addEventListener("click", () => editerEvenement(null, { iso: b.dataset.ajout })));
     $$("[data-quart]", racine).forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); ouvrirJour(b.dataset.quart); }));
+    $$("[data-offrir]", racine).forEach((b) => b.addEventListener("click", () => ouvrirOffre(b.dataset.offrir)));
     $$("[data-allerjour]", racine).forEach((b) => b.addEventListener("click", () => { cal.date = cal.sel = b.dataset.allerjour; changerVue("jour"); }));
   }
 
@@ -1380,10 +1414,231 @@
     } catch { return false; }
   }
 
+
+  /* ---------------- Calendrier du conjoint·e (2e calendrier, privé) ---------------- */
+  $$("[data-cible]").forEach((b) => b.addEventListener("click", () => {
+    hr.cible = b.dataset.cible === "conjoint" && hr.conj ? "conjoint" : "moi";
+    hr.vue = null; $("#hr-qui").value = ""; $("#hr-form").hidden = true;
+    rendreHoraire();
+  }));
+
+  /* ---------------- Statistiques d'heures et rapport de temps supplémentaire ---------------- */
+  const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth() };
+  const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
+  function calculerMois(a, m, src) {
+    const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [] };
+    const n = new Date(a, m + 1, 0).getDate();
+    for (let j = 1; j <= n; j++) {
+      const iso = `${a}-${String(m + 1).padStart(2, "0")}-${String(j).padStart(2, "0")}`;
+      const q = quartDu(iso, src);
+      if (!q.code) continue;
+      r.jours[q.code] = (r.jours[q.code] || 0) + 1;
+      if (!["J", "S", "N", "X"].includes(q.code)) continue;
+      const h = heuresJour(q.code, iso, src), d = dureeH(h);
+      r.travailles++; r.heures += d;
+      if (q.code === "X") { r.ts += d; r.lignesTS.push({ iso, h, d, note: q.note, ts: ((src.exceptions || {})[iso] || {}).ts || {} }); }
+    }
+    for (const [iso, e] of Object.entries(src.exceptions || {})) { // formations avec détails, pour le rapport
+      if (e.type === "F" && e.ts && iso.startsWith(`${a}-${String(m + 1).padStart(2, "0")}`)) r.lignesTS.push({ iso, h: e.debut ? [e.debut, e.fin] : null, d: e.debut ? dureeH([e.debut, e.fin]) : 0, note: e.note, ts: e.ts, formation: true });
+    }
+    r.lignesTS.sort((x, y) => x.iso.localeCompare(y.iso));
+    return r;
+  }
+  function rendreStats() {
+    const src = affichee();
+    $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
+    $("#stats-rapport").hidden = stats.mode !== "mois";
+    if (!src.config) { $("#stats-contenu").innerHTML = `<p class="vide">Configurez d'abord la rotation.</p>`; return; }
+    if (stats.mode === "mois") {
+      $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+      const r = calculerMois(stats.a, stats.m, src);
+      $("#stats-contenu").innerHTML = `
+        <div class="stats-totaux">
+          <div><small>Heures travaillées</small><b>${fmtH(r.heures)}</b><span>${r.travailles} jour${r.travailles > 1 ? "s" : ""} de quart</span></div>
+          <div class="ts"><small>Temps supplémentaire</small><b>${fmtH(r.ts)}</b><span>Total du mois</span></div>
+        </div>
+        <div class="stats-cats">${Object.entries(r.jours).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="q q-${esc(k)}"><b>${esc(QUARTS[k] ? QUARTS[k].nom : k)}</b>${n} jour${n > 1 ? "s" : ""}</span>`).join("")}</div>`;
+    } else {
+      $("#stats-periode").textContent = `Année ${stats.a}`;
+      let tH = 0, tTS = 0, tJ = 0;
+      const lignes = Array.from({ length: 12 }, (_, m) => {
+        const r = calculerMois(stats.a, m, src); tH += r.heures; tTS += r.ts; tJ += r.travailles;
+        return `<tr><td>${esc(new Date(stats.a, m, 15).toLocaleDateString("fr-CA", { month: "long" }))}</td><td>${r.travailles}</td><td>${fmtH(r.heures)}</td><td>${r.ts ? fmtH(r.ts) : "—"}</td></tr>`;
+      }).join("");
+      $("#stats-contenu").innerHTML = `<div class="table-defile"><table class="table-vitesse stats-table"><thead><tr><th>Mois</th><th>Jours</th><th>Heures</th><th>Temps supp.</th></tr></thead>
+        <tbody>${lignes}</tbody><tfoot><tr><td>Total</td><td>${tJ}</td><td>${fmtH(tH)}</td><td>${fmtH(tTS)}</td></tr></tfoot></table></div>`;
+    }
+  }
+  $("#hr-stats").addEventListener("click", () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); rendreStats(); $("#stats-voile").hidden = false; });
+  $("#stats-fermer").addEventListener("click", () => ($("#stats-voile").hidden = true));
+  $("#stats-voile").addEventListener("click", (e) => { if (e.target.id === "stats-voile") e.target.hidden = true; });
+  $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
+  $("#stats-prec").addEventListener("click", () => { if (stats.mode === "annee") stats.a--; else if (stats.m === 0) { stats.m = 11; stats.a--; } else stats.m--; rendreStats(); });
+  $("#stats-suiv").addEventListener("click", () => { if (stats.mode === "annee") stats.a++; else if (stats.m === 11) { stats.m = 0; stats.a++; } else stats.m++; rendreStats(); });
+  $("#stats-rapport").addEventListener("click", () => {
+    const src = affichee(), r = calculerMois(stats.a, stats.m, src), p = etat.profil;
+    const mois = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const det = (ts) => CHAMPS_TS.filter(([k]) => ts[k]).map(([k, l]) => `<b>${esc(l)} :</b> ${esc(ts[k])}`).join("<br>");
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Temps supplémentaire — ${esc(mois)}</title>
+      <style>body{font:13px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#111;margin:28px}h1{font-size:20px;margin:0 0 4px}p{margin:0 0 14px;color:#444}
+      table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee}tfoot td{font-weight:700}
+      .imprimer{margin:16px 0;padding:10px 16px;font-weight:700;border:0;border-radius:8px;background:#F2B33D;cursor:pointer}@media print{.imprimer{display:none}body{margin:12mm}}</style></head><body>
+      <h1>Rapport de temps supplémentaire — ${esc(mois)}</h1>
+      <p>${esc([p.grade, p.nom_complet].filter(Boolean).join(" "))}${p.matricule ? " · Matricule " + esc(p.matricule) : ""}${p.unite ? " · " + esc(p.unite) : ""}${p.corps_police ? " · " + esc(p.corps_police) : ""}</p>
+      <button class="imprimer" onclick="print()">Imprimer ou enregistrer en PDF</button>
+      ${r.lignesTS.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Heures</th><th>Durée</th><th>Détails</th><th>Note</th></tr></thead><tbody>
+      ${r.lignesTS.map((l) => `<tr><td>${esc(new Date(l.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</td><td>${l.formation ? "Formation" : "Temps supp."}</td><td>${l.h ? esc(l.h[0] + " – " + l.h[1]) : "—"}</td><td>${l.d ? fmtH(l.d) : "—"}</td><td>${det(l.ts) || "—"}</td><td>${esc(l.note || "")}</td></tr>`).join("")}
+      </tbody><tfoot><tr><td colspan="3">Total du temps supplémentaire</td><td>${fmtH(r.ts)}</td><td colspan="2"></td></tr></tfoot></table>` : "<p>Aucun temps supplémentaire ce mois-ci.</p>"}
+      <p style="margin-top:18px;font-size:11px">Généré par Police Management le ${esc(new Date().toLocaleString("fr-CA"))}. Document de travail : la feuille officielle de votre organisation prévaut.</p></body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    const w = window.open(url, "_blank");
+    if (!w) { const a = document.createElement("a"); a.href = url; a.download = `temps-supplementaire-${stats.a}-${String(stats.m + 1).padStart(2, "0")}.html`; document.body.appendChild(a); a.click(); a.remove(); }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  });
+
+  /* ---------------- Échanges de quarts au poste ---------------- */
+  let echanges = [];
+  async function chargerEchanges() {
+    if (hr.vue || !etat.profil) return;
+    const { data, error } = await sb.rpc("liste_echanges");
+    if (error) return;
+    echanges = data || [];
+    const moi = etat.profil.id, auj = aujourdhuiISO();
+    const offerts = echanges.filter((e) => e.offreur !== moi && e.statut === "offert" && e.jour >= auj);
+    const miens = echanges.filter((e) => e.offreur === moi || e.preneur === moi);
+    const libelle = (e) => `${QUARTS[e.code] ? QUARTS[e.code].nom : e.code} · ${new Date(e.jour + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" })}${e.debut ? ` · ${e.debut}–${e.fin}` : ""}`;
+    $("#hr-echanges-nb").textContent = offerts.length || ""; $("#hr-echanges-nb").hidden = !offerts.length;
+    $("#ech-offerts").innerHTML = !etat.profil.unite ? `<li class="vide-petit">Indiquez votre unité ou votre poste dans Mon compte pour échanger des quarts.</li>`
+      : offerts.length ? offerts.map((e) => `<li><span><b>${esc(libelle(e))}</b><small>Offert par ${esc(e.offreur_nom)}${e.note ? " · " + esc(e.note) : ""}</small></span>
+        <button class="btn-ok petit" data-prendre="${e.id}">Prendre</button></li>`).join("")
+      : `<li class="vide-petit">Aucun quart offert à votre poste pour le moment.</li>`;
+    $("#ech-miens").innerHTML = miens.length ? miens.map((e) => `<li><span><b>${esc(libelle(e))}</b><small>${
+      e.offreur !== moi ? `Pris de ${esc(e.offreur_nom)} ✅` : e.statut === "pris" ? `Pris par ${esc(e.preneur_nom)} ✅` : "En attente d'un preneur"}</small></span>
+      ${e.offreur === moi && e.statut === "offert" ? `<button class="btn-danger petit" data-retirer-offre="${e.id}">Retirer</button>` : ""}</li>`).join("")
+      : `<li class="vide-petit">Vous n'avez offert ni pris aucun quart.</li>`;
+    $$("[data-prendre]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      b.disabled = true;
+      const { error } = await sb.rpc("prendre_quart", { p_id: b.dataset.prendre });
+      if (error) { toast(traduireErreur(error)); chargerEchanges(); return; }
+      toast("Quart pris : il est ajouté à votre horaire");
+      hr.chargé = false; await initHoraire();
+    }));
+    $$("[data-retirer-offre]").forEach((b) => b.addEventListener("click", async () => {
+      const { error } = await sb.from("echanges_quarts").update({ statut: "annule" }).eq("id", b.dataset.retirerOffre);
+      if (error) return toast(traduireErreur(error));
+      toast("Offre retirée"); chargerEchanges();
+    }));
+  }
+  let offreJour = null;
+  function ouvrirOffre(isoChoisi) {
+    if (!etat.profil.unite) return toast("Indiquez votre unité ou votre poste dans Mon compte pour offrir un quart");
+    const auj = aujourdhuiISO(), deja = new Set(echanges.filter((e) => e.offreur === etat.profil.id && e.statut !== "annule").map((e) => e.jour));
+    const choix = Array.from({ length: 14 }, (_, i) => ajoutJours(auj, i))
+      .map((iso) => ({ iso, q: quartDu(iso, hr) }))
+      .filter((x) => ["J", "S", "N", "X"].includes(x.q.code) && !deja.has(x.iso));
+    if (isoChoisi && !choix.some((x) => x.iso === isoChoisi)) return toast(deja.has(isoChoisi) ? "Ce quart est déjà offert" : "Seuls les quarts des 14 prochains jours peuvent être offerts");
+    offreJour = isoChoisi || (choix[0] && choix[0].iso) || null;
+    $("#offre-choix").innerHTML = choix.length ? choix.map((x) => `<button type="button" class="q q-${esc(x.q.code)}" data-offre-jour="${x.iso}" aria-pressed="${x.iso === offreJour}">
+      <b>${esc(new Date(x.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</b>
+      <span>${esc(QUARTS[x.q.code].nom)}${heuresJour(x.q.code, x.iso, hr) ? " · " + esc(heuresDe(x.q.code, hr, x.iso)) : ""}</span></button>`).join("")
+      : `<p class="vide">Aucun quart à offrir dans les 14 prochains jours.</p>`;
+    $$("[data-offre-jour]").forEach((b) => b.addEventListener("click", () => { offreJour = b.dataset.offreJour; $$("[data-offre-jour]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); }));
+    $("#offre-ok").hidden = !choix.length;
+    $("#offre-note").value = "";
+    $("#offre-voile").hidden = false;
+  }
+  $("#hr-offrir").addEventListener("click", () => ouvrirOffre());
+  $("#ech-offrir").addEventListener("click", () => ouvrirOffre());
+  $("#offre-fermer").addEventListener("click", () => ($("#offre-voile").hidden = true));
+  $("#offre-voile").addEventListener("click", (e) => { if (e.target.id === "offre-voile") e.target.hidden = true; });
+  $("#offre-ok").addEventListener("click", async () => {
+    if (!offreJour) return toast("Choisissez un quart");
+    const q = quartDu(offreJour, hr), h = heuresJour(q.code, offreJour, hr);
+    const btn = $("#offre-ok"); btn.disabled = true;
+    const { error } = await sb.from("echanges_quarts").insert({ jour: offreJour, code: q.code, debut: h ? h[0] : null, fin: h ? h[1] : null, note: $("#offre-note").value.trim() || null });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    $("#offre-voile").hidden = true;
+    $("#hr-echanges").open = true;
+    toast("Quart offert : vos collègues du poste sont avisés");
+    chargerEchanges();
+  });
+
+  /* ---------------- Réglages de l'horaire : rappel avant les quarts, 2e calendrier ---------------- */
+  function majReglagesHoraire() {
+    $("#rg-rappel-quart").value = etat.profil && etat.profil.rappel_quart_min ? String(etat.profil.rappel_quart_min) : "";
+    chargerMonHoraire().then(() => {
+      $("#rg-conjoint").checked = !!hr.conj;
+      $("#rg-conjoint-nom").hidden = !hr.conj;
+      $("#rg-conjoint-nom").value = hr.conj ? hr.conj.nom : "";
+    }).catch(() => {});
+  }
+  $("#rg-rappel-quart").addEventListener("change", async (e) => {
+    const v = e.target.value ? Number(e.target.value) : null;
+    const { error } = await sb.rpc("regler_rappel_quart", { p_min: v });
+    if (error) { toast(traduireErreur(error)); return majReglagesHoraire(); }
+    etat.profil.rappel_quart_min = v;
+    toast(v ? `Rappel ${e.target.selectedOptions[0].textContent.toLowerCase()} chaque quart` : "Rappel des quarts désactivé");
+    if (v && !(await verifierAbonnementSilencieux())) setTimeout(() => toast("Activez aussi les notifications ci-dessus pour recevoir les rappels"), 2600);
+  });
+  $("#rg-conjoint").addEventListener("change", async (e) => {
+    await chargerMonHoraire();
+    if (e.target.checked) {
+      hr.conj = hr.conj || { nom: "Conjoint·e", config: null, exceptions: {} };
+    } else {
+      if (hr.conj && hr.conj.config && !confirm(`Supprimer le calendrier de ${hr.conj.nom} ? Sa rotation et ses exceptions seront effacées.`)) { e.target.checked = true; return; }
+      hr.conj = null; hr.cible = "moi";
+    }
+    try { await sauverHoraire(); } catch (err) { toast(traduireErreur(err)); }
+    majReglagesHoraire();
+    toast(e.target.checked ? "Deuxième calendrier ajouté dans Horaire" : "Deuxième calendrier retiré");
+  });
+  $("#rg-conjoint-nom").addEventListener("change", async (e) => {
+    if (!hr.conj) return;
+    hr.conj.nom = e.target.value.trim() || "Conjoint·e";
+    try { await sauverHoraire(); toast("Nom enregistré"); } catch (err) { toast(traduireErreur(err)); }
+  });
+
+  /* ---------------- Administration : modèles d'horaire ---------------- */
+  async function rendreModelesAdmin() {
+    if (!estAdmin()) return;
+    const liste = await chargerModelesAdmin();
+    $("#adm-modeles").innerHTML = liste.length ? liste.map((m) => `<li><span><b>${esc(m.nom)}</b><small>Cycle de ${m.cycle.length} jours${m.hybride ? " · hybride" : ""} · ${esc(m.cycle.join(""))}</small></span>
+      <button class="btn-danger petit" data-suppr-modele="${m.id}">Retirer</button></li>`).join("") : `<li class="vide-petit">Aucun modèle publié.</li>`;
+    $$("[data-suppr-modele]").forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error } = await sb.from("modeles_rotation").delete().eq("id", b.dataset.supprModele);
+      if (error) return toast(traduireErreur(error));
+      toast("Modèle retiré"); rendreModelesAdmin();
+    }));
+  }
+  $("#adm-modele-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nom = $("#adm-modele-nom").value.trim();
+    if (!nom) return $("#adm-modele-nom").focus();
+    await chargerMonHoraire();
+    if (!hr.config) return toast("Configurez d'abord votre propre rotation dans Horaire, puis publiez-la ici");
+    const { error } = await sb.from("modeles_rotation").insert({ nom, cycle: hr.config.cycle, heures: hr.config.heures || null, hybride: !!hr.config.hybride });
+    if (error) return toast(traduireErreur(error));
+    $("#adm-modele-nom").value = ""; toast("Modèle publié pour tous"); rendreModelesAdmin();
+  });
+
   // Configuration de la rotation
+  let modelesAdmin = [];
+  async function chargerModelesAdmin() {
+    const { data } = await sb.from("modeles_rotation").select("*").order("nom");
+    modelesAdmin = data || [];
+    const g = $("#hr-modeles-admin");
+    g.innerHTML = modelesAdmin.map((m) => `<option value="m:${m.id}">${esc(m.nom)}</option>`).join("");
+    g.hidden = !modelesAdmin.length;
+    return modelesAdmin;
+  }
   function ouvrirConfig() {
-    const c = hr.config;
-    hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) } };
+    const c = cibleEdition().config;
+    hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) }, hybride: !!(c && c.hybride) };
+    $("#hr-hybride").checked = hr.brouillon.hybride;
+    chargerModelesAdmin().then(() => { if (c && c.modele && String(c.modele).startsWith("m:")) $("#hr-modele").value = c.modele; });
     $("#hr-modele").value = c ? (c.modele || "perso") : "4-4J";
     $("#hr-debut").value = hr.brouillon.debut;
     $("#hr-form").hidden = false;
@@ -1404,9 +1659,19 @@
       <input type="time" data-h="${k}" data-pos="0" value="${esc(b.heures[k][0])}" aria-label="${QUARTS[k].nom} : début">
       <input type="time" data-h="${k}" data-pos="1" value="${esc(b.heures[k][1])}" aria-label="${QUARTS[k].nom} : fin"></div>`).join("");
     $$("#hr-heures input").forEach((inp) => inp.addEventListener("change", () => { b.heures[inp.dataset.h][+inp.dataset.pos] = inp.value; }));
+    $("#hr-heures").hidden = $("#hr-heures-titre").hidden = !!b.hybride;
   }
+  $("#hr-hybride").addEventListener("change", (e) => { hr.brouillon.hybride = e.target.checked; rendreBrouillon(); });
   $("#hr-modele").addEventListener("change", (e) => {
     if (MODELES[e.target.value]) { hr.brouillon.cycle = MODELES[e.target.value].split(""); rendreBrouillon(); }
+    const m = e.target.value.startsWith("m:") && modelesAdmin.find((x) => "m:" + x.id === e.target.value);
+    if (m) {
+      hr.brouillon.cycle = [...m.cycle];
+      if (m.heures) hr.brouillon.heures = { ...HEURES_DEFAUT, ...m.heures };
+      hr.brouillon.hybride = !!m.hybride; $("#hr-hybride").checked = hr.brouillon.hybride;
+      rendreBrouillon();
+      toast(`Modèle « ${m.nom} » appliqué : choisissez le premier jour du cycle`);
+    }
   });
   $("#hr-ajout-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length < 84) { hr.brouillon.cycle.push("C"); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
   $("#hr-retrait-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length > 1) { hr.brouillon.cycle.pop(); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
@@ -1417,14 +1682,15 @@
     ev.preventDefault();
     const debut = $("#hr-debut").value;
     if (!debut) { $("#hr-debut").focus(); return toast("Choisissez le premier jour du cycle"); }
-    const ancien = hr.config;
-    hr.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso" };
+    const cible = cibleEdition();
+    const ancien = cible.config;
+    cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride };
     try {
       await sauverHoraire();
       $("#hr-form").hidden = true;
       rendreHoraire();
       toast("Rotation enregistrée");
-    } catch (e) { hr.config = ancien; toast(traduireErreur(e)); }
+    } catch (e) { cible.config = ancien; toast(traduireErreur(e)); }
   });
 
   // Exceptions sur une journée
@@ -1436,7 +1702,7 @@
     $("#hr-jour-lecture").hidden = !lecture;
     if (lecture) {
       $("#hr-jour-lecture").innerHTML = `<span class="chip-grand q q-${esc(q.code || "C")}">${esc(q.code ? QUARTS[q.code].nom : "—")}</span>
-        ${["J", "S", "N"].includes(q.code) ? `<span class="ref">${esc(heuresDe(q.code))}</span>` : ""}
+        ${heuresJour(q.code, iso) ? `<span class="ref">${esc(heuresDe(q.code, undefined, iso))}</span>` : ""}
         ${q.note ? `<p>${esc(q.note)}</p>` : ""}`;
     }
     $("#hr-jour-titre").textContent = new Date(iso + "T12:00:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -1444,28 +1710,52 @@
     $("#hr-jour-choix").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<button type="button" class="q q-${k}" data-q="${k}" aria-pressed="${String(q.code === k)}">${k} · ${esc(v.nom)}</button>`).join("");
     $$("#hr-jour-choix button").forEach((b) => b.addEventListener("click", () => $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)))));
     $("#hr-jour-note").value = q.note || "";
+    const ex = (cibleEdition().exceptions || {})[iso] || {};
+    $("#hr-jour-debut").value = ex.debut || ""; $("#hr-jour-fin").value = ex.fin || "";
+    $$("#hr-ts-champs input").forEach((i) => (i.value = (ex.ts && ex.ts[i.dataset.ts]) || ""));
+    $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
     $("#hr-jour-retirer").hidden = !q.exception;
+    $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
+    majChampsJour();
     $("#hr-voile").hidden = false;
   }
+  const CHAMPS_TS = [["codeGain", "Code gain"], ["gain", "Gain"], ["activite", "Activité"], ["nature", "Nature"], ["projet", "Projet"], ["psa", "PSA"], ["noDossier", "No dossier / No cours"],
+    ["fonctionRemplacee", "Fonction remplacée"], ["uoImpute", "UO imputée"], ["nbreRepas", "Nbre de repas"], ["tempsRepas", "Temps de repas (hh:mm)"], ["demandePar", "Demandé par"], ["remarque", "Remarque"]];
+  $("#hr-ts-champs").innerHTML = CHAMPS_TS.map(([k, l]) => `<label><span>${esc(l)}</span><input data-ts="${k}" maxlength="120" autocomplete="off"></label>`).join("");
+  const typeChoisi = () => { const b = $("#hr-jour-choix button[aria-pressed='true']"); return b ? b.dataset.q : quartDu(hr.jourChoisi, cibleEdition()).prevu; };
+  function majChampsJour() {
+    const t = typeChoisi();
+    $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T"].includes(t);
+    $("#hr-jour-ts").hidden = !!hr.vue || !["X", "F"].includes(t);
+    const h = heuresJour(t, null, cibleEdition());
+    $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
+  }
+  $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
+  $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   const fermerJour = () => ($("#hr-voile").hidden = true);
   $("#hr-jour-fermer").addEventListener("click", fermerJour);
   $("#hr-voile").addEventListener("click", (e) => { if (e.target.id === "hr-voile") fermerJour(); });
   $("#hr-jour-ok").addEventListener("click", async () => {
-    const iso = hr.jourChoisi;
-    const choix = ($("#hr-jour-choix button[aria-pressed='true']") || {}).dataset;
-    const type = choix ? choix.q : quartDu(iso, hr).prevu;
+    const iso = hr.jourChoisi, cible = cibleEdition();
+    cible.exceptions = cible.exceptions || {};
+    const type = typeChoisi();
     const note = $("#hr-jour-note").value.trim();
-    const avant = hr.exceptions[iso];
-    if (type === quartDu(iso, hr).prevu && !note) delete hr.exceptions[iso];
-    else hr.exceptions[iso] = { type, note };
+    const avecHeures = !$("#hr-jour-heures").hidden;
+    const debut = avecHeures ? $("#hr-jour-debut").value : "", fin = avecHeures ? $("#hr-jour-fin").value : "";
+    if ((debut && !fin) || (!debut && fin)) return toast("Indiquez l'heure de début et de fin");
+    const ts = {};
+    if (!$("#hr-jour-ts").hidden) $$("#hr-ts-champs input").forEach((i) => { if (i.value.trim()) ts[i.dataset.ts] = i.value.trim(); });
+    const avant = cible.exceptions[iso];
+    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length) delete cible.exceptions[iso];
+    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}) };
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
-    catch (e) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; toast(traduireErreur(e)); }
+    catch (e) { if (avant) cible.exceptions[iso] = avant; else delete cible.exceptions[iso]; toast(traduireErreur(e)); }
   });
   $("#hr-jour-retirer").addEventListener("click", async () => {
-    const iso = hr.jourChoisi, avant = hr.exceptions[iso];
-    delete hr.exceptions[iso];
+    const iso = hr.jourChoisi, cible = cibleEdition(), avant = cible.exceptions[iso];
+    delete cible.exceptions[iso];
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Retour à la rotation"); }
-    catch (e) { hr.exceptions[iso] = avant; toast(traduireErreur(e)); }
+    catch (e) { cible.exceptions[iso] = avant; toast(traduireErreur(e)); }
   });
 
   // Export vers le calendrier du téléphone (.ics), 6 mois à partir d'aujourd'hui
@@ -1479,9 +1769,9 @@
       if (!q.code || q.code === "C") continue;
       const date = iso.replace(/-/g, "");
       const titre = (QUARTS[q.code] ? QUARTS[q.code].nom : q.code) + (q.note ? " — " + q.note : "");
-      const h = (hr.config.heures || HEURES_DEFAUT)[q.code];
+      const h = heuresJour(q.code, iso, hr);
       lignes.push("BEGIN:VEVENT", `UID:${date}-${q.code}@police-management`, `DTSTAMP:${maintenant}`);
-      if (h && ["J", "S", "N"].includes(q.code)) {
+      if (h) {
         const fin = h[1] <= h[0] ? isoDe(n0 + i + 1).replace(/-/g, "") : date; // quart de nuit : se termine le lendemain
         lignes.push(`DTSTART:${date}T${h[0].replace(":", "")}00`, `DTEND:${fin}T${h[1].replace(":", "")}00`);
       } else {
@@ -2638,6 +2928,7 @@
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
+    rendreModelesAdmin();
   }
 
   async function decider(btn, id, statut) {
