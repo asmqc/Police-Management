@@ -3,6 +3,9 @@
   "use strict";
 
   const C = window.PE_CONFIG;
+  // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
+  const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
+  if (estAppIOS) document.documentElement.classList.add("app-ios");
   const sb = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
@@ -97,7 +100,7 @@
     if (etat.forcerAuth) { montrer("#ecran-auth"); return; }
     if (h === "connexion" || h === "demande") { montrer("#ecran-auth"); ongletAuth(h); return; }
     // App installée sur l'écran d'accueil : directement à la connexion
-    if (window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) { montrer("#ecran-auth"); ongletAuth("connexion"); return; }
+    if (estAppIOS || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) { montrer("#ecran-auth"); ongletAuth("connexion"); return; }
     montrer("#ecran-site");
   }
   function ouvrirAuth(onglet) {
@@ -920,7 +923,7 @@
   /* ---------------- Notifications (Web Push) ---------------- */
   const pushPossible = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   const estIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-  const estInstallee = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const estInstallee = () => estAppIOS || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   function cleVapid() {
     const b = C.vapidPublic.replace(/-/g, "+").replace(/_/g, "/");
     const brut = atob(b + "=".repeat((4 - (b.length % 4)) % 4));
@@ -942,7 +945,10 @@
   async function majBlocsNotif() {
     const blocs = $$("[data-notif]");
     let etatTxt, libelle, actif = false, desactive = false;
-    if (!pushPossible()) {
+    if (estAppIOS) {
+      etatTxt = "Les notifications ne sont pas encore offertes dans l'app iPhone et iPad. Pour les recevoir, utilisez le site ajouté à l'écran d'accueil.";
+      libelle = "Bientôt"; desactive = true;
+    } else if (!pushPossible()) {
       if (estIOS() && !estInstallee()) { etatTxt = "Sur iPhone, ajoutez d'abord l'app à l'écran d'accueil (tuile App de l'accueil), puis ouvrez-la à partir de son icône."; libelle = "Comment faire"; }
       else { etatTxt = "Ce navigateur ne permet pas les notifications."; libelle = "Non offert"; desactive = true; }
     } else if (Notification.permission === "denied") {
