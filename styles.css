@@ -1506,3 +1506,9 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .cv-texte { white-space: pre-line; font-size: .95rem; margin: 6px 0 8px; }
 .cv-pdf { font-size: .85rem; }
 .cv-claude .btn-secondaire { flex-basis: 100%; }
+.cv-reponse-claude { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, #D97757 9%, var(--surface)); border: 1px solid color-mix(in srgb, #D97757 35%, var(--ligne)); line-height: 1.5; }
+.cv-reponse-claude p { margin: 0 0 8px; }
+.cv-reponse-claude ul, .cv-reponse-claude ol { margin: 4px 0 10px; padding-left: 22px; display: grid; gap: 4px; }
+.cv-claude-tete { display: flex; align-items: center; gap: 8px; color: #B65A3C; }
+.cv-claude-err { margin: 10px 0 0; color: #C62F3A; font-size: .92rem; }
+.cv-btn-claude:disabled { opacity: .75; }

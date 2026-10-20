@@ -600,7 +600,7 @@
     if (cv.lecture === k) return arreterLecture();
     speechSynthesis.cancel();
     const m = cv.fil[k];
-    const u = new SpeechSynthesisUtterance(texteALire(m.extraits || []));
+    const u = new SpeechSynthesisUtterance(m.claude ? m.claude.replace(/\*\*/g, "").replace(/^\s*[-•*]\s+/gm, "") : texteALire(m.extraits || []));
     u.lang = "fr-CA";
     const v = voixFrancaise(); if (v) u.voice = v;
     u.rate = 1;
@@ -629,6 +629,43 @@
     }
     return tete + liste + (extraits.length ? corps : "");
   }
+  // Mise en forme légère des réponses de Claude : gras, listes, paragraphes (le texte est d'abord échappé)
+  function mdSimple(t) {
+    const lignes = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
+    let html = "", liste = null;
+    for (const l of lignes) {
+      const m = l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
+      if (m) { if (!liste) { liste = /^\s*\d/.test(l) ? "ol" : "ul"; html += `<${liste}>`; } html += `<li>${m[1]}</li>`; continue; }
+      if (liste) { html += `</${liste}>`; liste = null; }
+      if (l.trim()) html += `<p>${l.replace(/^#+\s*/, "")}</p>`;
+    }
+    if (liste) html += `</${liste}>`;
+    return html;
+  }
+  // Claude répond directement dans Police Management (fonction ia-convention, clé API de Police Management)
+  async function demanderClaude(k) {
+    const m = cv.fil[k];
+    if (!m || m.claudeEnCours) return;
+    reveillerVoix();
+    m.claudeEnCours = true; m.claudeErreur = null; m.claudeLien = false;
+    rendreConvention();
+    const historique = [];
+    cv.fil.slice(0, k).forEach((x) => { if (x.role === "resultat" && x.claude) historique.push({ role: "user", contenu: x.question }, { role: "assistant", contenu: x.claude }); });
+    const { data, error } = await sb.functions.invoke("ia-convention", { body: { question: m.question, historique: historique.slice(-6) } });
+    m.claudeEnCours = false;
+    if (error || !data || data.erreur) {
+      let j = data || null;
+      try { if (error && error.context) j = await error.context.json(); } catch { /* message par défaut */ }
+      m.claudeErreur = (j && j.erreur) || "Claude n'a pas pu répondre. Réessayez plus tard.";
+      m.claudeLien = !!(j && (j.code === "non_active" || j.code === "limite"));
+    } else {
+      m.claude = data.reponse;
+      if (data.restantes != null) toast(`${data.restantes} question${data.restantes > 1 ? "s" : ""} à Claude restante${data.restantes > 1 ? "s" : ""} aujourd'hui`);
+    }
+    sauverFilCv();
+    rendreConvention();
+    if (m.claude && cv.vocalClaude) lire(k);
+  }
   const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
   const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
   const ICONE_HP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
@@ -642,9 +679,9 @@
       const ex = m.extraits || [];
       return `<article class="panneau cv-r">
         ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
-          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
-          <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
-        <p class="aide">Claude explique la clause avec votre propre compte Claude (gratuit ou payant). Vérifiez toujours la clause citée.</p>
+          ${m.claude ? "" : `<button type="button" class="btn-principal cv-btn-claude" data-cv-claude="${k}" ${m.claudeEnCours ? "disabled" : ""}>${ICONE_CLAUDE}${m.claudeEnCours ? "Claude réfléchit…" : "Demander à Claude"}</button>`}</div>
+        ${m.claude ? `<section class="cv-reponse-claude"><p class="cv-claude-tete">${ICONE_CLAUDE}<b>Réponse de Claude</b></p>${mdSimple(m.claude)}<p class="aide">Générée par IA à partir des clauses du contrat : vérifiez toujours la clause citée.</p></section>` : ""}
+        ${m.claudeErreur ? `<p class="cv-claude-err">${esc(m.claudeErreur)}${m.claudeLien ? ` <a href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">Ouvrir dans Claude ↗</a>` : ""}</p>` : ""}
         <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
         <p class="cv-texte">${esc(ex[0].texte)}</p>
         <a class="cv-pdf" href="${PDF_CONVENTION}#page=${(ex[0].page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>
@@ -655,12 +692,7 @@
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
     $$("[data-cv-lire]", el).forEach((b) => b.addEventListener("click", () => lire(Number(b.dataset.cvLire))));
-    $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
-      const m = cv.fil[Number(b.dataset.cvCopier)];
-      try { await navigator.clipboard.writeText(promptClaude(m.question, m.extraits || [], false)); toast("Copié. Collez-le dans Claude."); }
-      catch { toast("Copie impossible sur cet appareil. Utilisez « Demander à Claude »."); return; }
-      setTimeout(() => window.open("https://claude.ai/new", "_blank", "noopener"), 700);
-    }));
+    $$("[data-cv-claude]", el).forEach((b) => b.addEventListener("click", () => demanderClaude(Number(b.dataset.cvClaude))));
     majBoutonsLecture();
     const dernier = el.lastElementChild;
     if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });
