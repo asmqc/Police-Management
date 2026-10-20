@@ -505,19 +505,11 @@
     const p = etat.profil;
     $("#rg-consentement").textContent = p && p.consentement_le ? `acceptée le ${new Date(p.consentement_le).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}` : "à accepter";
   }
+  // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
     { date: "2026-10-20", titre: "Favoris et photos de profil", points: [
       "Lois : touchez « Ajouter aux favoris » sur un article, puis retrouvez-les dans l'onglet ★ Favoris, toutes lois confondues, sur tous vos appareils.",
       "Votre photo de profil s'affiche maintenant à côté de votre nom : forum, idées, échanges de quarts, collègues du poste et messagerie."] },
-    { date: "2026-10-19", titre: "Fonctionnalités de l'app iPhone", points: [
-      "Lois : véhicules hors route, transport rémunéré, assurance automobile et sécurité nautique (fédéral).",
-      "Carte : autres postes de police (municipaux, GRC…), repères personnels et district judiciaire.",
-      "Horaire : échanges de quarts au poste, 2ᵉ calendrier (conjoint·e), temps supplémentaire détaillé, statistiques et rapport PDF, rappel avant les quarts, modèles d'horaire, horaire hybride.",
-      "Communauté : forum de votre corps de police, idées avec votes, sondages et annonces.",
-      "Styles d'interface : Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police."] },
-    { date: "2026-10-18", titre: "Calendrier façon Apple", points: [
-      "Vues Jour, Semaine, Mois et Liste, événements privés avec répétitions et rappels.",
-      "Design modernisé, confirmation du courriel, partage de la rotation au poste."] },
   ];
   function ouvrirNouveautes() {
     $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
