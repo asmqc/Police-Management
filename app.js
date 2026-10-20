@@ -569,28 +569,55 @@
     toast("Message d'avertissement publié pour tous");
   });
 
-  /* ---------------- Convention collective : recherche + « Demander à Claude » (membres de la Sûreté du Québec) ----------------
-     Police Management trouve les clauses du contrat de travail APPQ, puis ouvre Claude (app ou claude.ai) avec la question
-     et les clauses : le policier obtient la réponse avec SON propre compte Claude. Rien n'est envoyé à Anthropic par l'app. */
+  /* ---------------- Convention collective : question à voix haute, clause lue par la voix de l'appareil (membres de la Sûreté du Québec) ----------------
+     Police Management trouve les clauses du contrat de travail APPQ, puis les lit à voix haute (synthèse vocale de l'appareil, comme Siri).
+     La dictée utilise la reconnaissance vocale du navigateur quand elle existe, sinon le micro du clavier. */
   const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || /s[ûu]ret[ée] du qu[ée]bec/i.test(etat.profil.corps_police || ""));
   const PDF_CONVENTION = "https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf";
-  const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention2") || "[]"); } catch { return []; } })(), enCours: false };
-  const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention2", JSON.stringify(cv.fil.slice(-10))); } catch { /* facultatif */ } };
+  const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention3") || "[]"); } catch { return []; } })(), enCours: false, lecture: null, vocal: false };
+  const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention3", JSON.stringify(cv.fil.slice(-10))); } catch { /* facultatif */ } };
   const nomClause = (e) => (/^Annexe/.test(e.article || "") ? e.article : "clause " + (e.article || "?")) + (e.page ? `, p. ${e.page}` : "");
-  // Texte envoyé à Claude. « court » : pour le lien claude.ai/new?q= (longueur limitée); sinon : extraits complets à coller.
-  function promptClaude(question, extraits, court) {
-    const tete = `Je suis policier ou policière à la Sûreté du Québec. Réponds à ma question en te basant sur le Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}\nCite les clauses et les pages. Si les extraits ne suffisent pas, dis-le et indique quoi vérifier. Ce n'est pas un avis juridique.\n\nQuestion : ${question}\n\n`;
-    const liste = extraits.length ? `Clauses trouvées : ${extraits.map(nomClause).join(" ; ")}\n\n` : "";
-    let corps = "Extraits du contrat :\n";
-    for (const e of extraits) {
-      const brut = (e.texte || "").replace(/\s+/g, " ").trim();
-      const bloc = `\n[${nomClause(e)}] ${court ? brut.slice(0, 600) + (brut.length > 600 ? "…" : "") : brut}\n`;
-      if (court && encodeURIComponent(tete + liste + corps + bloc).length > 3600) break;
-      corps += bloc;
-    }
-    return tete + liste + (extraits.length ? corps : "");
+  const voixPossible = () => "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
+  const Reconnaissance = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  // Texte à lire : la clause la plus pertinente, nettoyée pour l'oreille (« un (1) an » → « un an »)
+  function texteALire(extraits) {
+    if (!extraits.length) return "Je n'ai trouvé aucune clause pour cette question. Essayez avec d'autres mots.";
+    const e = extraits[0];
+    let t = (e.texte || "").replace(/\s+/g, " ").replace(/\s\(\d+(?:[.,]\d+)?\)/g, "").replace(/^\d{1,2}\.\d{2}\s*/, "").trim();
+    if (t.length > 650) { const coupe = t.slice(0, 650); const fin = Math.max(coupe.lastIndexOf(". "), coupe.lastIndexOf("; ")); t = (fin > 250 ? coupe.slice(0, fin + 1) : coupe) + " …"; }
+    const lieu = /^Annexe/.test(e.article || "") ? e.article : "la clause " + (e.article || "");
+    const autres = extraits.slice(1, 4).map((x) => (/^Annexe/.test(x.article || "") ? x.article : x.article)).filter(Boolean);
+    return `Selon ${lieu} du contrat de travail${e.page ? ", page " + e.page : ""}. ${t}${autres.length ? ` Voir aussi : ${autres.join(", ")}.` : ""}`;
   }
-  const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
+  function voixFrancaise() {
+    const v = speechSynthesis.getVoices();
+    return v.find((x) => /^fr[-_]CA/i.test(x.lang)) || v.find((x) => /^fr/i.test(x.lang)) || null;
+  }
+  function arreterLecture() { if (voixPossible()) speechSynthesis.cancel(); cv.lecture = null; majBoutonsLecture(); }
+  function lire(k) {
+    if (!voixPossible()) return toast("La lecture à voix haute n'est pas offerte sur cet appareil.");
+    if (cv.lecture === k) return arreterLecture();
+    speechSynthesis.cancel();
+    const m = cv.fil[k];
+    const u = new SpeechSynthesisUtterance(texteALire(m.extraits || []));
+    u.lang = "fr-CA";
+    const v = voixFrancaise(); if (v) u.voice = v;
+    u.rate = 1;
+    u.onend = u.onerror = () => { if (cv.lecture === k) { cv.lecture = null; majBoutonsLecture(); } };
+    cv.lecture = k;
+    speechSynthesis.speak(u);
+    majBoutonsLecture();
+  }
+  function majBoutonsLecture() {
+    $$("[data-cv-lire]").forEach((b) => {
+      const actif = cv.lecture === Number(b.dataset.cvLire);
+      b.innerHTML = actif ? `${ICONE_STOP}Arrêter` : `${ICONE_HP}Écouter la réponse`;
+      b.classList.toggle("actif", actif);
+    });
+  }
+  const ICONE_HP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+  const ICONE_STOP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>`;
 
   function rendreConvention() {
     const el = $("#cv-fil");
@@ -599,44 +626,41 @@
       if (m.erreur) return `<article class="panneau cv-r cv-erreur"><p>${esc(m.erreur)}</p></article>`;
       const ex = m.extraits || [];
       return `<article class="panneau cv-r">
-        <div class="cv-claude">
-          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
-          <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button>
-        </div>
-        <p class="aide">Claude répond avec votre propre compte (gratuit ou payant). Vérifiez toujours la clause citée.</p>
-        ${ex.length ? `<p class="cv-titre-ex"><b>${ex.length} clause${ex.length > 1 ? "s" : ""} trouvée${ex.length > 1 ? "s" : ""}</b></p>` + ex.map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : `<p>Aucune clause trouvée avec ces mots. Claude pourra quand même chercher dans le PDF officiel.</p>`}
+        ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button></div>
+        <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
+        <p class="cv-texte">${esc(ex[0].texte)}</p>
+        <a class="cv-pdf" href="${PDF_CONVENTION}#page=${(ex[0].page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>
+        ${ex.length > 1 ? `<p class="cv-titre-ex"><b>Autres clauses</b></p>` + ex.slice(1).map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : ""}`
+        : `<p>Aucune clause trouvée avec ces mots. Essayez avec d'autres mots, par exemple « vacances », « temps supplémentaire » ou « prime de nuit ».</p>`}
       </article>`;
     }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
-    $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
-      const m = cv.fil[Number(b.dataset.cvCopier)];
-      const texte = promptClaude(m.question, m.extraits || [], false);
-      try { await navigator.clipboard.writeText(texte); toast("Copié. Collez-le dans Claude."); }
-      catch { toast("Copie impossible sur cet appareil. Utilisez « Demander à Claude »."); return; }
-      setTimeout(() => window.open("https://claude.ai/new", "_blank", "noopener"), 700);
-    }));
+    $$("[data-cv-lire]", el).forEach((b) => b.addEventListener("click", () => lire(Number(b.dataset.cvLire))));
+    majBoutonsLecture();
     const dernier = el.lastElementChild;
     if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
-  const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
   function initConvention() {
     if (!accesConvention()) { afficherVue("accueil"); return; }
     let accepte = false;
-    try { accepte = localStorage.getItem("pm-convention-claude") === "1"; } catch { /* facultatif */ }
+    try { accepte = localStorage.getItem("pm-convention-voix") === "1"; } catch { /* facultatif */ }
     $("#cv-avis").hidden = accepte;
     $("#cv-form").hidden = !accepte;
     rendreConvention();
   }
   $("#cv-avis-ok").addEventListener("click", () => {
-    try { localStorage.setItem("pm-convention-claude", "1"); } catch { /* facultatif */ }
+    try { localStorage.setItem("pm-convention-voix", "1"); } catch { /* facultatif */ }
     initConvention();
     $("#cv-texte").focus();
   });
-  async function poserQuestionConvention(question) {
+  // iOS exige un toucher avant la première lecture : on « réveille » la voix pendant le toucher
+  function reveillerVoix() { if (voixPossible() && !cv.voixPrete) { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); cv.voixPrete = true; } }
+  async function poserQuestionConvention(question, vocal = false) {
     question = question.trim();
     if (!question || cv.enCours) return;
     if ($("#cv-form").hidden) { $("#cv-avis").scrollIntoView({ behavior: "smooth" }); return toast("Lisez l'avis, puis touchez « J'ai compris »."); }
+    arreterLecture();
     cv.fil.push({ role: "user", question });
     cv.enCours = true; $("#cv-envoyer").disabled = true;
     rendreConvention();
@@ -645,19 +669,53 @@
     cv.fil.push(error ? { role: "resultat", question, erreur: traduireErreur(error) } : { role: "resultat", question, extraits: data || [] });
     sauverFilCv();
     rendreConvention();
+    // Question posée à voix haute : la réponse est lue tout de suite
+    if (vocal && !error && voixPossible()) lire(cv.fil.length - 1);
   }
   $("#cv-form").addEventListener("submit", (e) => {
     e.preventDefault();
+    reveillerVoix();
     const t = $("#cv-texte").value;
     $("#cv-texte").value = ""; $("#cv-texte").style.height = "auto";
-    poserQuestionConvention(t);
+    poserQuestionConvention(t, cv.vocal);
+    cv.vocal = false;
   });
   $("#cv-texte").addEventListener("input", (e) => { const z = e.target; z.style.height = "auto"; z.style.height = Math.min(z.scrollHeight, 140) + "px"; });
   $("#cv-texte").addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(pointer: fine)").matches) { e.preventDefault(); $("#cv-form").requestSubmit(); }
   });
-  $$("[data-cv-q]").forEach((b) => b.addEventListener("click", () => poserQuestionConvention(b.dataset.cvQ)));
-  $("#cv-effacer").addEventListener("click", () => { cv.fil = []; sauverFilCv(); rendreConvention(); });
+  $$("[data-cv-q]").forEach((b) => b.addEventListener("click", () => { reveillerVoix(); poserQuestionConvention(b.dataset.cvQ); }));
+  $("#cv-effacer").addEventListener("click", () => { arreterLecture(); cv.fil = []; sauverFilCv(); rendreConvention(); });
+  // Micro : dictée du navigateur si elle existe; sinon, le micro du clavier de l'iPhone fait le travail
+  $("#cv-micro").addEventListener("click", () => {
+    reveillerVoix();
+    arreterLecture();
+    if (!Reconnaissance) {
+      $("#cv-texte").focus();
+      cv.vocal = true;
+      return toast("Touchez le micro 🎤 du clavier pour dicter votre question, puis Envoyer : la réponse sera lue à voix haute.");
+    }
+    if (cv.ecoute) { cv.ecoute.stop(); return; }
+    const r = new Reconnaissance();
+    r.lang = "fr-CA"; r.interimResults = true; r.maxAlternatives = 1;
+    let final = "";
+    r.onresult = (ev) => {
+      let t = "";
+      for (const res of ev.results) t += res[0].transcript;
+      $("#cv-texte").value = t;
+      if (ev.results[ev.results.length - 1].isFinal) final = t;
+    };
+    r.onerror = (ev) => { if (ev.error === "not-allowed") toast("Autorisez le micro pour ce site dans les réglages du navigateur."); };
+    r.onend = () => {
+      cv.ecoute = null; $("#cv-micro").classList.remove("ecoute");
+      const t = (final || $("#cv-texte").value).trim();
+      if (t) { $("#cv-texte").value = ""; poserQuestionConvention(t, true); }
+    };
+    cv.ecoute = r; $("#cv-micro").classList.add("ecoute");
+    try { r.start(); } catch { cv.ecoute = null; $("#cv-micro").classList.remove("ecoute"); }
+  });
+  if (voixPossible()) speechSynthesis.getVoices(); // charge la liste des voix
+  document.addEventListener("visibilitychange", () => { if (document.hidden) arreterLecture(); });
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {

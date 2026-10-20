@@ -1496,3 +1496,12 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .cv-num { font-weight: 700; color: var(--ambre, #C98A12); }
 .cv-ex p { white-space: pre-line; font-size: .93rem; margin: 8px 0; }
 .cv-ex a { font-size: .85rem; }
+.cv-micro { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--ligne); background: var(--surface); color: var(--fg); display: grid; place-items: center; }
+.cv-micro.ecoute { background: #C62F3A; border-color: #C62F3A; color: #fff; animation: cv-pulse 1.2s infinite; }
+@keyframes cv-pulse { 0% { box-shadow: 0 0 0 0 rgba(198,47,58,.5); } 100% { box-shadow: 0 0 0 14px rgba(198,47,58,0); } }
+.cv-btn-voix { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.cv-btn-voix.actif { background: #1F3A64; border-color: #1F3A64; color: #fff; }
+.cv-principale { margin: 12px 0 4px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.cv-principale small { color: var(--fg-doux); }
+.cv-texte { white-space: pre-line; font-size: .95rem; margin: 6px 0 8px; }
+.cv-pdf { font-size: .85rem; }
