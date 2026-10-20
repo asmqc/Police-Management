@@ -1551,3 +1551,107 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .mesure-boite b { font-size: 1.3rem; font-family: var(--f-mono); }
 .mesure-boite small { color: var(--fg-doux); grid-column: 1 / -1; }
 .mesure-boite .lien { font-weight: 700; }
+
+/* =====================================================================
+   Refonte d'octobre 2026 — « Bande réfléchissante »
+   Lettrage : Overpass, descendant direct du Highway Gothic des panneaux routiers.
+   Couleurs : asphalte, ambre de signalisation, bleu gyrophare (le violet générique est retiré).
+   Surfaces plates à filet fin, comme une signalisation; la profondeur vient du contraste, pas des ombres.
+   Une seule audace : la bande à chevrons ambre sous la barre du haut, comme l'arrière d'un véhicule d'urgence.
+   La console de navigation reste foncée de jour comme de nuit, comme un terminal véhiculaire.
+   ===================================================================== */
+:root {
+  --f-titre: "Overpass", "Barlow Condensed", "Segoe UI", sans-serif;
+  --f-texte: "Overpass", "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-mono: "Overpass Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --console: #0B1626;
+  --console-2: #13223A;
+  --console-txt: #8E9DB3;
+  --ambre-vif: #FFB81C;
+  --ambre: #A86E00;
+  --sur-ambre: #1A1204;
+  --marque: #2457E6;
+  --bg: #ECEFF3;
+  --surface: #FFFFFF;
+  --surface-2: #E3E7ED;
+  --ligne: #D3D9E1;
+  --champ: #EEF1F5;
+  --fg: #0E1828;
+  --fg-doux: #586577;
+  --bord-carte: var(--ligne);
+  --ombre-carte: none;
+  --r: 18px;
+  --r-ctrl: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #060D18; --surface: #0D1727; --surface-2: #152237; --ligne: #1E2D45; --champ: #111D30;
+    --fg: #E8EDF4; --fg-doux: #8E9DB3; --ambre: #FFB81C; --marque: #5B8CFF; --bord-carte: #1A283E;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #060D18; --surface: #0D1727; --surface-2: #152237; --ligne: #1E2D45; --champ: #111D30;
+  --fg: #E8EDF4; --fg-doux: #8E9DB3; --ambre: #FFB81C; --marque: #5B8CFF; --bord-carte: #1A283E;
+}
+
+body { font-feature-settings: "kern", "liga"; letter-spacing: 0; }
+h1, h2, h3, h4 { font-family: var(--f-titre); }
+
+/* Barre du haut : console marine et bande à chevrons */
+.barre { position: relative; background: var(--console); box-shadow: none; }
+.barre::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px; pointer-events: none;
+  background: repeating-linear-gradient(-45deg, var(--ambre-vif) 0 9px, var(--console) 9px 18px);
+}
+.marque { font-family: var(--f-titre); font-weight: 800; letter-spacing: .01em; text-transform: none; }
+.marque span { color: var(--ambre-vif); }
+body::before { background: var(--console); }
+
+/* Navigation : console foncée de jour comme de nuit (onglets en bas sur téléphone, rail sur grand écran) */
+.nav {
+  background: var(--console); border-top: 0; border-right: 0;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.nav button { color: var(--console-txt); font-family: var(--f-texte); font-weight: 600; font-size: .7rem; }
+.nav button:hover { color: #C9D3E2; }
+.nav button[aria-current="page"] { color: var(--ambre-vif); }
+.nav button[aria-current="page"] .nav-ico { background: color-mix(in srgb, var(--ambre-vif) 16%, transparent); }
+.nav .badge { border-color: var(--console); }
+.nav .beta-nav { border-color: var(--console); }
+
+/* Titres : grands, serrés, en minuscules comme sur un panneau */
+.vue-tete h2 { font-weight: 800; font-size: clamp(1.9rem, 1.5rem + 1.6vw, 2.5rem); letter-spacing: -.02em; line-height: 1.02; }
+.vue-tete .ref { font-family: var(--f-texte); font-size: .9rem; color: var(--fg-doux); letter-spacing: 0; }
+.intertitre { font-weight: 800; letter-spacing: -.01em; }
+.accueil-tete h2 { font-weight: 800; letter-spacing: -.025em; font-size: clamp(2rem, 1.6rem + 1.8vw, 2.7rem); }
+.accueil-tete .ref { color: var(--ambre); font-weight: 700; }
+
+/* Surfaces plates à filet fin */
+.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte,
+.liste-articles, .liste-reglages, .liste-conv, .liste-sq, .liste-messages, .table-defile {
+  border: 1px solid var(--bord-carte); box-shadow: none;
+}
+.tuile:hover { box-shadow: none; border-color: color-mix(in srgb, var(--fg) 22%, var(--ligne)); }
+.tuile { border-radius: 16px; }
+.tuile-txt b { font-weight: 700; font-size: 1.04rem; letter-spacing: -.005em; }
+.tuile-ico { border-radius: 12px; }
+.tuile[data-aller="horaire"] .tuile-ico { background: color-mix(in srgb, var(--marque) 16%, var(--surface)); }
+
+/* Boutons : aplats francs */
+.btn-principal { box-shadow: none; font-weight: 800; letter-spacing: .005em; }
+.btn-principal:hover { filter: brightness(1.04); }
+.btn-secondaire { font-weight: 700; }
+
+/* Couleur de marque : bleu gyrophare au lieu du violet */
+.beta, .beta-nav, .conv-badge { background: var(--marque); }
+.bulle.moi { background: var(--marque); }
+.chat-envoyer { background: var(--marque); }
+.notif-bloc.compact { background: color-mix(in srgb, var(--marque) 9%, var(--surface)); border-color: color-mix(in srgb, var(--marque) 30%, var(--ligne)); }
+.icone-lieu.justice { background: #2457E6; }
+
+/* Chiffres et codes : mono routière */
+.code-mun, .ref, .vt-chiffres b, .stats-totaux b, .hr-grille .chip { font-variant-numeric: tabular-nums; }
+.code-mun { font-family: var(--f-mono); }
+
+/* Carte du quart du jour : on garde le gyrophare, plus discret */
+.ac-quart, .hr-aujourdhui { border: 1px solid #1B2C46; }
