@@ -3996,6 +3996,7 @@
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
             <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
           ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Renvoyer le lien</button>` : ""}
+          ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
         </div>
       </div>`).join("")
@@ -4007,6 +4008,7 @@
       btn.textContent = "Lien envoyé";
     }));
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
+    $$("button[data-confirmer]", el).forEach((btn) => btn.addEventListener("click", () => confirmerCourrielAdmin(btn, btn.dataset.confirmer)));
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     rendreAdminCorps();
     rendreModelesAdmin();
@@ -4014,6 +4016,16 @@
     rendreAnnoncesAdmin();
     rendreSignalements();
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
+  }
+
+  // L'administrateur confirme lui-même le courriel (ex. vérifié de vive voix) : Carte, Lois et Territoires se déverrouillent
+  async function confirmerCourrielAdmin(btn, id) {
+    if (btn) btn.disabled = true;
+    const { error } = await sb.rpc("admin_confirmer_courriel", { p_id: id });
+    if (error) { if (btn) btn.disabled = false; toast(traduireErreur(error)); return false; }
+    toast("Courriel confirmé par l'administrateur");
+    await initAdmin();
+    return true;
   }
 
   async function decider(btn, id, statut) {
@@ -4070,7 +4082,7 @@
         ${ligne("Corps de police", esc(p.corps_police || "—"))}
         ${ligne("Unité / poste", esc(p.unite || "—"))}
         ${ligne("Demande", esc(dateFr(p.cree_le)))}
-        ${ligne("Courriel confirmé", p.courriel_verifie_le ? esc(dateFr(p.courriel_verifie_le)) : "Non")}
+        ${ligne("Courriel confirmé", p.courriel_verifie_le ? esc(dateFr(p.courriel_verifie_le)) : (moi ? "Non" : `Non <button class="lien" id="fc-confirmer" type="button">Confirmer moi-même</button>`))}
         ${ligne("Dernière connexion", esc(dateFr(p.derniere_connexion)))}
         ${ligne("Décision", esc(dateFr(p.decide_le)))}
         ${ligne("Compte modifié", esc(dateFr(p.modifie_le)))}
@@ -4123,6 +4135,7 @@
       if (await decider(btn, id, btn.dataset.fcStatut)) ouvrirFiche(id);
     }));
     if ($("#fc-ecrire")) $("#fc-ecrire").addEventListener("click", () => { fermerFiche(); ecrireA(id); });
+    if ($("#fc-confirmer")) $("#fc-confirmer").addEventListener("click", async (e) => { if (await confirmerCourrielAdmin(e.currentTarget, id)) ouvrirFiche(id); });
     $("#fc-generer").addEventListener("click", () => { $("#fc-mdp").value = motDePasseAleatoire(); });
     $("#fc-copier").addEventListener("click", () => copier($("#fc-mdp").value));
     $("#fc-appliquer").addEventListener("click", async (e) => {
