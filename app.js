@@ -435,7 +435,8 @@
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
     chargerAvertissement().finally(afficherAvertissement);
     const depart = (location.hash || "").replace("#", "");
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees"].includes(depart) && (depart !== "admin" || p.role === "admin") ? depart : "accueil");
+    document.body.classList.toggle("est-sq", accesConvention());
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     compterMessages();
     ecouterMessages();
@@ -568,6 +569,83 @@
     toast("Message d'avertissement publié pour tous");
   });
 
+  /* ---------------- Convention collective : assistant IA (membres de la Sûreté du Québec seulement) ---------------- */
+  // Accès : membre approuvé de la SQ, ou l'administrateur. La fonction ia-convention vérifie aussi côté serveur.
+  const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || /s[ûu]ret[ée] du qu[ée]bec/i.test(etat.profil.corps_police || ""));
+  const PDF_CONVENTION = "https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf";
+  const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention") || "[]"); } catch { return []; } })(), enCours: false };
+  const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention", JSON.stringify(cv.fil.slice(-20))); } catch { /* facultatif */ } };
+  // Mise en forme légère des réponses : gras, listes, paragraphes (le texte est d'abord échappé)
+  function mdSimple(t) {
+    const lignes = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
+    let html = "", liste = null;
+    for (const l of lignes) {
+      const m = l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
+      if (m) { if (!liste) { liste = /^\s*\d/.test(l) ? "ol" : "ul"; html += `<${liste}>`; } html += `<li>${m[1]}</li>`; continue; }
+      if (liste) { html += `</${liste}>`; liste = null; }
+      if (l.trim()) html += `<p>${l.replace(/^#+\s*/, "")}</p>`;
+    }
+    if (liste) html += `</${liste}>`;
+    return html;
+  }
+  function rendreConvention() {
+    const el = $("#cv-fil");
+    el.innerHTML = cv.fil.map((m) => m.role === "user"
+      ? `<div class="bulle moi cv-q"><span class="bulle-txt">${esc(m.contenu)}</span></div>`
+      : `<article class="panneau cv-r${m.erreur ? " cv-erreur" : ""}">${m.erreur ? `<p>${esc(m.contenu)}</p>` : mdSimple(m.contenu)}${(m.sources || []).length ? `<div class="cv-sources"><small>Clauses consultées :</small>${m.sources.map((s) => `<a href="${PDF_CONVENTION}#page=${(s.page || 0) + 8}" target="_blank" rel="noopener" title="${esc(s.titre || "")}">${esc(/^Annexe/.test(s.article || "") ? s.article : "Clause " + (s.article || "?"))}${s.page ? " · p. " + s.page : ""}</a>`).join("")}</div>` : ""}</article>`).join("")
+      + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
+    $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
+    $("#cv-effacer").hidden = !cv.fil.length;
+    const dernier = el.lastElementChild;
+    if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  function initConvention() {
+    if (!accesConvention()) { afficherVue("accueil"); return; }
+    let accepte = false;
+    try { accepte = localStorage.getItem("pm-ia-convention") === "1"; } catch { /* facultatif */ }
+    $("#cv-avis").hidden = accepte;
+    $("#cv-form").hidden = !accepte;
+    rendreConvention();
+  }
+  $("#cv-avis-ok").addEventListener("click", () => {
+    try { localStorage.setItem("pm-ia-convention", "1"); } catch { /* facultatif */ }
+    initConvention();
+    $("#cv-texte").focus();
+  });
+  async function poserQuestionConvention(question) {
+    question = question.trim();
+    if (!question || cv.enCours) return;
+    if ($("#cv-form").hidden) { $("#cv-avis").scrollIntoView({ behavior: "smooth" }); return toast("Lisez l'avis, puis touchez « J'ai compris »."); }
+    const historique = cv.fil.filter((m) => !m.erreur).slice(-6).map((m) => ({ role: m.role, contenu: m.contenu }));
+    cv.fil.push({ role: "user", contenu: question });
+    cv.enCours = true; $("#cv-envoyer").disabled = true;
+    rendreConvention();
+    const { data, error } = await sb.functions.invoke("ia-convention", { body: { question, historique } });
+    cv.enCours = false; $("#cv-envoyer").disabled = false;
+    if (error || !data || data.erreur) {
+      let message = (data && data.erreur) || "L'assistant n'a pas pu répondre. Réessayez plus tard.";
+      try { const j = error && error.context && (await error.context.json()); if (j && j.erreur) message = j.erreur; } catch { /* message par défaut */ }
+      cv.fil.push({ role: "assistant", contenu: message, erreur: true });
+    } else {
+      cv.fil.push({ role: "assistant", contenu: data.reponse, sources: data.sources || [] });
+      $("#cv-restantes").textContent = data.restantes == null ? "" : `${data.restantes} question${data.restantes > 1 ? "s" : ""} restante${data.restantes > 1 ? "s" : ""} aujourd'hui ·`;
+    }
+    sauverFilCv();
+    rendreConvention();
+  }
+  $("#cv-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("#cv-texte").value;
+    $("#cv-texte").value = ""; $("#cv-texte").style.height = "auto";
+    poserQuestionConvention(t);
+  });
+  $("#cv-texte").addEventListener("input", (e) => { const z = e.target; z.style.height = "auto"; z.style.height = Math.min(z.scrollHeight, 140) + "px"; });
+  $("#cv-texte").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(pointer: fine)").matches) { e.preventDefault(); $("#cv-form").requestSubmit(); }
+  });
+  $$("[data-cv-q]").forEach((b) => b.addEventListener("click", () => poserQuestionConvention(b.dataset.cvQ)));
+  $("#cv-effacer").addEventListener("click", () => { cv.fil = []; sauverFilCv(); rendreConvention(); });
+
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
     etat.vue = nom;
@@ -587,6 +665,7 @@
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
+    if (nom === "convention") initConvention();
   }
   // Menu de la photo de profil
   function ouvrirMenu() {

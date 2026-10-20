@@ -1461,3 +1461,28 @@ html:has(body.mode-site), body.mode-site { height: auto; }
 
 /* ---------- App iPhone/iPad (le site affiché dans l'app native) ---------- */
 html.app-ios .web-seulement { display: none !important; }
+
+/* ---------- Convention collective (assistant IA, membres SQ) ---------- */
+body:not(.est-sq) .seulement-sq { display: none !important; }
+.cv-avis ul { margin: 8px 0 14px; padding-left: 20px; display: grid; gap: 6px; font-size: .93rem; color: var(--fg-doux); }
+.cv-suggestions { flex-wrap: wrap; overflow: visible; }
+.cv-suggestions button { white-space: normal; text-align: left; }
+.cv-fil { display: flex; flex-direction: column; gap: 10px; }
+.cv-fil .cv-q { margin: 0; }
+.cv-r { align-self: stretch; line-height: 1.5; }
+.cv-r p { margin: 0 0 8px; }
+.cv-r p:last-child { margin-bottom: 0; }
+.cv-r ul, .cv-r ol { margin: 4px 0 10px; padding-left: 22px; display: grid; gap: 4px; }
+.cv-r.cv-erreur { border-left: 4px solid #C62F3A; }
+.cv-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--ligne); }
+.cv-sources small { color: var(--fg-doux); width: 100%; }
+.cv-sources a { font-size: .82rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg); text-decoration: none; }
+.cv-attente { color: var(--fg-doux); display: flex; align-items: center; gap: 10px; }
+.cv-points { display: inline-flex; gap: 4px; }
+.cv-points i { width: 7px; height: 7px; border-radius: 50%; background: var(--ambre, #F2B33D); animation: cv-pt 1s infinite ease-in-out; }
+.cv-points i:nth-child(2) { animation-delay: .15s; }
+.cv-points i:nth-child(3) { animation-delay: .3s; }
+@keyframes cv-pt { 0%, 80%, 100% { opacity: .25; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
+.cv-saisie { position: sticky; bottom: 0; display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; background: var(--bg); }
+.cv-saisie textarea { flex: 1; resize: none; border-radius: 22px; padding: 10px 14px; max-height: 140px; line-height: 1.35; }
+.cv-pied { text-align: center; }

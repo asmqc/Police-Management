@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610192236">
+  <link rel="stylesheet" href="styles.css?v=202610200014">
 </head>
 <body>
   <!-- Chargement -->
@@ -423,6 +423,10 @@
           <button class="tuile" data-aller="horaire">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <span class="tuile-txt"><b>Mon horaire</b><small>Quarts et partages</small></span>
+          </button>
+          <button class="tuile seulement-sq" data-aller="convention">
+            <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg></span>
+            <span class="tuile-txt"><b>Convention collective</b><small>Assistant IA · contrat APPQ</small></span>
           </button>
           <button class="tuile" data-aller="forum">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
@@ -1032,6 +1036,43 @@
       </div>
     </section>
 
+    <!-- Vue Convention collective : assistant IA réservé aux membres de la Sûreté du Québec -->
+    <section id="vue-convention" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Convention collective <span class="beta">IA</span></h2>
+        <p class="ref">Contrat de travail APPQ · 2022-2028 · Sûreté du Québec</p>
+      </div>
+      <div class="panneau cv-avis" id="cv-avis" hidden>
+        <b>Avant de commencer</b>
+        <ul>
+          <li>Les réponses sont générées par une intelligence artificielle à partir du contrat de travail entre le gouvernement du Québec et l'APPQ (version administrative publiée par la Sûreté). Elles peuvent contenir des erreurs : vérifiez toujours la clause citée.</li>
+          <li>Votre question et les extraits du contrat sont transmis à Anthropic (États-Unis) pour produire la réponse. Police Management ne conserve ni vos questions ni les réponses.</li>
+          <li>N'écrivez aucun renseignement personnel, aucune information confidentielle ni aucune donnée sur des citoyens.</li>
+          <li>Ce n'est pas un avis syndical ni juridique : pour un grief ou un cas particulier, communiquez avec l'APPQ.</li>
+        </ul>
+        <button type="button" class="btn-principal" id="cv-avis-ok">J'ai compris</button>
+      </div>
+      <div class="puces cv-suggestions" id="cv-suggestions">
+        <button type="button" data-cv-q="Combien d'heures de vacances annuelles ai-je selon mes années de service?">Vacances annuelles</button>
+        <button type="button" data-cv-q="Comment est payé le temps supplémentaire?">Temps supplémentaire</button>
+        <button type="button" data-cv-q="Quelles sont les primes de soir, de nuit et de fin de semaine?">Primes de soir et de nuit</button>
+        <button type="button" data-cv-q="Quelles conditions s'appliquent aux patrouilleurs sur l'horaire de 12 heures?">Horaire 12 h</button>
+        <button type="button" data-cv-q="À combien de jours d'absence ai-je droit pour un décès dans ma famille?">Événements familiaux</button>
+        <button type="button" data-cv-q="Quels sont les frais de repas remboursés lors d'un déplacement?">Frais de repas</button>
+        <button type="button" data-cv-q="Comment fonctionne la banque collective de maladie?">Banque de maladie</button>
+        <button type="button" data-cv-q="Quels sont les délais pour déposer un grief?">Griefs</button>
+      </div>
+      <div class="cv-fil" id="cv-fil" aria-live="polite"></div>
+      <form class="cv-saisie" id="cv-form" autocomplete="off">
+        <label for="cv-texte" class="visuellement-cache">Votre question sur la convention collective</label>
+        <textarea id="cv-texte" rows="1" maxlength="1000" placeholder="Votre question…" enterkeyhint="send"></textarea>
+        <button type="submit" class="chat-envoyer" id="cv-envoyer" aria-label="Envoyer">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" fill="currentColor"/></svg>
+        </button>
+      </form>
+      <p class="aide cv-pied"><span id="cv-restantes"></span> <a href="https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf" target="_blank" rel="noopener">Texte du contrat (PDF)</a> <button type="button" class="lien" id="cv-effacer">· Effacer la conversation</button></p>
+    </section>
+
     <section id="vue-idees" class="vue" hidden>
       <div class="vue-tete">
         <h2>Idées</h2>
@@ -1280,6 +1321,7 @@
         <div><b id="menu-nom"></b><small id="menu-sous"></small></div>
       </div>
       <button role="menuitem" data-menu="compte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mon compte</span></button>
+      <button role="menuitem" class="seulement-sq" data-menu="convention"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg><span>Convention collective</span></button>
       <button role="menuitem" data-menu="forum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Forum</span></button>
       <button role="menuitem" data-menu="idees"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Idées</span></button>
       <button role="menuitem" data-menu="corps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Territoires</span></button>
@@ -1291,9 +1333,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610192236"></script>
+  <script src="config.js?v=202610200014"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610192236"></script>
+  <script src="app.js?v=202610200014"></script>
 </body>
 </html>
