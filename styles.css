@@ -1486,3 +1486,13 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .cv-saisie { position: sticky; bottom: 0; display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; background: var(--bg); }
 .cv-saisie textarea { flex: 1; resize: none; border-radius: 22px; padding: 10px 14px; max-height: 140px; line-height: 1.35; }
 .cv-pied { text-align: center; }
+.cv-claude { display: flex; flex-wrap: wrap; gap: 8px; }
+.cv-claude > * { flex: 1 1 200px; margin: 0; }
+.cv-btn-claude { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: #D97757; border-color: #D97757; color: #fff; }
+.cv-titre-ex { margin: 14px 0 6px; }
+.cv-ex { border-top: 1px solid var(--ligne); padding: 8px 0; }
+.cv-ex summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.cv-ex summary small { color: var(--fg-doux); }
+.cv-num { font-weight: 700; color: var(--ambre, #C98A12); }
+.cv-ex p { white-space: pre-line; font-size: .93rem; margin: 8px 0; }
+.cv-ex a { font-size: .85rem; }

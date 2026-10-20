@@ -569,46 +569,67 @@
     toast("Message d'avertissement publié pour tous");
   });
 
-  /* ---------------- Convention collective : assistant IA (membres de la Sûreté du Québec seulement) ---------------- */
-  // Accès : membre approuvé de la SQ, ou l'administrateur. La fonction ia-convention vérifie aussi côté serveur.
+  /* ---------------- Convention collective : recherche + « Demander à Claude » (membres de la Sûreté du Québec) ----------------
+     Police Management trouve les clauses du contrat de travail APPQ, puis ouvre Claude (app ou claude.ai) avec la question
+     et les clauses : le policier obtient la réponse avec SON propre compte Claude. Rien n'est envoyé à Anthropic par l'app. */
   const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || /s[ûu]ret[ée] du qu[ée]bec/i.test(etat.profil.corps_police || ""));
   const PDF_CONVENTION = "https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf";
-  const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention") || "[]"); } catch { return []; } })(), enCours: false };
-  const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention", JSON.stringify(cv.fil.slice(-20))); } catch { /* facultatif */ } };
-  // Mise en forme légère des réponses : gras, listes, paragraphes (le texte est d'abord échappé)
-  function mdSimple(t) {
-    const lignes = esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").split("\n");
-    let html = "", liste = null;
-    for (const l of lignes) {
-      const m = l.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
-      if (m) { if (!liste) { liste = /^\s*\d/.test(l) ? "ol" : "ul"; html += `<${liste}>`; } html += `<li>${m[1]}</li>`; continue; }
-      if (liste) { html += `</${liste}>`; liste = null; }
-      if (l.trim()) html += `<p>${l.replace(/^#+\s*/, "")}</p>`;
+  const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention2") || "[]"); } catch { return []; } })(), enCours: false };
+  const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention2", JSON.stringify(cv.fil.slice(-10))); } catch { /* facultatif */ } };
+  const nomClause = (e) => (/^Annexe/.test(e.article || "") ? e.article : "clause " + (e.article || "?")) + (e.page ? `, p. ${e.page}` : "");
+  // Texte envoyé à Claude. « court » : pour le lien claude.ai/new?q= (longueur limitée); sinon : extraits complets à coller.
+  function promptClaude(question, extraits, court) {
+    const tete = `Je suis policier ou policière à la Sûreté du Québec. Réponds à ma question en te basant sur le Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}\nCite les clauses et les pages. Si les extraits ne suffisent pas, dis-le et indique quoi vérifier. Ce n'est pas un avis juridique.\n\nQuestion : ${question}\n\n`;
+    const liste = extraits.length ? `Clauses trouvées : ${extraits.map(nomClause).join(" ; ")}\n\n` : "";
+    let corps = "Extraits du contrat :\n";
+    for (const e of extraits) {
+      const brut = (e.texte || "").replace(/\s+/g, " ").trim();
+      const bloc = `\n[${nomClause(e)}] ${court ? brut.slice(0, 600) + (brut.length > 600 ? "…" : "") : brut}\n`;
+      if (court && encodeURIComponent(tete + liste + corps + bloc).length > 3600) break;
+      corps += bloc;
     }
-    if (liste) html += `</${liste}>`;
-    return html;
+    return tete + liste + (extraits.length ? corps : "");
   }
+  const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
+
   function rendreConvention() {
     const el = $("#cv-fil");
-    el.innerHTML = cv.fil.map((m) => m.role === "user"
-      ? `<div class="bulle moi cv-q"><span class="bulle-txt">${esc(m.contenu)}</span></div>`
-      : `<article class="panneau cv-r${m.erreur ? " cv-erreur" : ""}">${m.erreur ? `<p>${esc(m.contenu)}</p>` : mdSimple(m.contenu)}${(m.sources || []).length ? `<div class="cv-sources"><small>Clauses consultées :</small>${m.sources.map((s) => `<a href="${PDF_CONVENTION}#page=${(s.page || 0) + 8}" target="_blank" rel="noopener" title="${esc(s.titre || "")}">${esc(/^Annexe/.test(s.article || "") ? s.article : "Clause " + (s.article || "?"))}${s.page ? " · p. " + s.page : ""}</a>`).join("")}</div>` : ""}</article>`).join("")
-      + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
+    el.innerHTML = cv.fil.map((m, k) => {
+      if (m.role === "user") return `<div class="bulle moi cv-q"><span class="bulle-txt">${esc(m.question)}</span></div>`;
+      if (m.erreur) return `<article class="panneau cv-r cv-erreur"><p>${esc(m.erreur)}</p></article>`;
+      const ex = m.extraits || [];
+      return `<article class="panneau cv-r">
+        <div class="cv-claude">
+          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
+          <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button>
+        </div>
+        <p class="aide">Claude répond avec votre propre compte (gratuit ou payant). Vérifiez toujours la clause citée.</p>
+        ${ex.length ? `<p class="cv-titre-ex"><b>${ex.length} clause${ex.length > 1 ? "s" : ""} trouvée${ex.length > 1 ? "s" : ""}</b></p>` + ex.map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : `<p>Aucune clause trouvée avec ces mots. Claude pourra quand même chercher dans le PDF officiel.</p>`}
+      </article>`;
+    }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
+    $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
+      const m = cv.fil[Number(b.dataset.cvCopier)];
+      const texte = promptClaude(m.question, m.extraits || [], false);
+      try { await navigator.clipboard.writeText(texte); toast("Copié. Collez-le dans Claude."); }
+      catch { toast("Copie impossible sur cet appareil. Utilisez « Demander à Claude »."); return; }
+      setTimeout(() => window.open("https://claude.ai/new", "_blank", "noopener"), 700);
+    }));
     const dernier = el.lastElementChild;
     if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
+  const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
   function initConvention() {
     if (!accesConvention()) { afficherVue("accueil"); return; }
     let accepte = false;
-    try { accepte = localStorage.getItem("pm-ia-convention") === "1"; } catch { /* facultatif */ }
+    try { accepte = localStorage.getItem("pm-convention-claude") === "1"; } catch { /* facultatif */ }
     $("#cv-avis").hidden = accepte;
     $("#cv-form").hidden = !accepte;
     rendreConvention();
   }
   $("#cv-avis-ok").addEventListener("click", () => {
-    try { localStorage.setItem("pm-ia-convention", "1"); } catch { /* facultatif */ }
+    try { localStorage.setItem("pm-convention-claude", "1"); } catch { /* facultatif */ }
     initConvention();
     $("#cv-texte").focus();
   });
@@ -616,20 +637,12 @@
     question = question.trim();
     if (!question || cv.enCours) return;
     if ($("#cv-form").hidden) { $("#cv-avis").scrollIntoView({ behavior: "smooth" }); return toast("Lisez l'avis, puis touchez « J'ai compris »."); }
-    const historique = cv.fil.filter((m) => !m.erreur).slice(-6).map((m) => ({ role: m.role, contenu: m.contenu }));
-    cv.fil.push({ role: "user", contenu: question });
+    cv.fil.push({ role: "user", question });
     cv.enCours = true; $("#cv-envoyer").disabled = true;
     rendreConvention();
-    const { data, error } = await sb.functions.invoke("ia-convention", { body: { question, historique } });
+    const { data, error } = await sb.rpc("convention_recherche", { p_q: question, p_n: 6 });
     cv.enCours = false; $("#cv-envoyer").disabled = false;
-    if (error || !data || data.erreur) {
-      let message = (data && data.erreur) || "L'assistant n'a pas pu répondre. Réessayez plus tard.";
-      try { const j = error && error.context && (await error.context.json()); if (j && j.erreur) message = j.erreur; } catch { /* message par défaut */ }
-      cv.fil.push({ role: "assistant", contenu: message, erreur: true });
-    } else {
-      cv.fil.push({ role: "assistant", contenu: data.reponse, sources: data.sources || [] });
-      $("#cv-restantes").textContent = data.restantes == null ? "" : `${data.restantes} question${data.restantes > 1 ? "s" : ""} restante${data.restantes > 1 ? "s" : ""} aujourd'hui ·`;
-    }
+    cv.fil.push(error ? { role: "resultat", question, erreur: traduireErreur(error) } : { role: "resultat", question, extraits: data || [] });
     sauverFilCv();
     rendreConvention();
   }

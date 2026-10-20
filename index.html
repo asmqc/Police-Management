@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610200014">
+  <link rel="stylesheet" href="styles.css?v=202610200033">
 </head>
 <body>
   <!-- Chargement -->
@@ -426,7 +426,7 @@
           </button>
           <button class="tuile seulement-sq" data-aller="convention">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg></span>
-            <span class="tuile-txt"><b>Convention collective</b><small>Assistant IA · contrat APPQ</small></span>
+            <span class="tuile-txt"><b>Convention collective</b><small>Contrat APPQ · Demander à Claude</small></span>
           </button>
           <button class="tuile" data-aller="forum">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
@@ -1039,16 +1039,16 @@
     <!-- Vue Convention collective : assistant IA réservé aux membres de la Sûreté du Québec -->
     <section id="vue-convention" class="vue" hidden>
       <div class="vue-tete">
-        <h2>Convention collective <span class="beta">IA</span></h2>
+        <h2>Convention collective</h2>
         <p class="ref">Contrat de travail APPQ · 2022-2028 · Sûreté du Québec</p>
       </div>
       <div class="panneau cv-avis" id="cv-avis" hidden>
         <b>Avant de commencer</b>
         <ul>
-          <li>Les réponses sont générées par une intelligence artificielle à partir du contrat de travail entre le gouvernement du Québec et l'APPQ (version administrative publiée par la Sûreté). Elles peuvent contenir des erreurs : vérifiez toujours la clause citée.</li>
-          <li>Votre question et les extraits du contrat sont transmis à Anthropic (États-Unis) pour produire la réponse. Police Management ne conserve ni vos questions ni les réponses.</li>
+          <li>Écrivez votre question : Police Management trouve les clauses du contrat de travail entre le gouvernement du Québec et l'APPQ (version administrative publiée par la Sûreté).</li>
+          <li>Touchez « Demander à Claude » : Claude s'ouvre avec votre question et ces clauses, et vous répond avec <b>votre propre compte Claude</b> (gratuit ou payant). Police Management n'envoie rien à Claude à votre place.</li>
+          <li>Les réponses de l'IA peuvent contenir des erreurs : vérifiez toujours la clause citée. Ce n'est pas un avis syndical ni juridique : pour un grief ou un cas particulier, communiquez avec l'APPQ.</li>
           <li>N'écrivez aucun renseignement personnel, aucune information confidentielle ni aucune donnée sur des citoyens.</li>
-          <li>Ce n'est pas un avis syndical ni juridique : pour un grief ou un cas particulier, communiquez avec l'APPQ.</li>
         </ul>
         <button type="button" class="btn-principal" id="cv-avis-ok">J'ai compris</button>
       </div>
@@ -1070,7 +1070,7 @@
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z" fill="currentColor"/></svg>
         </button>
       </form>
-      <p class="aide cv-pied"><span id="cv-restantes"></span> <a href="https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf" target="_blank" rel="noopener">Texte du contrat (PDF)</a> <button type="button" class="lien" id="cv-effacer">· Effacer la conversation</button></p>
+      <p class="aide cv-pied"><a href="https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf" target="_blank" rel="noopener">Texte du contrat (PDF)</a> <button type="button" class="lien" id="cv-effacer">· Effacer la conversation</button></p>
     </section>
 
     <section id="vue-idees" class="vue" hidden>
@@ -1333,9 +1333,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610200014"></script>
+  <script src="config.js?v=202610200033"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610200014"></script>
+  <script src="app.js?v=202610200033"></script>
 </body>
 </html>
