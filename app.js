@@ -679,7 +679,9 @@
       const ex = m.extraits || [];
       return `<article class="panneau cv-r">
         ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
-          ${m.claude ? "" : `<button type="button" class="btn-principal cv-btn-claude" data-cv-claude="${k}" ${m.claudeEnCours ? "disabled" : ""}>${ICONE_CLAUDE}${m.claudeEnCours ? "Claude réfléchit…" : "Demander à Claude"}</button>`}</div>
+          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
+          <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
+        <p class="aide">Claude s'ouvre avec votre question et les clauses, et vous répond avec votre compte Claude (le forfait gratuit suffit). Vérifiez toujours la clause citée.</p>
         ${m.claude ? `<section class="cv-reponse-claude"><p class="cv-claude-tete">${ICONE_CLAUDE}<b>Réponse de Claude</b></p>${mdSimple(m.claude)}<p class="aide">Générée par IA à partir des clauses du contrat : vérifiez toujours la clause citée.</p></section>` : ""}
         ${m.claudeErreur ? `<p class="cv-claude-err">${esc(m.claudeErreur)}${m.claudeLien ? ` <a href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">Ouvrir dans Claude ↗</a>` : ""}</p>` : ""}
         <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
@@ -692,7 +694,12 @@
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
     $$("[data-cv-lire]", el).forEach((b) => b.addEventListener("click", () => lire(Number(b.dataset.cvLire))));
-    $$("[data-cv-claude]", el).forEach((b) => b.addEventListener("click", () => demanderClaude(Number(b.dataset.cvClaude))));
+    $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
+      const m = cv.fil[Number(b.dataset.cvCopier)];
+      try { await navigator.clipboard.writeText(promptClaude(m.question, m.extraits || [], false)); toast("Copié. Collez-le dans Claude."); }
+      catch { toast("Copie impossible sur cet appareil. Utilisez « Demander à Claude »."); return; }
+      setTimeout(() => window.open("https://claude.ai/new", "_blank", "noopener"), 700);
+    }));
     majBoutonsLecture();
     const dernier = el.lastElementChild;
     if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });
