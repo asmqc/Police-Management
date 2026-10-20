@@ -1512,3 +1512,42 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .cv-claude-tete { display: flex; align-items: center; gap: 8px; color: #B65A3C; }
 .cv-claude-err { margin: 10px 0 0; color: #C62F3A; font-size: .92rem; }
 .cv-btn-claude:disabled { opacity: .75; }
+
+/* ---------- Carte : adresse, Y aller, fonds, 511, lieux utiles, districts, mesure ---------- */
+.adresse-barre { position: relative; display: flex; gap: 8px; align-items: center; background: var(--surface); padding: 10px max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); }
+.adresse-barre input { flex: 1; min-width: 0; padding: 9px 12px; }
+.adresse-barre .btn-secondaire { margin: 0; flex: none; width: 42px; height: 40px; padding: 0; display: grid; place-items: center; }
+.adresse-res { position: absolute; z-index: 900; top: 100%; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); margin: 4px 0 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; box-shadow: var(--ombre); max-height: 300px; overflow-y: auto; }
+.adresse-res button { width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 8px; display: grid; gap: 2px; color: var(--fg); }
+.adresse-res button:hover, .adresse-res button:focus-visible { background: var(--surface-2); }
+.adresse-res small { color: var(--fg-doux); font-size: .78rem; }
+.aller { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.aller span { font-size: .8rem; font-weight: 700; color: var(--fg-doux); margin-right: 2px; }
+.aller a { font-size: .82rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg); text-decoration: none; }
+.fiche-actions { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.fond-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 10px; background: var(--surface-2); margin-bottom: 4px; }
+.fond-choix button { border: 0; border-radius: 8px; padding: 5px 6px; font-weight: 700; font-size: .8rem; background: transparent; color: var(--fg-doux); }
+.fond-choix button[aria-checked="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+:root[data-theme="dark"] #carte:not(.fond-satellite) .tuiles-plan { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #carte:not(.fond-satellite) .tuiles-plan { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55); } }
+.trait.t511 { width: 16px; height: 4px; flex: none; border-radius: 2px; background: repeating-linear-gradient(90deg, #E67E22 0 5px, transparent 5px 8px); box-shadow: inset 0 0 0 0 #C62F3A; }
+.pastille.lieux { background: #C62F3A; border-radius: 50%; box-shadow: inset 0 0 0 3px #fff; border: 1px solid #C62F3A; }
+.pastille.districts { background: conic-gradient(#2F80ED 0 33%, #27AE60 0 66%, #9B51E0 0); border-radius: 3px; }
+.icone-511 { display: grid; place-items: center; border-radius: 50%; font-weight: 800; font-size: 13px; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.icone-511.avertissement { background: #C62F3A; }
+.icone-511.chantier { background: #E67E22; border-radius: 4px; transform: rotate(45deg); }
+.genre-511 { font-weight: 700; text-transform: uppercase; letter-spacing: .04em; font-size: .7rem; }
+.genre-511.chantier { color: #B85F12; }
+.genre-511.avertissement { color: #C62F3A; }
+.popup-511 span { font-size: .88rem; }
+.icone-lieu { display: grid; place-items: center; border-radius: 7px; font-weight: 800; font-size: 13px; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); line-height: 1; }
+.icone-lieu.urgence { background: #C62F3A; }
+.icone-lieu.hopital { background: #E06470; }
+.icone-lieu.justice { background: #6A3FE0; font-size: 12px; }
+.icone-lieu.detention { background: #475569; font-size: 11px; }
+.etiquette-district span { display: inline-block; white-space: nowrap; transform: translate(-50%, -50%); font-weight: 800; font-size: .74rem; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 85%, transparent); color: var(--c); border: 1.5px solid var(--c); }
+.btn-mesure { top: 132px; }
+.mesure-boite { position: absolute; z-index: 600; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: 10px; max-width: 460px; display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 2px 14px; padding: 10px 16px; border-radius: 16px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--ombre); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.mesure-boite b { font-size: 1.3rem; font-family: var(--f-mono); }
+.mesure-boite small { color: var(--fg-doux); grid-column: 1 / -1; }
+.mesure-boite .lien { font-weight: 700; }

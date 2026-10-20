@@ -6,6 +6,9 @@
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
   if (estAppIOS) document.documentElement.classList.add("app-ios");
+  // Lien « point partagé » : #carte@46.81234,-71.21234
+  { const m = (location.hash || "").match(/^#carte@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/); if (m) { try { sessionStorage.setItem("pm-point", JSON.stringify([+m[1], +m[2]])); } catch { /* facultatif */ } } }
+  const pointPartageEnAttente = () => { try { return JSON.parse(sessionStorage.getItem("pm-point") || "null"); } catch { return null; } };
   const sb = window.supabase.createClient(C.supabaseUrl, C.supabaseKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
   });
@@ -434,7 +437,8 @@
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
     chargerAvertissement().finally(afficherAvertissement);
-    const depart = (location.hash || "").replace("#", "");
+    let depart = (location.hash || "").replace("#", "");
+    if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
     document.body.classList.toggle("est-sq", accesConvention());
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
@@ -789,7 +793,11 @@
     history.replaceState(null, "", "#" + nom);
     if (verrou) { afficherVerrou(nom); return; }
     if (nom === "csr") initCsr();
-    if (nom === "carte") { initCarte(); personnaliserCarte(); }
+    if (nom === "carte") {
+      initCarte(); personnaliserCarte();
+      const pt = pointPartageEnAttente();
+      if (pt) { try { sessionStorage.removeItem("pm-point"); } catch { /* facultatif */ } setTimeout(() => etat.placer(pt[0], pt[1], "Point partagé", 16), 300); }
+    }
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
@@ -3298,11 +3306,25 @@
     f.innerHTML = `<button class="btn-icone fermer" aria-label="Fermer">✕</button>
       <h4>${esc(titre || "Ce point")}</h4>
       ${lignes.map(([a, b]) => `<div class="ligne-info"><span>${a}</span><span>${b}</span></div>`).join("")}
-      <button class="lien" data-copier-pos>Copier la position</button>`;
+      ${liensAller(res.lat, res.lon)}
+      <div class="fiche-actions"><button class="lien" data-copier-pos>Copier la position</button><button class="lien" data-partager-pos>Partager ce point</button></div>`;
     f.hidden = false;
     $(".fermer", f).addEventListener("click", () => (f.hidden = true));
     $("[data-copier-pos]", f).addEventListener("click", () => copier(`${res.lat.toFixed(5)}, ${res.lon.toFixed(5)}`));
+    $("[data-partager-pos]", f).addEventListener("click", () => partagerPoint(res.lat, res.lon, titre));
     $$("[data-copier-code]", f).forEach((b) => b.addEventListener("click", () => copier(b.dataset.copierCode)));
+  }
+  // « Y aller » : itinéraire dans Plans (Apple), Google Maps ou Waze
+  const liensAller = (lat, lon) => {
+    const ll = `${(+lat).toFixed(6)},${(+lon).toFixed(6)}`;
+    return `<div class="aller"><span>Y aller</span><a href="https://maps.apple.com/?daddr=${ll}&dirflg=d" target="_blank" rel="noopener">Plans</a><a href="https://www.google.com/maps/dir/?api=1&destination=${ll}" target="_blank" rel="noopener">Google Maps</a><a href="https://waze.com/ul?ll=${ll}&navigate=yes" target="_blank" rel="noopener">Waze</a></div>`;
+  };
+  // Partager un point : lien vers la carte de Police Management (le collègue doit être connecté)
+  async function partagerPoint(lat, lon, titre) {
+    const url = `${location.origin}${location.pathname}#carte@${(+lat).toFixed(5)},${(+lon).toFixed(5)}`;
+    const texte = `${titre || "Point"} — Police Management`;
+    if (navigator.share) { try { await navigator.share({ title: texte, text: texte, url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    copier(url);
   }
   const dirNom = (d) => ({ N: "Nord", S: "Sud", E: "Est", O: "Ouest" }[d] || d);
 
@@ -3310,7 +3332,25 @@
   function initCarte() {
     if (etat.carte) { setTimeout(() => etat.carte.invalidateSize(), 50); return; }
     const carte = (etat.carte = L.map("carte", { zoomControl: true, preferCanvas: true }).setView([46.9, -71.8], 6));
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(carte);
+    // Fonds : plan OpenStreetMap (assombri en thème foncé) ou imagerie satellite Esri avec noms de routes et de lieux
+    const fonds = {
+      plan: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap", className: "tuiles-plan" }),
+      satellite: L.layerGroup([
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagerie © Esri, Maxar, Earthstar Geographics" }),
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, opacity: 0.9 }),
+        L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19 }),
+      ]),
+    };
+    let fond = (() => { try { return localStorage.getItem("pm-fond") === "satellite" ? "satellite" : "plan"; } catch { return "plan"; } })();
+    const choisirFond = (f) => {
+      Object.entries(fonds).forEach(([k, c]) => (k === f ? c.addTo(carte) : carte.removeLayer(c)));
+      fond = f;
+      $$("[data-fond]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.fond === f)));
+      $("#carte").classList.toggle("fond-satellite", f === "satellite");
+      try { localStorage.setItem("pm-fond", f); } catch { /* facultatif */ }
+    };
+    choisirFond(fond);
+    $$("[data-fond]").forEach((b) => b.addEventListener("click", () => choisirFond(b.dataset.fond)));
     const rendu = L.canvas({ padding: 0.3 });
     etat.couches = {};
 
@@ -3336,7 +3376,7 @@
     charger("sq_bureaux.geojson").then((fc) => {
       etat.couches.bur = L.geoJSON(fc, {
         pointToLayer: (f, ll) => L.circleMarker(ll, { renderer: rendu, radius: 6, color: "#fff", weight: 2, fillColor: "#C62F3A", fillOpacity: 1 }),
-        onEachFeature: (f, l) => l.bindPopup(`<b>${esc(f.properties.NOM_ENT)}</b><br>${esc(f.properties.ADRESSE)}, ${esc(f.properties.MUNICIPALITE)} ${esc(f.properties.CODE_POST)}`),
+        onEachFeature: (f, l) => l.bindPopup(() => `<div class="popup-poste"><b>${esc(f.properties.NOM_ENT)}</b><span>${esc(f.properties.ADRESSE)}, ${esc(f.properties.MUNICIPALITE)} ${esc(f.properties.CODE_POST)}</span>${liensAller(f.geometry.coordinates[1], f.geometry.coordinates[0])}</div>`),
       });
       if ($("#c-bur").checked) etat.couches.bur.addTo(carte);
     }).catch(() => {});
@@ -3436,12 +3476,114 @@
           return `<div class="popup-poste"><b>${esc(p.nom || "Poste de police")}</b>${p.exploitant && p.exploitant !== p.nom ? `<small>${esc(p.exploitant)}</small>` : ""}
             ${p.adresse ? `<span>${esc(p.adresse)}${p.municipalite ? ", " + esc(p.municipalite) : ""}</span>` : ""}
             ${p.telephone ? `<a href="tel:${esc(p.telephone.replace(/[^+\d]/g, ""))}">${esc(p.telephone)}</a>` : ""}
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" rel="noopener">Itinéraire</a>
+            ${liensAller(lat, lon)}
             <small class="ref">Source : OpenStreetMap</small></div>`;
         }),
       }).addTo(etat.couches.autres);
     };
     $("#c-autres").addEventListener("change", (e) => { if (e.target.checked) { chargerAutres(); etat.couches.autres.addTo(carte); } else carte.removeLayer(etat.couches.autres); });
+
+    // Entraves et travaux routiers en temps réel (Québec 511, relayés par la fonction trafic-511)
+    etat.couches.t511 = L.layerGroup();
+    const date511 = (t) => { if (!t) return ""; const d = new Date(t.replace(/\//g, "-").replace(" ", "T")); return isNaN(d) ? t : d.toLocaleString("fr-CA", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }); };
+    const popup511 = (p, ll) => `<div class="popup-poste popup-511"><small class="genre-511 ${p.genre}">${p.genre === "chantier" ? "Travaux routiers" : "Avertissement routier"}${p.route ? " · route " + esc(p.route) : ""}</small>
+      <b>${esc(p.titre || p.travaux || "Entrave")}</b>
+      ${p.travaux && p.titre ? `<span>${esc(p.travaux)}</span>` : ""}
+      ${p.lieu ? `<span>${esc(p.lieu)}</span>` : ""}
+      ${p.direction ? `<span>Direction : ${esc(p.direction)}</span>` : ""}
+      ${p.municipalite ? `<span>${esc(p.municipalite)}</span>` : ""}
+      ${p.cause ? `<span>Cause : ${esc(p.cause)}</span>` : ""}
+      ${p.consequence ? `<span>${esc(p.consequence)}</span>` : ""}
+      ${p.debut || p.fin ? `<small>Du ${esc(date511(p.debut))} au ${esc(date511(p.fin))}</small>` : ""}
+      ${p.depuis ? `<small>En vigueur depuis ${esc(date511(p.depuis))}${p.duree ? " · durée : " + esc(p.duree) : ""}</small>` : ""}
+      ${p.detour ? `<span>Détour : ${esc(p.detour)}</span>` : ""}
+      ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Plus d'information</a>` : ""}
+      ${ll ? liensAller(ll.lat, ll.lng) : ""}
+      <small class="ref">Source : Québec 511 (MTMD)</small></div>`;
+    const charger511 = async () => {
+      const { data, error } = await sb.functions.invoke("trafic-511", { method: "GET" });
+      if (error || !data || !data.features) { toast("Québec 511 ne répond pas pour le moment. Réessayez plus tard."); return; }
+      etat.couches.t511.clearLayers();
+      L.geoJSON(data, {
+        style: (f) => f.properties.genre === "chantier" ? { color: "#E67E22", weight: 6, opacity: 0.9, dashArray: "8 6" } : { color: f.properties.couleur || "#C62F3A", weight: 7, opacity: 0.95 },
+        pointToLayer: (f, ll) => L.marker(ll, { icon: L.divIcon({ className: "icone-511 " + f.properties.genre, html: "!", iconSize: [22, 22] }) }),
+        onEachFeature: (f, l) => l.bindPopup(() => popup511(f.properties, l.getLatLng ? l.getLatLng() : l.getBounds().getCenter()), { maxWidth: 320 }),
+      }).addTo(etat.couches.t511);
+      etat.maj511 = Date.now();
+    };
+    $("#c-511").addEventListener("change", (e) => {
+      if (e.target.checked) { etat.couches.t511.addTo(carte); if (!etat.maj511 || Date.now() - etat.maj511 > 300000) charger511(); }
+      else carte.removeLayer(etat.couches.t511);
+    });
+
+    // Lieux utiles : urgences et hôpitaux, palais de justice, établissements de détention (OpenStreetMap)
+    etat.couches.lieux = L.layerGroup();
+    const TYPES_LIEUX = { urgence: ["Urgence", "H"], hopital: ["Hôpital", "H"], justice: ["Palais de justice", "⚖"], detention: ["Établissement de détention", "🔒"] };
+    const chargerLieux = async () => {
+      if (etat.couches.lieux.getLayers().length) return;
+      try {
+        const { data, error } = await sb.from("lieux_utiles").select("type, nom, lat, lon, adresse, telephone");
+        if (error) throw error;
+        for (const { type, nom, lat, lon, adresse, telephone: tel } of data || []) {
+          const [libelle, sym] = TYPES_LIEUX[type] || ["Lieu", "•"];
+          L.marker([lat, lon], { icon: L.divIcon({ className: "icone-lieu " + type, html: sym, iconSize: [24, 24] }), title: nom })
+            .bindPopup(() => `<div class="popup-poste"><small>${esc(libelle)}</small><b>${esc(nom || libelle)}</b>${adresse ? `<span>${esc(adresse)}</span>` : ""}${tel ? `<a href="tel:${esc(tel.replace(/[^+\d]/g, ""))}">${esc(tel)}</a>` : ""}${liensAller(lat, lon)}<small class="ref">Source : OpenStreetMap — vérifiez avant de vous déplacer</small></div>`)
+            .addTo(etat.couches.lieux);
+        }
+      } catch { toast("Les lieux utiles seront offerts après la prochaine mise à jour des données"); }
+    };
+    $("#c-lieux").addEventListener("change", (e) => { if (e.target.checked) { chargerLieux(); etat.couches.lieux.addTo(carte); } else carte.removeLayer(etat.couches.lieux); });
+
+    // Districts judiciaires : municipalités colorées par district, nom du district au centre
+    etat.couches.districts = L.layerGroup();
+    const couleurDistrict = (nom) => { let h = 0; for (const c of nom) h = (h * 31 + c.charCodeAt(0)) % 360; return `hsl(${h}, 62%, 48%)`; };
+    const chargerDistricts = async () => {
+      if (etat.couches.districts.getLayers().length) return;
+      try {
+        const [fc, dj, idx] = await Promise.all([charger("municipalites.geojson"), charger("districts_judiciaires.json"), charger("municipalites.json")]);
+        const dist = (code) => dj[String(code).padStart(5, "0")];
+        L.geoJSON(fc, {
+          renderer: rendu, interactive: false,
+          style: (f) => { const d = dist(f.properties.code); return d ? { color: couleurDistrict(d), weight: 0.6, fillColor: couleurDistrict(d), fillOpacity: 0.22 } : { stroke: false, fill: false }; },
+        }).addTo(etat.couches.districts);
+        const centres = {};
+        for (const m of idx.municipalites) { const d = dist(m[1]); if (!d) continue; const c = (centres[d] ||= [0, 0, 0]); c[0] += m[4]; c[1] += m[3]; c[2]++; }
+        for (const [d, c] of Object.entries(centres)) {
+          L.marker([c[0] / c[2], c[1] / c[2]], { interactive: false, icon: L.divIcon({ className: "etiquette-district", html: `<span style="--c:${couleurDistrict(d)}">${esc(d)}</span>`, iconSize: null }) }).addTo(etat.couches.districts);
+        }
+      } catch { toast("Districts judiciaires indisponibles pour le moment"); }
+    };
+    $("#c-districts").addEventListener("change", (e) => { if (e.target.checked) { chargerDistricts(); etat.couches.districts.addTo(carte); } else carte.removeLayer(etat.couches.districts); });
+
+    // Mesurer une distance : chaque toucher ajoute un point
+    const mesure = { points: [], ligne: L.polyline([], { color: "#F2B33D", weight: 4, dashArray: "6 6" }), marques: L.layerGroup() };
+    const majMesure = () => {
+      mesure.ligne.setLatLngs(mesure.points);
+      let d = 0; for (let i = 1; i < mesure.points.length; i++) d += carte.distance(mesure.points[i - 1], mesure.points[i]);
+      $("#mesure-total").textContent = d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(d < 10000 ? 2 : 1).replace(".", ",")} km`;
+      $("#mesure-aide").textContent = mesure.points.length < 2 ? "Touchez la carte pour ajouter des points" : `${mesure.points.length} points · distance totale`;
+    };
+    const finMesure = (effacer) => {
+      etat.modeMesure = false;
+      $("#btn-mesure").setAttribute("aria-pressed", "false"); $("#carte").classList.remove("mode-repere");
+      if (effacer) { mesure.points = []; mesure.marques.clearLayers(); carte.removeLayer(mesure.ligne); carte.removeLayer(mesure.marques); $("#mesure-boite").hidden = true; }
+      else $("#mesure-aide").textContent = "Mesure terminée";
+    };
+    $("#btn-mesure").addEventListener("click", () => {
+      if (etat.modeMesure) return finMesure(true);
+      etat.modeRepere = false; $("#btn-repere").setAttribute("aria-pressed", "false");
+      etat.modeMesure = true; mesure.points = []; mesure.marques.clearLayers();
+      mesure.ligne.addTo(carte); mesure.marques.addTo(carte);
+      $("#btn-mesure").setAttribute("aria-pressed", "true"); $("#carte").classList.add("mode-repere");
+      $("#mesure-boite").hidden = false; $("#fiche-lieu").hidden = true; majMesure();
+    });
+    $("#mesure-annuler").addEventListener("click", () => finMesure(true));
+    $("#mesure-fin").addEventListener("click", () => finMesure(false));
+    etat.ajouterPointMesure = (ll) => {
+      mesure.points.push(ll);
+      L.circleMarker(ll, { radius: 5, color: "#fff", weight: 2, fillColor: "#F2B33D", fillOpacity: 1 }).addTo(mesure.marques);
+      majMesure();
+    };
 
     // Mes repères (privés, enregistrés dans mon compte)
     etat.couches.reperes = L.layerGroup().addTo(carte);
@@ -3453,7 +3595,7 @@
             const div = document.createElement("div");
             div.className = "popup-poste";
             div.innerHTML = `<b>${esc(r.nom)}</b>${r.note ? `<span>${esc(r.note)}</span>` : ""}<span class="ref">${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}</span>
-              <a href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}" target="_blank" rel="noopener">Itinéraire</a>
+              ${liensAller(r.lat, r.lon)}
               <button type="button" class="lien rouge" data-suppr>Supprimer ce repère</button>`;
             div.querySelector("[data-suppr]").addEventListener("click", async () => {
               const { error } = await sb.from("reperes_perso").delete().eq("id", r.id);
@@ -3517,6 +3659,7 @@
       ficheLieu(res, titre);
     };
     carte.on("click", (e) => {
+      if (etat.modeMesure) return etat.ajouterPointMesure(e.latlng);
       if (etat.modeRepere) {
         etat.modeRepere = false; $("#btn-repere").setAttribute("aria-pressed", "false"); $("#carte").classList.remove("mode-repere");
         return etat.formRepere(e.latlng.lat, e.latlng.lng);
@@ -3672,6 +3815,44 @@
     const titre = `${nr.court} · km ${best[1]}${best[1] !== km ? ` (borne la plus proche du km ${km})` : ""}`;
     etat.placer(best[4], best[3], titre, 15);
   });
+
+  /* Recherche d'adresse ou de coordonnées (géocodage OpenStreetMap Nominatim, au Québec seulement) */
+  async function chercherAdresse(q) {
+    const liste = $("#adresse-res");
+    liste.hidden = true; liste.innerHTML = "";
+    q = q.trim();
+    if (!q) return;
+    const c = q.match(/^\s*(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)\s*$/);
+    if (c) {
+      let lat = parseFloat(c[1].replace(",", ".")), lon = parseFloat(c[2].replace(",", "."));
+      if (lon > 0 && lat < 0) [lat, lon] = [lon, lat];
+      if (lon > 0) lon = -lon; // au Québec, la longitude est toujours négative
+      return etat.placer(lat, lon, `Coordonnées ${lat.toFixed(5)}, ${lon.toFixed(5)}`, 16);
+    }
+    let res;
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=ca&accept-language=fr&addressdetails=1&viewbox=-79.8,62.6,-57.1,44.9&bounded=1&q=${encodeURIComponent(q)}`;
+      const r = await fetch(url, { headers: { Accept: "application/json" } });
+      res = r.ok ? await r.json() : [];
+    } catch { return toast("Recherche d'adresse impossible pour le moment"); }
+    if (!res.length) return toast(`Aucun résultat au Québec pour « ${q} »`);
+    const nomCourt = (x) => {
+      const a = x.address || {};
+      const rue = [a.house_number, a.road].filter(Boolean).join(" ");
+      const ville = a.city || a.town || a.village || a.municipality || a.hamlet || "";
+      return [x.name && x.name !== a.road ? x.name : "", rue, ville].filter(Boolean).join(", ") || x.display_name.split(",").slice(0, 3).join(",");
+    };
+    if (res.length === 1) return etat.placer(+res[0].lat, +res[0].lon, nomCourt(res[0]), 17);
+    liste.innerHTML = res.map((x, i) => `<li><button type="button" data-i="${i}"><b>${esc(nomCourt(x))}</b><small>${esc(x.display_name)}</small></button></li>`).join("");
+    liste.hidden = false;
+    $$("button[data-i]", liste).forEach((b) => b.addEventListener("click", () => {
+      const x = res[+b.dataset.i];
+      liste.hidden = true;
+      etat.placer(+x.lat, +x.lon, nomCourt(x), 17);
+    }));
+  }
+  $("#form-adresse").addEventListener("submit", (e) => { e.preventDefault(); $("#adresse-q").blur(); chercherAdresse($("#adresse-q").value); });
+  $("#adresse-q").addEventListener("input", (e) => { if (!e.target.value) { $("#adresse-res").hidden = true; } });
 
   $("#btn-position").addEventListener("click", () => {
     if (!navigator.geolocation) return toast("La localisation n'est pas offerte sur cet appareil");

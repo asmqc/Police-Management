@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610200114">
+  <link rel="stylesheet" href="styles.css?v=202610200135">
 </head>
 <body>
   <!-- Chargement -->
@@ -515,6 +515,12 @@
 
     <!-- Vue carte -->
     <section id="vue-carte" class="vue vue-carte" hidden>
+      <form id="form-adresse" class="adresse-barre" autocomplete="off" role="search">
+        <label for="adresse-q" class="visuellement-cache">Adresse, lieu ou coordonnées</label>
+        <input id="adresse-q" type="search" placeholder="Adresse, lieu ou coordonnées (ex. 225 Rochette, Saint-Pascal)" enterkeyhint="search">
+        <button type="submit" class="btn-secondaire" aria-label="Chercher l'adresse"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <ul id="adresse-res" class="adresse-res" hidden></ul>
+      </form>
       <form id="form-km" class="km-barre" autocomplete="off">
         <div class="km-champ">
           <label for="km-route">Route</label>
@@ -537,10 +543,16 @@
       <div class="carte-zone">
         <div id="carte"></div>
         <button type="button" class="btn-repere" id="btn-repere" aria-pressed="false" title="Ajouter un repère personnel"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 7v6M9 10h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Repère</span></button>
+        <button type="button" class="btn-repere btn-mesure" id="btn-mesure" aria-pressed="false" title="Mesurer une distance"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3 17 17 3l4 4L7 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m7 13 2 2M10 10l2 2M13 7l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mesurer</span></button>
+        <div class="mesure-boite" id="mesure-boite" hidden><b id="mesure-total">0 m</b><small id="mesure-aide">Touchez la carte pour ajouter des points</small><button type="button" class="lien" id="mesure-annuler">Effacer</button><button type="button" class="lien" id="mesure-fin">Terminer</button></div>
         <div class="legende" id="legende">
           <button class="legende-tete" id="legende-bascule" aria-expanded="true">Couches</button>
           <div class="legende-corps" id="legende-corps">
             <p class="legende-profil" id="legende-profil" hidden></p>
+            <div class="fond-choix" role="radiogroup" aria-label="Fond de carte">
+              <button type="button" role="radio" data-fond="plan" aria-checked="true">Plan</button>
+              <button type="button" role="radio" data-fond="satellite" aria-checked="false">Satellite</button>
+            </div>
             <label id="ligne-mien" hidden><input type="checkbox" id="c-mien" checked> <i class="pastille mien"></i><span id="txt-mien">Mon territoire</span></label>
             <label><input type="checkbox" id="c-sq" checked> <i class="pastille sq"></i>Postes SQ (MRC)</label>
             <label><input type="checkbox" id="c-mun" checked> <i class="pastille mun"></i>Corps de police municipaux</label>
@@ -551,12 +563,15 @@
             <label><input type="checkbox" id="c-limites"> <i class="trait limites"></i>Limites et codes municipaux</label>
             <label><input type="checkbox" id="c-cam"> <i class="pastille cam"></i>Caméras MTMD</label>
             <label><input type="checkbox" id="c-autres"> <i class="pastille autres"></i>Autres postes (municipaux, GRC…)</label>
+            <label><input type="checkbox" id="c-511"> <i class="trait t511"></i>Entraves et travaux (Québec 511)</label>
+            <label><input type="checkbox" id="c-lieux"> <i class="pastille lieux"></i>Urgences, palais de justice, détention</label>
+            <label><input type="checkbox" id="c-districts"> <i class="pastille districts"></i>Districts judiciaires</label>
             <label><input type="checkbox" id="c-reperes" checked> <i class="pastille repere"></i>Mes repères</label>
           </div>
         </div>
         <div id="fiche-lieu" class="fiche" hidden></div>
       </div>
-      <p class="source">Données : MTMD, Sûreté du Québec, MRNF — Données Québec (CC-BY 4.0). Fond : © OpenStreetMap.</p>
+      <p class="source">Données : MTMD, Québec 511, SQ, MRNF (Données Québec, CC-BY 4.0) · © OpenStreetMap (ODbL) · imagerie © Esri</p>
     </section>
 
     <!-- Vue territoires -->
@@ -1337,9 +1352,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610200114"></script>
+  <script src="config.js?v=202610200135"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610200114"></script>
+  <script src="app.js?v=202610200135"></script>
 </body>
 </html>
