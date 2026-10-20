@@ -1720,3 +1720,12 @@ body.carte-plein .carte-outils { top: max(10px, env(safe-area-inset-top)); }
 .onglets-csr { grid-template-columns: 1fr 1fr 1fr; }
 .onglets-csr [data-csr-onglet="favoris"] { white-space: nowrap; }
 .liste-partages li > span.avec-pastille:first-child { display: flex; flex: 1 1 210px; }
+
+/* ---------- Avertissement : messagerie et forum non chiffrés de bout en bout ---------- */
+.avert-conv { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+  background: color-mix(in srgb, var(--ambre-vif) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--ambre-vif) 55%, transparent);
+  color: var(--fg); font-size: .82rem; line-height: 1.4; }
+.avert-conv svg { width: 18px; height: 18px; flex: none; margin-top: 1px; color: var(--ambre); }
+.avert-conv a { color: inherit; font-weight: 600; }
+.avert-conv.compact { margin: 10px 0; }
+.chat-panneau > .avert-conv { margin: 0; border-radius: 0; border-width: 0 0 1px; }

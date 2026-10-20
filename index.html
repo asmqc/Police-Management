@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610201239">
+  <link rel="stylesheet" href="styles.css?v=202610201246">
 </head>
 <body>
   <!-- Chargement -->
@@ -717,6 +717,7 @@
         <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
         <button type="button" class="btn-ok petit notif-bouton">Activer</button>
       </div></div>
+        <p class="avert-conv" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Non chiffré de bout en bout.</b> Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils ni du CRPQ. L'administrateur a un accès technique aux messages et un tribunal peut les exiger. <a href="politique.html#messagerie" target="_blank" rel="noopener">En savoir plus</a></span></p>
         <div class="chat-fil" id="chat-fil" aria-live="polite"></div>
         <form class="chat-saisie" id="chat-form" autocomplete="off">
           <label for="chat-texte" class="visuellement-cache">Message</label>
@@ -1049,6 +1050,7 @@
           <p class="ref" id="forum-corps"></p>
         </div>
         <p class="aide">Échangez avec les collègues de votre corps de police sur les infractions, l'émission de constats et le travail sur la route. Restez professionnel : pas de renseignements personnels ni de dossiers en cours.</p>
+        <p class="avert-conv" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Non chiffré de bout en bout.</b> Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils ni du CRPQ. L'administrateur a un accès technique et un tribunal peut exiger les publications. <a href="politique.html#messagerie" target="_blank" rel="noopener">En savoir plus</a></span></p>
         <button type="button" class="btn-principal forum-nouveau" id="forum-nouveau">+ Nouveau sujet</button>
         <form id="forum-form" class="panneau formulaire" novalidate hidden>
           <input id="forum-titre" maxlength="120" placeholder="Titre du sujet" aria-label="Titre du sujet">
@@ -1060,6 +1062,7 @@
       <div id="forum-fil-vue" class="forum-bloc" hidden>
         <button type="button" class="lien forum-retour" id="forum-retour">‹ Tous les sujets</button>
         <article class="panneau forum-sujet" id="forum-sujet"></article>
+        <p class="avert-conv compact" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Non chiffré de bout en bout.</b> Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils ni du CRPQ. L'administrateur a un accès technique et un tribunal peut exiger les publications. <a href="politique.html#messagerie" target="_blank" rel="noopener">En savoir plus</a></span></p>
         <div class="forum-reponses" id="forum-reponses"></div>
         <form id="forum-rep-form" class="chat-saisie forum-saisie" novalidate>
           <textarea id="forum-rep" rows="1" maxlength="4000" placeholder="Répondre…" aria-label="Votre réponse"></textarea>
@@ -1264,12 +1267,13 @@
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.20) pour couvrir l'app iPhone et iPad et les agents de la paix. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.20.2) : elle précise les règles de la messagerie et du forum, qui ne sont pas chiffrés de bout en bout. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
         <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
         <li>Votre position GPS reste sur votre appareil : elle n'est ni enregistrée ni transmise.</li>
         <li>Vos événements, notes, repères et 2ᵉ calendrier restent privés.</li>
+        <li><b>Messagerie et forum : pas de chiffrement de bout en bout.</b> L'administrateur de la plateforme y a un accès technique, et un tribunal peut en exiger la communication. Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils.</li>
         <li>Vous pouvez supprimer votre compte et toutes vos données en tout temps.</li>
       </ul>
       <p class="aide">N'inscrivez aucune information confidentielle, aucun renseignement tiré d'une banque de données policière ni aucune donnée sur des citoyens.</p>
@@ -1369,9 +1373,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610201239"></script>
+  <script src="config.js?v=202610201246"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610201239"></script>
+  <script src="app.js?v=202610201246"></script>
 </body>
 </html>
