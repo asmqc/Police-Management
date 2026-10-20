@@ -616,6 +616,21 @@
       b.classList.toggle("actif", actif);
     });
   }
+  // Texte envoyé à Claude (le policier utilise son propre compte). « court » : pour le lien claude.ai/new?q= (longueur limitée).
+  function promptClaude(question, extraits, court) {
+    const tete = `Je suis policier ou policière à la Sûreté du Québec. Réponds à ma question en te basant sur le Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}\nCite les clauses et les pages. Si les extraits ne suffisent pas, dis-le et indique quoi vérifier. Ce n'est pas un avis juridique.\n\nQuestion : ${question}\n\n`;
+    const liste = extraits.length ? `Clauses trouvées : ${extraits.map(nomClause).join(" ; ")}\n\n` : "";
+    let corps = "Extraits du contrat :\n";
+    for (const e of extraits) {
+      const brut = (e.texte || "").replace(/\s+/g, " ").trim();
+      const bloc = `\n[${nomClause(e)}] ${court ? brut.slice(0, 600) + (brut.length > 600 ? "…" : "") : brut}\n`;
+      if (court && encodeURIComponent(tete + liste + corps + bloc).length > 3600) break;
+      corps += bloc;
+    }
+    return tete + liste + (extraits.length ? corps : "");
+  }
+  const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
+  const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
   const ICONE_HP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
   const ICONE_STOP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>`;
 
@@ -626,7 +641,10 @@
       if (m.erreur) return `<article class="panneau cv-r cv-erreur"><p>${esc(m.erreur)}</p></article>`;
       const ex = m.extraits || [];
       return `<article class="panneau cv-r">
-        ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button></div>
+        ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
+          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
+          <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
+        <p class="aide">Claude explique la clause avec votre propre compte Claude (gratuit ou payant). Vérifiez toujours la clause citée.</p>
         <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
         <p class="cv-texte">${esc(ex[0].texte)}</p>
         <a class="cv-pdf" href="${PDF_CONVENTION}#page=${(ex[0].page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>
@@ -637,6 +655,12 @@
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
     $$("[data-cv-lire]", el).forEach((b) => b.addEventListener("click", () => lire(Number(b.dataset.cvLire))));
+    $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
+      const m = cv.fil[Number(b.dataset.cvCopier)];
+      try { await navigator.clipboard.writeText(promptClaude(m.question, m.extraits || [], false)); toast("Copié. Collez-le dans Claude."); }
+      catch { toast("Copie impossible sur cet appareil. Utilisez « Demander à Claude »."); return; }
+      setTimeout(() => window.open("https://claude.ai/new", "_blank", "noopener"), 700);
+    }));
     majBoutonsLecture();
     const dernier = el.lastElementChild;
     if (dernier) dernier.scrollIntoView({ block: "nearest", behavior: "smooth" });

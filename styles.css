@@ -1505,3 +1505,4 @@ body:not(.est-sq) .seulement-sq { display: none !important; }
 .cv-principale small { color: var(--fg-doux); }
 .cv-texte { white-space: pre-line; font-size: .95rem; margin: 6px 0 8px; }
 .cv-pdf { font-size: .85rem; }
+.cv-claude .btn-secondaire { flex-basis: 100%; }
