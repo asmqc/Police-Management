@@ -1655,3 +1655,38 @@ body::before { background: var(--console); }
 
 /* Carte du quart du jour : on garde le gyrophare, plus discret */
 .ac-quart, .hr-aujourdhui { border: 1px solid #1B2C46; }
+
+/* ---------- Carte presque plein écran : outils flottants, barre du haut réduite ---------- */
+body[data-vue="carte"] { --barre-h: 44px; }
+body[data-vue="carte"] .barre .marque { font-size: 1.1rem; }
+body[data-vue="carte"] .barre .btn-icone { width: 34px; height: 34px; }
+body[data-vue="carte"] .barre::after { height: 4px; }
+.vue.vue-carte { padding: 0 !important; max-width: none !important; }
+.vue-carte .carte-zone { flex: 1; }
+.vue-carte .source { display: none; }
+.carte-outils { position: absolute; z-index: 800; top: 10px; left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: grid; gap: 8px; pointer-events: none; max-width: 640px; }
+.carte-outils > * { pointer-events: auto; }
+.vue-carte .adresse-barre {
+  padding: 5px; gap: 4px; border-radius: 16px; background: color-mix(in srgb, var(--surface) 94%, transparent);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--ligne); box-shadow: 0 6px 22px rgba(6, 13, 24, .22);
+}
+.vue-carte .adresse-barre input { background: transparent; border: 0; box-shadow: none; padding: 8px 10px; min-width: 0; }
+.vue-carte .adresse-barre input:focus { box-shadow: none; background: transparent; }
+.outil-carte { flex: none; width: 40px; height: 40px; border: 0; border-radius: 11px; background: transparent; color: var(--fg); display: grid; place-items: center; padding: 0; }
+.outil-carte:hover { background: var(--surface-2); }
+.outil-carte[aria-expanded="true"], .outil-carte[aria-pressed="true"] { background: var(--console); color: var(--ambre-vif); }
+.outil-chercher { color: var(--fg-doux); }
+.vue-carte .adresse-res { left: 0; right: 0; top: calc(100% + 6px); }
+.vue-carte .km-barre { border-radius: 16px; border: 1px solid var(--ligne); background: color-mix(in srgb, var(--surface) 96%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 6px 22px rgba(6, 13, 24, .22); padding: 10px 12px; }
+.vue-carte .btn-repere { top: 72px; }
+.vue-carte .btn-mesure { top: 118px; }
+.vue-carte .legende { top: 72px; }
+.vue-carte .mesure-boite { bottom: 14px; }
+.vue-carte .fiche { bottom: 10px; }
+.leaflet-bottom.leaflet-right .leaflet-control-zoom { margin-bottom: 26px; }
+@media (max-width: 520px) { .vue-carte .leaflet-control-zoom { display: none; } }
+/* Plein écran : la carte prend tout, sans barre du haut ni onglets */
+body.carte-plein .app { grid-template-rows: 0 1fr 0; }
+body.carte-plein .barre, body.carte-plein .nav { display: none; }
+@media (min-width: 900px) { body.carte-plein .app { grid-template-columns: 0 1fr; grid-template-rows: 0 1fr; } }
+body.carte-plein .carte-outils { top: max(10px, env(safe-area-inset-top)); }

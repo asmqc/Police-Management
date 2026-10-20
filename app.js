@@ -787,6 +787,8 @@
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
     etat.vue = nom;
+    document.body.dataset.vue = nom;
+    if (nom !== "carte") document.body.classList.remove("carte-plein");
     $$(".nav button").forEach((b) => (b.dataset.vue === nom ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
     const verrou = VUES_VERROU.includes(nom) && !courrielVerifie();
     $$(".vue").forEach((v) => (v.hidden = v.id !== (verrou ? "vue-verrou" : "vue-" + nom)));
@@ -1282,7 +1284,7 @@
     if (cible === "vitesse") { afficherVue("csr"); $("[data-csr-onglet='vitesse']").click(); return; }
     if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
     afficherVue(cible);
-    const champ = { csr: "#csr-q", carte: "#km-route", corps: "#corps-q" }[cible];
+    const champ = { csr: "#csr-q", carte: "#adresse-q", corps: "#corps-q" }[cible];
     if (champ) setTimeout(() => $(champ).focus(), 150);
   }
   $$("[data-aller]").forEach((b) => b.addEventListener("click", () => allerA(b.dataset.aller)));
@@ -3331,7 +3333,8 @@
   /* ---------------- Carte ---------------- */
   function initCarte() {
     if (etat.carte) { setTimeout(() => etat.carte.invalidateSize(), 50); return; }
-    const carte = (etat.carte = L.map("carte", { zoomControl: true, preferCanvas: true }).setView([46.9, -71.8], 6));
+    const carte = (etat.carte = L.map("carte", { zoomControl: false, preferCanvas: true }).setView([46.9, -71.8], 6));
+    L.control.zoom({ position: "bottomright" }).addTo(carte);
     // Fonds : plan OpenStreetMap (assombri en thème foncé) ou imagerie satellite Esri avec noms de routes et de lieux
     const fonds = {
       plan: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap", className: "tuiles-plan" }),
@@ -3799,7 +3802,7 @@
     f.hidden = false;
     $(".fermer", f).addEventListener("click", () => { f.hidden = true; g.clearLayers(); $("#choix-unite").value = ""; });
   }
-  $("#choix-unite").addEventListener("change", (e) => afficherUnite(e.target.value));
+  $("#choix-unite").addEventListener("change", (e) => { if (e.target.value) fermerOutilsKm(); afficherUnite(e.target.value); });
 
   $("#form-km").addEventListener("submit", async (ev) => {
     ev.preventDefault();
@@ -3813,6 +3816,7 @@
     for (const r of liste) if (Math.abs(r[1] - km) < Math.abs(best[1] - km)) best = r;
     const nr = nomRoute(no, rep);
     const titre = `${nr.court} · km ${best[1]}${best[1] !== km ? ` (borne la plus proche du km ${km})` : ""}`;
+    fermerOutilsKm(); $("#km-route").blur(); $("#km-km").blur();
     etat.placer(best[4], best[3], titre, 15);
   });
 
@@ -3851,6 +3855,20 @@
       etat.placer(+x.lat, +x.lon, nomCourt(x), 17);
     }));
   }
+  // Outils de la carte : panneau borne km / poste, plein écran
+  $("#btn-outils-km").addEventListener("click", () => {
+    const f = $("#form-km"), ouvrir = f.hidden;
+    f.hidden = !ouvrir;
+    $("#btn-outils-km").setAttribute("aria-expanded", String(ouvrir));
+    if (ouvrir) setTimeout(() => $("#km-route").focus(), 50);
+  });
+  const fermerOutilsKm = () => { $("#form-km").hidden = true; $("#btn-outils-km").setAttribute("aria-expanded", "false"); };
+  $("#btn-plein-ecran").addEventListener("click", () => {
+    const plein = document.body.classList.toggle("carte-plein");
+    $("#btn-plein-ecran").setAttribute("aria-pressed", String(plein));
+    $("#btn-plein-ecran").title = plein ? "Quitter le plein écran" : "Plein écran";
+    setTimeout(() => etat.carte && etat.carte.invalidateSize(), 60);
+  });
   $("#form-adresse").addEventListener("submit", (e) => { e.preventDefault(); $("#adresse-q").blur(); chercherAdresse($("#adresse-q").value); });
   $("#adresse-q").addEventListener("input", (e) => { if (!e.target.value) { $("#adresse-res").hidden = true; } });
 
