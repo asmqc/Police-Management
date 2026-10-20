@@ -1690,3 +1690,33 @@ body.carte-plein .app { grid-template-rows: 0 1fr 0; }
 body.carte-plein .barre, body.carte-plein .nav { display: none; }
 @media (min-width: 900px) { body.carte-plein .app { grid-template-columns: 0 1fr; grid-template-rows: 0 1fr; } }
 body.carte-plein .carte-outils { top: max(10px, env(safe-area-inset-top)); }
+
+/* ---------- Pastilles d'avatar à côté des noms ---------- */
+.avatar.mini { width: 22px; height: 22px; font-size: .6rem; letter-spacing: 0; }
+.qui { display: flex !important; align-items: center; gap: 7px; min-width: 0; }
+.qui > span { min-width: 0; }
+.avec-pastille { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.avec-pastille > span:last-child { display: grid; min-width: 0; }
+.forum-rep .qui b { color: var(--fg); }
+
+/* ---------- Favoris des lois ---------- */
+.btn-favori { display: inline-flex; align-items: center; gap: 6px; }
+.btn-favori svg { width: 18px; height: 18px; }
+.btn-favori[aria-pressed="true"] { color: var(--ambre); border-color: var(--ambre-vif); background: color-mix(in srgb, var(--ambre-vif) 14%, transparent); }
+.btn-favori[aria-pressed="true"] svg path { fill: var(--ambre-vif); }
+.no-art .etoile { display: block; color: var(--ambre-vif); font-size: .8rem; line-height: 1; margin-top: 2px; }
+.onglets-csr .nb-fav { margin-left: 6px; font-family: var(--f-mono, monospace); font-size: .75rem; opacity: .75; }
+.fav-groupe { margin: 0 0 18px; }
+.fav-groupe h4 { margin: 0 0 8px; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-doux); }
+.fav-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fav-liste li { display: flex; align-items: stretch; gap: 8px; background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; }
+.fav-liste .fav-ouvrir { flex: 1; display: flex; gap: 12px; align-items: flex-start; text-align: left; background: none; border: 0; color: inherit; padding: 12px 4px 12px 12px; min-width: 0; cursor: pointer; }
+.fav-liste .fav-ouvrir .extrait { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-size: .9rem; }
+.fav-liste .fav-retirer { background: none; border: 0; color: var(--ambre-vif); padding: 0 14px; font-size: 1.2rem; cursor: pointer; }
+.fav-vide { text-align: center; padding: 28px 12px; color: var(--fg-doux); }
+.fav-vide b { display: block; margin-bottom: 4px; color: var(--fg); }
+.onglets-csr { grid-template-columns: 1fr 1.3fr 1fr; }
+@media (max-width: 380px) { .onglets-csr button { padding: 10px 4px; font-size: .88rem; } }
+.onglets-csr { grid-template-columns: 1fr 1fr 1fr; }
+.onglets-csr [data-csr-onglet="favoris"] { white-space: nowrap; }
+.liste-partages li > span.avec-pastille:first-child { display: flex; flex: 1 1 210px; }

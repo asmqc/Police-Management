@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610201204">
+  <link rel="stylesheet" href="styles.css?v=202610201227">
 </head>
 <body>
   <!-- Chargement -->
@@ -457,6 +457,12 @@
       <div class="onglets-csr" role="tablist" aria-label="Section du CSR">
         <button role="tab" data-csr-onglet="articles" aria-selected="true">Articles</button>
         <button role="tab" data-csr-onglet="vitesse" aria-selected="false">Table des vitesses</button>
+        <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
+      </div>
+
+      <div id="csr-favoris" hidden>
+        <p class="aide">Vos articles favoris, toutes lois confondues. Touchez l'étoile d'un article pour l'ajouter ou le retirer. Ils vous suivent sur le web, l'iPhone et l'iPad.</p>
+        <div id="fav-contenu"></div>
       </div>
 
       <div id="csr-vitesse" class="vitesse" hidden>
@@ -1363,9 +1369,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610201204"></script>
+  <script src="config.js?v=202610201227"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610201204"></script>
+  <script src="app.js?v=202610201227"></script>
 </body>
 </html>

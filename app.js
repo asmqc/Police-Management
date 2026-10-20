@@ -456,7 +456,7 @@
       etat.session = session;
       verifierCourriel().then(() => { if (courrielVerifie() && VUES_VERROU.includes(etat.vue)) afficherVue(etat.vue); });
     }
-    if (evenement === "SIGNED_OUT") { etat.session = null; montrerAccueilPublic(); }
+    if (evenement === "SIGNED_OUT") { etat.session = null; favoris.liste = null; favoris.enCours = null; profilsAvatars.clear(); montrerAccueilPublic(); }
   });
 
   /* ---------------- Confirmation du courriel ----------------
@@ -506,6 +506,9 @@
     $("#rg-consentement").textContent = p && p.consentement_le ? `acceptée le ${new Date(p.consentement_le).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}` : "à accepter";
   }
   const NOUVEAUTES = [
+    { date: "2026-10-20", titre: "Favoris et photos de profil", points: [
+      "Lois : touchez « Ajouter aux favoris » sur un article, puis retrouvez-les dans l'onglet ★ Favoris, toutes lois confondues, sur tous vos appareils.",
+      "Votre photo de profil s'affiche maintenant à côté de votre nom : forum, idées, échanges de quarts, collègues du poste et messagerie."] },
     { date: "2026-10-19", titre: "Fonctionnalités de l'app iPhone", points: [
       "Lois : véhicules hors route, transport rémunéré, assurance automobile et sécurité nautique (fédéral).",
       "Carte : autres postes de police (municipaux, GRC…), repères personnels et district judiciaire.",
@@ -1045,6 +1048,10 @@
     $("#chat-sous").textContent = personne.sous;
     const [url] = estAdmin() ? await urlsAvatars([personne.profil.avatar_path]) : [null];
     $("#chat-avatar").innerHTML = url ? `<img src="${esc(url)}" alt="">` : esc(initiales(personne.profil));
+    if (!estAdmin() && personne.id) {
+      $("#chat-avatar").dataset.av = personne.id; delete $("#chat-avatar").dataset.avOk;
+      hydraterPastilles($("#chat-avatar").parentElement);
+    }
     if (!id) { msg.fil = []; rendreFil(true); return; }
     const { data, error } = await sb.from("messages").select("id, expediteur, destinataire, contenu, cree_le, lu_le")
       .or(`and(expediteur.eq.${moi},destinataire.eq.${id}),and(expediteur.eq.${id},destinataire.eq.${moi})`)
@@ -1313,17 +1320,17 @@
     $("#hr-poste-liste").innerHTML = !p.unite
       ? `<li class="vide-petit">Indiquez votre unité ou votre poste dans Mon compte pour voir les rotations de vos collègues.</li>`
       : hr.poste.length ? hr.poste.map((x) => `
-      <li><span><b>${esc(x.nom)}</b><small>${esc(x.grade || "")}${x.a_rotation ? "" : (x.grade ? " · " : "") + "rotation pas encore configurée"}</small></span>
+      <li><span class="avec-pastille">${pastille(x.id, x.nom, "petit")}<span><b>${esc(x.nom)}</b><small>${esc(x.grade || "")}${x.a_rotation ? "" : (x.grade ? " · " : "") + "rotation pas encore configurée"}</small></span></span>
       ${x.a_rotation ? `<button class="btn-secondaire petit" data-voir="${x.id}">Voir</button>` : ""}</li>`).join("")
       : `<li class="vide-petit">Aucun autre membre de votre poste n'utilise encore l'app.</li>`;
     const donnes = hr.partages.filter((x) => x.sens === "donne");
     const recus = hr.partages.filter((x) => x.sens === "recu");
     $("#hr-partages-donnes").innerHTML = donnes.length ? donnes.map((x) => `
-      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <li><span class="avec-pastille">${pastille(x.id, x.nom || x.email, "petit")}<span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span></span>
       <button class="btn-danger petit" data-retirer="${x.id}">Retirer</button></li>`).join("")
       : `<li class="vide-petit">Votre horaire n'est partagé avec personne.</li>`;
     $("#hr-partages-recus").innerHTML = recus.length ? recus.map((x) => `
-      <li><span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span>
+      <li><span class="avec-pastille">${pastille(x.id, x.nom || x.email, "petit")}<span><b>${esc(x.nom || x.email)}</b><small>${esc([x.grade, x.corps, x.unite].filter(Boolean).join(" · ") || x.email)}</small></span></span>
       <span class="fc-ligne"><button class="btn-secondaire petit" data-voir="${x.id}">Voir</button><button class="lien" data-quitter="${x.id}">Ne plus recevoir</button></span></li>`).join("")
       : `<li class="vide-petit">Personne ne vous a encore partagé son horaire.</li>`;
     const sel = $("#hr-qui");
@@ -1335,6 +1342,7 @@
     sel.value = hr.vue ? hr.vue.id : "";
     hr.quiVisible = !!(duPoste.length || autres.length);
     $("#hr-qui-bloc").hidden = !hr.quiVisible || hr.cible === "conjoint";
+    ["#hr-poste-liste", "#hr-partages-donnes", "#hr-partages-recus"].forEach((s) => hydraterPastilles($(s)));
     $$("[data-retirer]").forEach((b) => b.addEventListener("click", () => retirerPartage(etat.profil.id, b.dataset.retirer, "Partage retiré")));
     $$("[data-quitter]").forEach((b) => b.addEventListener("click", () => retirerPartage(b.dataset.quitter, etat.profil.id, "Vous ne recevez plus cet horaire")));
     $$("[data-voir]").forEach((b) => b.addEventListener("click", () => { $("#hr-qui").value = b.dataset.voir; afficherHoraireDe(b.dataset.voir); window.scrollTo(0, 0); $("#vue-horaire").scrollTo(0, 0); }));
@@ -1904,13 +1912,14 @@
     const libelle = (e) => `${QUARTS[e.code] ? QUARTS[e.code].nom : e.code} · ${new Date(e.jour + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" })}${e.debut ? ` · ${e.debut}–${e.fin}` : ""}`;
     $("#hr-echanges-nb").textContent = offerts.length || ""; $("#hr-echanges-nb").hidden = !offerts.length;
     $("#ech-offerts").innerHTML = !etat.profil.unite ? `<li class="vide-petit">Indiquez votre unité ou votre poste dans Mon compte pour échanger des quarts.</li>`
-      : offerts.length ? offerts.map((e) => `<li><span><b>${esc(libelle(e))}</b><small>Offert par ${esc(e.offreur_nom)}${e.note ? " · " + esc(e.note) : ""}</small></span>
+      : offerts.length ? offerts.map((e) => `<li><span><b>${esc(libelle(e))}</b><small class="qui">${pastille(e.offreur, e.offreur_nom)}<span>Offert par ${esc(e.offreur_nom)}${e.note ? " · " + esc(e.note) : ""}</span></small></span>
         <button class="btn-ok petit" data-prendre="${e.id}">Prendre</button></li>`).join("")
       : `<li class="vide-petit">Aucun quart offert à votre poste pour le moment.</li>`;
-    $("#ech-miens").innerHTML = miens.length ? miens.map((e) => `<li><span><b>${esc(libelle(e))}</b><small>${
-      e.offreur !== moi ? `Pris de ${esc(e.offreur_nom)} ✅` : e.statut === "pris" ? `Pris par ${esc(e.preneur_nom)} ✅` : "En attente d'un preneur"}</small></span>
+    $("#ech-miens").innerHTML = miens.length ? miens.map((e) => `<li><span><b>${esc(libelle(e))}</b><small class="qui">${
+      e.offreur !== moi ? `${pastille(e.offreur, e.offreur_nom)}<span>Pris de ${esc(e.offreur_nom)} ✅</span>` : e.statut === "pris" ? `${pastille(e.preneur, e.preneur_nom)}<span>Pris par ${esc(e.preneur_nom)} ✅</span>` : "En attente d'un preneur"}</small></span>
       ${e.offreur === moi && e.statut === "offert" ? `<button class="btn-danger petit" data-retirer-offre="${e.id}">Retirer</button>` : ""}</li>`).join("")
       : `<li class="vide-petit">Vous n'avez offert ni pris aucun quart.</li>`;
+    hydraterPastilles($("#ech-offerts")); hydraterPastilles($("#ech-miens"));
     $$("[data-prendre]").forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
       b.disabled = true;
@@ -2032,17 +2041,18 @@
   async function initForum() {
     $("#forum-corps").textContent = estAdmin() ? (etat.corpsAdmin ? `${etat.corpsAdmin} · vue administrateur` : "Tous les corps · vue administrateur") : (etat.profil.corps_police || "Votre corps de police");
     montrerFil(false);
-    const { data, error } = await sb.rpc("forum_liste");
+    const { data, error } = await sb.rpc("forum_liste_v2");
     if (error) { $("#forum-sujets").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     forum.sujets = (data || []).filter((x) => corpsVisible(x.corps));
     $("#forum-sujets").innerHTML = forum.sujets.length ? forum.sujets.map((x) => `
       <button type="button" class="forum-ligne" data-sujet="${x.id}">
         <b>${esc(x.titre)}</b>
         <span class="forum-extrait">${esc(x.contenu.slice(0, 140))}</span>
-        <small>${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}${estAdmin() ? " · " + esc(x.corps) : ""}</small>
+        <small class="qui">${pastille(x.auteur, x.auteur_nom)}<span>${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}${estAdmin() ? " · " + esc(x.corps) : ""}</span></small>
         <i>${x.nb_reponses} réponse${x.nb_reponses > 1 ? "s" : ""}</i>
       </button>`).join("") : `<p class="vide">Aucune discussion pour le moment. Lancez la première !</p>`;
     $$("[data-sujet]").forEach((b) => b.addEventListener("click", () => ouvrirSujet(b.dataset.sujet)));
+    hydraterPastilles($("#forum-sujets"));
   }
   function montrerFil(v) { $("#forum-liste-vue").hidden = v; $("#forum-fil-vue").hidden = !v; }
   $("#forum-nouveau").addEventListener("click", () => { $("#forum-form").hidden = false; $("#forum-nouveau").hidden = true; $("#forum-titre").focus(); });
@@ -2064,7 +2074,7 @@
     forum.ouvert = x;
     montrerFil(true);
     $("#vue-forum").scrollTo(0, 0);
-    $("#forum-sujet").innerHTML = `<h3>${esc(x.titre)}</h3><small class="ref">${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}</small>
+    $("#forum-sujet").innerHTML = `<h3>${esc(x.titre)}</h3><small class="ref qui">${pastille(x.auteur, x.auteur_nom, "petit")}<span>${esc(x.auteur_nom)} · ${esc(quand(x.cree_le))}</span></small>
       <div class="msg-texte">${esc(x.contenu)}</div>
       <div class="fc-ligne">${x.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-sujet>Supprimer le sujet</button>` : ""}${!x.est_moi ? `<button class="lien" data-signaler="sujet" data-cible="${x.id}">Signaler à l'administrateur</button>` : ""}</div>`;
     const sup = $("[data-suppr-sujet]", $("#forum-sujet"));
@@ -2075,14 +2085,15 @@
       toast("Sujet supprimé"); initForum();
     });
     brancherSignalements($("#forum-sujet"), x.contenu);
+    hydraterPastilles($("#forum-sujet"));
     await chargerReponses();
   }
   async function chargerReponses() {
     const x = forum.ouvert;
-    const { data, error } = await sb.rpc("forum_reponses_liste", { p_sujet: x.id });
+    const { data, error } = await sb.rpc("forum_reponses_liste_v2", { p_sujet: x.id });
     if (error) return toast(traduireErreur(error));
     $("#forum-reponses").innerHTML = (data || []).length ? data.map((r) => `
-      <div class="forum-rep ${r.est_moi ? "moi" : ""}"><small><b>${esc(r.auteur_nom)}</b> · ${esc(quand(r.cree_le))}</small><div class="msg-texte">${esc(r.contenu)}</div>
+      <div class="forum-rep ${r.est_moi ? "moi" : ""}"><small class="qui">${pastille(r.auteur, r.auteur_nom)}<span><b>${esc(r.auteur_nom)}</b> · ${esc(quand(r.cree_le))}</span></small><div class="msg-texte">${esc(r.contenu)}</div>
         <div class="fc-ligne">${r.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-rep="${r.id}">Supprimer</button>` : ""}${!r.est_moi ? `<button class="lien" data-signaler="reponse" data-cible="${r.id}" data-extrait="${esc(r.contenu.slice(0, 200))}">Signaler</button>` : ""}</div></div>`).join("")
       : `<p class="aide">Aucune réponse pour le moment.</p>`;
     $$("[data-suppr-rep]").forEach((b) => b.addEventListener("click", async () => {
@@ -2092,6 +2103,7 @@
       chargerReponses();
     }));
     brancherSignalements($("#forum-reponses"));
+    hydraterPastilles($("#forum-reponses"));
   }
   function brancherSignalements(racine, extraitParDefaut = "") {
     $$("[data-signaler]", racine).forEach((b) => b.addEventListener("click", async () => {
@@ -2128,7 +2140,7 @@
   }
   $$("[data-idees]").forEach((b) => b.addEventListener("click", () => { ongletIdees = b.dataset.idees; initIdees(); }));
   async function chargerIdees() {
-    const { data: brut, error } = await sb.rpc("idees_liste_v2");
+    const { data: brut, error } = await sb.rpc("idees_liste_v3");
     const data = (brut || []).filter((i) => corpsVisible(i.corps));
     if (error) { $("#idees-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     $("#idees-liste").innerHTML = (data || []).length ? data.map((i) => `
@@ -2136,11 +2148,12 @@
         <button type="button" class="idee-vote ${i.j_ai_vote ? "vote" : ""}" data-voter="${i.id}" data-a="${i.j_ai_vote}" aria-pressed="${i.j_ai_vote}" aria-label="Voter pour cette idée">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="m6 14 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b>${i.nb_votes}</b></button>
         <div class="idee-txt"><b>${esc(i.titre)}</b>${i.description ? `<span>${esc(i.description)}</span>` : ""}
-          <small>${esc(i.auteur_nom)} · ${esc(quand(i.cree_le))} · <span class="statut-idee ${esc(i.statut)}">${esc(STATUTS_IDEE[i.statut])}</span>${estAdmin() && !etat.corpsAdmin ? ` · ${esc(i.corps)}` : ""}</small>
+          <small class="qui">${pastille(i.auteur, i.auteur_nom)}<span>${esc(i.auteur_nom)} · ${esc(quand(i.cree_le))} · <span class="statut-idee ${esc(i.statut)}">${esc(STATUTS_IDEE[i.statut])}</span>${estAdmin() && !etat.corpsAdmin ? ` · ${esc(i.corps)}` : ""}</span></small>
           ${estAdmin() ? `<span class="fc-ligne"><select data-statut-idee="${i.id}" aria-label="Statut">${Object.entries(STATUTS_IDEE).map(([k, v]) => `<option value="${k}" ${k === i.statut ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></span>` : ""}
           ${i.est_moi || estAdmin() ? `<button class="lien rouge" data-suppr-idee="${i.id}">Supprimer</button>` : ""}
         </div>
       </div>`).join("") : `<p class="vide">Aucune demande pour le moment. Proposez la première !</p>`;
+    hydraterPastilles($("#idees-liste"));
     $$("[data-voter]").forEach((b) => b.addEventListener("click", async () => {
       b.disabled = true;
       const r = b.dataset.a === "true"
@@ -2777,6 +2790,26 @@
   function htmlAvatar(p, url, taille = "moyen") {
     return `<span class="avatar ${taille}">${url ? `<img src="${esc(url)}" alt="">` : esc(initiales(p))}</span>`;
   }
+  // Pastille à côté d'un nom : initiales tout de suite, photo ensuite (si la personne en a une et qu'on peut la voir)
+  const profilsAvatars = new Map();
+  function pastille(id, nom, taille = "mini") {
+    if (!id) return "";
+    return `<span class="avatar ${taille}" data-av="${esc(id)}" aria-hidden="true">${esc(initiales({ nom_complet: nom || "?" }))}</span>`;
+  }
+  async function hydraterPastilles(racine) {
+    const els = $$("[data-av]", racine || document).filter((e) => !e.dataset.avOk);
+    if (!els.length) return;
+    const ids = [...new Set(els.map((e) => e.dataset.av))];
+    const manquants = ids.filter((i) => !profilsAvatars.has(i));
+    if (manquants.length) {
+      const { data } = await sb.rpc("avatars_visibles", { p_ids: manquants });
+      manquants.forEach((i) => profilsAvatars.set(i, null));
+      (data || []).forEach((p) => profilsAvatars.set(p.id, p));
+    }
+    const urls = await urlsAvatars(ids.map((i) => (profilsAvatars.get(i) || {}).avatar_path));
+    const parId = new Map(ids.map((i, k) => [i, urls[k]]));
+    els.forEach((e) => { e.dataset.avOk = "1"; const u = parId.get(e.dataset.av); if (u) e.innerHTML = `<img src="${esc(u)}" alt="">`; });
+  }
   async function remplirAvatar(el, p) {
     const [url] = await urlsAvatars([p.avatar_path]);
     el.innerHTML = url ? `<img src="${esc(url)}" alt="">` : esc(initiales(p));
@@ -3011,13 +3044,15 @@
   function surlignerLigne() {
     $$("#vt-table tbody tr").forEach((tr) => tr.classList.toggle("choisie", +tr.dataset.v === Math.floor(vt.vitesse / 5) * 5));
   }
-  $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => {
-    const vitesse = b.dataset.csrOnglet === "vitesse";
-    $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    $("#csr-vitesse").hidden = !vitesse;
-    $("#csr-articles").hidden = vitesse;
-    if (vitesse) initVitesse();
-  }));
+  function ongletLois(nom) {
+    $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.csrOnglet === nom)));
+    $("#csr-vitesse").hidden = nom !== "vitesse";
+    $("#csr-articles").hidden = nom !== "articles";
+    $("#csr-favoris").hidden = nom !== "favoris";
+    if (nom === "vitesse") initVitesse();
+    if (nom === "favoris") rendreFavoris();
+  }
+  $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => ongletLois(b.dataset.csrOnglet)));
 
   /* ---------------- Code de la sécurité routière ---------------- */
   const RACCOURCIS = [
@@ -3049,7 +3084,72 @@
   });
   const loiCourante = () => LOIS[etat.loi] || LOIS.csr;
 
+  /* Favoris : articles marqués d'une étoile, par membre (table lois_favoris, visible par lui seul) */
+  const favoris = { liste: null, enCours: null };
+  const cleFav = (loi, no) => loi + "|" + no;
+  const ETOILE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.2 2.7 5.5 6 .9-4.35 4.25 1.03 6L12 17l-5.38 2.85 1.03-6L3.3 9.6l6-.9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+  async function chargerFavoris(forcer) {
+    if (favoris.liste && !forcer) return favoris.liste;
+    if (!favoris.enCours || forcer) {
+      favoris.enCours = sb.from("lois_favoris").select("loi, numero, cree_le").order("cree_le", { ascending: false })
+        .then(({ data }) => { favoris.liste = data || []; majNbFavoris(); return favoris.liste; });
+    }
+    return favoris.enCours;
+  }
+  const estFavori = (loi, no) => !!(favoris.liste || []).some((f) => cleFav(f.loi, f.numero) === cleFav(loi, no));
+  function majNbFavoris() { $("#nb-fav").textContent = favoris.liste && favoris.liste.length ? favoris.liste.length : ""; }
+  async function basculerFavori(loi, no) {
+    await chargerFavoris();
+    const deja = estFavori(loi, no);
+    const { error } = deja
+      ? await sb.from("lois_favoris").delete().eq("loi", loi).eq("numero", no)
+      : await sb.from("lois_favoris").insert({ loi, numero: no });
+    if (error) { toast(traduireErreur(error)); return deja; }
+    if (deja) favoris.liste = favoris.liste.filter((f) => cleFav(f.loi, f.numero) !== cleFav(loi, no));
+    else favoris.liste.unshift({ loi, numero: no, cree_le: new Date().toISOString() });
+    majNbFavoris();
+    toast(deja ? "Retiré des favoris" : `${(LOIS[loi] || {}).court || ""} art. ${no} ajouté aux favoris ★`);
+    return !deja;
+  }
+  async function rendreFavoris() {
+    const el = $("#fav-contenu");
+    if (!favoris.liste) el.innerHTML = `<p class="etat">Chargement de vos favoris…</p>`;
+    const liste = await chargerFavoris();
+    if (!liste.length) {
+      el.innerHTML = `<div class="fav-vide"><b>Aucun favori pour le moment</b>Ouvrez un article dans l'onglet Articles, puis touchez « Ajouter aux favoris ».</div>`;
+      return;
+    }
+    const parLoi = Object.keys(LOIS).map((k) => [k, liste.filter((f) => f.loi === k)]).filter(([, l]) => l.length);
+    const textes = {};
+    await Promise.all(parLoi.map(async ([k]) => {
+      try { const brut = await charger(LOIS[k].fichier); textes[k] = Array.isArray(brut) ? brut : brut.articles; } catch { textes[k] = []; }
+    }));
+    const ordre = (k, no) => { const a = textes[k].find((x) => x.numero === no); return a ? a.ordre ?? textes[k].indexOf(a) : 1e9; };
+    el.innerHTML = parLoi.map(([k, l]) => `<section class="fav-groupe"><h4>${esc(LOIS[k].nom)} · ${esc(LOIS[k].court)}</h4><ul class="fav-liste">${
+      l.slice().sort((a, b) => ordre(k, a.numero) - ordre(k, b.numero)).map((f) => {
+        const a = textes[k].find((x) => x.numero === f.numero);
+        return `<li><button class="fav-ouvrir" data-fav-loi="${esc(k)}" data-fav-no="${esc(f.numero)}"><span class="no-art">${esc(f.numero)}</span>
+          <span class="extrait-bloc"><small>${esc(a ? a.section || a.chapitre || a.titre || "" : "")}</small><span class="extrait">${esc(a ? a.texte.replace(/\s+/g, " ").slice(0, 260) : "Article introuvable dans la version actuelle du texte.")}</span></span></button>
+          <button class="fav-retirer" data-fav-retirer data-fav-loi="${esc(k)}" data-fav-no="${esc(f.numero)}" aria-label="Retirer l'article ${esc(f.numero)} des favoris" title="Retirer des favoris">★</button></li>`;
+      }).join("")}</ul></section>`).join("");
+    $$(".fav-ouvrir", el).forEach((b) => b.addEventListener("click", () => ouvrirFavori(b.dataset.favLoi, b.dataset.favNo)));
+    $$("[data-fav-retirer]", el).forEach((b) => b.addEventListener("click", async () => { await basculerFavori(b.dataset.favLoi, b.dataset.favNo); rendreFavoris(); }));
+  }
+  async function ouvrirFavori(loi, no) {
+    ongletLois("articles");
+    if (etat.loi !== loi || !etat.csr || !etat.csr.length) {
+      etat.loi = loi; $("#loi-choix").value = loi;
+      try { localStorage.setItem("pm-loi", loi); } catch { /* facultatif */ }
+      etat.csr = null;
+      await initCsr();
+    }
+    $("#csr-q").value = no;
+    chercherCsr();
+    ouvrirArticle(etat.csr.find((a) => a.numero === no));
+  }
+
   async function initCsr() {
+    chargerFavoris().then(() => { if (etat.csr && etat.csr.length && $("#csr-q")) marquerEtoiles(); });
     if (etat.csr) return;
     etat.csr = [];
     const loi = loiCourante();
@@ -3124,12 +3224,19 @@
       : `${etat.csr.length} articles. Cherchez par numéro ou par mot-clé.`;
     $("#csr-liste").innerHTML = res.slice(0, max).map((a) => `
       <li><button data-no="${esc(a.numero)}">
-        <span class="no-art">${esc(a.numero)}</span>
+        <span class="no-art">${esc(a.numero)}${estFavori(etat.loi, a.numero) ? `<i class="etoile" aria-label="Favori">★</i>` : ""}</span>
         <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span></span>
       </button></li>`).join("");
     $$("#csr-liste button").forEach((b) => b.addEventListener("click", () => ouvrirArticle(etat.csr.find((a) => a.numero === b.dataset.no), termes)));
   }
 
+  function marquerEtoiles() {
+    $$("#csr-liste button[data-no]").forEach((b) => {
+      const no = $(".no-art", b), oui = estFavori(etat.loi, b.dataset.no), e = $(".etoile", no);
+      if (oui && !e) no.insertAdjacentHTML("beforeend", `<i class="etoile" aria-label="Favori">★</i>`);
+      if (!oui && e) e.remove();
+    });
+  }
   function ouvrirArticle(a, termes = []) {
     if (!a) return;
     const el = $("#csr-article");
@@ -3139,6 +3246,7 @@
       <h3>${esc(a.numero)}</h3>
       <div class="texte">${surligner(a.texte, termes)}</div>
       <div class="outils-art">
+        <button class="btn-secondaire btn-favori" data-favori aria-pressed="${estFavori(etat.loi, a.numero)}">${ETOILE}<span>${estFavori(etat.loi, a.numero) ? "Dans mes favoris" : "Ajouter aux favoris"}</span></button>
         <button class="btn-secondaire" data-copier>Copier le texte</button>
         <a class="btn-secondaire" href="${esc(loi.lien(a.numero))}" target="_blank" rel="noopener">Texte officiel (${loi.site})</a>
         <button class="btn-secondaire" data-prec>‹ Précédent</button>
@@ -3149,6 +3257,14 @@
     $$("#csr-liste button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.no === a.numero)));
     const i = etat.csr.indexOf(a);
     $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}`));
+    const loiArt = etat.loi;
+    $("[data-favori]", el).addEventListener("click", async (ev) => {
+      const b = ev.currentTarget; b.disabled = true;
+      const oui = await basculerFavori(loiArt, a.numero);
+      b.disabled = false; b.setAttribute("aria-pressed", String(oui));
+      $("span", b).textContent = oui ? "Dans mes favoris" : "Ajouter aux favoris";
+      if (loiArt === etat.loi) marquerEtoiles();
+    });
     $("[data-prec]", el).addEventListener("click", () => ouvrirArticle(etat.csr[i - 1], termes));
     $("[data-suiv]", el).addEventListener("click", () => ouvrirArticle(etat.csr[i + 1], termes));
     if (window.innerWidth < 900) el.scrollIntoView({ behavior: "smooth", block: "start" });
