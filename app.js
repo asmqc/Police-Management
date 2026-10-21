@@ -5,6 +5,19 @@
   const C = window.PE_CONFIG;
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
+  // App ajoutée à l'écran d'accueil de l'iPhone : iOS donne au site une hauteur trop courte (il manque la hauteur de la barre d'état),
+  // ce qui laissait une bande vide sous les onglets. On prend la hauteur réelle de l'écran pour que l'app aille jusqu'en bas.
+  if (navigator.standalone && /iPhone|iPod/.test(navigator.userAgent)) {
+    document.documentElement.classList.add("ios-pwa");
+    const majHauteurEcran = () => {
+      const paysage = matchMedia("(orientation: landscape)").matches;
+      const h = paysage ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+      document.documentElement.style.setProperty("--app-h", Math.max(h, window.innerHeight) + "px");
+    };
+    majHauteurEcran();
+    addEventListener("resize", majHauteurEcran);
+    addEventListener("orientationchange", () => setTimeout(majHauteurEcran, 350));
+  }
   if (estAppIOS) document.documentElement.classList.add("app-ios");
   // Lien « point partagé » : #carte@46.81234,-71.21234
   { const m = (location.hash || "").match(/^#carte@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/); if (m) { try { sessionStorage.setItem("pm-point", JSON.stringify([+m[1], +m[2]])); } catch { /* facultatif */ } } }

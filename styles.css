@@ -1746,3 +1746,6 @@ body.carte-plein .app { padding-top: 0; grid-template-rows: 0 minmax(0, 1fr) 0; 
 body.carte-plein .vue-carte .btn-repere { top: calc(72px + env(safe-area-inset-top, 0px)); }
 body.carte-plein .vue-carte .btn-mesure { top: calc(118px + env(safe-area-inset-top, 0px)); }
 body.carte-plein .vue-carte .legende { top: calc(72px + env(safe-area-inset-top, 0px)); }
+/* Écran d'accueil iPhone : hauteur réelle de l'écran (voir app.js) */
+html.ios-pwa, html.ios-pwa body { height: var(--app-h, 100%); }
+html.ios-pwa .app { bottom: auto; height: var(--app-h, 100%); }
