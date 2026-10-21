@@ -522,6 +522,7 @@
   const NOUVEAUTES = [
     { date: "2026-10-20", titre: "Feuille de poste", points: [
       "Nouvel onglet Feuille : la feuille aide-mémoire de votre poste, en photo ou en PDF, partagée avec les membres de votre poste.",
+      "Version web : Claude (votre compte gratuit) lit la photo et crée une feuille propre et uniforme, sans les codes ni les fréquences radio.",
       "Tout membre du poste peut la remplacer ou la retirer. Lisez bien les règles : aucun code d'accès, aucune fréquence radio, aucun numéro interne, aucun renseignement sur une personne."] },
   ];
   function ouvrirNouveautes() {
@@ -2173,7 +2174,7 @@
     const p = etat.profil;
     $("#fp-poste").textContent = p.unite ? [p.unite, p.corps_police].filter(Boolean).join(" · ") : "Aucun poste indiqué";
     $("#fp-confirme").checked = false; $("#fp-choisir").disabled = true;
-    $("#fp-envoi").hidden = !p.unite;
+    $("#fp-envoi").hidden = !p.unite; $("#fp-claude").hidden = !p.unite;
     if (estAdmin()) chargerFeuillesAdmin();
     if (!p.unite) {
       $("#fp-contenu").innerHTML = `<div class="panneau fp-vide"><b>Aucun poste indiqué</b><span>Indiquez votre unité ou votre poste dans Mon compte pour voir et partager la feuille de votre poste.</span><button type="button" class="btn-secondaire" data-menu-compte>Ouvrir Mon compte</button></div>`;
@@ -2181,7 +2182,7 @@
       return;
     }
     $("#fp-contenu").innerHTML = `<p class="etat">Chargement de la feuille…</p>`;
-    const { data, error } = await sb.rpc("feuille_poste");
+    const { data, error } = await sb.rpc("feuille_poste_v2");
     if (error) { $("#fp-contenu").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     fp.donnees = (data && data[0]) || null;
     fp.zoom = 1;
@@ -2189,11 +2190,44 @@
   }
   async function rendreFeuille() {
     const el = $("#fp-contenu"), f = fp.donnees;
-    $("#fp-envoi-titre").textContent = f ? "Remplacer la feuille" : "Ajouter la feuille de votre poste";
-    if (!f) {
+    const aPhoto = !!(f && f.chemin), aWeb = !!(f && f.donnees);
+    $("#fp-envoi-titre").textContent = aPhoto ? "Remplacer la photo de la feuille" : "Ajouter la photo de la feuille de votre poste";
+    if (!aPhoto && !aWeb) {
       el.innerHTML = `<div class="panneau fp-vide"><b>Votre poste n'a pas encore de feuille</b><span>Ajoutez-en une ci-dessous : elle sera visible par tous les membres approuvés de votre poste.</span></div>`;
       return;
     }
+    if (!fp.mode || (fp.mode === "web" && !aWeb) || (fp.mode === "photo" && !aPhoto)) fp.mode = aWeb ? "web" : "photo";
+    el.innerHTML = (aPhoto && aWeb ? `<div class="segmente fp-modes" role="radiogroup" aria-label="Affichage de la feuille">
+        <button type="button" role="radio" data-fp-mode="web" aria-checked="${fp.mode === "web"}">Version web</button>
+        <button type="button" role="radio" data-fp-mode="photo" aria-checked="${fp.mode === "photo"}">Photo</button></div>` : "") + `<div id="fp-zone"></div>`;
+    $$("[data-fp-mode]", el).forEach((b) => b.addEventListener("click", () => { fp.mode = b.dataset.fpMode; rendreFeuille(); }));
+    if (fp.mode === "web") rendreWeb($("#fp-zone"), f); else await rendrePhoto($("#fp-zone"));
+  }
+  function rendreWeb(zone, f) {
+    zone.innerHTML = `<div class="panneau fpw">
+      <div class="fp-barre"><small class="ref">Version web · mise à jour ${esc(quand(f.donnees_le))} par ${esc(f.donnees_par_nom)}</small></div>
+      ${htmlFeuilleWeb(filtrerAffichage(f.donnees))}
+      <div class="fc-ligne">${estAdmin() ? "" : `<button type="button" class="lien" id="fp-signaler-web">Signaler à l'administrateur</button>`}<button type="button" class="lien rouge" id="fp-retirer-web">Retirer la version web</button></div>
+    </div>`;
+    const sig = $("#fp-signaler-web");
+    if (sig) sig.addEventListener("click", () => signalerFeuille(sig, f));
+    const ret = $("#fp-retirer-web");
+    ret.addEventListener("click", async () => {
+      if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la version web"; return; }
+      const { error } = await sb.rpc("feuille_poste_donnees_retirer", {});
+      if (error) return toast(traduireErreur(error));
+      toast("Version web retirée"); chargerFeuille();
+    });
+  }
+  async function signalerFeuille(sig, f) {
+    if (!sig.dataset.arme) { sig.dataset.arme = "1"; sig.textContent = "Confirmer le signalement"; return; }
+    sig.disabled = true;
+    const { error } = await sb.rpc("envoyer_message", { p_destinataire: null, p_contenu: `Signalement — Feuille de poste de ${f.unite}${etat.profil.corps_police ? " (" + etat.profil.corps_police + ")" : ""} : elle pourrait contenir un élément interdit (code d'accès, fréquence radio, numéro interne ou renseignement sur une personne). Merci de la vérifier.` });
+    if (error) { sig.disabled = false; return toast(traduireErreur(error)); }
+    sig.textContent = "Signalé ✓"; toast("L'administrateur a été avisé et vérifiera la feuille");
+  }
+  async function rendrePhoto(el) {
+    const f = fp.donnees;
     el.innerHTML = `<p class="etat">Chargement de la feuille…</p>`;
     try {
       const blob = await blobFeuille(f.chemin);
@@ -2209,7 +2243,7 @@
       </div>
       ${image ? `<div class="fp-cadre" id="fp-cadre"><img id="fp-img" src="${esc(fp.url)}" alt="Feuille de poste de ${esc(f.unite)}"></div><p class="aide fp-astuce">Touchez deux fois la feuille pour l'agrandir, puis glissez pour vous déplacer.</p>`
         : `<div class="fp-pdf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6zM14 2v6h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><text x="12.5" y="18" text-anchor="middle" font-size="5.5" font-weight="700" fill="currentColor">PDF</text></svg><b>Feuille en PDF</b><a class="btn-principal" href="${esc(fp.url)}" target="_blank" rel="noopener">Ouvrir le PDF</a></div>`}
-      <div class="fc-ligne">${estAdmin() ? "" : `<button type="button" class="lien" id="fp-signaler">Signaler à l'administrateur</button>`}<button type="button" class="lien rouge" id="fp-retirer">Retirer la feuille</button></div>
+      <div class="fc-ligne">${estAdmin() ? "" : `<button type="button" class="lien" id="fp-signaler">Signaler à l'administrateur</button>`}<button type="button" class="lien rouge" id="fp-retirer">Retirer la photo</button></div>
     </div>`;
     if (image) {
       const img = $("#fp-img"), cadre = $("#fp-cadre");
@@ -2223,22 +2257,16 @@
       appliquer();
     }
     const sig = $("#fp-signaler");
-    if (sig) sig.addEventListener("click", async () => {
-      if (!sig.dataset.arme) { sig.dataset.arme = "1"; sig.textContent = "Confirmer le signalement"; return; }
-      sig.disabled = true;
-      const { error } = await sb.rpc("envoyer_message", { p_destinataire: null, p_contenu: `Signalement — Feuille de poste de ${f.unite}${etat.profil.corps_police ? " (" + etat.profil.corps_police + ")" : ""} : elle pourrait contenir un élément interdit (code d'accès, fréquence radio, numéro interne ou renseignement sur une personne). Merci de la vérifier.` });
-      if (error) { sig.disabled = false; return toast(traduireErreur(error)); }
-      sig.textContent = "Signalé ✓"; toast("L'administrateur a été avisé et vérifiera la feuille");
-    });
+    if (sig) sig.addEventListener("click", () => signalerFeuille(sig, f));
     const ret = $("#fp-retirer");
     ret.addEventListener("click", async () => {
-      if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la feuille du poste"; return; }
+      if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la photo du poste"; return; }
       ret.disabled = true;
       const { data: ancien, error } = await sb.rpc("feuille_poste_retirer", {});
       if (error) { ret.disabled = false; return toast(traduireErreur(error)); }
       if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
       viderCacheFeuille();
-      toast("Feuille retirée"); chargerFeuille();
+      toast("Photo retirée"); chargerFeuille();
     });
   }
   // Photo : redimensionnée (2600 px max.) et recréée en JPEG, ce qui retire la position GPS et les données de l'appareil
@@ -2290,15 +2318,99 @@
       $("#fp-confirme").checked = false; b.disabled = true;
     }
   }
+
+  /* Version web de la feuille : Claude (compte gratuit du membre) lit la photo et renvoie un JSON uniforme */
+  const CONSIGNE_FEUILLE = `Tu transcris la photo jointe d'une feuille aide-mémoire de poste de police (Québec) pour l'application Police Management.
+
+Règles :
+1. Réponds UNIQUEMENT avec un objet JSON valide, sans aucun texte avant ou après.
+2. Recopie fidèlement, n'invente rien. Si un élément est illisible, écris "?".
+3. N'INCLUS JAMAIS, même s'ils sont sur la photo : codes d'accès (porte, barrière, guérite, cadenas, alarme, clés), mots de passe, fréquences ou canaux radio (ex. RITP, RENIR), numéros de téléphone internes ou non publics (urgence du poste, détention, lignes directes, cellulaires personnels), renseignements sur des personnes, et le tableau des vitesses ou des amendes (déjà dans l'application). Inscris seulement le nom de ce que tu as omis dans "exclus".
+4. Regroupe le contenu dans ces sections, avec ces titres exacts, si elles s'appliquent : "Tribunaux et poursuivants", "Postes de police", "Numéros utiles", "Remorqueurs", "Codes de lieux", "Limites de territoire", "Autres". Mets les repères kilométriques dans "reperes_km".
+
+Format :
+{"poste":"nom du poste ou de la région","maj":"date de mise à jour inscrite, ou null","sections":[{"titre":"Postes de police","type":"tableau","colonnes":["Poste","Code","Téléphone"],"lignes":[["SQ Roberval","PQ40256","418-275-0433"]]},{"titre":"Numéros utiles","type":"liste","elements":[{"libelle":"SAAQ Police","valeur":"418-643-5482"}]}],"reperes_km":[{"route":"167","km":"274","lieu":"Lac Bordeleau"}],"exclus":["Codes de porte","Fréquences radio"]}`;
+  const MOTIF_INTERDIT = /(codes?\s+(de\s+)?(porte|d'?acc[eè]s|alarme|barri[eè]re|cadenas|gu[ée]rite)|fr[ée]quences?|\bradio\b|\bcanal\b|\bRITP\b|\bRENIR\b|gu[ée]rite|mots?\s+de\s+passe|urgence\s+poste|#\s?\d{3,})/i;
+  const txt = (v, max = 200) => (v === null || v === undefined ? "" : String(v)).replace(/\s+/g, " ").trim().slice(0, max);
+  function nettoyerFeuille(brut) {
+    let d;
+    const m = String(brut || "").match(/\{[\s\S]*\}/);
+    if (!m) throw new Error("Je ne trouve pas la réponse de Claude. Copiez toute sa réponse (le bloc qui commence par « { »).");
+    try { d = JSON.parse(m[0]); } catch { throw new Error("La réponse de Claude est incomplète. Demandez-lui : « Redonne seulement le JSON complet », puis recopiez."); }
+    const retires = [];
+    let lignesRetirees = 0;
+    const sections = (Array.isArray(d.sections) ? d.sections : []).slice(0, 30).map((sec) => {
+      const titre = txt(sec && sec.titre, 80) || "Autres";
+      if (MOTIF_INTERDIT.test(titre)) { retires.push(titre); return null; }
+      if (sec.type === "tableau") {
+        const colonnes = (Array.isArray(sec.colonnes) ? sec.colonnes : []).slice(0, 10).map((c) => txt(c, 60));
+        const lignes = (Array.isArray(sec.lignes) ? sec.lignes : []).slice(0, 250).map((l) => (Array.isArray(l) ? l : [l]).slice(0, 10).map((c) => txt(c)))
+          .filter((l) => { const bad = MOTIF_INTERDIT.test(l.join(" ")); if (bad) lignesRetirees++; return !bad && l.some(Boolean); });
+        return lignes.length ? { titre, type: "tableau", colonnes, lignes } : null;
+      }
+      const elements = (Array.isArray(sec.elements) ? sec.elements : []).slice(0, 250).map((e) => ({ libelle: txt(e && e.libelle, 120), valeur: txt(e && e.valeur) }))
+        .filter((e) => { const bad = MOTIF_INTERDIT.test(e.libelle + " " + e.valeur); if (bad) lignesRetirees++; return !bad && (e.libelle || e.valeur); });
+      return elements.length ? { titre, type: "liste", elements } : null;
+    }).filter(Boolean);
+    const reperes_km = (Array.isArray(d.reperes_km) ? d.reperes_km : []).slice(0, 500)
+      .map((r) => ({ route: txt(r && r.route, 20), km: txt(r && r.km, 12), lieu: txt(r && r.lieu, 120) }))
+      .filter((r) => (r.km || r.lieu) && !MOTIF_INTERDIT.test(r.lieu));
+    const exclus = [...new Set([...(Array.isArray(d.exclus) ? d.exclus : []).slice(0, 20).map((x) => txt(x, 80)), ...retires])].filter(Boolean);
+    if (!sections.length && !reperes_km.length) throw new Error("La réponse de Claude ne contient aucune donnée utilisable.");
+    return { donnees: { poste: txt(d.poste, 120), maj: txt(d.maj, 40) || null, sections, reperes_km, exclus }, lignesRetirees, sectionsRetirees: retires.length };
+  }
+  // À l'affichage aussi, on retire tout élément interdit (au cas où une feuille aurait été publiée autrement)
+  const filtrerAffichage = (d) => { try { return nettoyerFeuille(JSON.stringify(d)).donnees; } catch { return d; } };
+  const avecTel = (v) => esc(v).replace(/(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}/g, (t) => `<a href="tel:${t.replace(/[^\d+]/g, "")}">${t}</a>`);
+  function htmlFeuilleWeb(d) {
+    if (!d) return "";
+    const tete = `<div class="fpw-tete"><b>${esc(d.poste || "Feuille de poste")}</b>${d.maj ? `<small>Feuille d'origine : ${esc(d.maj)}</small>` : ""}</div>`;
+    const sections = (d.sections || []).map((sec) => `<section class="fpw-sec"><h4>${esc(sec.titre)}</h4>${sec.type === "tableau"
+      ? `<div class="table-defile"><table class="fpw-table">${(sec.colonnes || []).some(Boolean) ? `<thead><tr>${sec.colonnes.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>` : ""}<tbody>${sec.lignes.map((l) => `<tr>${l.map((c) => `<td>${avecTel(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+      : `<dl class="fpw-liste">${sec.elements.map((e) => `<div><dt>${esc(e.libelle)}</dt><dd>${avecTel(e.valeur)}</dd></div>`).join("")}</dl>`}</section>`).join("");
+    const routes = {};
+    (d.reperes_km || []).forEach((r) => (routes[r.route || "—"] = routes[r.route || "—"] || []).push(r));
+    const km = Object.keys(routes).length ? `<section class="fpw-sec"><h4>Repères kilométriques</h4>${Object.entries(routes).map(([route, l]) => `<h5>${/^\d/.test(route) ? "Route " : ""}${esc(route)}</h5><ul class="fpw-km">${l.map((r) => `<li><b>km ${esc(r.km)}</b><span>${esc(r.lieu)}</span></li>`).join("")}</ul>`).join("")}</section>` : "";
+    const exclus = (d.exclus || []).length ? `<p class="fpw-exclus">Laissé de côté par sécurité : ${d.exclus.map(esc).join(", ")}.</p>` : "";
+    return tete + sections + km + exclus;
+  }
+  $("#fp-ouvrir-claude").addEventListener("click", async () => {
+    await copier(CONSIGNE_FEUILLE);
+    window.open(lienClaude(CONSIGNE_FEUILLE), "_blank", "noopener");
+  });
+  $("#fp-copier-consigne").addEventListener("click", () => copier(CONSIGNE_FEUILLE));
+  $("#fp-creer-web").addEventListener("click", () => {
+    const ap = $("#fp-apercu");
+    let res;
+    try { res = nettoyerFeuille($("#fp-json").value); } catch (err) { ap.hidden = true; return toast(err.message); }
+    fp.brouillon = res.donnees;
+    const n = res.lignesRetirees + res.sectionsRetirees;
+    ap.hidden = false;
+    ap.innerHTML = `<h4 class="fp-apercu-titre">Aperçu : vérifiez avant de publier</h4>
+      ${n ? `<p class="message ok">${n} élément${n > 1 ? "s" : ""} interdit${n > 1 ? "s" : ""} retiré${n > 1 ? "s" : ""} automatiquement (codes, radio, numéros internes).</p>` : ""}
+      <div class="fpw fpw-apercu">${htmlFeuilleWeb(res.donnees)}</div>
+      <label class="fp-case"><input type="checkbox" id="fp-confirme-web"> <span>J'ai vérifié l'aperçu : il ne contient <b>aucun élément interdit</b>.</span></label>
+      <div class="fc-ligne"><button type="button" class="btn-principal" id="fp-publier-web" disabled style="margin:0">Publier pour mon poste</button><button type="button" class="lien" id="fp-annuler-web">Annuler</button></div>`;
+    $("#fp-confirme-web").addEventListener("change", (e) => { $("#fp-publier-web").disabled = !e.target.checked; });
+    $("#fp-annuler-web").addEventListener("click", () => { ap.hidden = true; fp.brouillon = null; });
+    $("#fp-publier-web").addEventListener("click", async (e) => {
+      e.currentTarget.disabled = true;
+      const { error } = await sb.rpc("feuille_poste_donnees_publier", { p_donnees: fp.brouillon });
+      if (error) { e.currentTarget.disabled = false; return toast(traduireErreur(error)); }
+      ap.hidden = true; $("#fp-json").value = ""; fp.brouillon = null; fp.mode = "web";
+      toast("Version web publiée pour votre poste"); chargerFeuille(); $("#vue-feuille").scrollTo({ top: 0, behavior: "smooth" });
+    });
+    ap.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   // Administrateur : toutes les feuilles, pour vérifier et retirer une feuille non conforme
   async function chargerFeuillesAdmin() {
     let bloc = $("#fp-admin");
     if (!bloc) { $("#vue-feuille").insertAdjacentHTML("beforeend", `<div class="panneau" id="fp-admin"></div>`); bloc = $("#fp-admin"); }
-    const { data, error } = await sb.rpc("admin_feuilles_poste");
+    const { data, error } = await sb.rpc("admin_feuilles_poste_v2");
     if (error) { bloc.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     bloc.innerHTML = `<h3>Toutes les feuilles · administrateur</h3>` + ((data || []).length ? `<ul class="liste-partages">${data.map((f) => `
       <li><span><b>${esc(f.unite)}</b><small>${esc(f.corps || "")} · ${esc(quand(f.ajoute_le))} · ${esc(f.ajoute_par_nom)}</small></span>
-        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.chemin)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
+        <span class="fc-ligne">${f.chemin ? `<button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.chemin)}">Photo</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer la photo</button>` : ""}${f.donnees ? `<button type="button" class="btn-secondaire petit" data-fpa-web="${esc(f.cle)}">Version web</button><button type="button" class="btn-danger petit" data-fpa-retirer-web="${esc(f.cle)}">Retirer la version web</button>` : ""}</span></li>`).join("")}</ul><div id="fp-admin-web"></div>`
       : `<p class="aide">Aucun poste n'a encore partagé de feuille.</p>`);
     $$("[data-fpa-voir]", bloc).forEach((b) => b.addEventListener("click", async () => {
       const fen = window.open("", "_blank");
@@ -2307,6 +2419,17 @@
         if (eS || !signe) throw new Error("Fichier introuvable");
         if (fen) fen.location.href = signe.signedUrl; else window.open(signe.signedUrl, "_blank");
       } catch (err) { if (fen) fen.close(); toast(err.message); }
+    }));
+    $$("[data-fpa-web]", bloc).forEach((b) => b.addEventListener("click", () => {
+      const f = data.find((x) => x.cle === b.dataset.fpaWeb);
+      $("#fp-admin-web").innerHTML = `<div class="fpw fpw-apercu">${htmlFeuilleWeb(f.donnees)}</div>`;
+      $("#fp-admin-web").scrollIntoView({ behavior: "smooth", block: "start" });
+    }));
+    $$("[data-fpa-retirer-web]", bloc).forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { error: e3 } = await sb.rpc("feuille_poste_donnees_retirer", { p_cle: b.dataset.fpaRetirerWeb });
+      if (e3) return toast(traduireErreur(e3));
+      toast("Version web retirée"); chargerFeuille();
     }));
     $$("[data-fpa-retirer]", bloc).forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }

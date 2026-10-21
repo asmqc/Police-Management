@@ -1784,3 +1784,36 @@ html.ios-pwa .app { bottom: auto; height: var(--app-h, 100%); }
 #fp-choisir:disabled { opacity: .5; }
 #fp-admin { display: grid; gap: 10px; }
 #fp-admin h3 { margin: 0; }
+
+/* ---------- Feuille de poste : version web (créée par Claude) ---------- */
+.fp-modes { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }
+.fp-claude { display: grid; gap: 10px; }
+.fp-claude h3 { margin: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fp-etapes { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: .92rem; }
+.fp-etapes .btn-secondaire { margin-left: 4px; }
+#fp-json { min-height: 90px; font-family: var(--f-mono, monospace); font-size: .8rem; }
+#fp-apercu { display: grid; gap: 10px; }
+.fp-apercu-titre { margin: 6px 0 0; }
+.fpw { display: grid; gap: 14px; }
+.fpw-apercu { border: 1px dashed var(--ligne); border-radius: 12px; padding: 12px; }
+.fpw-tete { display: grid; gap: 2px; padding-bottom: 10px; border-bottom: 3px solid var(--ambre-vif); }
+.fpw-tete b { font-family: var(--f-titre); font-size: 1.25rem; }
+.fpw-tete small { color: var(--fg-doux); }
+.fpw-sec h4 { margin: 0 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--console); color: #fff; font-size: .82rem; letter-spacing: .06em; text-transform: uppercase; }
+.fpw-sec h5 { margin: 10px 0 6px; font-size: .9rem; color: var(--ambre); }
+.fpw-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.fpw-table th { text-align: left; font-size: .74rem; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-doux); padding: 6px 8px; border-bottom: 1px solid var(--ligne); white-space: nowrap; }
+.fpw-table td { padding: 7px 8px; border-bottom: 1px solid var(--ligne); vertical-align: top; }
+.fpw-table tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+.fpw-liste { margin: 0; display: grid; gap: 1px; background: var(--ligne); border: 1px solid var(--ligne); border-radius: 10px; overflow: hidden; }
+.fpw-liste > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 8px 10px; background: var(--surface); font-size: .88rem; }
+.fpw-liste dt { font-weight: 600; }
+.fpw-liste dd { margin: 0; text-align: right; font-family: var(--f-mono, monospace); font-size: .84rem; }
+.fpw a[href^="tel:"] { color: var(--marque); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.fpw-km { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 12px; }
+.fpw-km li { display: flex; gap: 10px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--ligne); font-size: .88rem; }
+.fpw-km b { flex: none; min-width: 62px; font-family: var(--f-mono, monospace); font-size: .8rem; color: var(--ambre); }
+.fpw-exclus { margin: 0; font-size: .8rem; color: var(--fg-doux); font-style: italic; }
+#vue-feuille > *, #fp-contenu, #fp-zone, .fpw, .fpw-sec, #fp-apercu, .fp-claude { min-width: 0; max-width: 100%; }
+.fpw .table-defile { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.fpw-table td { min-width: 90px; }
