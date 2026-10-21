@@ -1749,3 +1749,38 @@ body.carte-plein .vue-carte .legende { top: calc(72px + env(safe-area-inset-top,
 /* Écran d'accueil iPhone : hauteur réelle de l'écran (voir app.js) */
 html.ios-pwa, html.ios-pwa body { height: var(--app-h, 100%); }
 html.ios-pwa .app { bottom: auto; height: var(--app-h, 100%); }
+
+/* ---------- Feuille de poste ---------- */
+.fp-avert { justify-items: stretch; text-align: left; }
+.fp-avert .avert-icone, .fp-avert h2 { justify-self: center; }
+.fp-intro { margin: 0; font-size: .92rem; color: var(--fg-doux); }
+.fp-titre-liste { margin: 4px 0 0; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; }
+.fp-titre-liste.interdit { color: var(--rouge); }
+.fp-titre-liste.permis { color: var(--vert); }
+.fp-liste { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.fp-liste li { position: relative; padding: 8px 10px 8px 34px; border-radius: 10px; font-size: .88rem; line-height: 1.4;
+  background: color-mix(in srgb, var(--rouge) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--rouge) 28%, transparent); }
+.fp-liste li::before { content: "✕"; position: absolute; left: 11px; top: 8px; font-weight: 800; color: var(--rouge); }
+.fp-permis { margin: 0; padding: 8px 10px; border-radius: 10px; font-size: .88rem; background: color-mix(in srgb, var(--vert) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--vert) 30%, transparent); }
+.fp-avert .btn-principal { justify-self: stretch; }
+#fp-revoir { font-size: inherit; padding: 0; }
+.fp-vide { display: grid; gap: 6px; justify-items: start; }
+.fp-vide span { color: var(--fg-doux); font-size: .92rem; }
+.fp-vue { display: grid; gap: 10px; }
+.fp-barre { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.fp-outils { display: flex; align-items: center; gap: 6px; }
+.fp-outils .btn-icone { width: 36px; height: 36px; font-size: 1.2rem; font-weight: 700; border-radius: 10px; background: var(--surface-2); color: var(--fg); border: 0; }
+.fp-pc { font-family: var(--f-mono, monospace); font-size: .8rem; min-width: 46px; text-align: center; color: var(--fg-doux); }
+.fp-cadre { overflow: auto; max-height: 72vh; border-radius: 10px; background: #fff; border: 1px solid var(--ligne); -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.fp-cadre img { display: block; width: 100%; max-width: none; height: auto; -webkit-user-select: none; user-select: none; }
+.fp-cadre:not(.zoom) { max-height: none; }
+.fp-astuce { margin: 0; }
+.fp-pdf { display: grid; justify-items: center; gap: 8px; padding: 24px; border-radius: 12px; background: var(--surface-2); }
+.fp-pdf svg { width: 54px; height: 54px; color: var(--fg-doux); }
+.fp-envoi { display: grid; gap: 10px; }
+.fp-envoi h3 { margin: 0; }
+.fp-case { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; cursor: pointer; }
+.fp-case input { width: 20px; height: 20px; flex: none; margin-top: 2px; accent-color: var(--ambre-vif); }
+#fp-choisir:disabled { opacity: .5; }
+#fp-admin { display: grid; gap: 10px; }
+#fp-admin h3 { margin: 0; }

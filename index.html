@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610210237">
+  <link rel="stylesheet" href="styles.css?v=202610210305">
 </head>
 <body>
   <!-- Chargement -->
@@ -362,6 +362,13 @@
         </span>
         <span class="nav-txt">Horaire</span>
       </button>
+      <button data-vue="feuille">
+        <span class="nav-ico">
+          <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3M9 3h6v3H9zM8.5 11h7M8.5 15h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="ico-plein" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1zm1 2v1h4V4zM8 10v2h8v-2zm0 4v2h6v-2z" fill="currentColor" fill-rule="evenodd"/></svg>
+        </span>
+        <span class="nav-txt">Feuille</span>
+      </button>
       <button data-vue="messages">
         <span class="nav-ico">
           <svg class="ico-contour" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -427,6 +434,10 @@
           <button class="tuile seulement-sq" data-aller="convention">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg></span>
             <span class="tuile-txt"><b>Convention collective <span class="beta">DÉMO</span></b><small>Contrat APPQ · voix et Claude</small></span>
+          </button>
+          <button class="tuile" data-aller="feuille">
+            <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3M9 3h6v3H9zM8.5 11h7M8.5 15h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="tuile-txt"><b>Feuille de poste</b><small>L'aide-mémoire de votre poste</small></span>
           </button>
           <button class="tuile" data-aller="forum">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></span>
@@ -1043,6 +1054,24 @@
       </div>
     </section>
 
+    <!-- Vue Feuille de poste : photo ou PDF partagé entre les membres d'un même poste -->
+    <section id="vue-feuille" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Feuille de poste</h2>
+        <p class="ref" id="fp-poste"></p>
+      </div>
+      <p class="avert-conv" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Aucun code de porte, aucune fréquence radio, aucun numéro interne, aucun renseignement sur des personnes.</b> Visible par tous les membres de votre poste, non chiffrée de bout en bout. <button type="button" class="lien" id="fp-revoir">Revoir toutes les règles</button></span></p>
+      <div id="fp-contenu"></div>
+      <div class="panneau fp-envoi" id="fp-envoi">
+        <h3 id="fp-envoi-titre">Ajouter la feuille de votre poste</h3>
+        <p class="aide">Une seule feuille par poste. Tout membre approuvé du poste peut la remplacer ou la retirer en tout temps. La nouvelle remplace l'ancienne, qui est effacée.</p>
+        <label class="fp-case"><input type="checkbox" id="fp-confirme"> <span>Je confirme que ma photo ou mon PDF ne contient <b>aucun élément interdit</b> : je les ai cachés ou découpés avant de l'envoyer.</span></label>
+        <input type="file" id="fp-fichier" accept="image/*,application/pdf" hidden>
+        <button type="button" class="btn-principal" id="fp-choisir" disabled>Choisir une photo ou un PDF</button>
+        <p class="aide">Les photos sont réduites et nettoyées avant l'envoi (la position GPS et les autres données de l'appareil sont retirées). PDF : 10 Mo maximum.</p>
+      </div>
+    </section>
+
     <section id="vue-forum" class="vue" hidden>
       <div id="forum-liste-vue" class="forum-bloc">
         <div class="vue-tete">
@@ -1264,10 +1293,34 @@
     </div>
   </div>
 
+  <div id="fp-voile" class="avert" role="alertdialog" aria-modal="true" aria-labelledby="fp-avert-titre" hidden>
+    <div class="avert-carte fp-avert">
+      <div class="avert-icone" aria-hidden="true"><svg viewBox="0 0 24 24" width="52" height="52"><path d="M12 3 2 20h20z" fill="currentColor"/><path d="M12 9v5" stroke="#1A1204" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17" r="1.4" fill="#1A1204"/></svg></div>
+      <h2 id="fp-avert-titre">Feuille de poste</h2>
+      <p class="fp-intro">Cette feuille est visible par <b>tous les membres approuvés de votre poste</b>. Elle n'est pas chiffrée de bout en bout : l'administrateur de la plateforme y a un accès technique, et un tribunal ou votre employeur pourrait en exiger la communication. Police Management n'est pas un outil approuvé par votre corps de police.</p>
+      <h3 class="fp-titre-liste interdit">Ne doit JAMAIS s'y retrouver</h3>
+      <ul class="fp-liste interdit">
+        <li><b>Codes d'accès</b> : codes de porte, de barrière, de guérite, de cadenas, d'alarme, de clés ou de coffres, mots de passe.</li>
+        <li><b>Radio</b> : fréquences, canaux, groupes de conversation, indicatifs d'appel.</li>
+        <li><b>Numéros non publics</b> : lignes d'urgence ou directes du poste, de la détention, du centre de télécommunications, numéros de cellulaire personnels de collègues, de partenaires ou de citoyens.</li>
+        <li><b>Renseignements sur des personnes</b> : citoyens, suspects, victimes, témoins, informateurs, détenus, ni leurs noms, adresses, plaques, photos ou dates de naissance.</li>
+        <li><b>Banques de données policières</b> : CRPQ, CPIC, Module d'information policière, ni aucune capture d'écran de ces systèmes.</li>
+        <li><b>Opérations</b> : dossiers, enquêtes, opérations, points de surveillance, effectifs, horaires de patrouille, plans de déploiement.</li>
+        <li><b>Sécurité des lieux</b> : plans ou accès de bâtiments sécurisés, de détention, de palais de justice, procédures tactiques.</li>
+        <li><b>Documents internes</b> : directives non publiques, documents marqués « confidentiel », « protégé » ou « usage interne ».</li>
+      </ul>
+      <h3 class="fp-titre-liste permis">Permis</h3>
+      <p class="fp-permis">Adresses et numéros publics des cours, palais de justice, postes et organismes, remorqueurs, poursuivants par territoire, repères kilométriques, codes de lieux pour les constats, limites de territoire, barèmes d'amendes.</p>
+      <p class="aide">Cachez ou découpez les éléments interdits <b>avant</b> de prendre la photo. Une feuille non conforme sera retirée par l'administrateur, et le compte pourra être bloqué. La personne qui envoie la feuille en est responsable.</p>
+      <button type="button" class="btn-principal" id="fp-compris">J'ai compris</button>
+      <button type="button" class="lien" id="fp-quitter">Retour à l'accueil</button>
+    </div>
+  </div>
+
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.20.2) : elle précise les règles de la messagerie et du forum, qui ne sont pas chiffrés de bout en bout. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.20.3) : elle ajoute la feuille de poste, partagée entre les membres d'un même poste, et précise les règles de la messagerie et du forum, qui ne sont pas chiffrés de bout en bout. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
         <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
@@ -1373,9 +1426,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610210237"></script>
+  <script src="config.js?v=202610210305"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610210237"></script>
+  <script src="app.js?v=202610210305"></script>
 </body>
 </html>

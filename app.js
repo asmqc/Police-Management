@@ -453,7 +453,7 @@
     let depart = (location.hash || "").replace("#", "");
     if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
     document.body.classList.toggle("est-sq", accesConvention());
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     compterMessages();
     ecouterMessages();
@@ -475,7 +475,7 @@
   /* ---------------- Confirmation du courriel ----------------
      Un policier approuvé entre dans l'app même sans avoir confirmé son courriel,
      mais la carte, le CSR et les territoires restent verrouillés jusqu'à la confirmation. */
-  const VUES_VERROU = ["csr", "carte", "corps"];
+  const VUES_VERROU = ["csr", "carte", "corps", "feuille"];
   const courrielVerifie = () => !!(etat.profil && etat.profil.courriel_verifie_le);
   async function verifierCourriel() {
     if (!etat.profil || etat.profil.courriel_verifie_le) return;
@@ -504,7 +504,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.10.20.2";
+  const VERSION_POLITIQUE = "2026.10.20.3";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -520,9 +520,9 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
-    { date: "2026-10-20", titre: "Favoris et photos de profil", points: [
-      "Lois : touchez « Ajouter aux favoris » sur un article, puis retrouvez-les dans l'onglet ★ Favoris, toutes lois confondues, sur tous vos appareils.",
-      "Votre photo de profil s'affiche maintenant à côté de votre nom : forum, idées, échanges de quarts, collègues du poste et messagerie."] },
+    { date: "2026-10-20", titre: "Feuille de poste", points: [
+      "Nouvel onglet Feuille : la feuille aide-mémoire de votre poste, en photo ou en PDF, partagée avec les membres de votre poste.",
+      "Tout membre du poste peut la remplacer ou la retirer. Lisez bien les règles : aucun code d'accès, aucune fréquence radio, aucun numéro interne, aucun renseignement sur une personne."] },
   ];
   function ouvrirNouveautes() {
     $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
@@ -818,6 +818,7 @@
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
     if (nom === "convention") initConvention();
+    if (nom === "feuille") initFeuille();
   }
   // Menu de la photo de profil
   function ouvrirMenu() {
@@ -2131,6 +2132,162 @@
     chargerReponses();
   });
   $("#forum-rep").addEventListener("input", (e) => { e.target.style.height = "auto"; e.target.style.height = Math.min(140, e.target.scrollHeight) + "px"; });
+
+
+  /* ---------------- Feuille de poste (photo ou PDF partagé entre les membres d'un même poste) ---------------- */
+  const fp = { donnees: null, url: null, zoom: 1 };
+  const SEAU_FEUILLES = "feuilles-poste";
+  function ouvrirAvertFeuille() { $("#fp-voile").hidden = false; $("#fp-compris").focus({ preventScroll: true }); $("#fp-voile .avert-carte").scrollTop = 0; }
+  $("#fp-compris").addEventListener("click", () => { $("#fp-voile").hidden = true; });
+  $("#fp-quitter").addEventListener("click", () => { $("#fp-voile").hidden = true; afficherVue("accueil"); });
+  $("#fp-revoir").addEventListener("click", ouvrirAvertFeuille);
+  $("#fp-confirme").addEventListener("change", (e) => { $("#fp-choisir").disabled = !e.target.checked; });
+  $("#fp-choisir").addEventListener("click", () => $("#fp-fichier").click());
+  $("#fp-fichier").addEventListener("change", envoyerFeuille);
+
+  function initFeuille() {
+    ouvrirAvertFeuille(); // l'avertissement s'affiche à chaque entrée dans la page
+    chargerFeuille();
+  }
+  async function chargerFeuille() {
+    const p = etat.profil;
+    $("#fp-poste").textContent = p.unite ? [p.unite, p.corps_police].filter(Boolean).join(" · ") : "Aucun poste indiqué";
+    $("#fp-confirme").checked = false; $("#fp-choisir").disabled = true;
+    $("#fp-envoi").hidden = !p.unite;
+    if (estAdmin()) chargerFeuillesAdmin();
+    if (!p.unite) {
+      $("#fp-contenu").innerHTML = `<div class="panneau fp-vide"><b>Aucun poste indiqué</b><span>Indiquez votre unité ou votre poste dans Mon compte pour voir et partager la feuille de votre poste.</span><button type="button" class="btn-secondaire" data-menu-compte>Ouvrir Mon compte</button></div>`;
+      $("[data-menu-compte]").addEventListener("click", () => afficherVue("compte"));
+      return;
+    }
+    $("#fp-contenu").innerHTML = `<p class="etat">Chargement de la feuille…</p>`;
+    const { data, error } = await sb.rpc("feuille_poste");
+    if (error) { $("#fp-contenu").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    fp.donnees = (data && data[0]) || null;
+    fp.zoom = 1;
+    rendreFeuille();
+  }
+  async function rendreFeuille() {
+    const el = $("#fp-contenu"), f = fp.donnees;
+    $("#fp-envoi-titre").textContent = f ? "Remplacer la feuille" : "Ajouter la feuille de votre poste";
+    if (!f) {
+      el.innerHTML = `<div class="panneau fp-vide"><b>Votre poste n'a pas encore de feuille</b><span>Ajoutez-en une ci-dessous : elle sera visible par tous les membres approuvés de votre poste.</span></div>`;
+      return;
+    }
+    const { data: signe } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(f.chemin, 3600);
+    fp.url = signe && signe.signedUrl;
+    if (!fp.url) { el.innerHTML = `<p class="vide">La feuille n'a pas pu être chargée. Réessayez dans un instant.</p>`; return; }
+    const image = f.type === "image";
+    el.innerHTML = `<div class="panneau fp-vue">
+      <div class="fp-barre">
+        <small class="ref">Mise à jour ${esc(quand(f.ajoute_le))} par ${esc(f.ajoute_par_nom)}</small>
+        <span class="fp-outils">${image ? `<button type="button" class="btn-icone" data-fp-zoom="-1" aria-label="Réduire">−</button><b class="fp-pc" id="fp-pc">100 %</b><button type="button" class="btn-icone" data-fp-zoom="1" aria-label="Agrandir">+</button>` : ""}
+          <a class="btn-secondaire petit" href="${esc(fp.url)}" target="_blank" rel="noopener">Ouvrir</a></span>
+      </div>
+      ${image ? `<div class="fp-cadre" id="fp-cadre"><img id="fp-img" src="${esc(fp.url)}" alt="Feuille de poste de ${esc(f.unite)}"></div><p class="aide fp-astuce">Touchez deux fois la feuille pour l'agrandir, puis glissez pour vous déplacer.</p>`
+        : `<div class="fp-pdf"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l6 6v14H6zM14 2v6h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><text x="12.5" y="18" text-anchor="middle" font-size="5.5" font-weight="700" fill="currentColor">PDF</text></svg><b>Feuille en PDF</b><a class="btn-principal" href="${esc(fp.url)}" target="_blank" rel="noopener">Ouvrir le PDF</a></div>`}
+      <div class="fc-ligne">${estAdmin() ? "" : `<button type="button" class="lien" id="fp-signaler">Signaler à l'administrateur</button>`}<button type="button" class="lien rouge" id="fp-retirer">Retirer la feuille</button></div>
+    </div>`;
+    if (image) {
+      const img = $("#fp-img"), cadre = $("#fp-cadre");
+      const appliquer = () => { img.style.width = fp.zoom * 100 + "%"; $("#fp-pc").textContent = Math.round(fp.zoom * 100) + " %"; cadre.classList.toggle("zoom", fp.zoom > 1); };
+      $$("[data-fp-zoom]", el).forEach((b) => b.addEventListener("click", () => { fp.zoom = Math.min(4, Math.max(1, fp.zoom + 0.5 * Number(b.dataset.fpZoom))); appliquer(); }));
+      img.addEventListener("dblclick", (e) => {
+        const r = img.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+        fp.zoom = fp.zoom > 1 ? 1 : 2.5; appliquer();
+        cadre.scrollLeft = fx * img.offsetWidth - cadre.clientWidth / 2; cadre.scrollTop = fy * img.offsetHeight - cadre.clientHeight / 2;
+      });
+      appliquer();
+    }
+    const sig = $("#fp-signaler");
+    if (sig) sig.addEventListener("click", async () => {
+      if (!sig.dataset.arme) { sig.dataset.arme = "1"; sig.textContent = "Confirmer le signalement"; return; }
+      sig.disabled = true;
+      const { error } = await sb.rpc("envoyer_message", { p_destinataire: null, p_contenu: `Signalement — Feuille de poste de ${f.unite}${etat.profil.corps_police ? " (" + etat.profil.corps_police + ")" : ""} : elle pourrait contenir un élément interdit (code d'accès, fréquence radio, numéro interne ou renseignement sur une personne). Merci de la vérifier.` });
+      if (error) { sig.disabled = false; return toast(traduireErreur(error)); }
+      sig.textContent = "Signalé ✓"; toast("L'administrateur a été avisé et vérifiera la feuille");
+    });
+    const ret = $("#fp-retirer");
+    ret.addEventListener("click", async () => {
+      if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la feuille du poste"; return; }
+      ret.disabled = true;
+      const { data: ancien, error } = await sb.rpc("feuille_poste_retirer", {});
+      if (error) { ret.disabled = false; return toast(traduireErreur(error)); }
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      toast("Feuille retirée"); chargerFeuille();
+    });
+  }
+  // Photo : redimensionnée (2600 px max.) et recréée en JPEG, ce qui retire la position GPS et les données de l'appareil
+  function reduireFeuille(fichier, max = 2600) {
+    return new Promise((ok, ko) => {
+      const img = new Image();
+      img.onload = () => {
+        const r = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * r); c.height = Math.round(img.naturalHeight * r);
+        const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob((b) => (b ? ok(b) : ko(new Error("Image illisible"))), "image/jpeg", 0.86);
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => ko(new Error("Cette photo n'est pas lisible. Essayez en JPEG ou en PNG."));
+      img.src = URL.createObjectURL(fichier);
+    });
+  }
+  async function envoyerFeuille(e) {
+    const fichier = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!fichier) return;
+    if (!$("#fp-confirme").checked) return toast("Cochez d'abord la confirmation");
+    const pdf = fichier.type === "application/pdf" || /\.pdf$/i.test(fichier.name);
+    if (!pdf && !/^image\//.test(fichier.type)) return toast("Choisissez une photo ou un PDF");
+    if (pdf && fichier.size > 10 * 1024 * 1024) return toast("Le PDF dépasse 10 Mo");
+    const b = $("#fp-choisir");
+    b.disabled = true; b.textContent = "Envoi en cours…";
+    let chemin = null;
+    try {
+      const { data: cle, error: eCle } = await sb.rpc("feuille_poste_cle");
+      if (eCle) throw eCle;
+      if (!cle) throw new Error("Indiquez votre unité ou votre poste dans Mon compte pour partager une feuille de poste.");
+      const contenu = pdf ? fichier : await reduireFeuille(fichier);
+      chemin = `${cle}/${crypto.randomUUID()}.${pdf ? "pdf" : "jpg"}`;
+      const { error: eEnvoi } = await sb.storage.from(SEAU_FEUILLES).upload(chemin, contenu, { contentType: pdf ? "application/pdf" : "image/jpeg", upsert: false });
+      if (eEnvoi) { chemin = null; throw eEnvoi; }
+      const { data: ancien, error: ePub } = await sb.rpc("feuille_poste_publier", { p_chemin: chemin, p_type: pdf ? "pdf" : "image" });
+      if (ePub) throw ePub;
+      chemin = null;
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      toast("Feuille publiée pour votre poste");
+      chargerFeuille();
+    } catch (err) {
+      if (chemin) await sb.storage.from(SEAU_FEUILLES).remove([chemin]);
+      toast(traduireErreur(err));
+    } finally {
+      b.textContent = "Choisir une photo ou un PDF";
+      $("#fp-confirme").checked = false; b.disabled = true;
+    }
+  }
+  // Administrateur : toutes les feuilles, pour vérifier et retirer une feuille non conforme
+  async function chargerFeuillesAdmin() {
+    let bloc = $("#fp-admin");
+    if (!bloc) { $("#vue-feuille").insertAdjacentHTML("beforeend", `<div class="panneau" id="fp-admin"></div>`); bloc = $("#fp-admin"); }
+    const { data, error } = await sb.rpc("admin_feuilles_poste");
+    if (error) { bloc.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    bloc.innerHTML = `<h3>Toutes les feuilles · administrateur</h3>` + ((data || []).length ? `<ul class="liste-partages">${data.map((f) => `
+      <li><span><b>${esc(f.unite)}</b><small>${esc(f.corps || "")} · ${esc(quand(f.ajoute_le))} · ${esc(f.ajoute_par_nom)}</small></span>
+        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.chemin)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
+      : `<p class="aide">Aucun poste n'a encore partagé de feuille.</p>`);
+    $$("[data-fpa-voir]", bloc).forEach((b) => b.addEventListener("click", async () => {
+      const { data: s } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(b.dataset.fpaVoir, 600);
+      if (s && s.signedUrl) window.open(s.signedUrl, "_blank", "noopener"); else toast("Fichier introuvable");
+    }));
+    $$("[data-fpa-retirer]", bloc).forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const { data: ancien, error: e2 } = await sb.rpc("feuille_poste_retirer", { p_cle: b.dataset.fpaRetirer });
+      if (e2) return toast(traduireErreur(e2));
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      toast("Feuille retirée"); chargerFeuille();
+    }));
+  }
 
   /* ---------------- Communauté : Idées et sondages ---------------- */
   const STATUTS_IDEE = { proposee: "Proposée", planifiee: "Planifiée", realisee: "Réalisée ✅", refusee: "Non retenue" };
