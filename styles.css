@@ -1817,3 +1817,26 @@ html.ios-pwa .app { bottom: auto; height: var(--app-h, 100%); }
 #vue-feuille > *, #fp-contenu, #fp-zone, .fpw, .fpw-sec, #fp-apercu, .fp-claude { min-width: 0; max-width: 100%; }
 .fpw .table-defile { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
 .fpw-table td { min-width: 90px; }
+
+/* ---------- App iOS « glass » : barres natives par-dessus le site ---------- */
+html.app-natif { --natif-haut: calc(env(safe-area-inset-top, 0px) + 58px); --natif-bas: calc(env(safe-area-inset-bottom, 0px) + 92px); }
+html.app-natif .barre, html.app-natif .nav, html.app-natif body::before { display: none !important; }
+html.app-natif .app {
+  padding-top: 0 !important;
+  grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: 0 minmax(0, 1fr) 0 !important;
+  grid-template-areas: "barre" "vue" "nav" !important;
+}
+html.app-natif .vue { padding-top: calc(var(--natif-haut) + 10px); padding-bottom: calc(var(--natif-bas) + 12px); }
+html.app-natif .vue.vue-carte { padding: 0 !important; }
+html.app-natif .vue-carte .carte-outils { top: calc(var(--natif-haut) + 6px); }
+html.app-natif .vue-carte .btn-repere { top: calc(var(--natif-haut) + 66px); }
+html.app-natif .vue-carte .btn-mesure { top: calc(var(--natif-haut) + 112px); }
+html.app-natif .vue-carte .legende { top: calc(var(--natif-haut) + 66px); }
+html.app-natif .vue-carte .leaflet-bottom { bottom: var(--natif-bas); }
+html.app-natif .vue-carte .fiche, html.app-natif .vue-carte .mesure-boite { bottom: calc(var(--natif-bas) + 8px); }
+html.app-natif body.carte-plein .vue-carte .carte-outils { top: max(10px, env(safe-area-inset-top)); }
+html.app-natif body.carte-plein .vue-carte .leaflet-bottom { bottom: 0; }
+html.app-natif .toast { bottom: calc(var(--natif-bas) + 10px); }
+html.app-natif .voile-menu { padding-top: calc(var(--natif-haut) - 4px); }
+/* Messagerie : la zone de saisie reste au-dessus des onglets */
+html.app-natif #vue-messages { padding-bottom: var(--natif-bas); }

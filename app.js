@@ -5,6 +5,9 @@
   const C = window.PE_CONFIG;
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
+  // App iOS « glass » : les barres (haut et onglets) sont natives, le site cache les siennes
+  const pontNatif = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.pm;
+  if (pontNatif) document.documentElement.classList.add("app-natif");
   // App ajoutée à l'écran d'accueil de l'iPhone : iOS donne au site une hauteur trop courte (il manque la hauteur de la barre d'état),
   // ce qui laissait une bande vide sous les onglets. On prend la hauteur réelle de l'écran pour que l'app aille jusqu'en bas.
   if (navigator.standalone && /iPhone|iPod/.test(navigator.userAgent)) {
@@ -819,6 +822,37 @@
     if (nom === "idees") initIdees();
     if (nom === "convention") initConvention();
     if (nom === "feuille") initFeuille();
+    informerNatif();
+  }
+  // Pont avec l'app iOS : le site informe l'app (onglet, badges, fenêtres ouvertes) et l'app pilote la navigation
+  let natifPrevu = false;
+  function informerNatif() {
+    if (!pontNatif || natifPrevu) return;
+    natifPrevu = true;
+    requestAnimationFrame(() => {
+      natifPrevu = false;
+      const nb = (id) => { const b = document.getElementById(id); return b && !b.hidden ? parseInt(b.textContent, 10) || 1 : 0; };
+      try {
+        pontNatif.postMessage({
+          vue: etat.vue || "accueil",
+          connecte: !$("#ecran-app").hidden,
+          modal: !!document.querySelector(".voile:not([hidden]), .avert:not([hidden])"),
+          plein: document.body.classList.contains("carte-plein"),
+          admin: !!(etat.profil && etat.profil.role === "admin"),
+          messages: nb("badge-messages"),
+          attente: nb("badge-nav-admin"),
+        });
+      } catch { /* l'app n'écoute pas */ }
+    });
+  }
+  if (pontNatif) {
+    new MutationObserver(informerNatif).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "class"] });
+    window.pmNatif = {
+      aller: (v) => { if (!$("#ecran-app").hidden) { fermerMenu(); afficherVue(v); } },
+      menu: () => { if (!$("#ecran-app").hidden) ouvrirMenu(); },
+      actualiser: () => location.reload(),
+    };
+    informerNatif();
   }
   // Menu de la photo de profil
   function ouvrirMenu() {
