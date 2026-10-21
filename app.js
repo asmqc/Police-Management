@@ -49,7 +49,7 @@
   }
   // Styles d'interface (repris de l'app iOS)
   const STYLES = [
-    { id: "moderne", nom: "Moderne", desc: "Clair ou sombre", c: ["#0E1B2C", "#F2B33D", "#EFF2F7"] },
+    { id: "moderne", nom: "Liquid Glass", desc: "Verre clair ou sombre", c: ["#06070D", "#E0263B", "#2563EB"] },
     { id: "mdt", nom: "Terminal MDT", desc: "Noir, vert, chasse fixe", c: ["#000000", "#33FF66", "#0A140C"] },
     { id: "officiel", nom: "Terminal officiel", desc: "Noir et or", c: ["#0B0B0B", "#D4AF37", "#171512"] },
     { id: "marine", nom: "Marine", desc: "Bleu marine, accents cyan", c: ["#071A33", "#4FC3F7", "#0E2747"] },
