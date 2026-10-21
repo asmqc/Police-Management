@@ -1990,3 +1990,7 @@ html.verre-leger:not([data-style]) { --verre-flou: blur(10px); }
 .site-tel img { border-radius: 33px; }
 .site-btn-plein { background: #FFC53D; box-shadow: 0 8px 24px rgba(255, 197, 61, .35); }
 .site-btn { border-radius: 999px; }
+
+/* Site public : bandes du haut et du bas de Safari en couleur nuit (et non le fond clair) */
+html:has(#ecran-site:not([hidden])), html:has(#ecran-site:not([hidden])) body { background: #06070D; }
+.site-barre { background: rgba(6, 7, 13, .86); }

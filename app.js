@@ -45,7 +45,7 @@
     else document.documentElement.removeAttribute("data-theme");
     const sombre = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", sombre ? "#0A1420" : "#0E1B2C");
+    if (meta) meta.setAttribute("content", sombre ? "#06070D" : "#E4ECF5");
   }
   // Styles d'interface (repris de l'app iOS)
   const STYLES = [
@@ -114,6 +114,12 @@
   function montrer(ecran) {
     ["#ecran-chargement", "#ecran-site", "#ecran-auth", "#ecran-attente", "#ecran-mdp-temp", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
     document.body.classList.toggle("mode-site", ecran === "#ecran-site");
+    if (ecran !== "#ecran-site" && !document.documentElement.hasAttribute("data-style")) {
+      const t = document.documentElement.getAttribute("data-theme");
+      const sombre = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute("content", sombre ? "#06070D" : "#E4ECF5");
+    }
   }
   // Site officiel : affiché aux visiteurs non connectés; « Se connecter » et « Demander l'accès » ouvrent l'écran d'authentification
   function montrerAccueilPublic() {
@@ -123,6 +129,7 @@
     // App installée sur l'écran d'accueil : directement à la connexion
     if (estAppIOS || window.matchMedia("(display-mode: standalone)").matches || navigator.standalone) { montrer("#ecran-auth"); ongletAuth("connexion"); return; }
     montrer("#ecran-site");
+    { const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute("content", "#06070D"); }
   }
   function ouvrirAuth(onglet) {
     montrer("#ecran-auth"); ongletAuth(onglet);
