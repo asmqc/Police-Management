@@ -469,7 +469,7 @@
       etat.session = session;
       verifierCourriel().then(() => { if (courrielVerifie() && VUES_VERROU.includes(etat.vue)) afficherVue(etat.vue); });
     }
-    if (evenement === "SIGNED_OUT") { etat.session = null; favoris.liste = null; favoris.enCours = null; profilsAvatars.clear(); montrerAccueilPublic(); }
+    if (evenement === "SIGNED_OUT") { etat.session = null; favoris.liste = null; favoris.enCours = null; profilsAvatars.clear(); viderCacheFeuille(); montrerAccueilPublic(); }
   });
 
   /* ---------------- Confirmation du courriel ----------------
@@ -2136,15 +2136,27 @@
 
   /* ---------------- Feuille de poste (photo ou PDF partagé entre les membres d'un même poste) ---------------- */
   const fp = { donnees: null, url: null, zoom: 1 };
-  // Le fichier est conservé dans un dépôt GitHub privé; la fonction « feuilles-poste » vérifie l'accès et le relaie
-  async function appelFeuilles(params, init = {}) {
-    const { data: { session } } = await sb.auth.getSession();
-    const r = await fetch(`${C.supabaseUrl}/functions/v1/feuilles-poste${params}`, {
-      ...init, headers: { Authorization: `Bearer ${session ? session.access_token : ""}`, apikey: C.supabaseKey, ...(init.headers || {}) },
-    });
-    if (!r.ok) { let m = "La feuille n'a pas pu être chargée."; try { m = (await r.json()).erreur || m; } catch { /* réponse non JSON */ } throw new Error(m); }
-    return r;
+  const SEAU_FEUILLES = "feuilles-poste";
+  // La feuille est gardée sur l'appareil : elle n'est téléchargée de nouveau que lorsqu'elle change (moins de données, affichage instantané)
+  const CACHE_FEUILLE = "pm-feuille-poste";
+  async function blobFeuille(chemin) {
+    const cle = new Request(`${location.origin}/__feuille/${encodeURIComponent(chemin)}`);
+    let cache = null;
+    try { cache = await caches.open(CACHE_FEUILLE); const r = await cache.match(cle); if (r) return await r.blob(); } catch { cache = null; }
+    const { data: signe, error } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(chemin, 600);
+    if (error || !signe) throw new Error("La feuille n'a pas pu être chargée. Réessayez dans un instant.");
+    const r = await fetch(signe.signedUrl);
+    if (!r.ok) throw new Error("La feuille n'a pas pu être chargée. Réessayez dans un instant.");
+    const blob = await r.blob();
+    if (cache) {
+      try {
+        for (const k of await cache.keys()) await cache.delete(k); // une seule feuille gardée : la plus récente
+        await cache.put(cle, new Response(blob, { headers: { "Content-Type": blob.type || "application/octet-stream" } }));
+      } catch { /* facultatif */ }
+    }
+    return blob;
   }
+  async function viderCacheFeuille() { try { await caches.delete(CACHE_FEUILLE); } catch { /* facultatif */ } }
   function ouvrirAvertFeuille() { $("#fp-voile").hidden = false; $("#fp-compris").focus({ preventScroll: true }); $("#fp-voile .avert-carte").scrollTop = 0; }
   $("#fp-compris").addEventListener("click", () => { $("#fp-voile").hidden = true; });
   $("#fp-quitter").addEventListener("click", () => { $("#fp-voile").hidden = true; afficherVue("accueil"); });
@@ -2184,7 +2196,7 @@
     }
     el.innerHTML = `<p class="etat">Chargement de la feuille…</p>`;
     try {
-      const blob = await (await appelFeuilles("")).blob();
+      const blob = await blobFeuille(f.chemin);
       if (fp.url) URL.revokeObjectURL(fp.url);
       fp.url = URL.createObjectURL(blob);
     } catch (err) { el.innerHTML = `<p class="vide">${esc(err.message)}</p>`; return; }
@@ -2222,7 +2234,10 @@
     ret.addEventListener("click", async () => {
       if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la feuille du poste"; return; }
       ret.disabled = true;
-      try { await appelFeuilles("?action=retirer", { method: "POST" }); } catch (err) { ret.disabled = false; return toast(err.message); }
+      const { data: ancien, error } = await sb.rpc("feuille_poste_retirer", {});
+      if (error) { ret.disabled = false; return toast(traduireErreur(error)); }
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      viderCacheFeuille();
       toast("Feuille retirée"); chargerFeuille();
     });
   }
@@ -2252,13 +2267,24 @@
     if (pdf && fichier.size > 10 * 1024 * 1024) return toast("Le PDF dépasse 10 Mo");
     const b = $("#fp-choisir");
     b.disabled = true; b.textContent = "Envoi en cours…";
+    let chemin = null;
     try {
       const contenu = pdf ? fichier : await reduireFeuille(fichier);
-      await appelFeuilles("?action=publier", { method: "POST", headers: { "Content-Type": pdf ? "application/pdf" : "image/jpeg" }, body: contenu });
+      const { data: cle, error: eCle } = await sb.rpc("feuille_poste_cle");
+      if (eCle) throw eCle;
+      if (!cle) throw new Error("Indiquez votre unité ou votre poste dans Mon compte pour partager une feuille de poste.");
+      chemin = `${cle}/${crypto.randomUUID()}.${pdf ? "pdf" : "jpg"}`;
+      const { error: eEnvoi } = await sb.storage.from(SEAU_FEUILLES).upload(chemin, contenu, { contentType: pdf ? "application/pdf" : "image/jpeg", upsert: false });
+      if (eEnvoi) { chemin = null; throw eEnvoi; }
+      const { data: ancien, error: ePub } = await sb.rpc("feuille_poste_publier", { p_chemin: chemin, p_type: pdf ? "pdf" : "image" });
+      if (ePub) throw ePub;
+      chemin = null;
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
       toast("Feuille publiée pour votre poste");
       chargerFeuille();
     } catch (err) {
-      toast(err.message || traduireErreur(err));
+      if (chemin) await sb.storage.from(SEAU_FEUILLES).remove([chemin]);
+      toast(traduireErreur(err));
     } finally {
       b.textContent = "Choisir une photo ou un PDF";
       $("#fp-confirme").checked = false; b.disabled = true;
@@ -2272,19 +2298,21 @@
     if (error) { bloc.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     bloc.innerHTML = `<h3>Toutes les feuilles · administrateur</h3>` + ((data || []).length ? `<ul class="liste-partages">${data.map((f) => `
       <li><span><b>${esc(f.unite)}</b><small>${esc(f.corps || "")} · ${esc(quand(f.ajoute_le))} · ${esc(f.ajoute_par_nom)}</small></span>
-        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.cle)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
+        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.chemin)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
       : `<p class="aide">Aucun poste n'a encore partagé de feuille.</p>`);
     $$("[data-fpa-voir]", bloc).forEach((b) => b.addEventListener("click", async () => {
       const fen = window.open("", "_blank");
       try {
-        const blob = await (await appelFeuilles(`?cle=${encodeURIComponent(b.dataset.fpaVoir)}`)).blob();
-        const u = URL.createObjectURL(blob);
-        if (fen) fen.location.href = u; else window.open(u, "_blank");
+        const { data: signe, error: eS } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(b.dataset.fpaVoir, 600);
+        if (eS || !signe) throw new Error("Fichier introuvable");
+        if (fen) fen.location.href = signe.signedUrl; else window.open(signe.signedUrl, "_blank");
       } catch (err) { if (fen) fen.close(); toast(err.message); }
     }));
     $$("[data-fpa-retirer]", bloc).forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
-      try { await appelFeuilles(`?action=retirer&cle=${encodeURIComponent(b.dataset.fpaRetirer)}`, { method: "POST" }); } catch (err) { return toast(err.message); }
+      const { data: ancien, error: e2 } = await sb.rpc("feuille_poste_retirer", { p_cle: b.dataset.fpaRetirer });
+      if (e2) return toast(traduireErreur(e2));
+      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
       toast("Feuille retirée"); chargerFeuille();
     }));
   }
