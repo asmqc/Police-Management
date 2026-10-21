@@ -1941,7 +1941,7 @@ html:not([data-style]) .marque { color: var(--barre-fg); }
 @media (max-width: 899px) {
   html:not([data-style]):not(.app-natif) .app { grid-template-rows: var(--barre-h) minmax(0, 1fr) 0; }
   html:not([data-style]):not(.app-natif) .nav {
-    position: fixed; z-index: 60; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    position: fixed; z-index: 1200; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     height: 64px; padding: 6px; box-sizing: border-box; border-radius: 32px;
     background: var(--verre-nav); border: 1px solid var(--verre-bord); box-shadow: var(--verre-ombre);
     -webkit-backdrop-filter: blur(26px) saturate(180%); backdrop-filter: blur(26px) saturate(180%);
