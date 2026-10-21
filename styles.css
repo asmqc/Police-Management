@@ -1729,3 +1729,20 @@ body.carte-plein .carte-outils { top: max(10px, env(safe-area-inset-top)); }
 .avert-conv a { color: inherit; font-weight: 600; }
 .avert-conv.compact { margin: 10px 0; }
 .chat-panneau > .avert-conv { margin: 0; border-radius: 0; border-width: 0 0 1px; }
+
+/* ---------- Comme une vraie app : écran fixe, encoche et barre d'accueil respectées ----------
+   (écran d'accueil iPhone/Android et app iPhone/iPad : le site occupe tout l'écran, sous l'heure et la batterie) */
+html, body { overscroll-behavior: none; }
+.app {
+  position: fixed; inset: 0; height: auto;
+  padding-top: env(safe-area-inset-top, 0px);
+  grid-template-rows: var(--barre-h) minmax(0, 1fr) calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 900px) {
+  .app { grid-template-rows: var(--barre-h) minmax(0, 1fr); }
+}
+body.carte-plein .app { padding-top: 0; grid-template-rows: 0 minmax(0, 1fr) 0; }
+@media (min-width: 900px) { body.carte-plein .app { grid-template-rows: 0 minmax(0, 1fr); } }
+body.carte-plein .vue-carte .btn-repere { top: calc(72px + env(safe-area-inset-top, 0px)); }
+body.carte-plein .vue-carte .btn-mesure { top: calc(118px + env(safe-area-inset-top, 0px)); }
+body.carte-plein .vue-carte .legende { top: calc(72px + env(safe-area-inset-top, 0px)); }
