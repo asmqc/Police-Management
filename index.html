@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610211121">
+  <link rel="stylesheet" href="styles.css?v=202610211132">
 </head>
 <body>
   <!-- Chargement -->
@@ -1070,7 +1070,7 @@
         <button type="button" class="btn-principal" id="fp-choisir" disabled>Choisir une photo ou un PDF</button>
         <p class="aide">Les photos sont réduites et nettoyées avant l'envoi (la position GPS et les autres données de l'appareil sont retirées). PDF : 10 Mo maximum.</p>
       </div>
-      <div class="panneau fp-claude" id="fp-claude">
+      <div class="panneau fp-claude" id="fp-claude" hidden>
         <h3>Créer la version web avec Claude <span class="beta">GRATUIT</span></h3>
         <p class="aide">Claude lit la photo de la feuille et la transforme en feuille web propre, pareille pour tous les postes. Il laisse de côté les codes de porte, les fréquences radio et les numéros internes. Utilise votre propre compte Claude gratuit : rien n'est payé par Police Management.</p>
         <ol class="fp-etapes">
@@ -1438,9 +1438,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610211121"></script>
+  <script src="config.js?v=202610211132"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610211121"></script>
+  <script src="app.js?v=202610211132"></script>
 </body>
 </html>

@@ -522,7 +522,6 @@
   const NOUVEAUTES = [
     { date: "2026-10-20", titre: "Feuille de poste", points: [
       "Nouvel onglet Feuille : la feuille aide-mémoire de votre poste, en photo ou en PDF, partagée avec les membres de votre poste.",
-      "Version web : Claude (votre compte gratuit) lit la photo et crée une feuille propre et uniforme, sans les codes ni les fréquences radio.",
       "Tout membre du poste peut la remplacer ou la retirer. Lisez bien les règles : aucun code d'accès, aucune fréquence radio, aucun numéro interne, aucun renseignement sur une personne."] },
   ];
   function ouvrirNouveautes() {
@@ -2137,6 +2136,8 @@
 
   /* ---------------- Feuille de poste (photo ou PDF partagé entre les membres d'un même poste) ---------------- */
   const fp = { donnees: null, url: null, zoom: 1 };
+  // Version web de la feuille (créée avec Claude) : désactivée pour tout le monde pour le moment. Mettre true pour la réactiver.
+  const FEUILLE_WEB_ACTIVE = false;
   const SEAU_FEUILLES = "feuilles-poste";
   // La feuille est gardée sur l'appareil : elle n'est téléchargée de nouveau que lorsqu'elle change (moins de données, affichage instantané)
   const CACHE_FEUILLE = "pm-feuille-poste";
@@ -2174,7 +2175,7 @@
     const p = etat.profil;
     $("#fp-poste").textContent = p.unite ? [p.unite, p.corps_police].filter(Boolean).join(" · ") : "Aucun poste indiqué";
     $("#fp-confirme").checked = false; $("#fp-choisir").disabled = true;
-    $("#fp-envoi").hidden = !p.unite; $("#fp-claude").hidden = !p.unite;
+    $("#fp-envoi").hidden = !p.unite; $("#fp-claude").hidden = !p.unite || !FEUILLE_WEB_ACTIVE;
     if (estAdmin()) chargerFeuillesAdmin();
     if (!p.unite) {
       $("#fp-contenu").innerHTML = `<div class="panneau fp-vide"><b>Aucun poste indiqué</b><span>Indiquez votre unité ou votre poste dans Mon compte pour voir et partager la feuille de votre poste.</span><button type="button" class="btn-secondaire" data-menu-compte>Ouvrir Mon compte</button></div>`;
@@ -2190,7 +2191,7 @@
   }
   async function rendreFeuille() {
     const el = $("#fp-contenu"), f = fp.donnees;
-    const aPhoto = !!(f && f.chemin), aWeb = !!(f && f.donnees);
+    const aPhoto = !!(f && f.chemin), aWeb = FEUILLE_WEB_ACTIVE && !!(f && f.donnees);
     $("#fp-envoi-titre").textContent = aPhoto ? "Remplacer la photo de la feuille" : "Ajouter la photo de la feuille de votre poste";
     if (!aPhoto && !aWeb) {
       el.innerHTML = `<div class="panneau fp-vide"><b>Votre poste n'a pas encore de feuille</b><span>Ajoutez-en une ci-dessous : elle sera visible par tous les membres approuvés de votre poste.</span></div>`;
