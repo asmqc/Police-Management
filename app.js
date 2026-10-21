@@ -2136,7 +2136,15 @@
 
   /* ---------------- Feuille de poste (photo ou PDF partagé entre les membres d'un même poste) ---------------- */
   const fp = { donnees: null, url: null, zoom: 1 };
-  const SEAU_FEUILLES = "feuilles-poste";
+  // Le fichier est conservé dans un dépôt GitHub privé; la fonction « feuilles-poste » vérifie l'accès et le relaie
+  async function appelFeuilles(params, init = {}) {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(`${C.supabaseUrl}/functions/v1/feuilles-poste${params}`, {
+      ...init, headers: { Authorization: `Bearer ${session ? session.access_token : ""}`, apikey: C.supabaseKey, ...(init.headers || {}) },
+    });
+    if (!r.ok) { let m = "La feuille n'a pas pu être chargée."; try { m = (await r.json()).erreur || m; } catch { /* réponse non JSON */ } throw new Error(m); }
+    return r;
+  }
   function ouvrirAvertFeuille() { $("#fp-voile").hidden = false; $("#fp-compris").focus({ preventScroll: true }); $("#fp-voile .avert-carte").scrollTop = 0; }
   $("#fp-compris").addEventListener("click", () => { $("#fp-voile").hidden = true; });
   $("#fp-quitter").addEventListener("click", () => { $("#fp-voile").hidden = true; afficherVue("accueil"); });
@@ -2174,9 +2182,12 @@
       el.innerHTML = `<div class="panneau fp-vide"><b>Votre poste n'a pas encore de feuille</b><span>Ajoutez-en une ci-dessous : elle sera visible par tous les membres approuvés de votre poste.</span></div>`;
       return;
     }
-    const { data: signe } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(f.chemin, 3600);
-    fp.url = signe && signe.signedUrl;
-    if (!fp.url) { el.innerHTML = `<p class="vide">La feuille n'a pas pu être chargée. Réessayez dans un instant.</p>`; return; }
+    el.innerHTML = `<p class="etat">Chargement de la feuille…</p>`;
+    try {
+      const blob = await (await appelFeuilles("")).blob();
+      if (fp.url) URL.revokeObjectURL(fp.url);
+      fp.url = URL.createObjectURL(blob);
+    } catch (err) { el.innerHTML = `<p class="vide">${esc(err.message)}</p>`; return; }
     const image = f.type === "image";
     el.innerHTML = `<div class="panneau fp-vue">
       <div class="fp-barre">
@@ -2211,9 +2222,7 @@
     ret.addEventListener("click", async () => {
       if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la feuille du poste"; return; }
       ret.disabled = true;
-      const { data: ancien, error } = await sb.rpc("feuille_poste_retirer", {});
-      if (error) { ret.disabled = false; return toast(traduireErreur(error)); }
-      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      try { await appelFeuilles("?action=retirer", { method: "POST" }); } catch (err) { ret.disabled = false; return toast(err.message); }
       toast("Feuille retirée"); chargerFeuille();
     });
   }
@@ -2243,24 +2252,13 @@
     if (pdf && fichier.size > 10 * 1024 * 1024) return toast("Le PDF dépasse 10 Mo");
     const b = $("#fp-choisir");
     b.disabled = true; b.textContent = "Envoi en cours…";
-    let chemin = null;
     try {
-      const { data: cle, error: eCle } = await sb.rpc("feuille_poste_cle");
-      if (eCle) throw eCle;
-      if (!cle) throw new Error("Indiquez votre unité ou votre poste dans Mon compte pour partager une feuille de poste.");
       const contenu = pdf ? fichier : await reduireFeuille(fichier);
-      chemin = `${cle}/${crypto.randomUUID()}.${pdf ? "pdf" : "jpg"}`;
-      const { error: eEnvoi } = await sb.storage.from(SEAU_FEUILLES).upload(chemin, contenu, { contentType: pdf ? "application/pdf" : "image/jpeg", upsert: false });
-      if (eEnvoi) { chemin = null; throw eEnvoi; }
-      const { data: ancien, error: ePub } = await sb.rpc("feuille_poste_publier", { p_chemin: chemin, p_type: pdf ? "pdf" : "image" });
-      if (ePub) throw ePub;
-      chemin = null;
-      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      await appelFeuilles("?action=publier", { method: "POST", headers: { "Content-Type": pdf ? "application/pdf" : "image/jpeg" }, body: contenu });
       toast("Feuille publiée pour votre poste");
       chargerFeuille();
     } catch (err) {
-      if (chemin) await sb.storage.from(SEAU_FEUILLES).remove([chemin]);
-      toast(traduireErreur(err));
+      toast(err.message || traduireErreur(err));
     } finally {
       b.textContent = "Choisir une photo ou un PDF";
       $("#fp-confirme").checked = false; b.disabled = true;
@@ -2274,17 +2272,19 @@
     if (error) { bloc.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     bloc.innerHTML = `<h3>Toutes les feuilles · administrateur</h3>` + ((data || []).length ? `<ul class="liste-partages">${data.map((f) => `
       <li><span><b>${esc(f.unite)}</b><small>${esc(f.corps || "")} · ${esc(quand(f.ajoute_le))} · ${esc(f.ajoute_par_nom)}</small></span>
-        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.chemin)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
+        <span class="fc-ligne"><button type="button" class="btn-secondaire petit" data-fpa-voir="${esc(f.cle)}">Voir</button><button type="button" class="btn-danger petit" data-fpa-retirer="${esc(f.cle)}">Retirer</button></span></li>`).join("")}</ul>`
       : `<p class="aide">Aucun poste n'a encore partagé de feuille.</p>`);
     $$("[data-fpa-voir]", bloc).forEach((b) => b.addEventListener("click", async () => {
-      const { data: s } = await sb.storage.from(SEAU_FEUILLES).createSignedUrl(b.dataset.fpaVoir, 600);
-      if (s && s.signedUrl) window.open(s.signedUrl, "_blank", "noopener"); else toast("Fichier introuvable");
+      const fen = window.open("", "_blank");
+      try {
+        const blob = await (await appelFeuilles(`?cle=${encodeURIComponent(b.dataset.fpaVoir)}`)).blob();
+        const u = URL.createObjectURL(blob);
+        if (fen) fen.location.href = u; else window.open(u, "_blank");
+      } catch (err) { if (fen) fen.close(); toast(err.message); }
     }));
     $$("[data-fpa-retirer]", bloc).forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
-      const { data: ancien, error: e2 } = await sb.rpc("feuille_poste_retirer", { p_cle: b.dataset.fpaRetirer });
-      if (e2) return toast(traduireErreur(e2));
-      if (ancien) await sb.storage.from(SEAU_FEUILLES).remove([ancien]);
+      try { await appelFeuilles(`?action=retirer&cle=${encodeURIComponent(b.dataset.fpaRetirer)}`, { method: "POST" }); } catch (err) { return toast(err.message); }
       toast("Feuille retirée"); chargerFeuille();
     }));
   }
