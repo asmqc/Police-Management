@@ -1994,3 +1994,12 @@ html.verre-leger:not([data-style]) { --verre-flou: blur(10px); }
 /* Site public : bandes du haut et du bas de Safari en couleur nuit (et non le fond clair) */
 html:has(#ecran-site:not([hidden])), html:has(#ecran-site:not([hidden])) body { background: #06070D; }
 .site-barre { background: rgba(6, 7, 13, .86); }
+
+/* Site public : chaque section claire porte son propre fond (Safari ne garde pas toujours un fond fixe sous sa barre d'adresse) */
+.site-section:not(.site-sombre), .site-bande {
+  background: radial-gradient(circle at 92% 12%, rgba(255, 197, 61, .26), transparent 45%), radial-gradient(circle at 4% 92%, rgba(125, 183, 255, .36), transparent 45%), #E4ECF5;
+}
+.site-bande:nth-of-type(even) {
+  background: radial-gradient(circle at 6% 10%, rgba(125, 183, 255, .34), transparent 45%), radial-gradient(circle at 96% 90%, rgba(255, 197, 61, .24), transparent 45%), #E8EEF6;
+}
+.site::before { display: none; }
