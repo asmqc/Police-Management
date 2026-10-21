@@ -1,0 +1,4 @@
+confirmation-inscription.html : Confirmez votre courriel · Police Management
+lien-magique.html : Votre lien de confirmation · Police Management
+reinitialisation-mot-de-passe.html : Réinitialisez votre mot de passe · Police Management
+changement-courriel.html : Confirmez votre nouvelle adresse · Police Management
