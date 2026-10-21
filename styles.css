@@ -1856,3 +1856,116 @@ html.app-natif #vue-messages { padding-bottom: var(--natif-bas); }
 .table-frais td, .table-frais th { white-space: normal; }
 .table-frais tbody tr[data-fr] { cursor: pointer; }
 .table-frais td:first-child, .table-frais th:first-child { white-space: nowrap; text-align: left; }
+
+
+/* =====================================================================
+   Refonte « Liquid Glass » (style Moderne, par défaut)
+   Mode clair : verre givré blanc sur une carte routière pâle (variante A).
+   Mode sombre : verre fumé sur la nuit, lueurs de gyrophare rouge et bleu (variante B).
+   ===================================================================== */
+html:not([data-style]) {
+  --bg: #E4ECF5;
+  --surface: rgba(255, 255, 255, .62);
+  --surface-2: rgba(14, 27, 44, .06);
+  --champ: rgba(255, 255, 255, .72);
+  --ligne: rgba(14, 27, 44, .10);
+  --bord-carte: rgba(255, 255, 255, .92);
+  --fg: #0E1B2C;
+  --fg-doux: #3E5470;
+  --marque: #0A4FB8;
+  --verre-bord: rgba(255, 255, 255, .92);
+  --verre-fort: rgba(255, 255, 255, .86);
+  --verre-barre: rgba(255, 255, 255, .58);
+  --verre-nav: rgba(255, 255, 255, .64);
+  --verre-ombre: 0 10px 30px rgba(30, 60, 100, .12);
+  --verre-flou: blur(24px) saturate(180%);
+  --barre-fg: #0E1B2C;
+  --onglet-actif: #0A4FB8;
+  --fond-deco: radial-gradient(circle at 88% 16%, rgba(255, 197, 61, .38), transparent 38%),
+    radial-gradient(circle at 8% 84%, rgba(125, 183, 255, .5), transparent 42%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='390' height='844' viewBox='0 0 390 844' preserveAspectRatio='xMidYMid slice'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath d='M-20 260C100 220 160 300 240 270S370 190 420 230' stroke-width='22'/%3E%3Cpath d='M70-10C90 170 50 330 130 480S220 770 190 860' stroke-width='14'/%3E%3Cpath d='M310-10C300 150 350 310 310 430S270 710 340 860' stroke-width='9'/%3E%3C/g%3E%3Cpath d='M-10 600C120 560 230 650 410 580' fill='none' stroke='%23F7D57A' stroke-width='12'/%3E%3C/svg%3E") center / cover no-repeat, #E4ECF5;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-style]):not([data-theme="light"]) {
+    --bg: #06070D; --surface: rgba(255, 255, 255, .075); --surface-2: rgba(255, 255, 255, .07); --champ: rgba(255, 255, 255, .08);
+    --ligne: rgba(255, 255, 255, .12); --bord-carte: rgba(255, 255, 255, .18); --fg: #F3F6FB; --fg-doux: #A9B4C6; --marque: #8FB6FF;
+    --verre-bord: rgba(255, 255, 255, .2); --verre-fort: rgba(16, 18, 30, .86); --verre-barre: rgba(10, 12, 22, .45); --verre-nav: rgba(255, 255, 255, .1);
+    --verre-ombre: 0 10px 30px rgba(0, 0, 0, .35); --barre-fg: #FFFFFF; --onglet-actif: #FFFFFF;
+    --fond-deco: radial-gradient(circle at 6% 16%, rgba(224, 38, 59, .45), transparent 42%),
+      radial-gradient(circle at 96% 26%, rgba(37, 99, 235, .5), transparent 42%),
+      radial-gradient(circle at 50% 98%, rgba(37, 99, 235, .22), transparent 45%), #06070D;
+  }
+}
+html[data-theme="dark"]:not([data-style]) {
+  --bg: #06070D; --surface: rgba(255, 255, 255, .075); --surface-2: rgba(255, 255, 255, .07); --champ: rgba(255, 255, 255, .08);
+  --ligne: rgba(255, 255, 255, .12); --bord-carte: rgba(255, 255, 255, .18); --fg: #F3F6FB; --fg-doux: #A9B4C6; --marque: #8FB6FF;
+  --verre-bord: rgba(255, 255, 255, .2); --verre-fort: rgba(16, 18, 30, .86); --verre-barre: rgba(10, 12, 22, .45); --verre-nav: rgba(255, 255, 255, .1);
+  --verre-ombre: 0 10px 30px rgba(0, 0, 0, .35); --barre-fg: #FFFFFF; --onglet-actif: #FFFFFF;
+  --fond-deco: radial-gradient(circle at 6% 16%, rgba(224, 38, 59, .45), transparent 42%),
+    radial-gradient(circle at 96% 26%, rgba(37, 99, 235, .5), transparent 42%),
+    radial-gradient(circle at 50% 98%, rgba(37, 99, 235, .22), transparent 45%), #06070D;
+}
+html:not([data-style]) body { background: var(--fond-deco); }
+html:not([data-style]) .app, html:not([data-style]) .vue { background: transparent; }
+
+/* Surfaces en verre */
+html:not([data-style]) :is(.panneau, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages,
+  .table-defile, .liste-conv, .chat-tete, .chat-saisie, .legende, .fiche, .adresse-barre, .km-barre, .onglets-csr, .segmente, .fp-cadre, .cv-r, .hr-cal, .carte-mois) {
+  background-color: var(--surface);
+  border: 1px solid var(--verre-bord);
+  -webkit-backdrop-filter: var(--verre-flou); backdrop-filter: var(--verre-flou);
+  box-shadow: var(--verre-ombre);
+}
+html:not([data-style]) :is(.panneau, .tuile, .article, .forum-ligne, .idee, .annonce, .fiche) { border-radius: 24px; }
+html:not([data-style]) :is(.liste-articles, .liste-partages, .table-defile, .liste-conv) { border-radius: 20px; }
+html:not([data-style]) :is(.fiche-compte, .menu-feuille, .avert-carte, .adresse-res) {
+  background: var(--verre-fort); border: 1px solid var(--verre-bord); color: var(--fg);
+  -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%);
+}
+html:not([data-style]) .toast { background: var(--verre-fort); color: var(--fg); border: 1px solid var(--verre-bord); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+html:not([data-style]) :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not(.corps-admin) { background-color: var(--champ); }
+
+/* Barre du haut en verre */
+html:not([data-style]) .barre {
+  background: var(--verre-barre); color: var(--barre-fg); box-shadow: inset 0 -1px 0 var(--verre-bord);
+  -webkit-backdrop-filter: blur(26px) saturate(180%); backdrop-filter: blur(26px) saturate(180%); z-index: 20;
+}
+html:not([data-style]) .barre::after { display: none; }
+html:not([data-style]) body::before { background: var(--verre-barre); -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px); }
+html:not([data-style]) .barre .btn-rafraichir, html:not([data-style]) .barre .usager { color: var(--barre-fg); }
+html:not([data-style]) .barre .btn-icone:hover { background: var(--surface-2); }
+html:not([data-style]) .corps-admin { background-color: var(--surface-2); color: var(--barre-fg); border-color: var(--verre-bord); }
+html:not([data-style]) .marque { color: var(--barre-fg); }
+
+/* Onglets du bas : barre flottante en verre (téléphone) */
+@media (max-width: 899px) {
+  html:not([data-style]):not(.app-natif) .app { grid-template-rows: var(--barre-h) minmax(0, 1fr) 0; }
+  html:not([data-style]):not(.app-natif) .nav {
+    position: fixed; z-index: 60; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    height: 64px; padding: 6px; box-sizing: border-box; border-radius: 32px;
+    background: var(--verre-nav); border: 1px solid var(--verre-bord); box-shadow: var(--verre-ombre);
+    -webkit-backdrop-filter: blur(26px) saturate(180%); backdrop-filter: blur(26px) saturate(180%);
+  }
+  html:not([data-style]):not(.app-natif) .nav button { border-radius: 26px; }
+  html:not([data-style]):not(.app-natif) .vue { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); }
+  html:not([data-style]):not(.app-natif) .vue.vue-carte { padding-bottom: 0 !important; }
+  html:not([data-style]):not(.app-natif) .vue-carte .leaflet-bottom { bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); }
+  html:not([data-style]):not(.app-natif) .vue-carte :is(.fiche, .mesure-boite) { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
+  html:not([data-style]):not(.app-natif) #vue-messages { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); }
+  html:not([data-style]):not(.app-natif) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
+  html:not([data-style]):not(.app-natif) body.carte-plein .app { grid-template-rows: 0 minmax(0, 1fr) 0; }
+}
+@media (min-width: 900px) {
+  html:not([data-style]) .nav { background: var(--verre-nav); border-right: 1px solid var(--verre-bord); -webkit-backdrop-filter: blur(26px) saturate(180%); backdrop-filter: blur(26px) saturate(180%); }
+}
+html:not([data-style]) .nav button { color: var(--fg-doux); }
+html:not([data-style]) .nav button:hover { color: var(--fg); }
+html:not([data-style]) .nav button[aria-current="page"] { color: var(--onglet-actif); }
+html:not([data-style]) .nav button[aria-current="page"] .nav-ico { background: color-mix(in srgb, var(--onglet-actif) 16%, transparent); }
+html:not([data-style]) .nav :is(.badge, .beta-nav) { border-color: transparent; }
+
+/* Appareils plus modestes ou transparence réduite : moins de flou, surfaces plus opaques */
+html.verre-leger:not([data-style]) { --verre-flou: blur(10px); }
+@media (prefers-reduced-transparency: reduce) {
+  html:not([data-style]) { --surface: #FFFFFF; --verre-flou: none; --verre-nav: #FFFFFF; --verre-barre: #FFFFFF; }
+}

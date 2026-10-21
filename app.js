@@ -5,6 +5,8 @@
   const C = window.PE_CONFIG;
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
+  // Effet de verre allégé sur les appareils modestes (flou moins coûteux)
+  try { if ((navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 && !/iPhone|iPad|Mac/.test(navigator.userAgent))) document.documentElement.classList.add("verre-leger"); } catch { /* facultatif */ }
   // App iOS « glass » : les barres (haut et onglets) sont natives, le site cache les siennes
   const pontNatif = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.pm;
   if (pontNatif) document.documentElement.classList.add("app-natif");
