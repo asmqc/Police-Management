@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610211155">
+  <link rel="stylesheet" href="styles.css?v=202610211203">
 </head>
 <body>
   <!-- Chargement -->
@@ -467,8 +467,28 @@
       </div>
       <div class="onglets-csr" role="tablist" aria-label="Section du CSR">
         <button role="tab" data-csr-onglet="articles" aria-selected="true">Articles</button>
-        <button role="tab" data-csr-onglet="vitesse" aria-selected="false">Table des vitesses</button>
+        <button role="tab" data-csr-onglet="vitesse" aria-selected="false">Vitesses</button>
+        <button role="tab" data-csr-onglet="frais" aria-selected="false">Frais</button>
         <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
+      </div>
+
+      <div id="csr-frais" class="frais" hidden>
+        <div class="panneau frais-calcul">
+          <label for="fr-amende">Montant de l'amende</label>
+          <div class="frais-saisie"><input id="fr-amende" type="number" inputmode="numeric" min="0" max="100000" value="150"><span>$</span></div>
+          <div class="segmente frais-age" role="radiogroup" aria-label="Âge du défendeur">
+            <button type="button" role="radio" data-fr-age="adulte" aria-checked="true">18 ans et plus</button>
+            <button type="button" role="radio" data-fr-age="mineur" aria-checked="false">Moins de 18 ans</button>
+          </div>
+          <div id="fr-resultat"></div>
+        </div>
+        <h3 class="intertitre">Frais judiciaires <span class="ref">inclus au constat</span></h3>
+        <div class="table-defile"><table class="table-vitesse table-frais" id="fr-table-frais"></table></div>
+        <h3 class="intertitre">Contribution pénale</h3>
+        <div class="table-defile"><table class="table-vitesse table-frais" id="fr-table-contrib"></table></div>
+        <h3 class="intertitre">Total à payer · amendes courantes <span class="ref">18 ans et plus</span></h3>
+        <div class="table-defile"><table class="table-vitesse table-frais" id="fr-table-total"></table></div>
+        <p class="aide vitesse-source">Frais : Tarif judiciaire en matière pénale (C-25.1, r. 6, art. 1, par. 7°), montants indexés au 1er janvier 2026, pour un plaidoyer de culpabilité ou un paiement sans plaidoyer. Moins de 18 ans : Règlement sur certains frais judiciaires en matière pénale (C-25.1, r. 3, art. 2, par. 6°), frais totaux plafonnés à 100 $. Contribution pénale : art. 8.1 du Code de procédure pénale. D'autres frais s'ajoutent si le dossier va plus loin (jugement par défaut, avis de jugement, etc.). Outil de référence : les textes officiels prévalent.</p>
       </div>
 
       <div id="csr-favoris" hidden>
@@ -1438,9 +1458,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610211155"></script>
+  <script src="config.js?v=202610211203"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610211155"></script>
+  <script src="app.js?v=202610211203"></script>
 </body>
 </html>

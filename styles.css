@@ -1840,3 +1840,19 @@ html.app-natif .toast { bottom: calc(var(--natif-bas) + 10px); }
 html.app-natif .voile-menu { padding-top: calc(var(--natif-haut) - 4px); }
 /* Messagerie : la zone de saisie reste au-dessus des onglets */
 html.app-natif #vue-messages { padding-bottom: var(--natif-bas); }
+
+/* ---------- Lois : frais et contribution selon l'amende ---------- */
+.onglets-csr { grid-template-columns: repeat(4, 1fr); }
+.onglets-csr button { padding-inline: 4px; }
+.frais { display: grid; gap: 12px; }
+.frais-calcul { display: grid; gap: 10px; }
+.frais-calcul label { font-weight: 600; }
+.frais-saisie { display: flex; align-items: center; gap: 8px; }
+.frais-saisie input { flex: 1; font-size: 1.4rem; font-weight: 700; font-family: var(--f-mono, monospace); }
+.frais-saisie span { font-size: 1.3rem; font-weight: 700; color: var(--fg-doux); }
+.frais-age { grid-template-columns: 1fr 1fr; }
+.frais-detail { padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.frais-detail .total { font-size: 1.1rem; color: var(--ambre); }
+.table-frais td, .table-frais th { white-space: normal; }
+.table-frais tbody tr[data-fr] { cursor: pointer; }
+.table-frais td:first-child, .table-frais th:first-child { white-space: nowrap; text-align: left; }

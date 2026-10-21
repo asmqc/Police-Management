@@ -3322,6 +3322,17 @@ Format :
   /* ---------------- Table des vitesses (mêmes règles que l'app Police Management iOS) ---------------- */
   const LIMITES = [10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100];
   const vt = { limite: 90, vitesse: 118, zone: "normale" };
+  // Frais judiciaires inclus au constat (C-25.1, r. 6, art. 1, par. 7°, indexés au 1er janvier 2026)
+  function fraisJudiciaires(amende) {
+    return amende <= 0 ? 0 : amende <= 10 ? 7 : amende < 50 ? 16 : amende < 100 ? 33 : amende < 150 ? 59 : amende < 300 ? 86 : amende < 600 ? 172 : amende < 1500 ? 343
+      : amende <= 10000 ? Math.round(amende * 0.25) : 2500 + Math.round((amende - 10000) * 0.01);
+  }
+  // Moins de 18 ans (C-25.1, r. 3, art. 2, par. 6°) : null au-delà de 750 $
+  const fraisMineur = (amende) => (amende <= 0 ? 0 : amende <= 10 ? 7 : amende < 50 ? 16 : amende <= 750 ? 23 : null);
+  // Contribution pénale (art. 8.1 C.p.p.)
+  function contributionPenale(amende) {
+    return amende <= 0 ? 0 : amende <= 100 ? 28 : amende <= 300 ? 52 : amende <= 500 ? 75 : Math.round(amende * 0.25);
+  }
   function calculVitesse(limite, vitesse, zone) {
     const exces = Math.max(0, vitesse - limite);
     const tarif = exces <= 20 ? 10 : exces <= 30 ? 15 : exces <= 45 ? 20 : exces <= 60 ? 25 : 30;
@@ -3333,9 +3344,8 @@ Format :
     if (zone !== "normale") amende *= 2;
     const pointsBase = exces <= 10 ? 0 : exces <= 20 ? 1 : exces <= 30 ? 2 : exces <= 45 ? 3 : exces <= 60 ? 5 : exces <= 80 ? 7 : exces <= 100 ? 9 : 12 + Math.floor((exces - 101) / 20) * 3;
     const points = gev ? pointsBase * 2 : pointsBase;
-    const frais = amende <= 0 ? 0 : amende <= 10 ? 7 : amende < 50 ? 16 : amende < 100 ? 33 : amende < 150 ? 59 : amende < 300 ? 86 : amende < 600 ? 172 : amende < 1500 ? 343
-      : amende <= 10000 ? Math.round(amende * 0.25) : 2500 + Math.round((amende - 10000) * 0.01);
-    const contribution = amende <= 0 ? 0 : amende <= 100 ? 28 : amende <= 300 ? 52 : amende <= 500 ? 75 : Math.round(amende * 0.25);
+    const frais = fraisJudiciaires(amende);
+    const contribution = contributionPenale(amende);
     return { exces, tarif, tranches, amende, gev, points, frais, contribution, total: amende + frais + contribution };
   }
   const dollars = (n) => n.toLocaleString("fr-CA") + " $";
@@ -3392,11 +3402,56 @@ Format :
   function surlignerLigne() {
     $$("#vt-table tbody tr").forEach((tr) => tr.classList.toggle("choisie", +tr.dataset.v === Math.floor(vt.vitesse / 5) * 5));
   }
+  /* Frais et contribution selon le montant de l'amende */
+  const fr = { age: "adulte", pret: false };
+  function initFrais() {
+    if (!fr.pret) {
+      fr.pret = true;
+      $("#fr-amende").addEventListener("input", rendreFraisCalcul);
+      $$("[data-fr-age]").forEach((b) => b.addEventListener("click", () => { fr.age = b.dataset.frAge; $$("[data-fr-age]").forEach((x) => x.setAttribute("aria-checked", String(x === b))); rendreFraisCalcul(); }));
+      const tranches = [["10 $ ou moins", 10], ["11 $ à 49 $", 49], ["50 $ à 99 $", 99], ["100 $ à 149 $", 149], ["150 $ à 299 $", 299], ["300 $ à 599 $", 599], ["600 $ à 1 499 $", 1499], ["1 500 $ à 10 000 $", null], ["Plus de 10 000 $", null]];
+      $("#fr-table-frais").innerHTML = `<thead><tr><th>Amende</th><th>18 ans et plus</th><th>Moins de 18 ans</th></tr></thead><tbody>${tranches.map(([t, a], i) => {
+        const adulte = a !== null ? dollars(fraisJudiciaires(a)) : i === 7 ? "25 % de l'amende" : "2 500 $ + 1 % de l'excédent de 10 000 $";
+        const mineur = i <= 1 ? dollars(fraisMineur(a)) : i <= 6 ? "23 $" + (i === 6 ? " (jusqu'à 750 $)" : "") : "—";
+        return `<tr><td>${t}</td><td><b>${adulte}</b></td><td>${mineur}</td></tr>`;
+      }).join("")}</tbody>`;
+      $("#fr-table-contrib").innerHTML = `<thead><tr><th>Amende</th><th>Contribution pénale</th></tr></thead><tbody>
+        <tr><td>100 $ ou moins</td><td><b>28 $</b></td></tr><tr><td>101 $ à 300 $</td><td><b>52 $</b></td></tr>
+        <tr><td>301 $ à 500 $</td><td><b>75 $</b></td></tr><tr><td>501 $ et plus</td><td><b>25 % de l'amende</b></td></tr></tbody>`;
+      const courantes = [50, 75, 100, 150, 200, 250, 300, 350, 500, 750, 1000, 1500, 2000, 3000];
+      $("#fr-table-total").innerHTML = `<thead><tr><th>Amende</th><th>Frais</th><th>Contrib.</th><th>Total</th></tr></thead><tbody>${courantes.map((a) => {
+        const f = fraisJudiciaires(a), c = contributionPenale(a);
+        return `<tr data-fr="${a}"><td>${dollars(a)}</td><td>${dollars(f)}</td><td>${dollars(c)}</td><td><b>${dollars(a + f + c)}</b></td></tr>`;
+      }).join("")}</tbody>`;
+      $$("#fr-table-total tbody tr").forEach((tr) => tr.addEventListener("click", () => { $("#fr-amende").value = tr.dataset.fr; rendreFraisCalcul(); $("#fr-amende").scrollIntoView({ behavior: "smooth", block: "center" }); }));
+    }
+    rendreFraisCalcul();
+  }
+  function rendreFraisCalcul() {
+    const a = Math.max(0, Math.min(100000, Math.round(+$("#fr-amende").value || 0)));
+    const mineur = fr.age === "mineur";
+    let f = mineur ? fraisMineur(a) : fraisJudiciaires(a);
+    const c = contributionPenale(a);
+    if (mineur && f === null) {
+      $("#fr-resultat").innerHTML = `<p class="message">Pour une personne de moins de 18 ans, le règlement prévoit des frais seulement pour une amende de 750 $ ou moins.</p>`;
+      return;
+    }
+    let total = a + f + c;
+    $("#fr-resultat").innerHTML = a <= 0 ? `<p class="aide">Inscrivez le montant de l'amende inscrit au constat.</p>` : `<dl class="vt-detail frais-detail">
+      <dt>Amende</dt><dd>${dollars(a)}</dd>
+      <dt>Frais judiciaires</dt><dd>${dollars(f)}</dd>
+      <dt>Contribution pénale</dt><dd>${dollars(c)}</dd>
+      <dt class="total">Total à payer</dt><dd class="total">${dollars(total)}</dd></dl>
+      ${mineur ? `<p class="aide">Moins de 18 ans : les frais totaux sont plafonnés à 100 $. La contribution pénale indiquée est celle de l'art. 8.1 C.p.p.; vérifiez son application au dossier.</p>` : ""}`;
+    $$("#fr-table-total tbody tr").forEach((tr) => tr.classList.toggle("choisie", +tr.dataset.fr === a));
+  }
   function ongletLois(nom) {
     $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.csrOnglet === nom)));
     $("#csr-vitesse").hidden = nom !== "vitesse";
     $("#csr-articles").hidden = nom !== "articles";
     $("#csr-favoris").hidden = nom !== "favoris";
+    $("#csr-frais").hidden = nom !== "frais";
+    if (nom === "frais") initFrais();
     if (nom === "vitesse") initVitesse();
     if (nom === "favoris") rendreFavoris();
   }
