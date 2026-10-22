@@ -560,7 +560,7 @@
       "Horaire : calendrier abonné qui se met à jour tout seul dans le Calendrier de l'iPhone, Google Agenda ou Outlook.",
       "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
-      "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte et valeur du temps supplémentaire calculée automatiquement dans l'horaire.",
+      "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
   ];
   function ouvrirNouveautes() {
@@ -2120,7 +2120,7 @@
   }));
 
   /* ---------------- Statistiques d'heures et rapport de temps supplémentaire ---------------- */
-  const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth() };
+  const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth(), paie: 0 };
   const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
   function calculerMois(a, m, src) {
     const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [], tsEq: 0, tsVal: 0 };
@@ -2195,11 +2195,109 @@
   async function chargerPaie(forcer) {
     if (!estSQ()) { etat.paie = null; return null; }
     if (etat.paie !== undefined && !forcer) return etat.paie;
-    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel").eq("user_id", etat.profil.id).maybeSingle();
+    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel, retenues").eq("user_id", etat.profil.id).maybeSingle();
     etat.paie = data || null;
     return etat.paie;
   }
   const paieActive = () => estSQ() && affichee() === hr && etat.paie && salaireSQ(etat.paie);
+
+  /* ---------------- Paie aux deux semaines (SQ) : traitement, primes (art. 16), temps supp., retenues et impôts 2026 ---------------- */
+  const PAIE_ANCRE = "2026-10-29"; // un jeudi de paie (art. 20.01 : paie tous les deux jeudis)
+  const FISC_2026 = {
+    fed: { paliers: [[58523, 0.14], [117045, 0.205], [181440, 0.26], [258482, 0.29], [Infinity, 0.33]], base: 16452, emploi: 1501, credit: 0.14, abattement: 0.165 },
+    qc: { paliers: [[54345, 0.14], [108680, 0.19], [132245, 0.24], [Infinity, 0.2575]], base: 18952, credit: 0.14, travailleur: 1450 },
+    rrq: { mga: 74600, exemptionPaie: 134.61, taux: 0.063, tauxBase: 0.053, max: 4479.30, plafond2: 85000, taux2: 0.04, max2: 416 },
+    rqap: { taux: 0.0043, max: 442.90 },
+    ae: { taux: 0.013, max: 895.70 },
+  };
+  const isoPlus = (iso, n) => isoDe(jourUTC(iso) + n);
+  const FERIES_FIXES = ["01-01", "06-24", "07-01", "12-25", "12-26"];
+  function datePaie(k) { // k = 0 : prochaine paie à partir d'aujourd'hui
+    const auj = aujourdhuiISO();
+    let n = Math.ceil((jourUTC(auj) - jourUTC(PAIE_ANCRE)) / 14);
+    const jeudi = isoPlus(PAIE_ANCRE, (n + k) * 14);
+    let verse = jeudi; // jour férié : jour ouvrable précédent (art. 20.01)
+    while (FERIES_FIXES.includes(verse.slice(5)) || [0, 6].includes(new Date(verse + "T12:00").getDay())) verse = isoPlus(verse, -1);
+    return { jeudi, verse };
+  }
+  const reglagesPaie = () => ({ decalage: 12, rrmsq: 0, syndicat: 0, assurances: 0, autres: 0, ...((etat.paie && etat.paie.retenues) || {}) });
+  // Répartition des minutes d'un quart régulier selon les primes
+  function primesQuart(iso, h, sal, ansService) {
+    const [a, b] = h.map((t) => { const [x, y] = t.split(":").map(Number); return x * 60 + y; });
+    let duree = b - a; if (duree <= 0) duree += 1440;
+    const t2080 = sal.annuel / 2080;
+    const relève194 = h[0] === "19:00" && h[1] === "04:00", relève164 = h[0] === "16:00" && h[1] === "04:00";
+    let nuit = 0, soirZone = 0, fds = 0;
+    const jour0 = new Date(iso + "T12:00").getDay();
+    for (let m = 0; m < duree; m += 5) {
+      const abs = a + m, hd = (abs % 1440) / 60, jour = (jour0 + Math.floor(abs / 1440)) % 7;
+      const estNuit = relève194 || (relève164 ? (hd >= 19 || hd < 4) : hd < 7);
+      if (estNuit) nuit += 5;
+      if (hd >= 19 && !estNuit) soirZone += 5;
+      if (jour === 6 || jour === 0) fds += 5;
+    }
+    // Prime de soir (16.01) : toutes les heures si la moitié ou plus du quart est entre 19 h et minuit
+    let enSoir = 0; for (let m = 0; m < duree; m += 5) { const hd = ((a + m) % 1440) / 60; if (hd >= 19) enSoir += 5; }
+    const soir = enSoir * 2 >= duree ? duree - nuit : soirZone;
+    const pctNuit = ansService >= 10 ? 0.14 : ansService >= 5 ? 0.12 : 0.11;
+    return { heures: duree / 60, nuitH: nuit / 60, soirH: Math.max(0, soir) / 60, fdsH: fds / 60,
+      nuit: nuit / 60 * t2080 * pctNuit, soir: Math.max(0, soir) / 60 * 0.73, fds: fds / 60 * t2080 * 0.04, pctNuit };
+  }
+  function impotAnnuel(paliers, revenu) { let impot = 0, bas = 0; for (const [haut, taux] of paliers) { if (revenu <= bas) break; impot += (Math.min(revenu, haut) - bas) * taux; bas = haut; } return impot; }
+  function calculPaie(k, avecDetails = true) {
+    const paie = etat.paie, src = hr;
+    const { jeudi, verse } = datePaie(k);
+    const r = reglagesPaie();
+    const fin = isoPlus(jeudi, -r.decalage), debut = isoPlus(fin, -13);
+    const sal = salaireSQ(paie, jeudi);
+    const base = sal.annuel / 26;
+    const jours = [];
+    let prNuit = 0, prSoir = 0, prFds = 0, tsVal = 0, tsH = 0, regTrav = 0, regPrevus = 0;
+    for (let i = 0; i < 14; i++) {
+      const iso = isoPlus(debut, i), q = quartDu(iso, src);
+      const salJ = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
+      const prevuTravail = ["J", "S", "N"].includes(q.prevu);
+      if (prevuTravail) regPrevus++;
+      const ligne = { iso, code: q.code, prevu: q.prevu, note: q.note };
+      if (["J", "S", "N"].includes(q.code)) {
+        const h = heuresJour(q.code, iso, src);
+        if (h) { const pq = primesQuart(iso, h, salJ, ans); prNuit += pq.nuit; prSoir += pq.soir; prFds += pq.fds; ligne.h = h; ligne.primes = pq.nuit + pq.soir + pq.fds; ligne.detail = pq; regTrav++; }
+      } else if (q.code === "X") {
+        const ex = (src.exceptions || {})[iso] || {}, h = heuresJour("X", iso, src) || (ex.debut ? [ex.debut, ex.fin] : null);
+        const d = h ? arrondiTS(dureeH(h)) : 0, maj = +ex.maj || 1.5;
+        tsH += d; tsVal += d * maj * salJ.tauxTS; ligne.h = h; ligne.ts = d * maj * salJ.tauxTS; ligne.maj = maj;
+      } else if (prevuTravail && q.code && q.code !== q.prevu) {
+        const h = heuresJour(q.prevu, iso, src);
+        if (h) { const pq = primesQuart(iso, h, salJ, ans); ligne.perdu = pq.nuit + pq.soir + pq.fds; ligne.hPrevu = h; }
+      }
+      jours.push(ligne);
+    }
+    const primes = prNuit + prSoir + prFds;
+    const brut = base + primes + tsVal;
+    const rotation = sal.annuel * 0.018 / 26 * (regPrevus ? Math.min(1, regTrav / regPrevus) : 0); // 16.04 : versée au REER collectif
+    return { k, jeudi, verse, debut, fin, sal, base, prNuit, prSoir, prFds, primes, tsVal, tsH, brut, rotation, jours, r };
+  }
+  function retenuesPaie(p) {
+    const F = FISC_2026, an = p.verse.slice(0, 4);
+    // Cumuls de l'année avant cette paie (pour les maximums RRQ, AE, RQAP)
+    let cumul = 0;
+    for (let k = -1; k > -30; k--) { const q = calculPaie(k + p.k, false); if (q.verse.slice(0, 4) !== an) break; cumul += q.brut; }
+    const assurable = (max, taux, montant) => Math.max(0, Math.min(montant * taux, max - Math.min(max, cumul * taux)));
+    const rrqCumul = Math.max(0, Math.min(cumul, F.rrq.mga) - 3500 * Math.min(1, cumul / F.rrq.mga)) * F.rrq.taux;
+    const rrq = Math.max(0, Math.min((Math.max(0, Math.min(p.brut, Math.max(0, F.rrq.mga - cumul))) - F.rrq.exemptionPaie) * F.rrq.taux, F.rrq.max - rrqCumul));
+    const rrq2 = Math.max(0, Math.min(Math.max(0, Math.min(cumul + p.brut, F.rrq.plafond2) - Math.max(cumul, F.rrq.mga)) * F.rrq.taux2, F.rrq.max2));
+    const ae = assurable(F.ae.max, F.ae.taux, p.brut), rqap = assurable(F.rqap.max, F.rqap.taux, p.brut);
+    const r = p.r, deductible = (+r.rrmsq || 0) + (+r.syndicat || 0);
+    // Impôts retenus : revenu annualisé (paie × 26), méthode simplifiée
+    const partieSupp = rrq * ((F.rrq.taux - F.rrq.tauxBase) / F.rrq.taux) + rrq2;
+    const A = Math.max(0, (p.brut - deductible - partieSupp) * 26);
+    const creditsFed = F.fed.credit * (F.fed.base + F.fed.emploi + (rrq - rrq * ((F.rrq.taux - F.rrq.tauxBase) / F.rrq.taux) + ae + rqap) * 26);
+    const fed = Math.max(0, impotAnnuel(F.fed.paliers, A) - creditsFed) * (1 - F.fed.abattement) / 26;
+    const qc = Math.max(0, impotAnnuel(F.qc.paliers, Math.max(0, A - Math.min(F.qc.travailleur, A * 0.06))) - F.qc.credit * F.qc.base) / 26;
+    const autres = (+r.rrmsq || 0) + (+r.syndicat || 0) + (+r.assurances || 0) + (+r.autres || 0);
+    const total = fed + qc + rrq + rrq2 + ae + rqap + autres;
+    return { fed, qc, rrq, rrq2, ae, rqap, autres, total, net: p.brut - total };
+  }
 
   // Valeur du temps supplémentaire : taux gardés sur cet appareil seulement
   const tsReglages = (() => { try { return { taux: 0, mult: 1.5, mode: "paie", ...JSON.parse(localStorage.getItem("pm-ts-reglages") || "{}") }; } catch { return { taux: 0, mult: 1.5, mode: "paie" }; } })();
@@ -2264,11 +2362,87 @@
     ["#ts-taux", "#ts-mult", "#ts-mode"].forEach((id) => $(id).addEventListener("input", sauver));
     majCalculTS();
   }
+  const dateCourte = (iso, an) => new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: an === "jour" ? "short" : undefined, day: "numeric", month: "long", ...(an === true ? { year: "numeric" } : {}) });
+  function rendrePaieStats() {
+    const el = $("#stats-contenu");
+    if (!etat.paie || !salaireSQ(etat.paie)) {
+      $("#stats-periode").textContent = "Paie aux deux semaines";
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer votre paie, indiquez d'abord votre date d'entrée et votre emploi dans <b>Mon compte › Ma rémunération</b>.</p><button type="button" class="btn-principal" id="paie-aller">Configurer ma rémunération</button></div>`;
+      $("#paie-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      return;
+    }
+    const p = calculPaie(stats.paie), ret = retenuesPaie(p), r = p.r;
+    const $$d = dollarsTS;
+    $("#stats-periode").textContent = `Paie du ${dateCourte(p.verse, true)}`;
+    const nomQ = (c) => (c && QUARTS[c] ? QUARTS[c].nom : "—");
+    const lignesJours = p.jours.map((j) => {
+      let quoi = "", val = "";
+      if (j.primes !== undefined) { quoi = `${esc(nomQ(j.code))} ${j.h ? `<small>${esc(j.h[0])}–${esc(j.h[1])}</small>` : ""}`; val = j.primes ? "+ " + $$d(j.primes) : "—"; }
+      else if (j.ts !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"}`; val = "+ " + $$d(j.ts); }
+      else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
+      else { quoi = esc(nomQ(j.code)); val = ""; }
+      return `<tr><td>${esc(dateCourte(j.iso, "jour"))}</td><td>${quoi}</td><td>${val}</td></tr>`;
+    }).join("");
+    el.innerHTML = `
+      <div class="paie-resume">
+        <div><small>Brut</small><b>${$$d(p.brut)}</b></div>
+        <div class="net"><small>Net estimé</small><b>${$$d(ret.net)}</b></div>
+      </div>
+      <p class="aide paie-periode">Versée le ${esc(dateCourte(p.verse, true))}${p.verse !== p.jeudi ? " (jour férié le jeudi)" : ""} · primes et temps supp. de la période du ${esc(dateCourte(p.debut))} au ${esc(dateCourte(p.fin, true))}</p>
+      <dl class="vt-detail">
+        <dt>Traitement (${$$d(p.sal.annuel)} ÷ 26)</dt><dd>${$$d(p.base)}</dd>
+        <dt>Prime de nuit (16.02, ${Math.round((p.jours.find((j) => j.detail) || { detail: { pctNuit: 0.11 } }).detail.pctNuit * 100)} %)</dt><dd>${$$d(p.prNuit)}</dd>
+        <dt>Prime de soir (16.01, 0,73 $/h)</dt><dd>${$$d(p.prSoir)}</dd>
+        <dt>Prime de fin de semaine (16.03, 4 %)</dt><dd>${$$d(p.prFds)}</dd>
+        ${p.tsVal ? `<dt>Temps supplémentaire (${fmtH(p.tsH)})</dt><dd>${$$d(p.tsVal)}</dd>` : ""}
+        <dt class="total">Brut</dt><dd class="total">${$$d(p.brut)}</dd>
+      </dl>
+      <h4 class="paie-inter">Retenues</h4>
+      <dl class="vt-detail">
+        <dt>Impôt fédéral</dt><dd>${$$d(ret.fed)}</dd>
+        <dt>Impôt du Québec</dt><dd>${$$d(ret.qc)}</dd>
+        <dt>RRQ</dt><dd>${ret.rrq + ret.rrq2 ? $$d(ret.rrq + ret.rrq2) : `<span class="perdu">max. annuel atteint</span>`}</dd>
+        <dt>Assurance-emploi</dt><dd>${ret.ae ? $$d(ret.ae) : `<span class="perdu">max. annuel atteint</span>`}</dd>
+        <dt>RQAP</dt><dd>${ret.rqap ? $$d(ret.rqap) : `<span class="perdu">max. annuel atteint</span>`}</dd>
+        <dt>Mes retenues du talon</dt><dd>${ret.autres ? $$d(ret.autres) : `<span class="perdu">à inscrire</span>`}</dd>
+        <dt class="total">Net estimé</dt><dd class="total">${$$d(ret.net)}</dd>
+      </dl>
+      ${p.rotation ? `<p class="aide">Prime de rotation (16.04) : environ ${$$d(p.rotation)} versés directement au REER collectif de l'APPQ, hors de votre paie nette.</p>` : ""}
+      <details class="paie-jours"><summary>Détail des 14 jours</summary>
+        <div class="table-defile"><table class="table-vitesse paie-table"><tbody>${lignesJours}</tbody></table></div>
+        <p class="aide">Les primes sont versées seulement pour les heures régulières effectivement travaillées. Pour un V, une maladie ou une formation, l'app prend le quart prévu à votre rotation pour montrer la prime qui n'est pas versée.</p>
+      </details>
+      <details class="paie-reglages" id="paie-reglages"${ret.autres ? "" : " open"}><summary>Mes retenues (talon de paie)</summary>
+        <p class="aide">Copiez les montants par paie de votre talon. Ils restent dans votre compte, visibles par vous seulement.</p>
+        <div class="paie-champs">
+          <label><span>Régime de retraite RRMSQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="rrmsq" value="${r.rrmsq || ""}"></label>
+          <label><span>Cotisation syndicale APPQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="syndicat" value="${r.syndicat || ""}"></label>
+          <label><span>Assurances collectives ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="assurances" value="${r.assurances || ""}"></label>
+          <label><span>Autres retenues ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="autres" value="${r.autres || ""}"></label>
+          <label class="large"><span>Période de travail payée</span><select data-ret="decalage">
+            <option value="12"${+r.decalage === 12 ? " selected" : ""}>Se termine le samedi, 12 jours avant la paie</option>
+            <option value="5"${+r.decalage === 5 ? " selected" : ""}>Se termine le samedi précédant la paie</option>
+            <option value="19"${+r.decalage === 19 ? " selected" : ""}>Se termine 19 jours avant la paie</option>
+          </select></label>
+        </div>
+        <button type="button" class="btn-secondaire" id="paie-ret-ok">Enregistrer mes retenues</button>
+      </details>
+      <p class="aide">Estimation : impôts calculés avec les taux 2026 sur la paie annualisée (méthode simplifiée), RRQ, assurance-emploi et RQAP avec leurs maximums annuels. Le temps supplémentaire est compté dans la paie de sa période, mais la Sûreté peut le verser jusqu'à 45 jours après la réclamation (20.03). Votre talon de paie fait foi.</p>`;
+    $("#paie-ret-ok").addEventListener("click", async () => {
+      const nouv = { ...reglagesPaie() };
+      $$("[data-ret]", el).forEach((i) => { const v = parseFloat(String(i.value).replace(",", ".")); nouv[i.dataset.ret] = i.dataset.ret === "decalage" ? (+i.value || 12) : (v > 0 && v < 10000 ? Math.round(v * 100) / 100 : 0); });
+      const { error } = await sb.from("paie_sq").update({ retenues: nouv, maj_le: new Date().toISOString() }).eq("user_id", etat.profil.id);
+      if (error) return toast(traduireErreur(error));
+      etat.paie.retenues = nouv; toast("Retenues enregistrées"); rendreStats();
+    });
+  }
   function rendreStats() {
     const src = affichee();
     $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
     $("#stats-rapport").hidden = stats.mode !== "mois";
+    $("[data-stats='paie']").hidden = !(estSQ() && affichee() === hr);
     if (!src.config) { $("#stats-contenu").innerHTML = `<p class="vide">Configurez d'abord la rotation.</p>`; return; }
+    if (stats.mode === "paie") { rendrePaieStats(); return; }
     if (stats.mode === "mois") {
       $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
       const r = calculerMois(stats.a, stats.m, src);
@@ -2293,12 +2467,12 @@
       brancherCalculTS();
     }
   }
-  $("#hr-stats").addEventListener("click", async () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); try { await chargerPaie(); } catch { /* facultatif */ } rendreStats(); $("#stats-voile").hidden = false; });
+  $("#hr-stats").addEventListener("click", async () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); stats.paie = 0; try { await chargerPaie(); } catch { /* facultatif */ } rendreStats(); $("#stats-voile").hidden = false; });
   $("#stats-fermer").addEventListener("click", () => ($("#stats-voile").hidden = true));
   $("#stats-voile").addEventListener("click", (e) => { if (e.target.id === "stats-voile") e.target.hidden = true; });
   $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
-  $("#stats-prec").addEventListener("click", () => { if (stats.mode === "annee") stats.a--; else if (stats.m === 0) { stats.m = 11; stats.a--; } else stats.m--; rendreStats(); });
-  $("#stats-suiv").addEventListener("click", () => { if (stats.mode === "annee") stats.a++; else if (stats.m === 11) { stats.m = 0; stats.a++; } else stats.m++; rendreStats(); });
+  $("#stats-prec").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie--; rendreStats(); return; } if (stats.mode === "annee") stats.a--; else if (stats.m === 0) { stats.m = 11; stats.a--; } else stats.m--; rendreStats(); });
+  $("#stats-suiv").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie++; rendreStats(); return; } if (stats.mode === "annee") stats.a++; else if (stats.m === 11) { stats.m = 0; stats.a++; } else stats.m++; rendreStats(); });
   $("#stats-rapport").addEventListener("click", () => {
     const src = affichee(), r = calculerMois(stats.a, stats.m, src), p = etat.profil;
     const mois = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
@@ -4962,7 +5136,7 @@ Format :
     if (f.date_entree > aujourdhuiISO()) return toast("La date d'entrée ne peut pas être dans le futur");
     const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, ...f, maj_le: new Date().toISOString() });
     if (error) return toast(traduireErreur(error));
-    etat.paie = f; toast("Rémunération enregistrée");
+    etat.paie = { ...(etat.paie || {}), ...f }; toast("Rémunération enregistrée");
   });
   $("#paie-effacer").addEventListener("click", async () => {
     const { error } = await sb.from("paie_sq").delete().eq("user_id", etat.profil.id);

@@ -2192,3 +2192,33 @@ html[data-style="nuit"] .leaflet-overlay-pane { filter: grayscale(1) sepia(1) hu
 .essai-choix { display: flex; flex-wrap: wrap; gap: 8px; }
 .essai-choix button { font: inherit; font-weight: 700; border: 1.5px solid #D5DEEA; background: #fff; color: var(--s-texte); border-radius: 999px; padding: 10px 16px; cursor: pointer; }
 .essai-choix button[aria-pressed="true"] { background: #0A4FB8; border-color: #0A4FB8; color: #fff; }
+.paie-resume { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 6px; }
+.paie-resume div { display: grid; gap: 2px; padding: 14px; border-radius: 18px; background: var(--surface-2); }
+.paie-resume div.net { background: linear-gradient(135deg, rgba(31, 143, 85, .18), rgba(37, 99, 235, .12)); }
+.paie-resume small { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-doux); }
+.paie-resume b { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+.paie-resume .net b { color: var(--vert, #1F8F55); }
+.paie-periode { margin: 0 0 6px; }
+.paie-inter { margin: 14px 0 4px; font-size: .95rem; }
+.perdu { color: var(--fg-doux); font-style: italic; font-weight: 500; }
+.paie-jours, .paie-reglages { margin-top: 12px; border-radius: 16px; background: var(--surface-2); padding: 0 12px; }
+.paie-jours summary, .paie-reglages summary { cursor: pointer; font-weight: 700; padding: 12px 0; }
+.paie-table td { padding: 7px 6px; vertical-align: top; }
+.paie-table td:first-child { white-space: nowrap; color: var(--fg-doux); }
+.paie-table td:last-child { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.paie-table small { color: var(--fg-doux); display: block; }
+.paie-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.paie-champs label { display: grid; gap: 4px; font-size: .8rem; font-weight: 700; color: var(--fg-doux); }
+.paie-champs label.large { grid-column: 1 / -1; }
+.paie-champs input, .paie-champs select { width: 100%; min-width: 0; }
+.paie-reglages .btn-secondaire { margin: 0 0 12px; }
+.paie-vide { display: grid; gap: 10px; padding: 8px 0; }
+.stats-mode button[hidden] { display: none; }
+.paie-jours .table-defile { overflow: visible; }
+.paie-table { width: 100%; table-layout: fixed; font-family: inherit; font-size: .88rem; }
+.paie-table td { font-family: inherit; }
+.paie-table td:first-child { width: 31%; white-space: normal; }
+.paie-table td:last-child { width: 30%; white-space: normal; }
+.paie-table td:nth-child(2) { overflow-wrap: anywhere; }
+#stats-contenu { min-width: 0; }
+#stats-contenu .vt-detail dd { white-space: nowrap; }
