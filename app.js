@@ -1479,14 +1479,14 @@
     }));
   }
   function rendre511() {
-    const liste = $("#ac-511-liste"), max = 8;
+    const liste = $("#ac-511-liste"), max = 2;
     const vus = t511.tout ? t511.liste : t511.liste.slice(0, max);
     liste.hidden = !vus.length;
     liste.innerHTML = vus.map((x, i) => `<li><button type="button" data-511="${i}">
         <span class="genre-511 ${esc(x.p.genre || "")}">${x.p.genre === "chantier" ? "Travaux" : "Avertissement"}${x.p.route ? " · route " + esc(x.p.route) : ""}</span>
         <b>${esc(x.p.titre || x.p.travaux || "Entrave")}</b>
         <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).join(" · "))}</small></button></li>`).join("")
-      + (t511.liste.length > max ? `<li class="ac-511-plus"><button type="button" id="ac-511-plus">${t511.tout ? "Afficher moins" : `Voir les ${t511.liste.length} entraves`}</button></li>` : "");
+      + (t511.liste.length > max ? `<li class="ac-511-plus"><button type="button" id="ac-511-plus">${t511.tout ? "Voir moins" : `Voir plus (${t511.liste.length - max} autre${t511.liste.length - max > 1 ? "s" : ""})`}</button></li>` : "");
     $$("[data-511]", liste).forEach((btn) => btn.addEventListener("click", () => {
       const x = t511.liste[+btn.dataset["511"]];
       afficherVue("carte");
