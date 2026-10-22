@@ -981,7 +981,7 @@
       const n = jourUTC(iso) - jourUTC(c.debut);
       prevu = c.cycle[((n % c.cycle.length) + c.cycle.length) % c.cycle.length];
     }
-    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e };
+    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e, tsp: e && e.tsp && e.tsp.debut ? e.tsp : null };
   }
   // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
   function heuresJour(code, iso, src = affichee()) {
@@ -1821,7 +1821,7 @@
       const dansMois = Number(iso.slice(5, 7)) === m;
       const evs = parJour[iso] || [];
       html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${iso === cal.sel ? "choisi" : ""} ${qq.exception && rotationVisible() ? "exc" : ""}" aria-label="${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun quart")}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}">
-        <span class="num">${Number(iso.slice(8))}</span>${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}</span>` : ""}
+        <span class="num">${Number(iso.slice(8))}</span>${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}${qq.tsp ? `<sup class="tsp-plus">+X</sup>` : ""}</span>` : ""}
         <span class="points">${evs.slice(0, 3).map((o) => `<i style="background:${couleurEv(o.ev)}"></i>`).join("")}</span></button>`;
     }
     $("#hr-grille").innerHTML = html;
@@ -1837,7 +1837,7 @@
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.tsp ? `<small class="tsp-ligne">+ Temps supp. ${esc(qq.tsp.debut)} – ${esc(qq.tsp.fin)}${+qq.tsp.maj === 2 ? " (× 2)" : ""}</small>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
         <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
@@ -2147,6 +2147,11 @@
       const q = quartDu(iso, src);
       if (!q.code) continue;
       r.jours[q.code] = (r.jours[q.code] || 0) + 1;
+      if (q.tsp && q.code !== "X") {
+        const d = dureeH([q.tsp.debut, q.tsp.fin]), maj = +q.tsp.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
+        r.ts += d; r.lignesTS.push({ iso, h: [q.tsp.debut, q.tsp.fin], d, note: [`En plus du quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj });
+        if (paie) { const sal = salaireSQ(paie, iso), h2 = arrondiTS(d); r.tsEq += h2 * maj; r.tsVal += h2 * maj * sal.tauxTS; }
+      }
       if (!["J", "S", "N", "X"].includes(q.code)) continue;
       const h = heuresJour(q.code, iso, src), d = dureeH(h);
       r.travailles++; r.heures += d;
@@ -2286,6 +2291,10 @@
         const h = heuresJour(q.prevu, iso, src);
         if (h) { const pq = primesQuart(iso, h, salJ, ans); ligne.perdu = pq.nuit + pq.soir + pq.fds; ligne.hPrevu = h; }
       }
+      if (q.tsp && q.code !== "X") {
+        const d = arrondiTS(dureeH([q.tsp.debut, q.tsp.fin])), maj = +q.tsp.maj || 1.5, v = d * maj * salJ.tauxTS;
+        tsH += d; tsVal += v; ligne.tsp = v; ligne.tspMaj = maj;
+      }
       jours.push(ligne);
     }
     const primes = prNuit + prSoir + prFds;
@@ -2397,6 +2406,7 @@
       else if (j.ts !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"}`; val = "+ " + $$d(j.ts); }
       else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
       else { quoi = esc(nomQ(j.code)); val = ""; }
+      if (j.tsp) { quoi += `<small>+ temps supp. ${j.tspMaj === 2 ? "× 2" : "× 1,5"}</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.tsp); }
       return `<tr><td>${esc(dateCourte(j.iso, "jour"))}</td><td>${quoi}</td><td>${val}</td></tr>`;
     }).join("");
     el.innerHTML = `
@@ -3548,6 +3558,9 @@ Format :
     $$("#hr-ts-champs input").forEach((i) => (i.value = (ex.ts && ex.ts[i.dataset.ts]) || ""));
     $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
     $("#hr-jour-maj").value = String(+ex.maj || 1.5);
+    $("#hr-tsp-actif").checked = !!(ex.tsp && ex.tsp.debut);
+    $("#hr-tsp-debut").value = (ex.tsp && ex.tsp.debut) || ""; $("#hr-tsp-fin").value = (ex.tsp && ex.tsp.fin) || "";
+    $("#hr-tsp-maj").value = String((ex.tsp && +ex.tsp.maj) || 1.5);
     $("#hr-jour-retirer").hidden = !q.exception;
     $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
     majChampsJour();
@@ -3560,7 +3573,9 @@ Format :
   function majChampsJour() {
     const t = typeChoisi();
     $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T"].includes(t);
-    $("#hr-jour-ts").hidden = !!hr.vue || !["X", "F"].includes(t);
+    $("#hr-tsp-bloc").hidden = !!hr.vue || !t || t === "X";
+    $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
+    $("#hr-jour-ts").hidden = !!hr.vue || !(["X", "F"].includes(t) || !$("#hr-tsp-champs").hidden);
     majValeurJour();
     const h = heuresJour(t, null, cibleEdition());
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
@@ -3569,6 +3584,7 @@ Format :
   $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
   function majValeurJour() {
+    majValeurTsp();
     const bloc = $("#hr-ts-valeur"), t = typeChoisi();
     const actif = !hr.vue && cibleEdition() === hr && t === "X" && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
     bloc.hidden = !actif;
@@ -3581,6 +3597,23 @@ Format :
       : `<span>Indiquez les heures pour voir la valeur estimée.</span>`;
   }
   ["#hr-jour-debut", "#hr-jour-fin", "#hr-jour-maj"].forEach((q) => $(q).addEventListener("input", majValeurJour));
+  $("#hr-tsp-actif").addEventListener("change", () => {
+    if ($("#hr-tsp-actif").checked && !$("#hr-tsp-debut").value) { // suggestion : juste après la fin du quart
+      const h = heuresJour(typeChoisi(), hr.jourChoisi, cibleEdition());
+      if (h) $("#hr-tsp-debut").value = $("#hr-jour-fin").value || h[1];
+    }
+    majChampsJour();
+  });
+  function majValeurTsp() {
+    const out = $("#hr-tsp-montant");
+    const actif = !$("#hr-tsp-champs").hidden && cibleEdition() === hr && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
+    const deb = $("#hr-tsp-debut").value, fin = $("#hr-tsp-fin").value;
+    out.hidden = !actif || !deb || !fin;
+    if (out.hidden) return;
+    const sal = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), h = arrondiTS(d), maj = +$("#hr-tsp-maj").value || 1.5;
+    out.innerHTML = `<b>${dollarsTS(h * maj * sal.tauxTS)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (art. 12.09)` : ""}</span><small>En banque : ${fmtH(h * maj)} · estimation</small>`;
+  }
+  ["#hr-tsp-debut", "#hr-tsp-fin", "#hr-tsp-maj"].forEach((q) => $(q).addEventListener("input", majValeurTsp));
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   const fermerJour = () => ($("#hr-voile").hidden = true);
   $("#hr-jour-fermer").addEventListener("click", fermerJour);
@@ -3595,9 +3628,15 @@ Format :
     if ((debut && !fin) || (!debut && fin)) return toast("Indiquez l'heure de début et de fin");
     const ts = {};
     if (!$("#hr-jour-ts").hidden) $$("#hr-ts-champs input").forEach((i) => { if (i.value.trim()) ts[i.dataset.ts] = i.value.trim(); });
+    let tsp = null;
+    if (!$("#hr-tsp-champs").hidden) {
+      const td = $("#hr-tsp-debut").value, tf = $("#hr-tsp-fin").value;
+      if (!td || !tf) return toast("Indiquez le début et la fin du temps supplémentaire");
+      tsp = { debut: td, fin: tf, ...($("#hr-tsp-maj").value === "2" ? { maj: 2 } : {}) };
+    }
     const avant = cible.exceptions[iso];
-    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}) };
+    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp) delete cible.exceptions[iso];
+    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(tsp ? { tsp } : {}) };
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
     catch (e) { if (avant) cible.exceptions[iso] = avant; else delete cible.exceptions[iso]; toast(traduireErreur(e)); }
   });

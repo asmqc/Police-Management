@@ -2251,3 +2251,17 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 #hr-jour-defaut { font-weight: 500; text-transform: none; letter-spacing: 0; }
 .cal-tete { position: relative; }
 .cal-plus-menu { background: linear-gradient(var(--surface), var(--surface)), var(--bg); -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%); }
+
+/* Temps supplémentaire ajouté à un quart */
+.hr-tsp { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: var(--surface-2); }
+.hr-tsp-interrupteur { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.hr-tsp-interrupteur input { width: 22px; height: 22px; flex: none; accent-color: #C2410C; }
+.hr-tsp-interrupteur span { display: grid; gap: 1px; }
+.hr-tsp-interrupteur small { color: var(--fg-doux); font-size: .82rem; }
+.hr-tsp-champs { display: grid; gap: 8px; }
+.hr-tsp-champs[hidden] { display: none; }
+.hr-tsp-champs select { width: 100%; }
+.tsp-plus { font-size: .6em; font-weight: 800; margin-left: 1px; color: #C2410C; vertical-align: super; }
+.chip .tsp-plus { color: inherit; opacity: .9; }
+.tsp-ligne { color: #C2410C !important; font-weight: 700; }
+.hr-tsp-champs .fc-ligne { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; } .hr-tsp-champs .fc-ligne input { flex: 1 1 0; width: auto; min-width: 0; }

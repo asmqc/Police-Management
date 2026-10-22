@@ -13,7 +13,7 @@ const jourUTC = (iso: string) => { const [a, m, j] = iso.split("-").map(Number);
 const isoDe = (n: number) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
 
 type Config = { cycle?: string[]; debut?: string; heures?: Record<string, [string, string]>; hybride?: boolean };
-type Exc = { type?: string; debut?: string; fin?: string };
+type Exc = { type?: string; debut?: string; fin?: string; tsp?: { debut?: string; fin?: string } };
 
 function quart(iso: string, c: Config | null, ex: Record<string, Exc>) {
   const e = ex[iso];
@@ -70,6 +70,13 @@ Deno.serve(async (req) => {
       lignes.push(`DTSTART;VALUE=DATE:${date}`, `DTEND;VALUE=DATE:${isoDe(n0 + i + 1).replace(/-/g, "")}`);
     }
     lignes.push(`SUMMARY:${NOMS[q.code] ?? q.code}`, "TRANSP:" + (["J", "S", "N", "X", "F", "T"].includes(q.code) ? "OPAQUE" : "TRANSPARENT"), "END:VEVENT");
+    const t = q.e && q.e.tsp;
+    if (t && t.debut && t.fin && /^\d\d:\d\d$/.test(t.debut) && /^\d\d:\d\d$/.test(t.fin)) {
+      const finT = t.fin <= t.debut ? isoDe(n0 + i + 1).replace(/-/g, "") : date;
+      lignes.push("BEGIN:VEVENT", `UID:${date}-TSP@policemanagement.ca`, `DTSTAMP:${maintenant}`,
+        `DTSTART;TZID=America/Toronto:${date}T${t.debut.replace(":", "")}00`, `DTEND;TZID=America/Toronto:${finT}T${t.fin.replace(":", "")}00`,
+        "SUMMARY:Temps supp.", "TRANSP:OPAQUE", "END:VEVENT");
+    }
   }
   lignes.push("END:VCALENDAR");
   return new Response(lignes.join("\r\n") + "\r\n", {

@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221937">
+  <link rel="stylesheet" href="styles.css?v=202610222140">
 </head>
 <body>
   <!-- Chargement -->
@@ -1463,6 +1463,17 @@
         <label class="ref" for="hr-jour-debut">Heures (facultatif)<span id="hr-jour-defaut"></span></label>
         <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
       </div>
+      <div class="hr-edition hr-tsp" id="hr-tsp-bloc" hidden>
+        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Ajouter du temps supplémentaire</b><small>En plus du quart : avant, après ou rappel</small></span></label>
+        <div class="hr-tsp-champs" id="hr-tsp-champs" hidden>
+          <div class="fc-ligne"><input type="time" id="hr-tsp-debut" aria-label="Début du temps supplémentaire"><span>à</span><input type="time" id="hr-tsp-fin" aria-label="Fin du temps supplémentaire"></div>
+          <select id="hr-tsp-maj" aria-label="Taux du temps supplémentaire">
+            <option value="1.5">Temps et demi (1 ½)</option>
+            <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
+          </select>
+          <div class="ts-valeur" id="hr-tsp-montant" aria-live="polite" hidden></div>
+        </div>
+      </div>
       <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" hidden>
         <label class="ref" for="hr-jour-maj">Taux du temps supplémentaire</label>
         <select id="hr-jour-maj">
@@ -1628,9 +1639,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221937"></script>
+  <script src="config.js?v=202610222140"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221937"></script>
+  <script src="app.js?v=202610222140"></script>
 </body>
 </html>
