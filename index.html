@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221342">
+  <link rel="stylesheet" href="styles.css?v=202610221349">
 </head>
 <body>
   <!-- Chargement -->
@@ -91,7 +91,7 @@
 
       <section class="site-section site-essai" id="site-essai">
         <p class="site-sur">Essayez maintenant</p>
-        <h2>Trois outils, sans compte</h2>
+        <h2>Un aperçu, sans compte</h2>
         <p class="site-essai-intro">Un avant-goût de ce que vous aurez en poche. Les données viennent de sources publiques (LégisQuébec, MRNF, Sûreté du Québec).</p>
         <div class="essai" id="essai">
           <div class="essai-onglets" role="tablist" aria-label="Outils à essayer">
@@ -100,23 +100,34 @@
             <button type="button" role="tab" aria-selected="false" data-essai="territoire">Qui couvre ?</button>
           </div>
           <div class="essai-panneau" data-panneau="vitesse">
-            <div class="essai-champs">
-              <label>Limite<select id="es-limite"></select></label>
-              <label>Vitesse mesurée<input id="es-vitesse" type="number" inputmode="numeric" min="0" max="260" value="132"></label>
-              <label>Zone<select id="es-zone"><option value="normale">Normale</option><option value="travaux">Travaux</option><option value="scolaire">Scolaire</option></select></label>
+            <p class="essai-aide">Exemple en zone de <b>100 km/h</b> : choisissez une vitesse mesurée.</p>
+            <div class="essai-choix" id="es-vitesses">
+              <button type="button" data-v="120" aria-pressed="true">120 km/h</button>
+              <button type="button" data-v="135" aria-pressed="false">135 km/h</button>
+              <button type="button" data-v="160" aria-pressed="false">160 km/h</button>
             </div>
             <div class="essai-res" id="es-vitesse-res" aria-live="polite"></div>
           </div>
           <div class="essai-panneau" data-panneau="article" hidden>
-            <div class="essai-champs un"><label>Numéro ou mot-clé<input id="es-article" type="search" placeholder="Ex. : 328, cellulaire, ceinture" autocomplete="off"></label></div>
-            <div class="essai-res" id="es-article-res" aria-live="polite"><p class="essai-aide">Tapez un numéro d'article ou un mot.</p></div>
+            <p class="essai-aide">Trois exemples d'articles du Code de la sécurité routière.</p>
+            <div class="essai-choix" id="es-articles">
+              <button type="button" data-a="443.1" aria-pressed="false">443.1 · Cellulaire</button>
+              <button type="button" data-a="396" aria-pressed="false">396 · Ceinture</button>
+              <button type="button" data-a="328" aria-pressed="false">328 · Vitesse</button>
+            </div>
+            <div class="essai-res" id="es-article-res" aria-live="polite"></div>
           </div>
           <div class="essai-panneau" data-panneau="territoire" hidden>
-            <div class="essai-champs un"><label>Municipalité<input id="es-muni" type="search" placeholder="Ex. : Joliette, Gatineau, Mashteuiatsh" autocomplete="off"></label></div>
-            <div class="essai-res" id="es-muni-res" aria-live="polite"><p class="essai-aide">Tapez le nom d'une municipalité pour savoir quel corps de police la dessert.</p></div>
+            <p class="essai-aide">Trois exemples : quel corps de police dessert la municipalité ?</p>
+            <div class="essai-choix" id="es-munis">
+              <button type="button" data-m="Joliette" aria-pressed="false">Joliette</button>
+              <button type="button" data-m="Rimouski" aria-pressed="false">Rimouski</button>
+              <button type="button" data-m="Laval" aria-pressed="false">Laval</button>
+            </div>
+            <div class="essai-res" id="es-muni-res" aria-live="polite"></div>
           </div>
           <div class="essai-pied">
-            <span>Dans l'app : table complète, frais pour les mineurs, Code criminel, favoris, carte, bornes kilométriques et bien plus.</span>
+            <span>Ceci n'est qu'un aperçu. Toutes les limites, toutes les lois, la carte et le reste sont réservés aux membres.</span>
             <button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès</button>
           </div>
         </div>
@@ -1141,6 +1152,42 @@
         </form>
       </div>
 
+      <h3 class="intertitre seulement-sq">Ma rémunération · Sûreté du Québec</h3>
+      <div class="panneau seulement-sq paie-bloc" id="paie-bloc">
+        <p class="aide">Selon le contrat de travail APPQ 2022-2028 (annexe T, art. 11). Sert à calculer automatiquement la valeur de votre temps supplémentaire dans l'horaire. Visible par vous seulement.</p>
+        <form id="form-paie" class="formulaire" novalidate>
+          <div class="rangee">
+            <div>
+              <label for="paie-entree">Date d'entrée à la Sûreté</label>
+              <input id="paie-entree" type="date" min="1960-01-01">
+            </div>
+            <div>
+              <label for="paie-emploi">Emploi</label>
+              <select id="paie-emploi">
+                <option value="">Choisir…</option>
+                <option value="agent">Agent</option>
+                <option value="agent_specialiste">Agent spécialiste</option>
+                <option value="sergent_gestionnaire">Sergent gestionnaire</option>
+                <option value="sergent_enqueteur">Sergent enquêteur</option>
+                <option value="sergent_gestionnaire_enquete">Sergent gestionnaire enquête</option>
+                <option value="sergent_responsable">Sergent responsable d'unité</option>
+              </select>
+            </div>
+          </div>
+          <div class="paie-resultat" id="paie-resultat" aria-live="polite"></div>
+          <details class="paie-ajuster" id="paie-ajuster">
+            <summary>Mon salaire réel est différent</summary>
+            <p class="aide">Ajustement de fonction, absence sans solde ou autre situation : inscrivez votre traitement annuel régulier (talon de paie). Il remplace l'estimation.</p>
+            <label for="paie-manuel">Traitement annuel régulier ($)</label>
+            <input id="paie-manuel" type="number" inputmode="decimal" min="20000" max="400000" step="1" placeholder="Ex. 103 500">
+          </details>
+          <div class="fc-ligne">
+            <button type="submit" class="btn-principal" style="margin:0">Enregistrer</button>
+            <button type="button" class="lien" id="paie-effacer">Effacer mes données de rémunération</button>
+          </div>
+        </form>
+      </div>
+
       <h3 class="intertitre">Notifications</h3>
       <div class="panneau">
       <div class="notif-bloc" data-notif>
@@ -1255,6 +1302,10 @@
         </ul>
         <button type="button" class="btn-principal" id="cv-avis-ok">J'ai compris</button>
       </div>
+      <details class="panneau cv-echelle" id="cv-echelle">
+        <summary><b>Échelle salariale</b><span>Annexe T · taux annuels des membres policiers</span></summary>
+        <div id="cv-echelle-contenu"></div>
+      </details>
       <div class="puces cv-suggestions" id="cv-suggestions">
         <button type="button" data-cv-q="Combien d'heures de vacances annuelles ai-je selon mes années de service?">Vacances annuelles</button>
         <button type="button" data-cv-q="Comment est payé le temps supplémentaire?">Temps supplémentaire</button>
@@ -1407,6 +1458,14 @@
       <div class="hr-edition hr-jour-heures" id="hr-jour-heures">
         <label class="ref" for="hr-jour-debut">Heures (facultatif)</label>
         <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
+      </div>
+      <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" hidden>
+        <label class="ref" for="hr-jour-maj">Taux du temps supplémentaire</label>
+        <select id="hr-jour-maj">
+          <option value="1.5">Temps et demi (1 ½)</option>
+          <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
+        </select>
+        <div class="ts-valeur" id="hr-ts-montant" aria-live="polite"></div>
       </div>
       <details class="hr-edition hr-ts" id="hr-jour-ts">
         <summary>Détails de temps supplémentaire</summary>
@@ -1565,9 +1624,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221342"></script>
+  <script src="config.js?v=202610221349"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221342"></script>
+  <script src="app.js?v=202610221349"></script>
 </body>
 </html>

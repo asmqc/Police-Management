@@ -488,6 +488,7 @@
     document.body.classList.toggle("est-sq", accesConvention());
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
+    etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
     ecouterMessages();
     verifierAbonnement();
@@ -559,6 +560,7 @@
       "Horaire : calendrier abonné qui se met à jour tout seul dans le Calendrier de l'iPhone, Google Agenda ou Outlook.",
       "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
+      "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte et valeur du temps supplémentaire calculée automatiquement dans l'horaire.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
   ];
   function ouvrirNouveautes() {
@@ -755,6 +757,7 @@
   }
   function initConvention() {
     if (!accesConvention()) { afficherVue("accueil"); return; }
+    rendreEchelle();
     let accepte = false;
     try { accepte = localStorage.getItem("pm-convention-voix") === "1"; } catch { /* facultatif */ }
     $("#cv-avis").hidden = accepte;
@@ -2120,7 +2123,8 @@
   const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth() };
   const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
   function calculerMois(a, m, src) {
-    const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [] };
+    const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [], tsEq: 0, tsVal: 0 };
+    const paie = paieActive() ? etat.paie : null;
     const n = new Date(a, m + 1, 0).getDate();
     for (let j = 1; j <= n; j++) {
       const iso = `${a}-${String(m + 1).padStart(2, "0")}-${String(j).padStart(2, "0")}`;
@@ -2130,7 +2134,11 @@
       if (!["J", "S", "N", "X"].includes(q.code)) continue;
       const h = heuresJour(q.code, iso, src), d = dureeH(h);
       r.travailles++; r.heures += d;
-      if (q.code === "X") { r.ts += d; r.lignesTS.push({ iso, h, d, note: q.note, ts: ((src.exceptions || {})[iso] || {}).ts || {} }); }
+      if (q.code === "X") {
+        const ex = (src.exceptions || {})[iso] || {}, maj = +ex.maj || 1.5;
+        r.ts += d; r.lignesTS.push({ iso, h, d, note: q.note, ts: ex.ts || {}, maj });
+        if (paie) { const sal = salaireSQ(paie, iso), hr2 = arrondiTS(d); r.tsEq += hr2 * maj; r.tsVal += hr2 * maj * sal.tauxTS; }
+      }
     }
     for (const [iso, e] of Object.entries(src.exceptions || {})) { // formations avec détails, pour le rapport
       if (e.type === "F" && e.ts && iso.startsWith(`${a}-${String(m + 1).padStart(2, "0")}`)) r.lignesTS.push({ iso, h: e.debut ? [e.debut, e.fin] : null, d: e.debut ? dureeH([e.debut, e.fin]) : 0, note: e.note, ts: e.ts, formation: true });
@@ -2138,10 +2146,76 @@
     r.lignesTS.sort((x, y) => x.iso.localeCompare(y.iso));
     return r;
   }
+  /* ---------------- Rémunération Sûreté du Québec (contrat de travail APPQ 2022-2028, annexe T et art. 11 et 12) ---------------- */
+  // Échelles en vigueur depuis la révision de la classification (1er janvier 2025). Taux annuels en $.
+  const DATES_ECHELLE_SQ = ["2025-01-01", "2025-04-01", "2026-04-01", "2027-04-01"];
+  const EMPLOIS_SQ = {
+    agent: { nom: "Agent", echelons: [
+      { mois: 0, libelle: "Entrée", taux: [55000, 56100, 57222, 59225] },
+      { mois: 6, libelle: "6 mois", taux: [56757, 57892, 59050, 61117] },
+      { mois: 12, libelle: "12 mois", taux: [60305, 61511, 62741, 64937] },
+      { mois: 18, libelle: "18 mois", taux: [64070, 65351, 66658, 68991] },
+      { mois: 24, libelle: "24 mois", taux: [68081, 69443, 70832, 73311] },
+      { mois: 30, libelle: "30 mois", taux: [72331, 73778, 75254, 77888] },
+      { mois: 36, libelle: "36 mois", taux: [78391, 79959, 81558, 84413] },
+      { mois: 48, libelle: "48 mois", taux: [85442, 87151, 88894, 92005] },
+      { mois: 60, libelle: "60 mois", taux: [93138, 95001, 96901, 100293] }] },
+    agent_specialiste: { nom: "Agent spécialiste", echelons: [{ mois: 0, libelle: "Taux unique", taux: [102452, 104501, 106591, 110322] }] },
+    sergent_gestionnaire: { nom: "Sergent gestionnaire", echelons: [{ mois: 0, libelle: "Taux unique", taux: [107109, 109251, 111436, 115337] }] },
+    sergent_enqueteur: { nom: "Sergent enquêteur", echelons: [{ mois: 0, libelle: "Taux unique", taux: [108040, 110201, 112405, 116340] }] },
+    sergent_gestionnaire_enquete: { nom: "Sergent gestionnaire enquête", echelons: [{ mois: 0, libelle: "Taux unique", taux: [108040, 110201, 112405, 116340] }] },
+    sergent_responsable: { nom: "Sergent responsable d'unité", echelons: [{ mois: 0, libelle: "Taux unique", taux: [118751, 121126, 123549, 127874] }] },
+  };
+  // Art. 11.09 : majoration selon les années d'ancienneté
+  const ANCIENNETE_SQ = [[21, 11], [14, 9], [10, 7], [6, 6]];
+  // Art. 11.17 : reconnaissance du niveau de service 6 (Loi sur la police)
+  const NIVEAU6_SQ = [["2026-04-01", 6], ["2025-04-01", 5], ["2024-04-01", 3.5], ["2023-04-01", 2], ["2022-04-01", 1]];
+  function moisEntre(a, b) { // mois complets entre deux dates ISO
+    const [y1, m1, d1] = a.split("-").map(Number), [y2, m2, d2] = b.split("-").map(Number);
+    return (y2 - y1) * 12 + (m2 - m1) - (d2 < d1 ? 1 : 0);
+  }
+  function salaireSQ(paie, iso = aujourdhuiISO()) {
+    if (!paie || !paie.date_entree || !paie.emploi || !EMPLOIS_SQ[paie.emploi]) return null;
+    const emploi = EMPLOIS_SQ[paie.emploi];
+    let k = 0; DATES_ECHELLE_SQ.forEach((d, i) => { if (iso >= d) k = i; });
+    const mois = Math.max(0, moisEntre(paie.date_entree, iso));
+    const ech = [...emploi.echelons].reverse().find((e) => mois >= e.mois) || emploi.echelons[0];
+    const base = ech.taux[k];
+    const ans = mois / 12;
+    const anc = (ANCIENNETE_SQ.find(([a]) => ans >= a) || [0, 0])[1];
+    const niv6 = (NIVEAU6_SQ.find(([d]) => iso >= d) || [0, 0])[1];
+    const calcule = Math.round(base * (1 + anc / 100) * (1 + niv6 / 100));
+    const annuel = paie.salaire_manuel ? +paie.salaire_manuel : calcule;
+    const suivant = emploi.echelons.find((e) => e.mois > mois);
+    return { emploi: emploi.nom, echelon: ech.libelle, base, anc, niv6, calcule, annuel, manuel: !!paie.salaire_manuel,
+      ans, tauxTS: annuel / 2000, tauxRegulier: annuel / 2080, dateTaux: DATES_ECHELLE_SQ[k], prochainEchelon: suivant ? suivant.libelle : null };
+  }
+  // Art. 12.09 : 1 à 14 min ne comptent pas, 15 à 44 min = ½ h, 45 min et plus = 1 h
+  const arrondiTS = (h) => { const t = Math.round(h * 60), r = t % 60; return Math.floor(t / 60) + (r >= 45 ? 1 : r >= 15 ? 0.5 : 0); };
+  async function chargerPaie(forcer) {
+    if (!estSQ()) { etat.paie = null; return null; }
+    if (etat.paie !== undefined && !forcer) return etat.paie;
+    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel").eq("user_id", etat.profil.id).maybeSingle();
+    etat.paie = data || null;
+    return etat.paie;
+  }
+  const paieActive = () => estSQ() && affichee() === hr && etat.paie && salaireSQ(etat.paie);
+
   // Valeur du temps supplémentaire : taux gardés sur cet appareil seulement
   const tsReglages = (() => { try { return { taux: 0, mult: 1.5, mode: "paie", ...JSON.parse(localStorage.getItem("pm-ts-reglages") || "{}") }; } catch { return { taux: 0, mult: 1.5, mode: "paie" }; } })();
   const dollarsTS = (n) => n.toLocaleString("fr-CA", { style: "currency", currency: "CAD" });
-  function htmlCalculTS(heuresTS, libelle) {
+  function htmlCalculTS(heuresTS, libelle, sq) {
+    if (sq) {
+      const sal = salaireSQ(etat.paie);
+      return `<div class="stats-ts-calc">
+      <h4>Valeur du temps supplémentaire <small>${esc(libelle)} · calcul automatique SQ</small></h4>
+      <div class="ts-reglages">
+        <label><span>Je le prends en</span><select id="ts-mode"><option value="paie">Paie</option><option value="banque">Banque de temps</option><option value="moitie">Moitié paie, moitié banque</option></select></label>
+      </div>
+      <dl class="vt-detail ts-resultat" id="ts-resultat" data-heures="${heuresTS}" data-eq="${sq.eq}" data-val="${sq.val}" data-sq="1"></dl>
+      <p class="aide">Salaire ${sal.manuel ? "ajusté" : "estimé"} de ${dollarsTS(sal.annuel)} (${esc(sal.emploi)}, ${esc(sal.echelon)}), soit ${dollarsTS(sal.tauxTS)}/h pour le temps supplémentaire (traitement ÷ 2 000, art. 12.01). Heures arrondies selon l'art. 12.09, à temps et demi ou à temps double selon chaque journée (art. 12.02). Estimation : la paie officielle prévaut. Indemnité de repas (12.08) et rappels minimums (12.03) non inclus.</p>
+    </div>`;
+    }
     return `<div class="stats-ts-calc">
       <h4>Valeur du temps supplémentaire <small>${esc(libelle)}</small></h4>
       <div class="ts-reglages">
@@ -2156,8 +2230,17 @@
   function majCalculTS() {
     const el = $("#ts-resultat");
     if (!el) return;
-    const h = +el.dataset.heures || 0, eq = h * tsReglages.mult;
     const partPaie = tsReglages.mode === "paie" ? 1 : tsReglages.mode === "moitie" ? 0.5 : 0;
+    if (el.dataset.sq) {
+      const h = +el.dataset.heures || 0, eq = +el.dataset.eq || 0, val = +el.dataset.val || 0;
+      el.innerHTML = `<dt>Heures supplémentaires</dt><dd>${fmtH(h)}</dd>
+        <dt>Équivalent majoré</dt><dd>${fmtH(eq)}</dd>
+        ${partPaie < 1 ? `<dt>En banque de temps (art. 12.11)</dt><dd>${fmtH(eq * (1 - partPaie))}</dd>` : ""}
+        ${partPaie < 1 ? `<dt>Valeur de la banque</dt><dd>${dollarsTS(val * (1 - partPaie))}</dd>` : ""}
+        ${partPaie > 0 ? `<dt class="total">Montant brut estimé</dt><dd class="total">${dollarsTS(val * partPaie)}</dd>` : ""}`;
+      return;
+    }
+    const h = +el.dataset.heures || 0, eq = h * tsReglages.mult;
     const montant = eq * partPaie * (tsReglages.taux || 0);
     el.innerHTML = `<dt>Heures supplémentaires</dt><dd>${fmtH(h)}</dd>
       <dt>Équivalent majoré (× ${String(tsReglages.mult).replace(".", ",")})</dt><dd>${fmtH(eq)}</dd>
@@ -2165,6 +2248,11 @@
       ${partPaie > 0 ? `<dt class="total">Montant brut estimé</dt><dd class="total">${tsReglages.taux ? dollarsTS(montant) : "—"}</dd>` : ""}`;
   }
   function brancherCalculTS() {
+    if (!$("#ts-taux") && $("#ts-mode")) {
+      $("#ts-mode").value = tsReglages.mode;
+      $("#ts-mode").addEventListener("input", () => { tsReglages.mode = $("#ts-mode").value; try { localStorage.setItem("pm-ts-reglages", JSON.stringify(tsReglages)); } catch { /* facultatif */ } majCalculTS(); });
+      majCalculTS(); return;
+    }
     if (!$("#ts-taux")) return;
     $("#ts-mult").value = String(tsReglages.mult); $("#ts-mode").value = tsReglages.mode;
     const sauver = () => {
@@ -2190,22 +2278,22 @@
           <div class="ts"><small>Temps supplémentaire</small><b>${fmtH(r.ts)}</b><span>Total du mois</span></div>
         </div>
         <div class="stats-cats">${Object.entries(r.jours).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="q q-${esc(k)}"><b>${esc(QUARTS[k] ? QUARTS[k].nom : k)}</b>${n} jour${n > 1 ? "s" : ""}</span>`).join("")}</div>
-        ${htmlCalculTS(r.ts, "du mois")}`;
+        ${htmlCalculTS(r.ts, "du mois", paieActive() ? { eq: r.tsEq, val: r.tsVal } : null)}`;
       brancherCalculTS();
     } else {
       $("#stats-periode").textContent = `Année ${stats.a}`;
-      let tH = 0, tTS = 0, tJ = 0;
+      let tH = 0, tTS = 0, tJ = 0, tEq = 0, tVal = 0;
       const lignes = Array.from({ length: 12 }, (_, m) => {
-        const r = calculerMois(stats.a, m, src); tH += r.heures; tTS += r.ts; tJ += r.travailles;
+        const r = calculerMois(stats.a, m, src); tH += r.heures; tTS += r.ts; tJ += r.travailles; tEq += r.tsEq; tVal += r.tsVal;
         return `<tr><td>${esc(new Date(stats.a, m, 15).toLocaleDateString("fr-CA", { month: "long" }))}</td><td>${r.travailles}</td><td>${fmtH(r.heures)}</td><td>${r.ts ? fmtH(r.ts) : "—"}</td></tr>`;
       }).join("");
       $("#stats-contenu").innerHTML = `<div class="table-defile"><table class="table-vitesse stats-table"><thead><tr><th>Mois</th><th>Jours</th><th>Heures</th><th>Temps supp.</th></tr></thead>
         <tbody>${lignes}</tbody><tfoot><tr><td>Total</td><td>${tJ}</td><td>${fmtH(tH)}</td><td>${fmtH(tTS)}</td></tr></tfoot></table></div>
-        ${htmlCalculTS(tTS, "de l'année")}`;
+        ${htmlCalculTS(tTS, "de l'année", paieActive() ? { eq: tEq, val: tVal } : null)}`;
       brancherCalculTS();
     }
   }
-  $("#hr-stats").addEventListener("click", () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); rendreStats(); $("#stats-voile").hidden = false; });
+  $("#hr-stats").addEventListener("click", async () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); try { await chargerPaie(); } catch { /* facultatif */ } rendreStats(); $("#stats-voile").hidden = false; });
   $("#stats-fermer").addEventListener("click", () => ($("#stats-voile").hidden = true));
   $("#stats-voile").addEventListener("click", (e) => { if (e.target.id === "stats-voile") e.target.hidden = true; });
   $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
@@ -3269,6 +3357,7 @@ Format :
     $("#hr-jour-debut").value = ex.debut || ""; $("#hr-jour-fin").value = ex.fin || "";
     $$("#hr-ts-champs input").forEach((i) => (i.value = (ex.ts && ex.ts[i.dataset.ts]) || ""));
     $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
+    $("#hr-jour-maj").value = String(+ex.maj || 1.5);
     $("#hr-jour-retirer").hidden = !q.exception;
     $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
     majChampsJour();
@@ -3282,10 +3371,25 @@ Format :
     const t = typeChoisi();
     $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T"].includes(t);
     $("#hr-jour-ts").hidden = !!hr.vue || !["X", "F"].includes(t);
+    majValeurJour();
     const h = heuresJour(t, null, cibleEdition());
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
   }
   $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
+  // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
+  function majValeurJour() {
+    const bloc = $("#hr-ts-valeur"), t = typeChoisi();
+    const actif = !hr.vue && cibleEdition() === hr && t === "X" && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
+    bloc.hidden = !actif;
+    if (!actif) return;
+    const sal = salaireSQ(etat.paie, hr.jourChoisi);
+    const debut = $("#hr-jour-debut").value || $("#hr-jour-debut").placeholder, fin = $("#hr-jour-fin").value || $("#hr-jour-fin").placeholder;
+    const d = debut && fin ? dureeH([debut, fin]) : 0, h = arrondiTS(d), maj = +$("#hr-jour-maj").value || 1.5;
+    $("#hr-ts-montant").innerHTML = d
+      ? `<b>${dollarsTS(h * maj * sal.tauxTS)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (art. 12.09)` : ""}</span><small>En banque : ${fmtH(h * maj)} · estimation, la paie officielle prévaut</small>`
+      : `<span>Indiquez les heures pour voir la valeur estimée.</span>`;
+  }
+  ["#hr-jour-debut", "#hr-jour-fin", "#hr-jour-maj"].forEach((q) => $(q).addEventListener("input", majValeurJour));
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   const fermerJour = () => ($("#hr-voile").hidden = true);
   $("#hr-jour-fermer").addEventListener("click", fermerJour);
@@ -3302,7 +3406,7 @@ Format :
     if (!$("#hr-jour-ts").hidden) $$("#hr-ts-champs input").forEach((i) => { if (i.value.trim()) ts[i.dataset.ts] = i.value.trim(); });
     const avant = cible.exceptions[iso];
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}) };
+    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}) };
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
     catch (e) { if (avant) cible.exceptions[iso] = avant; else delete cible.exceptions[iso]; toast(traduireErreur(e)); }
   });
@@ -3538,6 +3642,7 @@ Format :
 
   async function initCompte() {
     const p = etat.profil;
+    initPaie();
     $("#mc-courriel").textContent = p.email;
     $("#mc-nom").value = p.nom_complet || "";
     $("#mc-matricule").value = p.matricule || "";
@@ -4811,6 +4916,79 @@ Format :
     }));
   }
 
+  /* ---------------- Mon compte : rémunération SQ ---------------- */
+  const pctFr = (n) => String(n).replace(".", ",") + " %";
+  function lirePaieForm() {
+    const manuel = parseFloat(String($("#paie-manuel").value).replace(/\s/g, "").replace(",", "."));
+    return { date_entree: $("#paie-entree").value || null, emploi: $("#paie-emploi").value || null, salaire_manuel: manuel >= 20000 && manuel <= 400000 ? manuel : null };
+  }
+  function rendrePaie() {
+    const out = $("#paie-resultat"), f = lirePaieForm();
+    if (f.date_entree && f.date_entree > aujourdhuiISO()) { out.innerHTML = `<p class="message erreur">La date d'entrée ne peut pas être dans le futur.</p>`; return; }
+    const s = salaireSQ(f);
+    if (!s) { out.innerHTML = `<p class="aide">Indiquez votre date d'entrée et votre emploi pour voir votre traitement.</p>`; return; }
+    const ans = Math.floor(s.ans), mois = Math.floor((s.ans - ans) * 12 + 1e-9);
+    out.innerHTML = `<div class="paie-carte">
+        <div class="paie-total"><small>Traitement annuel ${s.manuel ? "inscrit" : "estimé"}</small><b>${dollarsTS(s.annuel)}</b><span>${esc(s.emploi)} · échelon ${esc(s.echelon)}</span></div>
+        <dl class="vt-detail">
+          <dt>Ancienneté</dt><dd>${ans} an${ans > 1 ? "s" : ""}${mois ? ` ${mois} mois` : ""}</dd>
+          <dt>Échelle (taux au ${esc(s.dateTaux.split("-").reverse().join("-"))})</dt><dd>${dollarsTS(s.base)}</dd>
+          <dt>Ancienneté (art. 11.09)</dt><dd>${s.anc ? "+ " + pctFr(s.anc) : "—"}</dd>
+          <dt>Niveau de service 6 (art. 11.17)</dt><dd>+ ${pctFr(s.niv6)}</dd>
+          ${s.manuel ? `<dt>Estimation selon l'échelle</dt><dd>${dollarsTS(s.calcule)}</dd>` : ""}
+          <dt>Taux horaire régulier (÷ 2 080)</dt><dd>${dollarsTS(s.tauxRegulier)}</dd>
+          <dt class="total">Taux pour le temps supp. (÷ 2 000)</dt><dd class="total">${dollarsTS(s.tauxTS)}</dd>
+          <dt>Temps et demi · temps double</dt><dd>${dollarsTS(s.tauxTS * 1.5)} · ${dollarsTS(s.tauxTS * 2)}</dd>
+        </dl>
+        ${s.prochainEchelon ? `<p class="aide">Prochain échelon : ${esc(s.prochainEchelon)} de service.</p>` : ""}
+        <p class="aide">Estimation selon l'échelle et l'ancienneté comptée depuis la date d'entrée. Les ajustements de fonction (annexe B), les primes (soir, nuit, fin de semaine, rotation) et les absences ne sont pas inclus. Votre talon de paie fait foi.</p>
+      </div>`;
+  }
+  async function initPaie() {
+    if (!estSQ()) return;
+    const p = await chargerPaie(true).catch(() => null);
+    $("#paie-entree").max = aujourdhuiISO();
+    $("#paie-entree").value = (p && p.date_entree) || "";
+    $("#paie-emploi").value = (p && p.emploi) || "";
+    $("#paie-manuel").value = (p && p.salaire_manuel) ? Math.round(p.salaire_manuel) : "";
+    $("#paie-ajuster").open = !!(p && p.salaire_manuel);
+    rendrePaie();
+  }
+  ["#paie-entree", "#paie-emploi", "#paie-manuel"].forEach((q) => $(q).addEventListener("input", rendrePaie));
+  $("#form-paie").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = lirePaieForm();
+    if (!f.date_entree || !f.emploi) return toast("Indiquez votre date d'entrée et votre emploi");
+    if (f.date_entree > aujourdhuiISO()) return toast("La date d'entrée ne peut pas être dans le futur");
+    const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, ...f, maj_le: new Date().toISOString() });
+    if (error) return toast(traduireErreur(error));
+    etat.paie = f; toast("Rémunération enregistrée");
+  });
+  $("#paie-effacer").addEventListener("click", async () => {
+    const { error } = await sb.from("paie_sq").delete().eq("user_id", etat.profil.id);
+    if (error) return toast(traduireErreur(error));
+    etat.paie = null; $("#paie-entree").value = ""; $("#paie-emploi").value = ""; $("#paie-manuel").value = ""; rendrePaie();
+    toast("Données de rémunération effacées");
+  });
+  // Convention : échelle salariale (annexe T)
+  function rendreEchelle() {
+    const el = $("#cv-echelle-contenu");
+    if (!el || el.dataset.fait) return;
+    const dates = DATES_ECHELLE_SQ.map((d) => d.split("-").reverse().join("-"));
+    const k = DATES_ECHELLE_SQ.reduce((acc, d, i) => (aujourdhuiISO() >= d ? i : acc), 0);
+    const lignes = Object.entries(EMPLOIS_SQ).map(([, e]) => e.echelons.map((ech, i) => `<tr${i === 0 ? ' class="debut-emploi"' : ""}><th>${i === 0 ? `<b>${esc(e.nom)}</b>` : ""}${e.echelons.length > 1 ? `<small>${esc(ech.libelle)}</small>` : ""}</th>${ech.taux.map((t, j) => `<td${j === k ? ' class="actuel"' : ""}>${t.toLocaleString("fr-CA")}</td>`).join("")}</tr>`).join("")).join("");
+    el.innerHTML = `<div class="table-defile"><table class="table-vitesse cv-table-echelle"><thead><tr><th>Emploi · échelon</th>${dates.map((d, j) => `<th${j === k ? ' class="actuel"' : ""}>${d}</th>`).join("")}</tr></thead><tbody>${lignes}</tbody></table></div>
+      <ul class="cv-echelle-notes">
+        <li><b>Ancienneté (11.09)</b> : + 6 % à 6 ans, 7 % à 10 ans, 9 % à 14 ans, 11 % à 21 ans.</li>
+        <li><b>Niveau de service 6 (11.17)</b> : + 5 % depuis le 1ᵉʳ avril 2025, + 6 % depuis le 1ᵉʳ avril 2026.</li>
+        <li><b>Taux horaire</b> : traitement ÷ 2 080 (2.22). Temps supplémentaire : traitement ÷ 2 000, à temps et demi, ou temps double dans les cas de l'art. 12.02.</li>
+        <li>Taux en vigueur à la révision de la classification (1ᵉʳ janvier 2025), puis aux 1ᵉʳˢ avril. La colonne en couleur est celle d'aujourd'hui.</li>
+      </ul>
+      <button type="button" class="btn-secondaire" id="cv-mon-salaire">Calculer mon salaire</button>`;
+    el.dataset.fait = "1";
+    $("#cv-mon-salaire").addEventListener("click", () => { afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+  }
+
   /* ---------------- Site public : outils à essayer sans compte (données publiques, aucun appel au serveur) ---------------- */
   (function essaiPublic() {
     const racine = document.getElementById("essai");
@@ -4819,71 +4997,45 @@ Format :
       $$("[data-essai]", racine).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
       $$("[data-panneau]", racine).forEach((p) => (p.hidden = p.dataset.panneau !== b.dataset.essai));
     }));
-    // Vitesse
-    const lim = $("#es-limite");
-    lim.innerHTML = LIMITES.map((l) => `<option value="${l}"${l === 100 ? " selected" : ""}>${l} km/h</option>`).join("");
-    function rendreV() {
-      const limite = +lim.value, v = Math.max(0, Math.min(260, +$("#es-vitesse").value || 0)), zone = $("#es-zone").value;
-      const r = calculVitesse(limite, v, zone);
-      $("#es-vitesse-res").innerHTML = r.exces <= 0 ? `<p class="essai-aide">Aucun excès de vitesse.</p>` : `
+    const choisir = (zone, b) => $$("button", zone).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    // Vitesse : 100 km/h seulement, trois exemples
+    function rendreV(v) {
+      const r = calculVitesse(100, v, "normale");
+      $("#es-vitesse-res").innerHTML = `
         <div class="essai-chiffres">
           <div><small>Excès</small><b>${r.exces} km/h</b></div>
           <div><small>Amende</small><b>${dollars(r.amende)}</b></div>
           <div><small>Total à payer</small><b>${dollars(r.total)}</b></div>
           <div><small>Points</small><b>${r.points}</b></div>
         </div>
-        <p class="essai-detail">Amende ${dollars(r.amende)} + frais ${dollars(r.frais)} + contribution ${dollars(r.contribution)}${zone !== "normale" ? ` · zone ${zone === "travaux" ? "de travaux" : "scolaire"} : amende doublée` : ""}</p>
-        ${r.gev ? `<p class="essai-gev">Grand excès de vitesse : amende et points doublés, suspension immédiate du permis pour 7 jours.</p>` : ""}`;
+        ${r.gev ? `<p class="essai-gev">Grand excès de vitesse : amende et points doublés, suspension immédiate du permis.</p>` : ""}`;
     }
-    ["#es-limite", "#es-zone"].forEach((q) => $(q).addEventListener("change", rendreV));
-    $("#es-vitesse").addEventListener("input", rendreV);
-    rendreV();
-    // Article du CSR
-    let minA;
-    $("#es-article").addEventListener("input", () => { clearTimeout(minA); minA = setTimeout(chercherA, 220); });
-    async function chercherA() {
-      const brut = $("#es-article").value.trim(), out = $("#es-article-res");
-      if (brut.length < 1 || (!/^\d/.test(brut) && brut.length < 3)) { out.innerHTML = `<p class="essai-aide">Tapez un numéro d'article ou un mot.</p>`; return; }
+    $$("#es-vitesses button").forEach((b) => b.addEventListener("click", () => { choisir($("#es-vitesses"), b); rendreV(+b.dataset.v); }));
+    rendreV(120);
+    // Article : trois exemples, extrait seulement
+    $$("#es-articles button").forEach((b) => b.addEventListener("click", async () => {
+      choisir($("#es-articles"), b);
+      const out = $("#es-article-res");
       let arts;
-      try { arts = await charger("csr.json"); } catch { out.innerHTML = `<p class="essai-aide">Impossible de charger le Code pour le moment.</p>`; return; }
-      if ($("#es-article").value.trim() !== brut) return;
-      const q = norm(brut);
-      const res = /^\d/.test(brut)
-        ? arts.filter((x) => x.numero === brut || x.numero.startsWith(brut + ".")).slice(0, 3)
-        : arts.filter((x) => norm(x.texte).includes(q) || norm(x.section || "").includes(q)).slice(0, 3);
-      if (!res.length) { out.innerHTML = `<p class="essai-aide">Aucun article trouvé pour « ${esc(brut)} ».</p>`; return; }
-      out.innerHTML = res.map((x) => {
-        const t = x.texte.replace(/\n/g, " ");
-        return `<article class="essai-article"><b>Art. ${esc(x.numero)}${x.section ? " · " + esc(x.section) : ""}</b>
-          <p>${esc(t.length > 320 ? t.slice(0, 320).replace(/\s\S*$/, "") + "…" : t)}</p>
-          <a href="${LEGIS}#se:${esc(x.numero.replace(/\./g, "_"))}" target="_blank" rel="noopener">Texte officiel sur LégisQuébec</a></article>`;
-      }).join("");
-    }
-    // Qui couvre cette municipalité ?
-    let minM;
-    $("#es-muni").addEventListener("input", () => { clearTimeout(minM); minM = setTimeout(chercherM, 220); });
-    async function chercherM() {
-      const brut = $("#es-muni").value.trim(), out = $("#es-muni-res"), q = norm(brut);
-      if (q.length < 2) { out.innerHTML = `<p class="essai-aide">Tapez le nom d'une municipalité pour savoir quel corps de police la dessert.</p>`; return; }
+      try { arts = await charger("csr.json"); } catch { out.innerHTML = `<p class="essai-aide">Impossible de charger l'exemple.</p>`; return; }
+      const x = arts.find((a) => a.numero === b.dataset.a);
+      if (!x) { out.innerHTML = ""; return; }
+      const t = x.texte.replace(/\n/g, " ");
+      out.innerHTML = `<article class="essai-article"><b>Art. ${esc(x.numero)} CSR</b><p>${esc(t.length > 180 ? t.slice(0, 180).replace(/\s\S*$/, "") + "…" : t)}</p></article>`;
+    }));
+    // Qui couvre : trois exemples
+    $$("#es-munis button").forEach((b) => b.addEventListener("click", async () => {
+      choisir($("#es-munis"), b);
+      const out = $("#es-muni-res");
       let idx;
-      try { idx = await charger("municipalites.json"); if (!etat.corps) await chargerCorps(); } catch { out.innerHTML = `<p class="essai-aide">Données indisponibles pour le moment.</p>`; return; }
-      if (norm($("#es-muni").value) !== q) return;
-      const trouvees = idx.municipalites.filter((m) => !/^tno aquatique/.test(norm(m[0])) && norm(m[0]).includes(q))
-        .sort((a, b) => (norm(a[0]) === q ? -1 : norm(b[0]) === q ? 1 : norm(a[0]).startsWith(q) ? -1 : norm(b[0]).startsWith(q) ? 1 : 0)).slice(0, 3);
-      if (!trouvees.length) { out.innerHTML = `<p class="essai-aide">Aucune municipalité trouvée pour « ${esc(brut)} ».</p>`; return; }
-      const postes = trouvees.some((m) => m[5]) ? await charger("sq_postes.geojson") : null;
-      out.innerHTML = trouvees.map(([nom, , mrc, lon, lat, sq]) => {
-        let qui = "Indéterminé", ou = "";
-        const c = etat.corps && corpsPourMunicipalite(nom);
-        if (c && !/s[ûu]ret[ée] du qu[ée]bec/i.test(c.nom)) qui = c.nom;
-        else if (sq) {
-          qui = "Sûreté du Québec";
-          const f = postes && trouverPolygone(postes, lon, lat);
-          if (f) ou = f.properties.NOM_UNIT;
-        } else qui = "Corps de police municipal ou régional";
-        return `<div class="essai-muni"><small>${esc(nom)}${mrc ? " · MRC " + esc(mrc) : ""}</small><b>${esc(qui)}</b>${ou ? `<span>${esc(ou)}</span>` : ""}</div>`;
-      }).join("");
-    }
+      try { idx = await charger("municipalites.json"); if (!etat.corps) await chargerCorps(); } catch { out.innerHTML = `<p class="essai-aide">Exemple indisponible.</p>`; return; }
+      const m = idx.municipalites.find((x) => norm(x[0]) === norm(b.dataset.m));
+      if (!m) { out.innerHTML = ""; return; }
+      const [nom, , mrc, , , sq] = m;
+      const c = etat.corps && corpsPourMunicipalite(nom);
+      const qui = c && !/s[ûu]ret[ée] du qu[ée]bec/i.test(c.nom) ? c.nom : sq ? "Sûreté du Québec" : "Corps de police municipal ou régional";
+      out.innerHTML = `<div class="essai-muni"><small>${esc(nom)}${mrc ? " · MRC " + esc(mrc) : ""}</small><b>${esc(qui)}</b></div>`;
+    }));
   })();
   $("#site-partager") && $("#site-partager").addEventListener("click", async () => {
     const donnees = { title: "Police Management", text: "L'outil de poche des policiers du Québec : horaire, lois, vitesses, carte et Québec 511. Gratuit.", url: "https://policemanagement.ca" };
