@@ -2281,3 +2281,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .banque-avis { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(242, 179, 61, .18); font-weight: 600; font-size: .9rem; }
 .banque-avis-liste { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: .9rem; }
 .banque-avis-liste li.fort { font-weight: 700; color: var(--rouge); }
+.rg-sous { margin: 14px 4px 6px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; font-size: .74rem; color: var(--fg-doux); }
+.rg-paie .paie-champs { margin-bottom: 12px; }
+.rg-paie #rg-retenues .btn-secondaire, .rg-paie #rg-soldes .btn-secondaire { margin: 0; }
+.banque-modifier { margin-top: 12px; width: 100%; }

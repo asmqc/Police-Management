@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610222159">
+  <link rel="stylesheet" href="styles.css?v=202610222201">
 </head>
 <body>
   <!-- Chargement -->
@@ -793,6 +793,48 @@
       </div>
       </div>
 
+      <div class="rg-bloc seulement-sq rg-paie">
+      <h3 class="intertitre" id="rg-paie-bloc">Paie et banques · Sûreté du Québec</h3>
+      <p class="aide rg-sous">Ma rémunération</p>
+      <div class="panneau paie-bloc" id="paie-bloc">
+        <p class="aide">Selon le contrat de travail APPQ 2022-2028 (annexe T, art. 11). Sert à calculer automatiquement la valeur de votre temps supplémentaire dans l'horaire. Visible par vous seulement.</p>
+        <form id="form-paie" class="formulaire" novalidate>
+          <div class="rangee">
+            <div>
+              <label for="paie-entree">Date d'entrée à la Sûreté</label>
+              <input id="paie-entree" type="date" min="1960-01-01">
+            </div>
+            <div>
+              <label for="paie-emploi">Emploi</label>
+              <select id="paie-emploi">
+                <option value="">Choisir…</option>
+                <option value="agent">Agent</option>
+                <option value="agent_specialiste">Agent spécialiste</option>
+                <option value="sergent_gestionnaire">Sergent gestionnaire</option>
+                <option value="sergent_enqueteur">Sergent enquêteur</option>
+                <option value="sergent_gestionnaire_enquete">Sergent gestionnaire enquête</option>
+                <option value="sergent_responsable">Sergent responsable d'unité</option>
+              </select>
+            </div>
+          </div>
+          <div class="paie-resultat" id="paie-resultat" aria-live="polite"></div>
+          <details class="paie-ajuster" id="paie-ajuster">
+            <summary>Mon salaire réel est différent</summary>
+            <p class="aide">Ajustement de fonction, absence sans solde ou autre situation : inscrivez votre traitement annuel régulier (talon de paie). Il remplace l'estimation.</p>
+            <label for="paie-manuel">Traitement annuel régulier ($)</label>
+            <input id="paie-manuel" type="number" inputmode="decimal" min="20000" max="400000" step="1" placeholder="Ex. 103 500">
+          </details>
+          <div class="fc-ligne">
+            <button type="submit" class="btn-principal" style="margin:0">Enregistrer</button>
+            <button type="button" class="lien" id="paie-effacer">Effacer mes données de rémunération</button>
+          </div>
+        </form>
+      </div>
+      <p class="aide rg-sous" id="rg-retenues-bloc">Mes retenues (talon de paie)</p>
+      <div class="panneau" id="rg-retenues"></div>
+      <p class="aide rg-sous" id="rg-soldes-bloc">Mes soldes de banques (comme soldes officiels)</p>
+      <div class="panneau" id="rg-soldes"></div>
+      </div>
       <div class="rg-bloc">
       <h3 class="intertitre">Confidentialité</h3>
       <div class="panneau">
@@ -1174,42 +1216,6 @@
             <option>Autre</option>
           </select>
           <button type="submit" class="btn-principal">Enregistrer les modifications</button>
-        </form>
-      </div>
-
-      <h3 class="intertitre seulement-sq">Ma rémunération · Sûreté du Québec</h3>
-      <div class="panneau seulement-sq paie-bloc" id="paie-bloc">
-        <p class="aide">Selon le contrat de travail APPQ 2022-2028 (annexe T, art. 11). Sert à calculer automatiquement la valeur de votre temps supplémentaire dans l'horaire. Visible par vous seulement.</p>
-        <form id="form-paie" class="formulaire" novalidate>
-          <div class="rangee">
-            <div>
-              <label for="paie-entree">Date d'entrée à la Sûreté</label>
-              <input id="paie-entree" type="date" min="1960-01-01">
-            </div>
-            <div>
-              <label for="paie-emploi">Emploi</label>
-              <select id="paie-emploi">
-                <option value="">Choisir…</option>
-                <option value="agent">Agent</option>
-                <option value="agent_specialiste">Agent spécialiste</option>
-                <option value="sergent_gestionnaire">Sergent gestionnaire</option>
-                <option value="sergent_enqueteur">Sergent enquêteur</option>
-                <option value="sergent_gestionnaire_enquete">Sergent gestionnaire enquête</option>
-                <option value="sergent_responsable">Sergent responsable d'unité</option>
-              </select>
-            </div>
-          </div>
-          <div class="paie-resultat" id="paie-resultat" aria-live="polite"></div>
-          <details class="paie-ajuster" id="paie-ajuster">
-            <summary>Mon salaire réel est différent</summary>
-            <p class="aide">Ajustement de fonction, absence sans solde ou autre situation : inscrivez votre traitement annuel régulier (talon de paie). Il remplace l'estimation.</p>
-            <label for="paie-manuel">Traitement annuel régulier ($)</label>
-            <input id="paie-manuel" type="number" inputmode="decimal" min="20000" max="400000" step="1" placeholder="Ex. 103 500">
-          </details>
-          <div class="fc-ligne">
-            <button type="submit" class="btn-principal" style="margin:0">Enregistrer</button>
-            <button type="button" class="lien" id="paie-effacer">Effacer mes données de rémunération</button>
-          </div>
         </form>
       </div>
 
@@ -1660,9 +1666,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610222159"></script>
+  <script src="config.js?v=202610222201"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610222159"></script>
+  <script src="app.js?v=202610222201"></script>
 </body>
 </html>

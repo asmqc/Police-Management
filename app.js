@@ -855,7 +855,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
+    if (nom === "reglages") { initPaieReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
@@ -2426,8 +2426,8 @@
     const el = $("#stats-contenu");
     $("#stats-periode").textContent = "Mes banques";
     if (!etat.paie || !etat.paie.date_entree) {
-      el.innerHTML = `<div class="paie-vide"><p>Pour calculer vos banques, indiquez d'abord votre date d'entrée dans <b>Mon compte › Ma rémunération</b>.</p><button type="button" class="btn-principal" id="banq-aller">Configurer</button></div>`;
-      $("#banq-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer vos banques, indiquez d'abord votre date d'entrée dans <b>Réglages › Paie et banques</b>.</p><button type="button" class="btn-principal" id="banq-aller">Configurer</button></div>`;
+      $("#banq-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
       return;
     }
     const B = banquesSQ(), { vac, fer, mal, b } = B;
@@ -2477,43 +2477,9 @@
         ${b.ts189 ? barreBanque(+b.ts189.h, 189) : ""}
         <p class="aide">Chaque heure de temps supplémentaire mise en banque vaut 1 h 30 (ou 2 h) (12.11). La banque de 1 040 h est offerte au maximum de l'échelle (12.12).</p>
       </section>
-      <details class="paie-reglages"${b.vacSolde || b.ferSolde ? "" : " open"}><summary>Mes soldes (talon de paie)</summary>
-        <p class="aide">Pour un compte exact, inscrivez les soldes de votre talon et leur date. L'app soustrait ensuite les V et les H de votre horaire après cette date.</p>
-        <div class="paie-champs">
-          <label class="large"><span>Type d'horaire</span><select data-banq="horaire">
-            <option value="auto"${b.horaire === "auto" ? " selected" : ""}>Détecter selon ma rotation</option>
-            <option value="9"${b.horaire === "9" ? " selected" : ""}>9 heures ou hybride</option>
-            <option value="12"${b.horaire === "12" ? " selected" : ""}>12 heures (annexe I)</option></select></label>
-          <label><span>Vacances : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="45" step="1" data-banq="vacSoldeJ" value="${b.vacSolde ? Math.floor(b.vacSolde.h / base + 1e-9) : ""}"></label>
-          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="vacSoldeH" value="${b.vacSolde ? Math.round((b.vacSolde.h - Math.floor(b.vacSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
-          <label class="large"><span>Solde de vacances en date du</span><input type="date" data-banq="vacSoldeD" value="${b.vacSolde ? b.vacSolde.date : ""}"></label>
-          <label><span>Fériés : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="25" step="1" data-banq="ferSoldeJ" value="${b.ferSolde ? Math.floor(b.ferSolde.h / base + 1e-9) : ""}"></label>
-          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="ferSoldeH" value="${b.ferSolde ? Math.round((b.ferSolde.h - Math.floor(b.ferSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
-          <label class="large"><span>Solde de fériés en date du</span><input type="date" data-banq="ferSoldeD" value="${b.ferSolde ? b.ferSolde.date : ""}"></label>
-          <label><span>Vacances reportées (max. 36 h)</span><input type="number" inputmode="decimal" min="0" max="36" step="0.25" data-banq="vacReport" value="${b.vacReport || ""}"></label>
-          <label><span>Fériés reportés (max. 12 h)</span><input type="number" inputmode="decimal" min="0" max="12" step="0.25" data-banq="ferReport" value="${b.ferReport || ""}"></label>
-          <label><span>Banque TS 189 h (solde)</span><input type="number" inputmode="decimal" min="0" max="189" step="0.25" data-banq="ts189" value="${b.ts189 ? b.ts189.h : ""}"></label>
-          <label><span>Banque 1 040 h (solde)</span><input type="number" inputmode="decimal" min="0" max="1040" step="0.25" data-banq="ts1040" value="${b.ts1040 ? b.ts1040.h : ""}"></label>
-        </div>
-        <button type="button" class="btn-secondaire" id="banq-ok">Enregistrer mes soldes</button>
-      </details>
+      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-soldes-bloc">Modifier mes soldes dans Réglages</button>
       <p class="aide">Estimation selon le contrat de travail APPQ 2022-2028. Le service continu est compté à partir de votre date d'entrée. Votre talon de paie et votre gestionnaire font foi.</p>`;
-    $("#banq-ok").addEventListener("click", async () => {
-      const v = (k) => { const i = $(`[data-banq='${k}']`, el); return i ? String(i.value).trim() : ""; };
-      const num = (k, max) => { const n = parseFloat(v(k).replace(",", ".")); return n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
-      const auj = aujourdhuiISO();
-      const solde = (jK, hK, dK, max) => {
-        if (v(jK) === "" && v(hK) === "") return null;
-        const t = (num(jK, 60) || 0) * base + (num(hK, 24) || 0);
-        return t <= max ? { h: Math.round(t * 100) / 100, date: v(dK) || auj } : null;
-      };
-      const nouv = { horaire: v("horaire") || "auto", vacReport: num("vacReport", 36) || 0, ferReport: num("ferReport", 12) || 0,
-        vacSolde: solde("vacSoldeJ", "vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeJ", "ferSoldeH", "ferSoldeD", 200),
-        ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj } };
-      const { error } = await sb.from("paie_sq").update({ banques: nouv, maj_le: new Date().toISOString() }).eq("user_id", etat.profil.id);
-      if (error) return toast(traduireErreur(error));
-      etat.paie.banques = nouv; toast("Soldes enregistrés"); rendreStats();
-    });
+    brancherAllerReglages(el);
   }
 
   // Valeur du temps supplémentaire : taux gardés sur cet appareil seulement
@@ -2584,8 +2550,8 @@
     const el = $("#stats-contenu");
     if (!etat.paie || !salaireSQ(etat.paie)) {
       $("#stats-periode").textContent = "Paie aux deux semaines";
-      el.innerHTML = `<div class="paie-vide"><p>Pour calculer votre paie, indiquez d'abord votre date d'entrée et votre emploi dans <b>Mon compte › Ma rémunération</b>.</p><button type="button" class="btn-principal" id="paie-aller">Configurer ma rémunération</button></div>`;
-      $("#paie-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer votre paie, indiquez d'abord votre date d'entrée et votre emploi dans <b>Réglages › Paie et banques</b>.</p><button type="button" class="btn-principal" id="paie-aller">Configurer ma rémunération</button></div>`;
+      $("#paie-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
       return;
     }
     const p = calculPaie(stats.paie), ret = retenuesPaie(p), r = p.r;
@@ -2630,30 +2596,9 @@
         <div class="table-defile"><table class="table-vitesse paie-table"><tbody>${lignesJours}</tbody></table></div>
         <p class="aide">Les primes sont versées seulement pour les heures régulières effectivement travaillées. Pour un V, une maladie ou une formation, l'app prend le quart prévu à votre rotation pour montrer la prime qui n'est pas versée.</p>
       </details>
-      <details class="paie-reglages" id="paie-reglages"${ret.autres ? "" : " open"}><summary>Mes retenues (talon de paie)</summary>
-        <p class="aide">Copiez les montants par paie de votre talon. Ils restent dans votre compte, visibles par vous seulement.</p>
-        <div class="paie-champs">
-          <label><span>Régime de retraite RRMSQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="rrmsq" value="${r.rrmsq || ""}"></label>
-          <label><span>Cotisation syndicale APPQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="syndicat" value="${r.syndicat || ""}"></label>
-          <label><span>Assurances collectives ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="assurances" value="${r.assurances || ""}"></label>
-          <label><span>Autres retenues ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="autres" value="${r.autres || ""}"></label>
-          <label class="large"><span>Période de travail payée</span><select data-ret="decalage">
-            <option value="11"${+r.decalage === 11 ? " selected" : ""}>Du lundi au dimanche (ex. 5 au 18 octobre pour la paie du 29)</option>
-            <option value="12"${+r.decalage === 12 ? " selected" : ""}>Se termine le samedi, 12 jours avant la paie</option>
-            <option value="5"${+r.decalage === 5 ? " selected" : ""}>Se termine le samedi précédant la paie</option>
-            <option value="19"${+r.decalage === 19 ? " selected" : ""}>Se termine 19 jours avant la paie</option>
-          </select></label>
-        </div>
-        <button type="button" class="btn-secondaire" id="paie-ret-ok">Enregistrer mes retenues</button>
-      </details>
+      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-paie-bloc">Modifier mes retenues dans Réglages</button>
       <p class="aide">Estimation : impôts calculés avec les taux 2026 sur la paie annualisée (méthode simplifiée), RRQ, assurance-emploi et RQAP avec leurs maximums annuels. Le temps supplémentaire est compté dans la paie de sa période, mais la Sûreté peut le verser jusqu'à 45 jours après la réclamation (20.03). Votre talon de paie fait foi.</p>`;
-    $("#paie-ret-ok").addEventListener("click", async () => {
-      const nouv = { ...reglagesPaie() };
-      $$("[data-ret]", el).forEach((i) => { const v = parseFloat(String(i.value).replace(",", ".")); nouv[i.dataset.ret] = i.dataset.ret === "decalage" ? (+i.value || 12) : (v > 0 && v < 10000 ? Math.round(v * 100) / 100 : 0); });
-      const { error } = await sb.from("paie_sq").update({ retenues: nouv, maj_le: new Date().toISOString() }).eq("user_id", etat.profil.id);
-      if (error) return toast(traduireErreur(error));
-      etat.paie.retenues = nouv; toast("Retenues enregistrées"); rendreStats();
-    });
+    brancherAllerReglages(el);
   }
   function rendreStats() {
     const src = affichee();
@@ -4068,7 +4013,6 @@ Format :
 
   async function initCompte() {
     const p = etat.profil;
-    initPaie();
     $("#mc-courriel").textContent = p.email;
     $("#mc-nom").value = p.nom_complet || "";
     $("#mc-matricule").value = p.matricule || "";
@@ -5342,6 +5286,90 @@ Format :
     }));
   }
 
+  /* ---------------- Réglages : retenues et soldes (SQ) ---------------- */
+  function brancherAllerReglages(racine) {
+    $$("[data-aller-reglages]", racine).forEach((b) => b.addEventListener("click", () => {
+      $("#stats-voile").hidden = true; afficherVue("reglages");
+      setTimeout(() => { const c = document.getElementById(b.dataset.allerReglages); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" }); }, 250);
+    }));
+  }
+  function rendreRetenuesReglages() {
+    const el = $("#rg-retenues");
+    if (!el || !estSQ()) return;
+    const r = reglagesPaie();
+    el.innerHTML = `
+      
+        <p class="aide">Copiez les montants par paie de votre talon. Ils restent dans votre compte, visibles par vous seulement.</p>
+        <div class="paie-champs">
+          <label><span>Régime de retraite RRMSQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="rrmsq" value="${r.rrmsq || ""}"></label>
+          <label><span>Cotisation syndicale APPQ ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="syndicat" value="${r.syndicat || ""}"></label>
+          <label><span>Assurances collectives ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="assurances" value="${r.assurances || ""}"></label>
+          <label><span>Autres retenues ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="autres" value="${r.autres || ""}"></label>
+          <label class="large"><span>Période de travail payée</span><select data-ret="decalage">
+            <option value="11"${+r.decalage === 11 ? " selected" : ""}>Du lundi au dimanche (ex. 5 au 18 octobre pour la paie du 29)</option>
+            <option value="12"${+r.decalage === 12 ? " selected" : ""}>Se termine le samedi, 12 jours avant la paie</option>
+            <option value="5"${+r.decalage === 5 ? " selected" : ""}>Se termine le samedi précédant la paie</option>
+            <option value="19"${+r.decalage === 19 ? " selected" : ""}>Se termine 19 jours avant la paie</option>
+          </select></label>
+        </div>
+        <button type="button" class="btn-secondaire" id="paie-ret-ok">Enregistrer mes retenues</button>
+`;
+    $("#paie-ret-ok", el).addEventListener("click", async () => {
+      const nouv = { ...reglagesPaie() };
+      $$("[data-ret]", el).forEach((i) => { const v = parseFloat(String(i.value).replace(",", ".")); nouv[i.dataset.ret] = i.dataset.ret === "decalage" ? (+i.value || 12) : (v > 0 && v < 10000 ? Math.round(v * 100) / 100 : 0); });
+      const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, retenues: nouv, maj_le: new Date().toISOString() });
+      if (error) return toast(traduireErreur(error));
+      etat.paie = { ...(etat.paie || {}), retenues: nouv }; toast("Retenues enregistrées");
+    });
+  }
+  function rendreSoldesReglages() {
+    const el = $("#rg-soldes");
+    if (!el || !estSQ()) return;
+    const b = reglagesBanques(), base = typeHoraireSQ() === "12" ? 12 : 9;
+    el.innerHTML = `
+      
+        <p class="aide">Pour un compte exact, inscrivez les soldes de votre talon et leur date. L'app soustrait ensuite les V et les H de votre horaire après cette date.</p>
+        <div class="paie-champs">
+          <label class="large"><span>Type d'horaire</span><select data-banq="horaire">
+            <option value="auto"${b.horaire === "auto" ? " selected" : ""}>Détecter selon ma rotation</option>
+            <option value="9"${b.horaire === "9" ? " selected" : ""}>9 heures ou hybride</option>
+            <option value="12"${b.horaire === "12" ? " selected" : ""}>12 heures (annexe I)</option></select></label>
+          <label><span>Vacances : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="45" step="1" data-banq="vacSoldeJ" value="${b.vacSolde ? Math.floor(b.vacSolde.h / base + 1e-9) : ""}"></label>
+          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="vacSoldeH" value="${b.vacSolde ? Math.round((b.vacSolde.h - Math.floor(b.vacSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
+          <label class="large"><span>Solde de vacances en date du</span><input type="date" data-banq="vacSoldeD" value="${b.vacSolde ? b.vacSolde.date : ""}"></label>
+          <label><span>Fériés : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="25" step="1" data-banq="ferSoldeJ" value="${b.ferSolde ? Math.floor(b.ferSolde.h / base + 1e-9) : ""}"></label>
+          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="ferSoldeH" value="${b.ferSolde ? Math.round((b.ferSolde.h - Math.floor(b.ferSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
+          <label class="large"><span>Solde de fériés en date du</span><input type="date" data-banq="ferSoldeD" value="${b.ferSolde ? b.ferSolde.date : ""}"></label>
+          <label><span>Vacances reportées (max. 36 h)</span><input type="number" inputmode="decimal" min="0" max="36" step="0.25" data-banq="vacReport" value="${b.vacReport || ""}"></label>
+          <label><span>Fériés reportés (max. 12 h)</span><input type="number" inputmode="decimal" min="0" max="12" step="0.25" data-banq="ferReport" value="${b.ferReport || ""}"></label>
+          <label><span>Banque TS 189 h (solde)</span><input type="number" inputmode="decimal" min="0" max="189" step="0.25" data-banq="ts189" value="${b.ts189 ? b.ts189.h : ""}"></label>
+          <label><span>Banque 1 040 h (solde)</span><input type="number" inputmode="decimal" min="0" max="1040" step="0.25" data-banq="ts1040" value="${b.ts1040 ? b.ts1040.h : ""}"></label>
+        </div>
+        <button type="button" class="btn-secondaire" id="banq-ok">Enregistrer mes soldes</button>
+`;
+    $("#banq-ok").addEventListener("click", async () => {
+      const v = (k) => { const i = $(`[data-banq='${k}']`, el); return i ? String(i.value).trim() : ""; };
+      const num = (k, max) => { const n = parseFloat(v(k).replace(",", ".")); return n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
+      const auj = aujourdhuiISO();
+      const solde = (jK, hK, dK, max) => {
+        if (v(jK) === "" && v(hK) === "") return null;
+        const t = (num(jK, 60) || 0) * base + (num(hK, 24) || 0);
+        return t <= max ? { h: Math.round(t * 100) / 100, date: v(dK) || auj } : null;
+      };
+      const nouv = { horaire: v("horaire") || "auto", vacReport: num("vacReport", 36) || 0, ferReport: num("ferReport", 12) || 0,
+        vacSolde: solde("vacSoldeJ", "vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeJ", "ferSoldeH", "ferSoldeD", 200),
+        ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj } };
+      const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, banques: nouv, maj_le: new Date().toISOString() });
+      if (error) return toast(traduireErreur(error));
+      etat.paie = { ...(etat.paie || {}), banques: nouv }; toast("Soldes enregistrés"); rendreSoldesReglages();
+    });
+  }
+  async function initPaieReglages() {
+    if (!estSQ()) return;
+    await initPaie();
+    rendreRetenuesReglages(); rendreSoldesReglages();
+  }
+
   /* ---------------- Mon compte : rémunération SQ ---------------- */
   const pctFr = (n) => String(n).replace(".", ",") + " %";
   function lirePaieForm() {
@@ -5412,7 +5440,7 @@ Format :
       </ul>
       <button type="button" class="btn-secondaire" id="cv-mon-salaire">Calculer mon salaire</button>`;
     el.dataset.fait = "1";
-    $("#cv-mon-salaire").addEventListener("click", () => { afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+    $("#cv-mon-salaire").addEventListener("click", () => { afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
   }
 
   /* ---------------- Site public : outils à essayer sans compte (données publiques, aucun appel au serveur) ---------------- */
