@@ -2102,3 +2102,58 @@ html[data-style="nuit"] .leaflet-overlay-pane { filter: grayscale(1) sepia(1) hu
 .ac-511-tete h3 { line-height: 1.25; }
 .ac-511-tete h3 small { display: block; font-size: .8rem; font-weight: 600; color: var(--fg-doux); }
 .ac-511-tete .btn-secondaire { flex: none; }
+
+/* ---------- Site public : outils à essayer, FAQ, partage ---------- */
+.site-essayer { display: inline-block; margin-top: 14px; color: #FFC53D; font-weight: 700; text-decoration: none; }
+.site-essayer:hover { text-decoration: underline; }
+.site-essai-intro { color: var(--s-doux); max-width: 60ch; margin: -8px 0 22px; line-height: 1.55; }
+.essai { background: rgba(255,255,255,.66); border: 1px solid rgba(255,255,255,.95); border-radius: 26px; box-shadow: 0 14px 40px rgba(30,60,100,.14); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); padding: 18px; display: grid; gap: 16px; max-width: 860px; color: var(--s-texte); }
+.essai-onglets { display: flex; gap: 6px; padding: 4px; background: rgba(14,27,44,.07); border-radius: 999px; overflow-x: auto; scrollbar-width: none; }
+.essai-onglets button { flex: 1 0 auto; border: 0; background: transparent; padding: 10px 14px; border-radius: 999px; font: inherit; font-weight: 700; font-size: .95rem; color: var(--s-doux); cursor: pointer; white-space: nowrap; }
+.essai-onglets button[aria-selected="true"] { background: #fff; color: var(--s-texte); box-shadow: 0 2px 8px rgba(14,27,44,.12); }
+.essai-panneau { display: grid; gap: 14px; }
+.essai-panneau[hidden] { display: none; }
+.essai-champs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.essai-champs.un { grid-template-columns: minmax(0, 1fr); }
+.essai-champs label { display: grid; gap: 6px; font-size: .82rem; font-weight: 700; color: var(--s-doux); }
+.essai-champs input, .essai-champs select { font: inherit; font-size: 1.05rem; font-weight: 600; color: var(--s-texte); background: #fff; border: 1.5px solid #D5DEEA; border-radius: 14px; padding: 11px 12px; width: 100%; min-width: 0; }
+.essai-champs input:focus, .essai-champs select:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.18); }
+.essai-res { display: grid; gap: 10px; min-height: 90px; align-content: start; }
+.essai-aide { margin: 0; color: var(--s-doux); }
+.essai-chiffres { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.essai-chiffres div { background: #fff; border-radius: 16px; padding: 12px; display: grid; gap: 2px; }
+.essai-chiffres small { font-size: .75rem; font-weight: 700; color: var(--s-doux); text-transform: uppercase; letter-spacing: .04em; }
+.essai-chiffres b { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.essai-chiffres div:nth-child(2) b, .essai-chiffres div:nth-child(3) b { color: #C62F3A; }
+.essai-detail { margin: 0; color: var(--s-doux); font-size: .92rem; }
+.essai-gev { margin: 0; background: #C62F3A; color: #fff; font-weight: 700; padding: 10px 14px; border-radius: 14px; }
+.essai-article { background: #fff; border-radius: 16px; padding: 14px; display: grid; gap: 6px; }
+.essai-article p { margin: 0; line-height: 1.5; color: var(--s-texte); }
+.essai-article a { color: #0A4FB8; font-weight: 700; font-size: .9rem; }
+.essai-muni { background: #fff; border-radius: 16px; padding: 12px 14px; display: grid; gap: 2px; border-left: 5px solid #0A4FB8; }
+.essai-muni small { color: var(--s-doux); font-weight: 600; }
+.essai-muni b { font-size: 1.1rem; }
+.essai-muni span { color: var(--s-doux); }
+.essai-pied { display: flex; align-items: center; justify-content: space-between; gap: 14px; border-top: 1px solid rgba(14,27,44,.1); padding-top: 14px; }
+.essai-pied span { color: var(--s-doux); font-size: .92rem; line-height: 1.45; }
+.faq { display: grid; gap: 10px; max-width: 860px; }
+.faq details { background: rgba(255,255,255,.66); border: 1px solid rgba(255,255,255,.95); border-radius: 20px; box-shadow: 0 8px 24px rgba(30,60,100,.1); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+.faq summary { cursor: pointer; list-style: none; padding: 16px 48px 16px 18px; font-weight: 800; font-size: 1.05rem; position: relative; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 1.4rem; font-weight: 600; color: #0A4FB8; transition: transform .2s; }
+.faq details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+.faq details p { margin: 0; padding: 0 18px 16px; color: var(--s-doux); line-height: 1.6; }
+.faq a { color: #0A4FB8; font-weight: 700; }
+.site-partage { margin-top: 32px; display: flex; gap: 20px; align-items: center; background: rgba(255,255,255,.66); border: 1px solid rgba(255,255,255,.95); border-radius: 24px; padding: 18px; max-width: 760px; box-shadow: 0 10px 30px rgba(30,60,100,.12); }
+.site-partage img { flex: none; border-radius: 12px; background: #fff; }
+.site-partage b { font-size: 1.1rem; }
+.site-partage p { margin: 4px 0 12px; color: var(--s-doux); }
+@media (max-width: 640px) {
+  .essai { padding: 12px; border-radius: 22px; }
+  .essai-champs { grid-template-columns: 1fr 1fr; }
+  .essai-champs label:last-child:nth-child(3) { grid-column: 1 / -1; }
+  .essai-chiffres { grid-template-columns: 1fr 1fr; }
+  .essai-pied { flex-direction: column; align-items: stretch; text-align: center; }
+  .site-partage { flex-direction: column; text-align: center; }
+  .site-partage .site-cta { justify-content: center; }
+}

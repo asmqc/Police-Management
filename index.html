@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221335">
+  <link rel="stylesheet" href="styles.css?v=202610221342">
 </head>
 <body>
   <!-- Chargement -->
@@ -53,10 +53,11 @@
     <header class="site-barre">
       <a class="site-logo" href="#haut" data-site-lien><img src="assets/logo.png" alt="" width="34" height="34"><span>Police <b>Management</b></span></a>
       <nav class="site-liens" aria-label="Sections du site">
+        <a href="#site-essai" data-site-lien>Essayer</a>
         <a href="#site-fonctions" data-site-lien>Fonctionnalités</a>
         <a href="#site-horaire" data-site-lien>Horaire</a>
         <a href="#site-securite" data-site-lien>Sécurité</a>
-        <a href="#site-corps" data-site-lien>Corps de police</a>
+        <a href="#site-faq" data-site-lien>FAQ</a>
         <a href="#site-contact" data-site-lien>Contact</a>
       </nav>
       <div class="site-actions">
@@ -68,13 +69,14 @@
     <main class="site-contenu" id="haut">
       <section class="site-hero">
         <div class="site-hero-txt">
-          <p class="site-pastille"><span></span>Réservé aux policiers du Québec · accès vérifié</p>
+          <p class="site-pastille"><span></span>Gratuit · réservé aux policiers du Québec · accès vérifié</p>
           <h1>L'horaire, la route et les lois, réunis pour les policiers du Québec.</h1>
           <p class="site-intro">Rotation et échanges de quarts, carte des postes avec les bornes kilométriques, Code de la sécurité routière et calculateur de vitesse, forum de votre corps de police. Une seule app, rapide à consulter en service, qui s'installe sur le téléphone ou l'ordinateur.</p>
           <div class="site-cta">
             <button type="button" class="site-btn site-btn-plein grand" data-site-auth="demande">Demander l'accès</button>
             <button type="button" class="site-btn site-btn-ligne grand" data-site-auth="connexion">J'ai déjà un compte</button>
           </div>
+          <a class="site-essayer" href="#site-essai" data-site-lien>Essayer sans compte ↓</a>
           <ul class="site-garanties">
             <li>Données hébergées au Canada</li>
             <li>Conçu selon la Loi 25</li>
@@ -87,6 +89,39 @@
         </div>
       </section>
 
+      <section class="site-section site-essai" id="site-essai">
+        <p class="site-sur">Essayez maintenant</p>
+        <h2>Trois outils, sans compte</h2>
+        <p class="site-essai-intro">Un avant-goût de ce que vous aurez en poche. Les données viennent de sources publiques (LégisQuébec, MRNF, Sûreté du Québec).</p>
+        <div class="essai" id="essai">
+          <div class="essai-onglets" role="tablist" aria-label="Outils à essayer">
+            <button type="button" role="tab" aria-selected="true" data-essai="vitesse">Excès de vitesse</button>
+            <button type="button" role="tab" aria-selected="false" data-essai="article">Article du CSR</button>
+            <button type="button" role="tab" aria-selected="false" data-essai="territoire">Qui couvre ?</button>
+          </div>
+          <div class="essai-panneau" data-panneau="vitesse">
+            <div class="essai-champs">
+              <label>Limite<select id="es-limite"></select></label>
+              <label>Vitesse mesurée<input id="es-vitesse" type="number" inputmode="numeric" min="0" max="260" value="132"></label>
+              <label>Zone<select id="es-zone"><option value="normale">Normale</option><option value="travaux">Travaux</option><option value="scolaire">Scolaire</option></select></label>
+            </div>
+            <div class="essai-res" id="es-vitesse-res" aria-live="polite"></div>
+          </div>
+          <div class="essai-panneau" data-panneau="article" hidden>
+            <div class="essai-champs un"><label>Numéro ou mot-clé<input id="es-article" type="search" placeholder="Ex. : 328, cellulaire, ceinture" autocomplete="off"></label></div>
+            <div class="essai-res" id="es-article-res" aria-live="polite"><p class="essai-aide">Tapez un numéro d'article ou un mot.</p></div>
+          </div>
+          <div class="essai-panneau" data-panneau="territoire" hidden>
+            <div class="essai-champs un"><label>Municipalité<input id="es-muni" type="search" placeholder="Ex. : Joliette, Gatineau, Mashteuiatsh" autocomplete="off"></label></div>
+            <div class="essai-res" id="es-muni-res" aria-live="polite"><p class="essai-aide">Tapez le nom d'une municipalité pour savoir quel corps de police la dessert.</p></div>
+          </div>
+          <div class="essai-pied">
+            <span>Dans l'app : table complète, frais pour les mineurs, Code criminel, favoris, carte, bornes kilométriques et bien plus.</span>
+            <button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès</button>
+          </div>
+        </div>
+      </section>
+
       <section class="site-section" id="site-fonctions">
         <p class="site-sur">Fonctionnalités</p>
         <h2>Tout ce qu'il faut pour un quart de travail</h2>
@@ -95,11 +130,12 @@
           <article><b>Échanges de quarts</b><p>Offrez un quart à votre poste : le premier collègue qui le prend l'obtient, et les deux horaires se mettent à jour.</p></article>
           <article><b>Carte des postes</b><p>Postes de la SQ, corps municipaux et autochtones, bornes kilométriques, sorties d'autoroute, codes municipaux et caméras du MTMD.</p></article>
           <article><b>Calculateur de vitesse</b><p>Amende (art. 516 CSR), frais, contribution, réclamation totale et points d'inaptitude, en zone normale, de travaux ou scolaire.</p></article>
-          <article><b>Lois du Québec</b><p>CSR, véhicules hors route, transport rémunéré, assurance automobile et sécurité nautique fédérale, avec recherche par article ou mot-clé.</p></article>
+          <article><b>Lois</b><p>CSR, Code criminel, cannabis, drogues, véhicules hors route et plus, avec recherche, favoris et tableau des frais et contributions.</p></article>
           <article><b>Forum de votre corps</b><p>Échangez avec vos collègues sur les infractions et l'émission de constats. Chaque publication peut être signalée à l'administrateur.</p></article>
+          <article><b>Feuille de poste</b><p>La feuille de votre poste, partagée entre les membres du même poste seulement, toujours à jour.</p></article>
           <article><b>Idées et sondages</b><p>Proposez des nouveautés, votez pour celles des autres et répondez aux sondages de l'administration.</p></article>
           <article><b>Rappels et notifications</b><p>Rappel avant chaque quart, rappels d'événements, messages et annonces, même quand l'app est fermée.</p></article>
-          <article><b>Six styles d'interface</b><p>Liquid Glass clair ou sombre (lueurs de gyrophare la nuit), Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police.</p></article>
+          <article><b>Québec 511 de votre secteur</b><p>Entraves et travaux sur le territoire de votre unité, actualisés automatiquement. Mode nuit rouge pour garder la vision nocturne.</p></article>
         </div>
       </section>
 
@@ -111,7 +147,7 @@
           <ul class="site-liste">
             <li>Rotation partagée avec votre poste, sans vos notes ni vos événements</li>
             <li>Statistiques d'heures et rapport de temps supplémentaire en PDF</li>
-            <li>Export vers le calendrier du téléphone ou d'Outlook</li>
+            <li>Calendrier abonné : votre horaire dans l'iPhone, Google ou Outlook, mis à jour tout seul</li>
           </ul>
         </div>
         <figure class="site-tel"><img src="assets/site/horaire.webp" alt="Vue semaine de l'horaire avec les quarts de jour et de nuit"></figure>
@@ -180,12 +216,37 @@
         </div>
       </section>
 
+      <section class="site-section site-faq" id="site-faq">
+        <p class="site-sur">Questions fréquentes</p>
+        <h2>Avant de vous inscrire</h2>
+        <div class="faq">
+          <details><summary>Est-ce gratuit ?</summary><p>Oui. Police Management est gratuit, sans publicité et sans abonnement.</p></details>
+          <details><summary>Qui peut s'inscrire ?</summary><p>Les policières et policiers en fonction au Québec, de la Sûreté du Québec ou d'un corps municipal ou autochtone. Chaque demande est vérifiée par l'administrateur, et le courriel doit être confirmé.</p></details>
+          <details><summary>Est-ce une application officielle de mon employeur ?</summary><p>Non. Police Management est un outil indépendant, créé par un policier, qui n'est affilié ni à la Sûreté du Québec ni à aucun corps de police. Les textes officiels et les directives de votre organisation prévalent toujours.</p></details>
+          <details><summary>Où vont mes données ?</summary><p>Les comptes et les horaires sont hébergés à Montréal, chiffrés en transit et au repos. Aucune donnée n'est vendue, aucun outil d'analyse ni de publicité. Votre position GPS reste sur votre appareil. Tout est détaillé dans la <a href="politique.html">politique de confidentialité</a>, conforme à la Loi 25.</p></details>
+          <details><summary>La messagerie est-elle chiffrée de bout en bout ?</summary><p>Non. Les messages sont chiffrés en transit et au repos, mais pas de bout en bout. N'y mettez jamais de renseignements opérationnels, d'enquête ou personnels sur des citoyens : la messagerie et le forum servent aux échanges courants entre collègues.</p></details>
+          <details><summary>Faut-il un iPhone ?</summary><p>Non. Le site s'installe comme une app sur iPhone, Android et ordinateur, directement à partir du navigateur.</p></details>
+          <details><summary>Je peux supprimer mon compte ?</summary><p>Oui, en tout temps dans Mon compte. Vos données sont alors effacées.</p></details>
+        </div>
+      </section>
+
       <section class="site-section site-contact" id="site-contact">
         <h2>Une question ?</h2>
         <p>Écrivez-nous ou rejoignez le Discord de soutien. Les membres approuvés peuvent aussi écrire directement à l'administrateur dans l'app.</p>
         <div class="site-cta">
           <a class="site-btn site-btn-plein" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener">Rejoindre le Discord</a>
           <a class="site-btn site-btn-ligne" href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>
+        </div>
+        <div class="site-partage">
+          <img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca" width="120" height="120">
+          <div>
+            <b>Faites connaître l'app à votre poste</b>
+            <p>Partagez le lien à un collègue ou imprimez l'affiche avec code QR pour le babillard.</p>
+            <div class="site-cta">
+              <button type="button" class="site-btn site-btn-plein" id="site-partager">Partager le lien</button>
+              <a class="site-btn site-btn-ligne" href="affiche.html" target="_blank" rel="noopener">Imprimer l'affiche</a>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -1504,9 +1565,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221335"></script>
+  <script src="config.js?v=202610221342"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221335"></script>
+  <script src="app.js?v=202610221342"></script>
 </body>
 </html>

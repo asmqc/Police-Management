@@ -4811,6 +4811,86 @@ Format :
     }));
   }
 
+  /* ---------------- Site public : outils à essayer sans compte (données publiques, aucun appel au serveur) ---------------- */
+  (function essaiPublic() {
+    const racine = document.getElementById("essai");
+    if (!racine) return;
+    $$("[data-essai]", racine).forEach((b) => b.addEventListener("click", () => {
+      $$("[data-essai]", racine).forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+      $$("[data-panneau]", racine).forEach((p) => (p.hidden = p.dataset.panneau !== b.dataset.essai));
+    }));
+    // Vitesse
+    const lim = $("#es-limite");
+    lim.innerHTML = LIMITES.map((l) => `<option value="${l}"${l === 100 ? " selected" : ""}>${l} km/h</option>`).join("");
+    function rendreV() {
+      const limite = +lim.value, v = Math.max(0, Math.min(260, +$("#es-vitesse").value || 0)), zone = $("#es-zone").value;
+      const r = calculVitesse(limite, v, zone);
+      $("#es-vitesse-res").innerHTML = r.exces <= 0 ? `<p class="essai-aide">Aucun excès de vitesse.</p>` : `
+        <div class="essai-chiffres">
+          <div><small>Excès</small><b>${r.exces} km/h</b></div>
+          <div><small>Amende</small><b>${dollars(r.amende)}</b></div>
+          <div><small>Total à payer</small><b>${dollars(r.total)}</b></div>
+          <div><small>Points</small><b>${r.points}</b></div>
+        </div>
+        <p class="essai-detail">Amende ${dollars(r.amende)} + frais ${dollars(r.frais)} + contribution ${dollars(r.contribution)}${zone !== "normale" ? ` · zone ${zone === "travaux" ? "de travaux" : "scolaire"} : amende doublée` : ""}</p>
+        ${r.gev ? `<p class="essai-gev">Grand excès de vitesse : amende et points doublés, suspension immédiate du permis pour 7 jours.</p>` : ""}`;
+    }
+    ["#es-limite", "#es-zone"].forEach((q) => $(q).addEventListener("change", rendreV));
+    $("#es-vitesse").addEventListener("input", rendreV);
+    rendreV();
+    // Article du CSR
+    let minA;
+    $("#es-article").addEventListener("input", () => { clearTimeout(minA); minA = setTimeout(chercherA, 220); });
+    async function chercherA() {
+      const brut = $("#es-article").value.trim(), out = $("#es-article-res");
+      if (brut.length < 1 || (!/^\d/.test(brut) && brut.length < 3)) { out.innerHTML = `<p class="essai-aide">Tapez un numéro d'article ou un mot.</p>`; return; }
+      let arts;
+      try { arts = await charger("csr.json"); } catch { out.innerHTML = `<p class="essai-aide">Impossible de charger le Code pour le moment.</p>`; return; }
+      if ($("#es-article").value.trim() !== brut) return;
+      const q = norm(brut);
+      const res = /^\d/.test(brut)
+        ? arts.filter((x) => x.numero === brut || x.numero.startsWith(brut + ".")).slice(0, 3)
+        : arts.filter((x) => norm(x.texte).includes(q) || norm(x.section || "").includes(q)).slice(0, 3);
+      if (!res.length) { out.innerHTML = `<p class="essai-aide">Aucun article trouvé pour « ${esc(brut)} ».</p>`; return; }
+      out.innerHTML = res.map((x) => {
+        const t = x.texte.replace(/\n/g, " ");
+        return `<article class="essai-article"><b>Art. ${esc(x.numero)}${x.section ? " · " + esc(x.section) : ""}</b>
+          <p>${esc(t.length > 320 ? t.slice(0, 320).replace(/\s\S*$/, "") + "…" : t)}</p>
+          <a href="${LEGIS}#se:${esc(x.numero.replace(/\./g, "_"))}" target="_blank" rel="noopener">Texte officiel sur LégisQuébec</a></article>`;
+      }).join("");
+    }
+    // Qui couvre cette municipalité ?
+    let minM;
+    $("#es-muni").addEventListener("input", () => { clearTimeout(minM); minM = setTimeout(chercherM, 220); });
+    async function chercherM() {
+      const brut = $("#es-muni").value.trim(), out = $("#es-muni-res"), q = norm(brut);
+      if (q.length < 2) { out.innerHTML = `<p class="essai-aide">Tapez le nom d'une municipalité pour savoir quel corps de police la dessert.</p>`; return; }
+      let idx;
+      try { idx = await charger("municipalites.json"); if (!etat.corps) await chargerCorps(); } catch { out.innerHTML = `<p class="essai-aide">Données indisponibles pour le moment.</p>`; return; }
+      if (norm($("#es-muni").value) !== q) return;
+      const trouvees = idx.municipalites.filter((m) => !/^tno aquatique/.test(norm(m[0])) && norm(m[0]).includes(q))
+        .sort((a, b) => (norm(a[0]) === q ? -1 : norm(b[0]) === q ? 1 : norm(a[0]).startsWith(q) ? -1 : norm(b[0]).startsWith(q) ? 1 : 0)).slice(0, 3);
+      if (!trouvees.length) { out.innerHTML = `<p class="essai-aide">Aucune municipalité trouvée pour « ${esc(brut)} ».</p>`; return; }
+      const postes = trouvees.some((m) => m[5]) ? await charger("sq_postes.geojson") : null;
+      out.innerHTML = trouvees.map(([nom, , mrc, lon, lat, sq]) => {
+        let qui = "Indéterminé", ou = "";
+        const c = etat.corps && corpsPourMunicipalite(nom);
+        if (c && !/s[ûu]ret[ée] du qu[ée]bec/i.test(c.nom)) qui = c.nom;
+        else if (sq) {
+          qui = "Sûreté du Québec";
+          const f = postes && trouverPolygone(postes, lon, lat);
+          if (f) ou = f.properties.NOM_UNIT;
+        } else qui = "Corps de police municipal ou régional";
+        return `<div class="essai-muni"><small>${esc(nom)}${mrc ? " · MRC " + esc(mrc) : ""}</small><b>${esc(qui)}</b>${ou ? `<span>${esc(ou)}</span>` : ""}</div>`;
+      }).join("");
+    }
+  })();
+  $("#site-partager") && $("#site-partager").addEventListener("click", async () => {
+    const donnees = { title: "Police Management", text: "L'outil de poche des policiers du Québec : horaire, lois, vitesses, carte et Québec 511. Gratuit.", url: "https://policemanagement.ca" };
+    try { if (navigator.share) { await navigator.share(donnees); return; } } catch { return; }
+    copier(donnees.url); toast("Lien copié");
+  });
+
   /* ---------------- Administration ---------------- */
   let filtreAdmin = "en_attente";
   $$(".filtres button").forEach((b) => b.addEventListener("click", () => {
