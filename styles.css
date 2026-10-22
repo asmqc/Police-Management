@@ -2222,3 +2222,21 @@ html[data-style="nuit"] .leaflet-overlay-pane { filter: grayscale(1) sepia(1) hu
 .paie-table td:nth-child(2) { overflow-wrap: anywhere; }
 #stats-contenu { min-width: 0; }
 #stats-contenu .vt-detail dd { white-space: nowrap; }
+
+/* ---------- iPhone : aucune page ne doit glisser à l'horizontale ---------- */
+html, body { overflow-x: hidden; }
+@supports (overflow: clip) { html, body { overflow-x: clip; } }
+.vue, .fiche-compte, .fiche, .avert-carte, .conv-panneau, .chat-fil, .cal-defile, .legende-corps {
+  overflow-x: hidden; overscroll-behavior-x: none;
+}
+.site { overflow-x: clip; }
+input, select, textarea { min-width: 0; max-width: 100%; }
+/* Safari iOS donne une largeur minimale aux champs de date et d'heure : on la retire */
+input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
+  -webkit-appearance: none; appearance: none; min-width: 0; text-align: left; min-height: 2.75em;
+}
+input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+.rangee, .formulaire, .paie-champs, .essai-champs, .ts-reglages { min-width: 0; }
+.formulaire > *, .paie-champs > *, .ts-reglages > * { min-width: 0; }
+.vt-detail { min-width: 0; }
+.vt-detail dt, .vt-detail dd { min-width: 0; overflow-wrap: anywhere; }
