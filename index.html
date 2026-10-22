@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221438">
+  <link rel="stylesheet" href="styles.css?v=202610221937">
 </head>
 <body>
   <!-- Chargement -->
@@ -907,7 +907,11 @@
           <button class="btn-icone" id="hr-suiv" aria-label="Période suivante">›</button>
           <button class="btn-secondaire petit" id="hr-auj">Aujourd'hui</button>
           <button class="btn-icone cal-outil" id="cal-calendriers" aria-label="Calendriers affichés"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-          <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Nouvel événement"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          <div class="cal-plus-menu" id="cal-plus-menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-plus="quart"><b>Modifier le quart</b><small>Vacances, maladie, temps supp., formation, échange…</small></button>
+            <button type="button" role="menuitem" data-plus="evenement"><b>Nouvel événement</b><small>Rendez-vous, rappel, événement personnel</small></button>
+          </div>
+          <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Ajouter" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
         </div>
         <div id="cal-zone" class="cal-zone">
           <div id="cal-mois">
@@ -1456,7 +1460,7 @@
       <label class="ref hr-edition" for="hr-jour-note">Note (facultatif)</label>
       <input id="hr-jour-note" class="hr-edition" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
       <div class="hr-edition hr-jour-heures" id="hr-jour-heures">
-        <label class="ref" for="hr-jour-debut">Heures (facultatif)</label>
+        <label class="ref" for="hr-jour-debut">Heures (facultatif)<span id="hr-jour-defaut"></span></label>
         <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
       </div>
       <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" hidden>
@@ -1624,9 +1628,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221438"></script>
+  <script src="config.js?v=202610221937"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221438"></script>
+  <script src="app.js?v=202610221937"></script>
 </body>
 </html>

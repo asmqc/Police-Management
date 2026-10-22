@@ -2240,3 +2240,14 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .formulaire > *, .paie-champs > *, .ts-reglages > * { min-width: 0; }
 .vt-detail { min-width: 0; }
 .vt-detail dt, .vt-detail dd { min-width: 0; overflow-wrap: anywhere; }
+
+/* Menu du « + » de l'horaire */
+.cal-plus-menu { position: absolute; z-index: 60; right: 0; top: calc(100% + 8px); width: min(300px, calc(100vw - 32px)); display: grid; gap: 4px; padding: 6px;
+  background: var(--surface); border: 1px solid var(--ligne); border-radius: 18px; box-shadow: var(--ombre); animation: feuille-entree .18s var(--ease); }
+.cal-plus-menu[hidden] { display: none; }
+.cal-plus-menu button { display: grid; gap: 2px; text-align: left; border: 0; background: transparent; color: var(--fg); padding: 11px 12px; border-radius: 12px; font: inherit; cursor: pointer; }
+.cal-plus-menu button:hover, .cal-plus-menu button:focus-visible { background: var(--surface-2); }
+.cal-plus-menu small { color: var(--fg-doux); font-size: .82rem; }
+#hr-jour-defaut { font-weight: 500; text-transform: none; letter-spacing: 0; }
+.cal-tete { position: relative; }
+.cal-plus-menu { background: linear-gradient(var(--surface), var(--surface)), var(--bg); -webkit-backdrop-filter: blur(28px) saturate(180%); backdrop-filter: blur(28px) saturate(180%); }

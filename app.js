@@ -1968,7 +1968,23 @@
   $("#hr-prec").addEventListener("click", () => deplacer(-1));
   $("#hr-suiv").addEventListener("click", () => deplacer(1));
   $("#hr-auj").addEventListener("click", () => { cal.date = cal.sel = aujourdhuiISO(); if (cal.vue === "liste") $("#cal-recherche").value = ""; rendreCalendrier(); });
-  $("#cal-ajout").addEventListener("click", () => editerEvenement(null, { iso: cal.vue === "liste" ? aujourdhuiISO() : cal.sel }));
+  // « + » : modifier le quart du jour choisi, ou ajouter un événement
+  const menuPlus = $("#cal-plus-menu");
+  const fermerMenuPlus = () => { menuPlus.hidden = true; $("#cal-ajout").setAttribute("aria-expanded", "false"); };
+  $("#cal-ajout").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const iso = cal.vue === "liste" ? aujourdhuiISO() : cal.sel;
+    const titre = new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+    $("[data-plus='quart'] b", menuPlus).textContent = `Modifier le quart du ${titre}`;
+    menuPlus.hidden = !menuPlus.hidden;
+    $("#cal-ajout").setAttribute("aria-expanded", String(!menuPlus.hidden));
+  });
+  $$("[data-plus]", menuPlus).forEach((b) => b.addEventListener("click", (e) => {
+    e.stopPropagation(); fermerMenuPlus();
+    const iso = cal.vue === "liste" ? aujourdhuiISO() : cal.sel;
+    if (b.dataset.plus === "quart") ouvrirJour(iso); else editerEvenement(null, { iso });
+  }));
+  document.addEventListener("click", (e) => { if (!menuPlus.hidden && !menuPlus.contains(e.target)) fermerMenuPlus(); });
   // Glisser pour changer de période
   {
     let x0 = null, y0 = 0;
@@ -3548,6 +3564,7 @@ Format :
     majValeurJour();
     const h = heuresJour(t, null, cibleEdition());
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
+    $("#hr-jour-defaut").textContent = h ? ` · par défaut ${h[0]} – ${h[1]}` : "";
   }
   $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
