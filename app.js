@@ -2415,6 +2415,13 @@
     const p = total > 0 ? Math.max(0, Math.min(100, utilise / total * 100)) : 0;
     return `<span class="banque-barre"><i style="width:${p.toFixed(1)}%"></i></span>`;
   }
+  // Comme soldes officiels : soldes en jours et heures (1 jour = 9 h, ou 12 h sur l'horaire de 12 heures)
+  function fmtJH(h, base) {
+    const neg = h < 0, t = Math.round(Math.abs(h) * 60), jour = base * 60;
+    const j = Math.floor(t / jour), r = t - j * jour, hh = Math.floor(r / 60), mm = r % 60;
+    const txt = [j ? `${j} j` : "", hh || mm || !j ? `${hh} h${mm ? String(mm).padStart(2, "0") : ""}` : ""].filter(Boolean).join(" ");
+    return (neg ? "− " : "") + txt;
+  }
   function rendreBanquesStats() {
     const el = $("#stats-contenu");
     $("#stats-periode").textContent = "Mes banques";
@@ -2424,18 +2431,20 @@
       return;
     }
     const B = banquesSQ(), { vac, fer, mal, b } = B;
-    const h = (n) => fmtH(Math.max(0, n)) + (n < 0 ? " (dépassé)" : "");
+    const base = B.type === "12" ? 12 : 9;
+    const jh = (n) => fmtJH(n, base);
+    const h = (n) => jh(Math.max(0, n)) + (n < 0 ? " (dépassé de " + jh(-n) + ")" : "");
     const dc = (iso) => dateCourte(iso, true);
     el.innerHTML = `
-      <p class="aide">Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
+      <p class="aide">Soldes en jours et heures, comme soldes officiels (1 jour = ${base} h). Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
       <section class="banque">
         <h4>Vacances <small>${esc(dc(vac.debut))} – ${esc(dc(vac.fin))}</small></h4>
         <div class="banque-chiffre"><b>${h(vac.solde)}</b><span>${vac.depart ? `solde selon votre talon du ${esc(dc(vac.depart.date))}` : "restantes aujourd'hui"}</span></div>
         ${barreBanque(vac.depart ? (+vac.depart.h - vac.solde) : vac.pris, vac.depart ? +vac.depart.h : vac.total)}
         <dl class="vt-detail">
-          ${vac.depart ? `<dt>Solde au ${esc(dc(vac.depart.date))} (talon)</dt><dd>${fmtH(+vac.depart.h)}</dd>` : `<dt>Droit de l'année (23.03${B.type === "12" ? ", annexe I 6.3" : ""})</dt><dd>${fmtH(vac.droit)}</dd>${vac.report ? `<dt>Reportées de l'an dernier (23.13)</dt><dd>${fmtH(vac.report)}</dd>` : ""}`}
-          <dt>Prises</dt><dd>${fmtH(vac.pris)}</dd>
-          <dt>Prévues à l'horaire</dt><dd>${fmtH(vac.prevus)}</dd>
+          ${vac.depart ? `<dt>Solde au ${esc(dc(vac.depart.date))} (talon)</dt><dd>${jh(+vac.depart.h)}</dd>` : `<dt>Droit de l'année (23.03${B.type === "12" ? ", annexe I 6.3" : ""})</dt><dd>${jh(vac.droit)}</dd>${vac.report ? `<dt>Reportées de l'an dernier (23.13)</dt><dd>${jh(vac.report)}</dd>` : ""}`}
+          <dt>Prises</dt><dd>${jh(vac.pris)}</dd>
+          <dt>Prévues à l'horaire</dt><dd>${jh(vac.prevus)}</dd>
           <dt class="total">Restantes au 31 mars</dt><dd class="total">${h(vac.soldeFin)}</dd>
         </dl>
         ${vac.soldeFin > 36 && +vac.fin.slice(0, 4) === +aujourdhuiISO().slice(0, 4) && aujourdhuiISO() >= vac.fin.slice(0, 4) + "-01-15" ? `<p class="banque-avis">Au plus 36 h peuvent être reportées après le 31 mars (23.13). Planifiez le reste avant.</p>` : ""}
@@ -2445,25 +2454,25 @@
         <div class="banque-chiffre"><b>${h(fer.solde)}</b><span>${fer.depart ? `solde selon votre talon du ${esc(dc(fer.depart.date))}` : "restantes aujourd'hui"}</span></div>
         ${barreBanque(fer.depart ? (+fer.depart.h - fer.solde) : fer.pris, fer.depart ? +fer.depart.h : fer.total)}
         <dl class="vt-detail">
-          ${fer.depart ? `<dt>Solde au ${esc(dc(fer.depart.date))} (talon)</dt><dd>${fmtH(+fer.depart.h)}</dd>` : `<dt>Droit de l'année (23.17${B.type === "12" ? ", annexe I 7.1" : ""})</dt><dd>${fmtH(fer.droit)}</dd>${fer.report ? `<dt>Reportées (23.17 c)</dt><dd>${fmtH(fer.report)}</dd>` : ""}`}
-          <dt>Pris</dt><dd>${fmtH(fer.pris)}</dd>
-          <dt>Prévus à l'horaire</dt><dd>${fmtH(fer.prevus)}</dd>
+          ${fer.depart ? `<dt>Solde au ${esc(dc(fer.depart.date))} (talon)</dt><dd>${jh(+fer.depart.h)}</dd>` : `<dt>Droit de l'année (23.17${B.type === "12" ? ", annexe I 7.1" : ""})</dt><dd>${jh(fer.droit)}</dd>${fer.report ? `<dt>Reportées (23.17 c)</dt><dd>${jh(fer.report)}</dd>` : ""}`}
+          <dt>Pris</dt><dd>${jh(fer.pris)}</dd>
+          <dt>Prévus à l'horaire</dt><dd>${jh(fer.prevus)}</dd>
           <dt class="total">Restants au 31 décembre</dt><dd class="total">${h(fer.soldeFin)}</dd>
         </dl>
         ${fer.special ? `<p class="aide">Congé spécial de ${fer.special} h en plus (23.17 d), à convenir avec la Sûreté.</p>` : `<p class="aide">À partir du 1ᵉʳ avril 2027 : congé spécial de ${B.type === "12" ? 12 : 9} h de plus par année (23.17 d).</p>`}
-        ${fer.soldeFin > 12 ? `<p class="banque-avis">Au 31 décembre, au plus 12 h peuvent être reportées ou payées (23.17 c). Il vous en resterait ${fmtH(fer.soldeFin)}.</p>` : ""}
+        ${fer.soldeFin > 12 ? `<p class="banque-avis">Au 31 décembre, au plus 12 h peuvent être reportées ou payées (23.17 c). Il vous en resterait ${jh(fer.soldeFin)}.</p>` : ""}
       </section>
       <section class="banque">
         <h4>Maladie <small>${esc(dc(B.fDebut))} – ${esc(dc(B.fFin))}</small></h4>
-        <div class="banque-chiffre"><b>${mal.jours} jour${mal.jours > 1 ? "s" : ""}</b><span>${fmtH(mal.heures)} · payées à 100 % par la banque collective</span></div>
+        <div class="banque-chiffre"><b>${mal.jours} jour${mal.jours > 1 ? "s" : ""}</b><span>${jh(mal.heures)} · payés à 100 % par la banque collective</span></div>
         <p class="aide">À la SQ, la maladie est payée par la banque collective (annexe C) : aucun solde personnel ne diminue. Avisez au moins 1 heure avant votre quart (2.09). Une déclaration écrite suffit jusqu'à 3 jours (2.03).</p>
         ${mal.avis.length ? `<ul class="banque-avis-liste">${mal.avis.map((a) => `<li class="${a.fort ? "fort" : ""}">${esc(a.texte)}</li>`).join("")}</ul>` : `<p class="aide">Aucun certificat médical à prévoir selon votre horaire.</p>`}
       </section>
       <section class="banque">
         <h4>Banques de temps supplémentaire</h4>
         <dl class="vt-detail">
-          <dt>Banque régulière (max. 189 h, 12.11)</dt><dd>${b.ts189 ? fmtH(+b.ts189.h) : "—"}</dd>
-          <dt>Banque de fin de carrière (max. 1 040 h, 12.12)</dt><dd>${b.ts1040 ? fmtH(+b.ts1040.h) : "—"}</dd>
+          <dt>Banque régulière (max. 189 h, 12.11)</dt><dd>${b.ts189 ? jh(+b.ts189.h) : "—"}</dd>
+          <dt>Banque de fin de carrière (max. 1 040 h, 12.12)</dt><dd>${b.ts1040 ? jh(+b.ts1040.h) : "—"}</dd>
         </dl>
         ${b.ts189 ? barreBanque(+b.ts189.h, 189) : ""}
         <p class="aide">Chaque heure de temps supplémentaire mise en banque vaut 1 h 30 (ou 2 h) (12.11). La banque de 1 040 h est offerte au maximum de l'échelle (12.12).</p>
@@ -2475,10 +2484,12 @@
             <option value="auto"${b.horaire === "auto" ? " selected" : ""}>Détecter selon ma rotation</option>
             <option value="9"${b.horaire === "9" ? " selected" : ""}>9 heures ou hybride</option>
             <option value="12"${b.horaire === "12" ? " selected" : ""}>12 heures (annexe I)</option></select></label>
-          <label><span>Vacances : solde (h)</span><input type="number" inputmode="decimal" min="0" max="400" step="0.25" data-banq="vacSoldeH" value="${b.vacSolde ? b.vacSolde.h : ""}"></label>
-          <label><span>en date du</span><input type="date" data-banq="vacSoldeD" value="${b.vacSolde ? b.vacSolde.date : ""}"></label>
-          <label><span>Fériés : solde (h)</span><input type="number" inputmode="decimal" min="0" max="200" step="0.25" data-banq="ferSoldeH" value="${b.ferSolde ? b.ferSolde.h : ""}"></label>
-          <label><span>en date du</span><input type="date" data-banq="ferSoldeD" value="${b.ferSolde ? b.ferSolde.date : ""}"></label>
+          <label><span>Vacances : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="45" step="1" data-banq="vacSoldeJ" value="${b.vacSolde ? Math.floor(b.vacSolde.h / base + 1e-9) : ""}"></label>
+          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="vacSoldeH" value="${b.vacSolde ? Math.round((b.vacSolde.h - Math.floor(b.vacSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
+          <label class="large"><span>Solde de vacances en date du</span><input type="date" data-banq="vacSoldeD" value="${b.vacSolde ? b.vacSolde.date : ""}"></label>
+          <label><span>Fériés : solde (jours)</span><input type="number" inputmode="numeric" min="0" max="25" step="1" data-banq="ferSoldeJ" value="${b.ferSolde ? Math.floor(b.ferSolde.h / base + 1e-9) : ""}"></label>
+          <label><span>+ heures</span><input type="number" inputmode="decimal" min="0" max="11.75" step="0.25" data-banq="ferSoldeH" value="${b.ferSolde ? Math.round((b.ferSolde.h - Math.floor(b.ferSolde.h / base + 1e-9) * base) * 100) / 100 : ""}"></label>
+          <label class="large"><span>Solde de fériés en date du</span><input type="date" data-banq="ferSoldeD" value="${b.ferSolde ? b.ferSolde.date : ""}"></label>
           <label><span>Vacances reportées (max. 36 h)</span><input type="number" inputmode="decimal" min="0" max="36" step="0.25" data-banq="vacReport" value="${b.vacReport || ""}"></label>
           <label><span>Fériés reportés (max. 12 h)</span><input type="number" inputmode="decimal" min="0" max="12" step="0.25" data-banq="ferReport" value="${b.ferReport || ""}"></label>
           <label><span>Banque TS 189 h (solde)</span><input type="number" inputmode="decimal" min="0" max="189" step="0.25" data-banq="ts189" value="${b.ts189 ? b.ts189.h : ""}"></label>
@@ -2491,9 +2502,13 @@
       const v = (k) => { const i = $(`[data-banq='${k}']`, el); return i ? String(i.value).trim() : ""; };
       const num = (k, max) => { const n = parseFloat(v(k).replace(",", ".")); return n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
       const auj = aujourdhuiISO();
-      const solde = (hK, dK, max) => { const n = num(hK, max); return n === null || v(hK) === "" ? null : { h: n, date: v(dK) || auj }; };
+      const solde = (jK, hK, dK, max) => {
+        if (v(jK) === "" && v(hK) === "") return null;
+        const t = (num(jK, 60) || 0) * base + (num(hK, 24) || 0);
+        return t <= max ? { h: Math.round(t * 100) / 100, date: v(dK) || auj } : null;
+      };
       const nouv = { horaire: v("horaire") || "auto", vacReport: num("vacReport", 36) || 0, ferReport: num("ferReport", 12) || 0,
-        vacSolde: solde("vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeH", "ferSoldeD", 200),
+        vacSolde: solde("vacSoldeJ", "vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeJ", "ferSoldeH", "ferSoldeD", 200),
         ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj } };
       const { error } = await sb.from("paie_sq").update({ banques: nouv, maj_le: new Date().toISOString() }).eq("user_id", etat.profil.id);
       if (error) return toast(traduireErreur(error));
