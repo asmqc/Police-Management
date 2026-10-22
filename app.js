@@ -55,6 +55,7 @@
     { id: "marine", nom: "Marine", desc: "Bleu marine, accents cyan", c: ["#071A33", "#4FC3F7", "#0E2747"] },
     { id: "epure", nom: "Épuré clair", desc: "Sable et blanc", c: ["#3B2F24", "#B07A3C", "#F4EFE6"] },
     { id: "poste", nom: "Poste de police", desc: "Logiciel de poste rétro", c: ["#0A246A", "#3A6EA5", "#ECE9D8"] },
+    { id: "nuit", nom: "Nuit rouge", desc: "Auto-patrouille la nuit", c: ["#000000", "#D23A3A", "#140303"] },
   ];
   let styleChoisi = "moderne";
   try { styleChoisi = localStorage.getItem("pm-style") || "moderne"; } catch { /* stockage indisponible */ }
@@ -111,9 +112,29 @@
     clearTimeout(toastMinuteur);
     toastMinuteur = setTimeout(() => (t.hidden = true), 3200);
   }
+  // Intro : étapes qui défilent, puis fondu dès que le premier écran est prêt (au moins 1,2 s pour être lisible)
+  const intro = { debut: performance.now(), i: 0, fini: false };
+  const ETAPES_INTRO = ["Connexion sécurisée…", "Vérification de votre compte…", "Chargement de votre horaire…", "Lois et carte à jour…", "Bienvenue"];
+  intro.minuteur = setInterval(() => {
+    if (intro.i < ETAPES_INTRO.length - 2) intro.i++;
+    const e = $("#intro-etape"); if (e) e.textContent = ETAPES_INTRO[intro.i];
+    const p = $("#intro-progres"); if (p) p.style.width = Math.round(((intro.i + 1) / ETAPES_INTRO.length) * 100) + "%";
+  }, 380);
+  function terminerIntro() {
+    if (intro.fini) return;
+    intro.fini = true;
+    const reste = Math.max(0, 1200 - (performance.now() - intro.debut));
+    setTimeout(() => {
+      clearInterval(intro.minuteur);
+      $("#intro-etape").textContent = ETAPES_INTRO[ETAPES_INTRO.length - 1];
+      $("#intro-progres").style.width = "100%";
+      setTimeout(() => { $("#intro").classList.add("intro-sortie"); setTimeout(() => $("#intro").remove(), 500); }, 220);
+    }, reste);
+  }
   function montrer(ecran) {
     ["#ecran-chargement", "#ecran-site", "#ecran-auth", "#ecran-attente", "#ecran-mdp-temp", "#ecran-app"].forEach((id) => ($(id).hidden = id !== ecran));
     document.body.classList.toggle("mode-site", ecran === "#ecran-site");
+    if (ecran !== "#ecran-chargement") terminerIntro();
     if (ecran !== "#ecran-site" && !document.documentElement.hasAttribute("data-style")) {
       const t = document.documentElement.getAttribute("data-theme");
       const sombre = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -516,7 +537,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.10.21";
+  const VERSION_POLITIQUE = "2026.10.22";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -532,9 +553,13 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
-    { date: "2026-10-20", titre: "Feuille de poste", points: [
-      "Nouvel onglet Feuille : la feuille aide-mémoire de votre poste, en photo ou en PDF, partagée avec les membres de votre poste.",
-      "Tout membre du poste peut la remplacer ou la retirer. Lisez bien les règles : aucun code d'accès, aucune fréquence radio, aucun numéro interne, aucun renseignement sur une personne."] },
+    { date: "2026-10-22", titre: "Nouvelles lois, recherche et calendrier abonné", points: [
+      "Lois : Code criminel, Loi sur le cannabis et Loi réglementant certaines drogues, avec raccourcis (capacité affaiblie, délit de fuite, voies de fait…).",
+      "Accueil : une recherche qui trouve un article, une municipalité ou une section, et les entraves Québec 511 autour de vous.",
+      "Horaire : calendrier abonné qui se met à jour tout seul dans le Calendrier de l'iPhone, Google Agenda ou Outlook.",
+      "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
+      "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
+      "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
   ];
   function ouvrirNouveautes() {
     $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
@@ -833,6 +858,22 @@
     if (nom === "feuille") initFeuille();
     informerNatif();
   }
+  // Phrase lue par Siri dans l'app iOS (« Prochain quart ») : calculée ici, gardée par l'app
+  function phraseProchainQuart() {
+    try {
+      if (!hr.config || !hr.chargé) return null;
+      const n0 = jourUTC(aujourdhuiISO());
+      for (let i = 0; i < 45; i++) {
+        const iso = isoDe(n0 + i), q = quartDu(iso, hr);
+        if (!q.code || !["J", "S", "N", "X", "F", "T"].includes(q.code)) continue;
+        const h = heuresJour(q.code, iso, hr);
+        const quand = i === 0 ? "aujourd'hui" : i === 1 ? "demain" : new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+        const heures = h ? `, de ${h[0].replace(":", " h ").replace(" h 00", " h")} à ${h[1].replace(":", " h ").replace(" h 00", " h")}` : "";
+        return `Votre prochain quart : ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}, ${quand}${heures}.`;
+      }
+      return "Aucun quart prévu dans les 45 prochains jours.";
+    } catch { return null; }
+  }
   // Pont avec l'app iOS : le site informe l'app (onglet, badges, fenêtres ouvertes) et l'app pilote la navigation
   let natifPrevu = false;
   function informerNatif() {
@@ -850,6 +891,7 @@
           admin: !!(etat.profil && etat.profil.role === "admin"),
           messages: nb("badge-messages"),
           attente: nb("badge-nav-admin"),
+          prochain: phraseProchainQuart(),
         });
       } catch { /* l'app n'écoute pas */ }
     });
@@ -891,6 +933,18 @@
   $("#btn-reglages").addEventListener("click", () => afficherVue("reglages"));
   $("#menu-voile").addEventListener("click", (e) => { if (e.target.id === "menu-voile") fermerMenu(); });
   $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
+  // Mode nuit rouge : bascule rapide depuis le menu (revient ensuite au style précédent)
+  function majBoutonNuit() { const b = $("#menu-nuit"); if (b) $("span", b).textContent = styleChoisi === "nuit" ? "Quitter le mode nuit rouge" : "Mode nuit rouge"; }
+  $("#menu-nuit").addEventListener("click", () => {
+    let avant = "moderne";
+    try { avant = localStorage.getItem("pm-style-avant-nuit") || "moderne"; } catch { /* facultatif */ }
+    if (styleChoisi === "nuit") styleChoisi = avant === "nuit" ? "moderne" : avant;
+    else { try { localStorage.setItem("pm-style-avant-nuit", styleChoisi); } catch { /* facultatif */ } styleChoisi = "nuit"; }
+    try { localStorage.setItem("pm-style", styleChoisi); } catch { /* facultatif */ }
+    appliquerStyle(styleChoisi); majBoutonNuit(); fermerMenu();
+    toast(styleChoisi === "nuit" ? "Mode nuit rouge activé" : "Mode nuit rouge désactivé");
+  });
+  majBoutonNuit();
   { const v = (document.querySelector('script[src^="app.js"]') || {}).src || ""; const m = v.match(/v=(\d{8})(\d{4})/); if (m) $("#rg-version").textContent = `Version du ${m[1].slice(6, 8)}/${m[1].slice(4, 6)}/${m[1].slice(0, 4)}`; }
   $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
 
@@ -1299,6 +1353,103 @@
   }
 
   /* ---------------- Accueil ---------------- */
+  // Accueil : recherche globale (sections de l'app, articles de loi, municipalités)
+  const SECTIONS_RECHERCHE = [
+    ["Horaire", "horaire rotation quart calendrier conge vacances", "horaire"], ["Carte", "carte borne kilometre route position", "carte"],
+    ["Lois", "lois csr code securite routiere article", "csr"], ["Table des vitesses", "vitesse amende points grand exces", "vitesse"],
+    ["Frais et contribution", "frais contribution amende tarif", "frais"], ["Feuille de poste", "feuille pad poste aide memoire", "feuille"],
+    ["Messages", "messages messagerie administrateur", "messages"], ["Forum", "forum discussion", "forum"], ["Idées et sondages", "idees sondages vote", "idees"],
+    ["Corps de police et territoires", "corps police territoire municipal autochtone", "corps"], ["Mon compte", "compte profil photo mot de passe", "compte"],
+    ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
+  ];
+  let rechMinuteur;
+  $("#ac-q").addEventListener("input", () => { clearTimeout(rechMinuteur); rechMinuteur = setTimeout(rechercheGlobale, 180); });
+  async function rechercheGlobale() {
+    const brut = $("#ac-q").value.trim(), q = norm(brut).replace(/^(art(icle)?\.?\s*)/, "");
+    const el = $("#ac-resultats");
+    if (q.length < 2) { el.hidden = true; el.innerHTML = ""; return; }
+    const res = [];
+    for (const [nom, mots, cible] of SECTIONS_RECHERCHE) {
+      if (cible === "convention" && !accesConvention()) continue;
+      if (norm(nom).includes(q) || mots.split(" ").some((m) => m.startsWith(q))) res.push({ g: "Sections", titre: nom, sous: "Ouvrir", agir: () => (cible === "frais" ? (afficherVue("csr"), ongletLois("frais")) : cible === "favoris" ? (afficherVue("csr"), ongletLois("favoris")) : allerA(cible)) });
+    }
+    const estNumero = /^\d+(\.\d+)*$/.test(q);
+    try {
+      const lois = estNumero ? [["csr", "csr.json"], ["criminel", "lois/criminel.json"]] : [["csr", "csr.json"]];
+      for (const [cle, fichier] of lois) {
+        const brutLoi = await charger(fichier);
+        const arts = Array.isArray(brutLoi) ? brutLoi : brutLoi.articles;
+        const trouves = estNumero
+          ? arts.filter((x) => x.numero === q || x.numero.startsWith(q + ".")).slice(0, 4)
+          : q.length >= 3 ? arts.filter((x) => norm(x.section || "").includes(q) || norm(x.texte).includes(q)).slice(0, 4) : [];
+        for (const x of trouves) res.push({ g: "Articles de loi", titre: `${LOIS[cle].court} art. ${x.numero}`, sous: (x.section || x.texte).replace(/\s+/g, " ").slice(0, 90), agir: () => { afficherVue("csr"); ouvrirFavori(cle, x.numero); } });
+      }
+    } catch { /* données non disponibles */ }
+    if (!estNumero && q.length >= 2) {
+      try {
+        const idx = await charger("municipalites.json");
+        const munis = idx.municipalites.filter((m) => norm(m[0]).startsWith(q) || (q.length >= 3 && norm(m[0]).includes(q))).slice(0, 5);
+        for (const m of munis) res.push({ g: "Municipalités", titre: m[0], sous: `MRC ${m[2]} · code ${m[1]}${m[5] ? " · desservie par la SQ" : ""}`, agir: () => { afficherVue("carte"); setTimeout(() => etat.placer && etat.placer(m[4], m[3], m[0], 12), 450); } });
+      } catch { /* facultatif */ }
+    }
+    if ($("#ac-q").value.trim() !== brut) return; // une autre recherche a commencé
+    el.hidden = false;
+    if (!res.length) { el.innerHTML = `<p class="aide">Aucun résultat pour « ${esc(brut)} ».</p>`; return; }
+    let groupe = "";
+    el.innerHTML = res.map((r, i) => {
+      const tete = r.g !== groupe ? `<h4>${esc(r.g)}</h4>` : ""; groupe = r.g;
+      return `${tete}<button type="button" data-res="${i}"><b>${esc(r.titre)}</b><small>${esc(r.sous)}</small></button>`;
+    }).join("");
+    $$("[data-res]", el).forEach((b) => b.addEventListener("click", () => { const r = res[+b.dataset.res]; $("#ac-q").value = ""; el.hidden = true; r.agir(); }));
+  }
+
+  // Accueil : entraves Québec 511 autour de la position (calcul fait sur l'appareil)
+  function kmEntre(a, b) {
+    const R = 6371, r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  function pointsGeo(g) {
+    if (!g) return [];
+    if (g.type === "Point") return [g.coordinates];
+    if (g.type === "LineString" || g.type === "MultiPoint") return g.coordinates;
+    if (g.type === "MultiLineString" || g.type === "Polygon") return g.coordinates.flat();
+    if (g.type === "MultiPolygon") return g.coordinates.flat(2);
+    return [];
+  }
+  $("#ac-511-btn").addEventListener("click", () => {
+    const etatEl = $("#ac-511-etat"), liste = $("#ac-511-liste"), b = $("#ac-511-btn");
+    if (!navigator.geolocation) { etatEl.textContent = "La localisation n'est pas offerte sur cet appareil."; return; }
+    b.disabled = true; etatEl.textContent = "Localisation…";
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const ici = [pos.coords.longitude, pos.coords.latitude];
+      etatEl.textContent = "Recherche des entraves…";
+      const { data, error } = await sb.functions.invoke("trafic-511", { method: "GET" });
+      b.disabled = false; b.textContent = "Actualiser";
+      if (error || !data || !data.features) { etatEl.textContent = "Québec 511 ne répond pas pour le moment. Réessayez plus tard."; liste.hidden = true; return; }
+      const proches = data.features.map((f) => {
+        let min = Infinity, pt = null;
+        for (const c of pointsGeo(f.geometry)) { const d = kmEntre(ici, c); if (d < min) { min = d; pt = c; } }
+        return { p: f.properties || {}, km: min, pt };
+      }).filter((x) => x.pt && x.km <= 25).sort((a, b) => a.km - b.km).slice(0, 6);
+      etatEl.textContent = proches.length ? `${proches.length} entrave${proches.length > 1 ? "s" : ""} à moins de 25 km · mis à jour à ${new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}` : "Aucune entrave signalée à moins de 25 km.";
+      liste.hidden = !proches.length;
+      liste.innerHTML = proches.map((x, i) => `<li><button type="button" data-511="${i}">
+        <span class="genre-511 ${esc(x.p.genre || "")}">${x.p.genre === "chantier" ? "Travaux" : "Avertissement"}${x.p.route ? " · route " + esc(x.p.route) : ""}</span>
+        <b>${esc(x.p.titre || x.p.travaux || "Entrave")}</b>
+        <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).join(" · "))}</small>
+        <i>${x.km < 1 ? "< 1" : Math.round(x.km)} km</i></button></li>`).join("");
+      $$("[data-511]", liste).forEach((btn) => btn.addEventListener("click", () => {
+        const x = proches[+btn.dataset["511"]];
+        afficherVue("carte");
+        setTimeout(() => {
+          const c = $("#c-511"); if (c && !c.checked) { c.checked = true; c.dispatchEvent(new Event("change")); }
+          if (etat.placer) etat.placer(x.pt[1], x.pt[0], x.p.titre || "Entrave Québec 511", 14);
+        }, 400);
+      }));
+    }, () => { b.disabled = false; etatEl.textContent = "Position refusée ou indisponible. Autorisez la localisation pour ce site."; }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 });
+  });
+
   async function initAccueil() {
     const p = etat.profil;
     const h = new Date().getHours();
@@ -1896,6 +2047,44 @@
     r.lignesTS.sort((x, y) => x.iso.localeCompare(y.iso));
     return r;
   }
+  // Valeur du temps supplémentaire : taux gardés sur cet appareil seulement
+  const tsReglages = (() => { try { return { taux: 0, mult: 1.5, mode: "paie", ...JSON.parse(localStorage.getItem("pm-ts-reglages") || "{}") }; } catch { return { taux: 0, mult: 1.5, mode: "paie" }; } })();
+  const dollarsTS = (n) => n.toLocaleString("fr-CA", { style: "currency", currency: "CAD" });
+  function htmlCalculTS(heuresTS, libelle) {
+    return `<div class="stats-ts-calc">
+      <h4>Valeur du temps supplémentaire <small>${esc(libelle)}</small></h4>
+      <div class="ts-reglages">
+        <label><span>Taux horaire</span><input type="number" inputmode="decimal" min="0" step="0.01" id="ts-taux" value="${tsReglages.taux || ""}" placeholder="ex. 52,40"></label>
+        <label><span>Majoration</span><select id="ts-mult"><option value="1">Temps simple</option><option value="1.5">Temps et demi</option><option value="2">Temps double</option></select></label>
+        <label><span>Je le prends en</span><select id="ts-mode"><option value="paie">Paie</option><option value="banque">Banque de temps</option><option value="moitie">Moitié paie, moitié banque</option></select></label>
+      </div>
+      <dl class="vt-detail ts-resultat" id="ts-resultat" data-heures="${heuresTS}"></dl>
+      <p class="aide">Estimation. Les taux et la majoration dépendent de votre convention collective et du type de temps supplémentaire : vérifiez-les. Vos taux restent sur cet appareil.</p>
+    </div>`;
+  }
+  function majCalculTS() {
+    const el = $("#ts-resultat");
+    if (!el) return;
+    const h = +el.dataset.heures || 0, eq = h * tsReglages.mult;
+    const partPaie = tsReglages.mode === "paie" ? 1 : tsReglages.mode === "moitie" ? 0.5 : 0;
+    const montant = eq * partPaie * (tsReglages.taux || 0);
+    el.innerHTML = `<dt>Heures supplémentaires</dt><dd>${fmtH(h)}</dd>
+      <dt>Équivalent majoré (× ${String(tsReglages.mult).replace(".", ",")})</dt><dd>${fmtH(eq)}</dd>
+      ${partPaie < 1 ? `<dt>En banque de temps</dt><dd>${fmtH(eq * (1 - partPaie))}</dd>` : ""}
+      ${partPaie > 0 ? `<dt class="total">Montant brut estimé</dt><dd class="total">${tsReglages.taux ? dollarsTS(montant) : "—"}</dd>` : ""}`;
+  }
+  function brancherCalculTS() {
+    if (!$("#ts-taux")) return;
+    $("#ts-mult").value = String(tsReglages.mult); $("#ts-mode").value = tsReglages.mode;
+    const sauver = () => {
+      tsReglages.taux = Math.max(0, parseFloat(String($("#ts-taux").value).replace(",", ".")) || 0);
+      tsReglages.mult = +$("#ts-mult").value || 1.5; tsReglages.mode = $("#ts-mode").value;
+      try { localStorage.setItem("pm-ts-reglages", JSON.stringify(tsReglages)); } catch { /* facultatif */ }
+      majCalculTS();
+    };
+    ["#ts-taux", "#ts-mult", "#ts-mode"].forEach((id) => $(id).addEventListener("input", sauver));
+    majCalculTS();
+  }
   function rendreStats() {
     const src = affichee();
     $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
@@ -1909,7 +2098,9 @@
           <div><small>Heures travaillées</small><b>${fmtH(r.heures)}</b><span>${r.travailles} jour${r.travailles > 1 ? "s" : ""} de quart</span></div>
           <div class="ts"><small>Temps supplémentaire</small><b>${fmtH(r.ts)}</b><span>Total du mois</span></div>
         </div>
-        <div class="stats-cats">${Object.entries(r.jours).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="q q-${esc(k)}"><b>${esc(QUARTS[k] ? QUARTS[k].nom : k)}</b>${n} jour${n > 1 ? "s" : ""}</span>`).join("")}</div>`;
+        <div class="stats-cats">${Object.entries(r.jours).sort((x, y) => y[1] - x[1]).map(([k, n]) => `<span class="q q-${esc(k)}"><b>${esc(QUARTS[k] ? QUARTS[k].nom : k)}</b>${n} jour${n > 1 ? "s" : ""}</span>`).join("")}</div>
+        ${htmlCalculTS(r.ts, "du mois")}`;
+      brancherCalculTS();
     } else {
       $("#stats-periode").textContent = `Année ${stats.a}`;
       let tH = 0, tTS = 0, tJ = 0;
@@ -1918,7 +2109,9 @@
         return `<tr><td>${esc(new Date(stats.a, m, 15).toLocaleDateString("fr-CA", { month: "long" }))}</td><td>${r.travailles}</td><td>${fmtH(r.heures)}</td><td>${r.ts ? fmtH(r.ts) : "—"}</td></tr>`;
       }).join("");
       $("#stats-contenu").innerHTML = `<div class="table-defile"><table class="table-vitesse stats-table"><thead><tr><th>Mois</th><th>Jours</th><th>Heures</th><th>Temps supp.</th></tr></thead>
-        <tbody>${lignes}</tbody><tfoot><tr><td>Total</td><td>${tJ}</td><td>${fmtH(tH)}</td><td>${fmtH(tTS)}</td></tr></tfoot></table></div>`;
+        <tbody>${lignes}</tbody><tfoot><tr><td>Total</td><td>${tJ}</td><td>${fmtH(tH)}</td><td>${fmtH(tTS)}</td></tr></tfoot></table></div>
+        ${htmlCalculTS(tTS, "de l'année")}`;
+      brancherCalculTS();
     }
   }
   $("#hr-stats").addEventListener("click", () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); rendreStats(); $("#stats-voile").hidden = false; });
@@ -3029,6 +3222,52 @@ Format :
     catch (e) { cible.exceptions[iso] = avant; toast(traduireErreur(e)); }
   });
 
+  // Calendrier abonné (lien webcal secret, révocable) : fonction serveur « calendrier »
+  const urlCalendrier = (j) => `${C.supabaseUrl}/functions/v1/calendrier?j=${j}`;
+  async function rendreAbonnement(creer) {
+    const el = $("#hr-abo-contenu");
+    let jeton = null;
+    if (creer) {
+      const { data, error } = await sb.rpc("calendrier_lien", { p_nouveau: creer === "nouveau" });
+      if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+      jeton = data;
+    } else {
+      const { data: actif } = await sb.rpc("calendrier_lien_etat");
+      if (actif) { const { data } = await sb.rpc("calendrier_lien", { p_nouveau: false }); jeton = data; }
+    }
+    if (!jeton) {
+      el.innerHTML = `<button type="button" class="btn-principal" id="hr-abo-creer" style="margin:0">Créer mon lien d'abonnement</button>`;
+      $("#hr-abo-creer").addEventListener("click", () => rendreAbonnement("oui"));
+      return;
+    }
+    const https = urlCalendrier(jeton), webcal = https.replace(/^https:/, "webcal:");
+    const google = "https://calendar.google.com/calendar/r?cid=" + encodeURIComponent(webcal);
+    el.innerHTML = `<div class="hr-abo-boutons">
+        <a class="btn-principal" href="${esc(webcal)}" style="margin:0">Ajouter au Calendrier (iPhone, Mac, Outlook)</a>
+        <a class="btn-secondaire" href="${esc(google)}" target="_blank" rel="noopener">Ajouter à Google Agenda</a>
+        <button type="button" class="btn-secondaire" id="hr-abo-copier">Copier le lien</button>
+      </div>
+      <div class="fc-ligne"><button type="button" class="lien" id="hr-abo-nouveau">Créer un nouveau lien</button><button type="button" class="lien rouge" id="hr-abo-retirer">Désactiver le lien</button></div>`;
+    $("#hr-abo-copier").addEventListener("click", () => copier(https));
+    const nouv = $("#hr-abo-nouveau");
+    nouv.addEventListener("click", () => {
+      if (!nouv.dataset.arme) { nouv.dataset.arme = "1"; nouv.textContent = "Confirmer : l'ancien lien cessera de fonctionner"; return; }
+      rendreAbonnement("nouveau").then(() => toast("Nouveau lien créé. Abonnez-vous de nouveau avec celui-ci."));
+    });
+    const ret = $("#hr-abo-retirer");
+    ret.addEventListener("click", async () => {
+      if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Confirmer la désactivation"; return; }
+      const { error } = await sb.rpc("calendrier_lien_retirer");
+      if (error) return toast(traduireErreur(error));
+      toast("Lien désactivé"); rendreAbonnement(false);
+    });
+  }
+  $("#hr-abo-btn").addEventListener("click", () => {
+    const p = $("#hr-abo"), ouvrir = p.hidden;
+    p.hidden = !ouvrir; $("#hr-abo-btn").setAttribute("aria-expanded", String(ouvrir));
+    if (ouvrir) { rendreAbonnement(false); p.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+  });
+
   // Export vers le calendrier du téléphone (.ics), 6 mois à partir d'aujourd'hui
   $("#hr-ics").addEventListener("click", () => {
     const n0 = jourUTC(aujourdhuiISO());
@@ -3479,7 +3718,7 @@ Format :
     criminel: [["Capacité affaiblie", "320.14"], ["Refus d'obtempérer", "320.15"], ["Délit de fuite", "320.16"], ["Conduite dangereuse", "320.13"],
       ["Voies de fait", "265"], ["Menaces", "264.1"], ["Harcèlement", "264"], ["Vol", "334"], ["Méfait", "430"], ["Bris de condition", "145"],
       ["Arrestation sans mandat", "495"], ["Entrave", "129"]],
-    cannabis: [["Possession", "8"], ["Distribution", "9"], ["Vente", "10"], ["Mineurs", "8"]],
+    cannabis: [["Possession", "8"], ["Distribution", "9"], ["Vente", "10"], ["Culture", "12"]],
     drogues: [["Possession", "4"], ["Trafic", "5"], ["Production", "7"], ["Définitions", "2"]],
   };
   // Lois et règlements offerts (textes publics, dans data/)

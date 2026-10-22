@@ -22,12 +22,29 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221306">
+  <link rel="stylesheet" href="styles.css?v=202610221316">
 </head>
 <body>
   <!-- Chargement -->
-  <div id="ecran-chargement" class="ecran-centre">
-    <img src="assets/logo.png" alt="" class="logo logo-pulse" width="80" height="80">
+  <div id="ecran-chargement" class="ecran-centre"></div>
+
+  <!-- Intro au démarrage : s'efface dès que la première page est prête -->
+  <div id="intro" class="intro" role="status" aria-live="polite" aria-label="Chargement de Police Management">
+    <div class="intro-centre">
+      <div class="intro-logo">
+        <span class="intro-halo" aria-hidden="true"></span>
+        <span class="intro-tuile"><img src="assets/logo.png" alt="" width="76" height="76"><span class="intro-reflet" aria-hidden="true"></span></span>
+      </div>
+      <div class="intro-nom">POLICE <span>MANAGEMENT</span></div>
+      <div class="intro-slogan">L'horaire, la route et les lois</div>
+      <div class="intro-barre" aria-hidden="true"><span id="intro-progres"></span></div>
+      <div class="intro-etape" id="intro-etape">Connexion sécurisée…</div>
+    </div>
+    <div class="intro-pied">
+      <span><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg> Connexion chiffrée · Données hébergées au Canada</span>
+      <small>Accès réservé au personnel policier et aux agents de la paix</small>
+      <i class="intro-bande" aria-hidden="true"></i>
+    </div>
   </div>
 
   <!-- Connexion / demande d'accès -->
@@ -399,12 +416,28 @@
         </div>
       </div>
 
+      <div class="ac-recherche" role="search">
+        <label for="ac-q" class="visuellement-cache">Rechercher dans Police Management</label>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <input id="ac-q" type="search" placeholder="Article, municipalité, section…" autocomplete="off" enterkeyhint="search">
+      </div>
+      <div class="ac-resultats" id="ac-resultats" hidden></div>
+
       <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
 
       <button class="ac-quart" id="ac-quart" data-aller="horaire"></button>
 
       <button class="ac-admin ac-msg" id="ac-msg" data-aller="messages" hidden></button>
       <button class="ac-admin" id="ac-admin" data-aller="admin" hidden></button>
+
+      <section class="panneau ac-511" aria-labelledby="ac-511-titre">
+        <div class="ac-511-tete">
+          <h3 id="ac-511-titre">Circulation · Québec 511</h3>
+          <button type="button" class="btn-secondaire petit" id="ac-511-btn">Autour de moi</button>
+        </div>
+        <p class="aide" id="ac-511-etat">Entraves et travaux routiers à moins de 25 km de vous. Votre position reste sur votre appareil.</p>
+        <ul class="ac-511-liste" id="ac-511-liste" hidden></ul>
+      </section>
 
       <div class="tuiles">
           <button class="tuile" data-aller="csr">
@@ -828,6 +861,13 @@
           <button class="btn-secondaire petit" id="hr-stats">Statistiques d'heures</button>
           <button class="btn-secondaire petit hr-moi-seul" id="hr-offrir">Offrir un quart</button>
           <button class="btn-secondaire petit" id="hr-ics">Exporter (.ics)</button>
+          <button class="btn-secondaire petit hr-moi-seul" id="hr-abo-btn" aria-expanded="false" aria-controls="hr-abo">Calendrier abonné</button>
+        </div>
+        <div class="panneau hr-abo" id="hr-abo" hidden>
+          <h3>Calendrier abonné</h3>
+          <p class="aide">Ajoutez votre horaire une seule fois au Calendrier de l'iPhone, à Google Agenda ou à Outlook : il se met à jour tout seul quand votre rotation ou vos journées changent (aux quelques heures, selon l'application). Seuls les quarts et les journées modifiées y paraissent, jamais vos notes, votre temps supplémentaire détaillé ni vos événements personnels.</p>
+          <div id="hr-abo-contenu"></div>
+          <p class="aide hr-abo-avert"><b>Ce lien est personnel.</b> Toute personne qui l'a peut voir votre horaire de travail. Partagez-le seulement avec vos proches. Si vous croyez qu'il a circulé, créez-en un nouveau : l'ancien cesse de fonctionner.</p>
         </div>
       </div>
 
@@ -1357,7 +1397,7 @@
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.21) : elle couvre la feuille de poste partagée entre les membres d'un même poste, la nouvelle app iPhone et iPad, et les règles de la messagerie et du forum, qui ne sont pas chiffrés de bout en bout. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.22) : elle ajoute le calendrier abonné (lien personnel que vous pouvez désactiver) et couvre la feuille de poste, l'app iPhone et iPad, et les règles de la messagerie et du forum, qui ne sont pas chiffrés de bout en bout. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
         <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
@@ -1450,6 +1490,7 @@
         <span class="avatar moyen" id="menu-avatar"></span>
         <div><b id="menu-nom"></b><small id="menu-sous"></small></div>
       </div>
+      <button role="menuitem" id="menu-nuit" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Mode nuit rouge</span></button>
       <button role="menuitem" data-menu="compte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mon compte</span></button>
       <button role="menuitem" class="seulement-sq" data-menu="convention"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg><span>Convention collective <span class="beta">DÉMO</span></span></button>
       <button role="menuitem" data-menu="forum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Forum</span></button>
@@ -1463,9 +1504,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221306"></script>
+  <script src="config.js?v=202610221316"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221306"></script>
+  <script src="app.js?v=202610221316"></script>
 </body>
 </html>
