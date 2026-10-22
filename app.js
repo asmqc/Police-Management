@@ -561,6 +561,8 @@
       "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
       "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
+      "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
+      "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
   ];
   function ouvrirNouveautes() {
@@ -962,7 +964,20 @@
   const MODELES = {
     "4-4J": "JJJJCCCC", "4-4JN": "JJJJCCCCNNNNCCCC", "223": "JJCCJJJCCJJCCCNNCCNNNCCNNCCC",
     "7-7": "JJJJJJJCCCCCCC", "3-3": "JJJCCC", "5-2": "JJJJJCC", "JSN": "JJJJJCCSSSSSCCNNNNNCC",
+    // Rotations 12 h courantes
+    "dupont": "NNNNCCCJJJCNNNCCCJJJJCCCCCCC", "3-3JN": "JJJCCCNNNCCC", "4-3-3-4": "JJJJCCCJJJCCCC",
+    "4-3-3-4JN": "JJJJCCCJJJCCCCNNNNCCCNNNCCCC", "2-3-2": "JJCCCJJCCJJJCC", "5-5-4-4": "JJJJJCCCCCNNNNCCCC",
+    "223J": "JJCCJJJCCJJCCC",
+    // Rotations 8 h
+    "swing": "JJJJJJJCCSSSSSSSCCNNNNNNNCCC", "6-2": "JJJJJJCCSSSSSSCCNNNNNNCC", "6-3": "JJJJJJCCC",
+    "4-2": "JJJJCCSSSSCCNNNNCC", "JSN5-2": "JJJJJCCSSSSSCCNNNNNCC",
+    // Autres
+    "4-3": "JJJJCCC", "5-4-9": "JJJJJCCJJJJCCC", "4-4S": "SSSSCCCC", "4-4N": "NNNNCCCC",
   };
+  const H8 = { J: ["07:00", "15:00"], S: ["15:00", "23:00"], N: ["23:00", "07:00"] };
+  const H12 = { J: ["07:00", "19:00"], S: ["11:00", "23:00"], N: ["19:00", "07:00"] };
+  const MODELES_HEURES = { dupont: H12, "3-3JN": H12, "4-3-3-4": H12, "4-3-3-4JN": H12, "2-3-2": H12, "5-5-4-4": H12, "223J": H12, "223": H12, "4-4JN": H12, "7-7": H12,
+    swing: H8, "6-2": H8, "6-3": H8, "4-2": H8, "JSN5-2": H8, "JSN": H8, "4-3": { ...H8, J: ["07:00", "16:00"] }, "5-4-9": { ...H8, J: ["07:00", "16:00"] } };
   const MS_JOUR = 86400000;
   const jourUTC = (iso) => { const [a, m, j] = iso.split("-").map(Number); return Date.UTC(a, m - 1, j) / MS_JOUR; };
   const isoDe = (n) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
@@ -2216,7 +2231,7 @@
   async function chargerPaie(forcer) {
     if (!estSQ()) { etat.paie = null; return null; }
     if (etat.paie !== undefined && !forcer) return etat.paie;
-    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel, retenues").eq("user_id", etat.profil.id).maybeSingle();
+    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel, retenues, banques").eq("user_id", etat.profil.id).maybeSingle();
     etat.paie = data || null;
     return etat.paie;
   }
@@ -2322,6 +2337,168 @@
     const autres = (+r.rrmsq || 0) + (+r.syndicat || 0) + (+r.assurances || 0) + (+r.autres || 0);
     const total = fed + qc + rrq + rrq2 + ae + rqap + autres;
     return { fed, qc, rrq, rrq2, ae, rqap, autres, total, net: p.brut - total };
+  }
+
+  /* ---------------- Mes banques (SQ) : vacances, fériés, maladie, temps supplémentaire (art. 23, annexes C et I, art. 12) ---------------- */
+  const VAC_9 = [[32, 288], [30, 279], [28, 270], [25, 252], [23, 243], [21, 234], [20, 225], [19, 207], [17, 198], [14, 189], [10, 180], [6, 171], [1, 162]];
+  const VAC_12 = [[32, 315], [30, 303], [28, 291], [25, 267], [23, 255], [21, 243], [20, 231], [19, 219], [17, 207], [14, 195], [10, 186], [6, 177], [1, 168]];
+  const reglagesBanques = () => ({ horaire: "auto", vacReport: 0, ferReport: 0, vacSolde: null, ferSolde: null, ts189: null, ts1040: null, ...((etat.paie && etat.paie.banques) || {}) });
+  function typeHoraireSQ() {
+    const b = reglagesBanques();
+    if (b.horaire === "9" || b.horaire === "12") return b.horaire;
+    const c = hr.config || {};
+    if (c.hybride) return "9";
+    const h = (c.heures && c.heures.J) || HEURES_DEFAUT.J;
+    return dureeH(h) >= 11.5 ? "12" : "9";
+  }
+  const anneesEntre = (a, b) => (jourUTC(b) - jourUTC(a)) / 365.25;
+  function heuresAbsence(iso) { // heures du quart remplacé (rotation prévue ou heures saisies)
+    const q = quartDu(iso, hr);
+    const h = heuresJour(["J", "S", "N"].includes(q.prevu) ? q.prevu : "X", iso, hr);
+    return h ? dureeH(h) : 0;
+  }
+  function banquesSQ() {
+    const paie = etat.paie, b = reglagesBanques(), type = typeHoraireSQ(), auj = aujourdhuiISO();
+    const an = +auj.slice(0, 4), mo = +auj.slice(5, 7);
+    const fDebut = `${mo >= 4 ? an : an - 1}-04-01`, fFin = `${mo >= 4 ? an + 1 : an}-03-31`;
+    const cDebut = `${an}-01-01`, cFin = `${an}-12-31`;
+    const jours = (a, z, f) => { for (let n = jourUTC(a); n <= jourUTC(z); n++) f(isoDe(n)); };
+    // Vacances
+    const ansAvril = anneesEntre(paie.date_entree, fDebut);
+    let droitVac;
+    if (paie.date_entree >= fDebut) droitVac = 0;
+    else if (ansAvril < 1) droitVac = Math.round(Math.min(1, (jourUTC(fDebut) - jourUTC(paie.date_entree)) / 364) * (type === "12" ? 156 : 144));
+    else droitVac = ((type === "12" ? VAC_12 : VAC_9).find(([a]) => ansAvril >= a) || [0, 0])[1];
+    const vac = { debut: fDebut, fin: fFin, droit: droitVac, report: Math.min(36, +b.vacReport || 0), pris: 0, prevus: 0, jours: [] };
+    jours(fDebut, fFin, (iso) => { const q = quartDu(iso, hr); if (q.code === "V") { const h = heuresAbsence(iso); if (iso <= auj) vac.pris += h; else vac.prevus += h; vac.jours.push({ iso, h, prevu: q.prevu }); } });
+    vac.total = vac.droit + vac.report;
+    if (b.vacSolde && b.vacSolde.date >= fDebut && b.vacSolde.date <= fFin) {
+      let apres = 0, apresFutur = 0; vac.jours.forEach((j) => { if (j.iso > b.vacSolde.date) { if (j.iso <= auj) apres += j.h; else apresFutur += j.h; } });
+      vac.depart = b.vacSolde; vac.solde = +b.vacSolde.h - apres; vac.soldeFin = vac.solde - apresFutur;
+    } else { vac.solde = vac.total - vac.pris; vac.soldeFin = vac.solde - vac.prevus; }
+    // Fériés (année civile)
+    let droitFer = type === "12" ? 120 : 81;
+    if (paie.date_entree > cDebut) droitFer = paie.date_entree > cFin ? 0 : Math.round((jourUTC(cFin) - jourUTC(paie.date_entree)) / 364 * (type === "12" ? 108 : 72));
+    const special = auj >= "2027-04-01" ? (type === "12" ? 12 : 9) : 0;
+    const fer = { debut: cDebut, fin: cFin, droit: droitFer, special, report: Math.min(12, +b.ferReport || 0), pris: 0, prevus: 0, jours: [] };
+    jours(cDebut, cFin, (iso) => { const q = quartDu(iso, hr); if (q.code === "H") { const h = heuresAbsence(iso); if (iso <= auj) fer.pris += h; else fer.prevus += h; fer.jours.push({ iso, h }); } });
+    fer.total = fer.droit + fer.report;
+    if (b.ferSolde && b.ferSolde.date >= cDebut && b.ferSolde.date <= cFin) {
+      let apres = 0, apresFutur = 0; fer.jours.forEach((j) => { if (j.iso > b.ferSolde.date) { if (j.iso <= auj) apres += j.h; else apresFutur += j.h; } });
+      fer.depart = b.ferSolde; fer.solde = +b.ferSolde.h - apres; fer.soldeFin = fer.solde - apresFutur;
+    } else { fer.solde = fer.total - fer.pris; fer.soldeFin = fer.solde - fer.prevus; }
+    // Maladie (année financière) et avis de certificat médical (annexe C, art. 2)
+    const mal = { jours: 0, heures: 0, avis: [] };
+    const estM = (iso) => ["M", "L"].includes(quartDu(iso, hr).code);
+    const codeDe = (iso) => quartDu(iso, hr).code;
+    let adjacentsHebdo = 0;
+    const seuil = type === "12" ? 4 : 3;
+    jours(fDebut, fFin, (iso) => {
+      if (!estM(iso)) return;
+      mal.jours++; mal.heures += heuresAbsence(iso);
+      if (estM(isoPlus(iso, -1))) return; // début d'une période de maladie seulement
+      let fin = iso, n = 1; while (estM(isoPlus(fin, 1))) { fin = isoPlus(fin, 1); n++; }
+      const avant = codeDe(isoPlus(iso, -1)), apres = codeDe(isoPlus(fin, 1));
+      const periode = n > 1 ? `du ${dateCourte(iso)} au ${dateCourte(fin)}` : `le ${dateCourte(iso)}`;
+      if (["V", "H"].includes(avant) || ["V", "H"].includes(apres)) mal.avis.push({ iso, texte: `Maladie ${periode}, collée à des vacances ou à un férié : certificat médical requis (2.06).`, fort: true });
+      else if (avant === "C" || apres === "C") {
+        adjacentsHebdo++;
+        if (n >= seuil) mal.avis.push({ iso, texte: `Maladie ${periode} (${n} jours) collée à un congé : certificat médical requis dès le ${seuil}ᵉ jour (2.07).`, fort: true });
+        else if (adjacentsHebdo >= seuil) mal.avis.push({ iso, texte: `Maladie ${periode} : ${adjacentsHebdo}ᵉ fois cette année collée à un congé hebdomadaire, certificat médical requis (2.07).`, fort: true });
+      }
+      if (n > 3 && !mal.avis.some((a) => a.iso === iso)) mal.avis.push({ iso, texte: `Maladie ${periode} (${n} jours) : certificat médical exigible sur demande (2.04 a).` });
+      if (n >= 36) mal.avis.push({ iso, texte: `Absence de ${n} jours : à partir du 36ᵉ jour, votre régime de rotation change (annexe C-1).` });
+    });
+    return { type, vac, fer, mal, b, fDebut, fFin };
+  }
+  function barreBanque(utilise, total) {
+    const p = total > 0 ? Math.max(0, Math.min(100, utilise / total * 100)) : 0;
+    return `<span class="banque-barre"><i style="width:${p.toFixed(1)}%"></i></span>`;
+  }
+  function rendreBanquesStats() {
+    const el = $("#stats-contenu");
+    $("#stats-periode").textContent = "Mes banques";
+    if (!etat.paie || !etat.paie.date_entree) {
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer vos banques, indiquez d'abord votre date d'entrée dans <b>Mon compte › Ma rémunération</b>.</p><button type="button" class="btn-principal" id="banq-aller">Configurer</button></div>`;
+      $("#banq-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      return;
+    }
+    const B = banquesSQ(), { vac, fer, mal, b } = B;
+    const h = (n) => fmtH(Math.max(0, n)) + (n < 0 ? " (dépassé)" : "");
+    const dc = (iso) => dateCourte(iso, true);
+    el.innerHTML = `
+      <p class="aide">Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
+      <section class="banque">
+        <h4>Vacances <small>${esc(dc(vac.debut))} – ${esc(dc(vac.fin))}</small></h4>
+        <div class="banque-chiffre"><b>${h(vac.solde)}</b><span>${vac.depart ? `solde selon votre talon du ${esc(dc(vac.depart.date))}` : "restantes aujourd'hui"}</span></div>
+        ${barreBanque(vac.depart ? (+vac.depart.h - vac.solde) : vac.pris, vac.depart ? +vac.depart.h : vac.total)}
+        <dl class="vt-detail">
+          ${vac.depart ? `<dt>Solde au ${esc(dc(vac.depart.date))} (talon)</dt><dd>${fmtH(+vac.depart.h)}</dd>` : `<dt>Droit de l'année (23.03${B.type === "12" ? ", annexe I 6.3" : ""})</dt><dd>${fmtH(vac.droit)}</dd>${vac.report ? `<dt>Reportées de l'an dernier (23.13)</dt><dd>${fmtH(vac.report)}</dd>` : ""}`}
+          <dt>Prises</dt><dd>${fmtH(vac.pris)}</dd>
+          <dt>Prévues à l'horaire</dt><dd>${fmtH(vac.prevus)}</dd>
+          <dt class="total">Restantes au 31 mars</dt><dd class="total">${h(vac.soldeFin)}</dd>
+        </dl>
+        ${vac.soldeFin > 36 && +vac.fin.slice(0, 4) === +aujourdhuiISO().slice(0, 4) && aujourdhuiISO() >= vac.fin.slice(0, 4) + "-01-15" ? `<p class="banque-avis">Au plus 36 h peuvent être reportées après le 31 mars (23.13). Planifiez le reste avant.</p>` : ""}
+      </section>
+      <section class="banque">
+        <h4>Congés fériés <small>année ${esc(fer.debut.slice(0, 4))}</small></h4>
+        <div class="banque-chiffre"><b>${h(fer.solde)}</b><span>${fer.depart ? `solde selon votre talon du ${esc(dc(fer.depart.date))}` : "restantes aujourd'hui"}</span></div>
+        ${barreBanque(fer.depart ? (+fer.depart.h - fer.solde) : fer.pris, fer.depart ? +fer.depart.h : fer.total)}
+        <dl class="vt-detail">
+          ${fer.depart ? `<dt>Solde au ${esc(dc(fer.depart.date))} (talon)</dt><dd>${fmtH(+fer.depart.h)}</dd>` : `<dt>Droit de l'année (23.17${B.type === "12" ? ", annexe I 7.1" : ""})</dt><dd>${fmtH(fer.droit)}</dd>${fer.report ? `<dt>Reportées (23.17 c)</dt><dd>${fmtH(fer.report)}</dd>` : ""}`}
+          <dt>Pris</dt><dd>${fmtH(fer.pris)}</dd>
+          <dt>Prévus à l'horaire</dt><dd>${fmtH(fer.prevus)}</dd>
+          <dt class="total">Restants au 31 décembre</dt><dd class="total">${h(fer.soldeFin)}</dd>
+        </dl>
+        ${fer.special ? `<p class="aide">Congé spécial de ${fer.special} h en plus (23.17 d), à convenir avec la Sûreté.</p>` : `<p class="aide">À partir du 1ᵉʳ avril 2027 : congé spécial de ${B.type === "12" ? 12 : 9} h de plus par année (23.17 d).</p>`}
+        ${fer.soldeFin > 12 ? `<p class="banque-avis">Au 31 décembre, au plus 12 h peuvent être reportées ou payées (23.17 c). Il vous en resterait ${fmtH(fer.soldeFin)}.</p>` : ""}
+      </section>
+      <section class="banque">
+        <h4>Maladie <small>${esc(dc(B.fDebut))} – ${esc(dc(B.fFin))}</small></h4>
+        <div class="banque-chiffre"><b>${mal.jours} jour${mal.jours > 1 ? "s" : ""}</b><span>${fmtH(mal.heures)} · payées à 100 % par la banque collective</span></div>
+        <p class="aide">À la SQ, la maladie est payée par la banque collective (annexe C) : aucun solde personnel ne diminue. Avisez au moins 1 heure avant votre quart (2.09). Une déclaration écrite suffit jusqu'à 3 jours (2.03).</p>
+        ${mal.avis.length ? `<ul class="banque-avis-liste">${mal.avis.map((a) => `<li class="${a.fort ? "fort" : ""}">${esc(a.texte)}</li>`).join("")}</ul>` : `<p class="aide">Aucun certificat médical à prévoir selon votre horaire.</p>`}
+      </section>
+      <section class="banque">
+        <h4>Banques de temps supplémentaire</h4>
+        <dl class="vt-detail">
+          <dt>Banque régulière (max. 189 h, 12.11)</dt><dd>${b.ts189 ? fmtH(+b.ts189.h) : "—"}</dd>
+          <dt>Banque de fin de carrière (max. 1 040 h, 12.12)</dt><dd>${b.ts1040 ? fmtH(+b.ts1040.h) : "—"}</dd>
+        </dl>
+        ${b.ts189 ? barreBanque(+b.ts189.h, 189) : ""}
+        <p class="aide">Chaque heure de temps supplémentaire mise en banque vaut 1 h 30 (ou 2 h) (12.11). La banque de 1 040 h est offerte au maximum de l'échelle (12.12).</p>
+      </section>
+      <details class="paie-reglages"${b.vacSolde || b.ferSolde ? "" : " open"}><summary>Mes soldes (talon de paie)</summary>
+        <p class="aide">Pour un compte exact, inscrivez les soldes de votre talon et leur date. L'app soustrait ensuite les V et les H de votre horaire après cette date.</p>
+        <div class="paie-champs">
+          <label class="large"><span>Type d'horaire</span><select data-banq="horaire">
+            <option value="auto"${b.horaire === "auto" ? " selected" : ""}>Détecter selon ma rotation</option>
+            <option value="9"${b.horaire === "9" ? " selected" : ""}>9 heures ou hybride</option>
+            <option value="12"${b.horaire === "12" ? " selected" : ""}>12 heures (annexe I)</option></select></label>
+          <label><span>Vacances : solde (h)</span><input type="number" inputmode="decimal" min="0" max="400" step="0.25" data-banq="vacSoldeH" value="${b.vacSolde ? b.vacSolde.h : ""}"></label>
+          <label><span>en date du</span><input type="date" data-banq="vacSoldeD" value="${b.vacSolde ? b.vacSolde.date : ""}"></label>
+          <label><span>Fériés : solde (h)</span><input type="number" inputmode="decimal" min="0" max="200" step="0.25" data-banq="ferSoldeH" value="${b.ferSolde ? b.ferSolde.h : ""}"></label>
+          <label><span>en date du</span><input type="date" data-banq="ferSoldeD" value="${b.ferSolde ? b.ferSolde.date : ""}"></label>
+          <label><span>Vacances reportées (max. 36 h)</span><input type="number" inputmode="decimal" min="0" max="36" step="0.25" data-banq="vacReport" value="${b.vacReport || ""}"></label>
+          <label><span>Fériés reportés (max. 12 h)</span><input type="number" inputmode="decimal" min="0" max="12" step="0.25" data-banq="ferReport" value="${b.ferReport || ""}"></label>
+          <label><span>Banque TS 189 h (solde)</span><input type="number" inputmode="decimal" min="0" max="189" step="0.25" data-banq="ts189" value="${b.ts189 ? b.ts189.h : ""}"></label>
+          <label><span>Banque 1 040 h (solde)</span><input type="number" inputmode="decimal" min="0" max="1040" step="0.25" data-banq="ts1040" value="${b.ts1040 ? b.ts1040.h : ""}"></label>
+        </div>
+        <button type="button" class="btn-secondaire" id="banq-ok">Enregistrer mes soldes</button>
+      </details>
+      <p class="aide">Estimation selon le contrat de travail APPQ 2022-2028. Le service continu est compté à partir de votre date d'entrée. Votre talon de paie et votre gestionnaire font foi.</p>`;
+    $("#banq-ok").addEventListener("click", async () => {
+      const v = (k) => { const i = $(`[data-banq='${k}']`, el); return i ? String(i.value).trim() : ""; };
+      const num = (k, max) => { const n = parseFloat(v(k).replace(",", ".")); return n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
+      const auj = aujourdhuiISO();
+      const solde = (hK, dK, max) => { const n = num(hK, max); return n === null || v(hK) === "" ? null : { h: n, date: v(dK) || auj }; };
+      const nouv = { horaire: v("horaire") || "auto", vacReport: num("vacReport", 36) || 0, ferReport: num("ferReport", 12) || 0,
+        vacSolde: solde("vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeH", "ferSoldeD", 200),
+        ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj } };
+      const { error } = await sb.from("paie_sq").update({ banques: nouv, maj_le: new Date().toISOString() }).eq("user_id", etat.profil.id);
+      if (error) return toast(traduireErreur(error));
+      etat.paie.banques = nouv; toast("Soldes enregistrés"); rendreStats();
+    });
   }
 
   // Valeur du temps supplémentaire : taux gardés sur cet appareil seulement
@@ -2446,6 +2623,7 @@
           <label><span>Assurances collectives ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="assurances" value="${r.assurances || ""}"></label>
           <label><span>Autres retenues ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-ret="autres" value="${r.autres || ""}"></label>
           <label class="large"><span>Période de travail payée</span><select data-ret="decalage">
+            <option value="11"${+r.decalage === 11 ? " selected" : ""}>Du lundi au dimanche (ex. 5 au 18 octobre pour la paie du 29)</option>
             <option value="12"${+r.decalage === 12 ? " selected" : ""}>Se termine le samedi, 12 jours avant la paie</option>
             <option value="5"${+r.decalage === 5 ? " selected" : ""}>Se termine le samedi précédant la paie</option>
             <option value="19"${+r.decalage === 19 ? " selected" : ""}>Se termine 19 jours avant la paie</option>
@@ -2466,9 +2644,12 @@
     const src = affichee();
     $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
     $("#stats-rapport").hidden = stats.mode !== "mois";
-    $("[data-stats='paie']").hidden = !(estSQ() && affichee() === hr);
+    $("[data-stats='paie']").hidden = $("[data-stats='banques']").hidden = !(estSQ() && affichee() === hr);
+    $(".stats-mode").classList.toggle("quatre", !$("[data-stats='paie']").hidden);
+    $(".hr-mois-tete", $("#stats-voile")).classList.toggle("sans-fleches", stats.mode === "banques");
     if (!src.config) { $("#stats-contenu").innerHTML = `<p class="vide">Configurez d'abord la rotation.</p>`; return; }
     if (stats.mode === "paie") { rendrePaieStats(); return; }
+    if (stats.mode === "banques") { rendreBanquesStats(); return; }
     if (stats.mode === "mois") {
       $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
       const r = calculerMois(stats.a, stats.m, src);
@@ -3506,7 +3687,7 @@ Format :
   }
   $("#hr-hybride").addEventListener("change", (e) => { hr.brouillon.hybride = e.target.checked; rendreBrouillon(); });
   $("#hr-modele").addEventListener("change", (e) => {
-    if (MODELES[e.target.value]) { hr.brouillon.cycle = MODELES[e.target.value].split(""); rendreBrouillon(); }
+    if (MODELES[e.target.value]) { hr.brouillon.cycle = MODELES[e.target.value].split(""); if (MODELES_HEURES[e.target.value]) hr.brouillon.heures = { ...MODELES_HEURES[e.target.value] }; rendreBrouillon(); }
     const m = e.target.value.startsWith("m:") && modelesAdmin.find((x) => "m:" + x.id === e.target.value);
     if (m) {
       hr.brouillon.cycle = [...m.cycle];
