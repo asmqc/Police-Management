@@ -3474,6 +3474,14 @@ Format :
     ["Délit de fuite", "accident"], ["Grand excès", "grand excès de vitesse"],
   ];
 
+  const RACCOURCIS_LOI = {
+    csr: RACCOURCIS,
+    criminel: [["Capacité affaiblie", "320.14"], ["Refus d'obtempérer", "320.15"], ["Délit de fuite", "320.16"], ["Conduite dangereuse", "320.13"],
+      ["Voies de fait", "265"], ["Menaces", "264.1"], ["Harcèlement", "264"], ["Vol", "334"], ["Méfait", "430"], ["Bris de condition", "145"],
+      ["Arrestation sans mandat", "495"], ["Entrave", "129"]],
+    cannabis: [["Possession", "8"], ["Distribution", "9"], ["Vente", "10"], ["Mineurs", "8"]],
+    drogues: [["Possession", "4"], ["Trafic", "5"], ["Production", "7"], ["Définitions", "2"]],
+  };
   // Lois et règlements offerts (textes publics, dans data/)
   const JUSTICE = "https://laws-lois.justice.gc.ca/fra/";
   const LOIS = {
@@ -3484,6 +3492,9 @@ Format :
     "petits-batiments": { nom: "Règlement sur les petits bâtiments", court: "RPB", ref: "DORS/2010-91", fichier: "lois/petits-batiments.json", lien: () => `${JUSTICE}reglements/DORS-2010-91/TexteComplet.html`, site: "Justice Canada" },
     competence: { nom: "Règlement sur la compétence des conducteurs d'embarcations de plaisance", court: "RCCEP", ref: "DORS/99-53", fichier: "lois/competence.json", lien: () => `${JUSTICE}reglements/DORS-99-53/TexteComplet.html`, site: "Justice Canada" },
     restrictions: { nom: "Règlement sur les restrictions visant l'utilisation des bâtiments", court: "RRVUB", ref: "DORS/2008-120", fichier: "lois/restrictions.json", lien: () => `${JUSTICE}reglements/DORS-2008-120/TexteComplet.html`, site: "Justice Canada" },
+    criminel: { nom: "Code criminel", court: "C.cr.", ref: "L.R.C. 1985, ch. C-46", fichier: "lois/criminel.json", lien: (n) => `${JUSTICE}lois/C-46/section-${n}.html`, site: "Justice Canada" },
+    cannabis: { nom: "Loi sur le cannabis", court: "LC", ref: "L.C. 2018, ch. 16", fichier: "lois/cannabis.json", lien: (n) => `${JUSTICE}lois/C-24.5/section-${n}.html`, site: "Justice Canada" },
+    drogues: { nom: "Loi réglementant certaines drogues et autres substances", court: "LRCDAS", ref: "L.C. 1996, ch. 19", fichier: "lois/drogues.json", lien: (n) => `${JUSTICE}lois/C-38.8/section-${n}.html`, site: "Justice Canada" },
     marine: { nom: "Loi de 2001 sur la marine marchande du Canada", court: "LMMC", ref: "L.C. 2001, ch. 26", fichier: "lois/marine.json", lien: () => `${JUSTICE}lois/c-10.15/TexteComplet.html`, site: "Justice Canada" },
   };
   etat.loi = (() => { try { const l = localStorage.getItem("pm-loi"); return LOIS[l] ? l : "csr"; } catch { return "csr"; } })();
@@ -3568,8 +3579,9 @@ Format :
     $("#loi-titre").textContent = loi.nom;
     $("#loi-ref").textContent = loi.ref;
     $("#csr-q").placeholder = etat.loi === "csr" ? "Article (ex. 328) ou mots-clés (ex. cellulaire)" : "Numéro d'article ou mots-clés";
-    $("#csr-raccourcis").hidden = etat.loi !== "csr";
-    $("#csr-raccourcis").innerHTML = RACCOURCIS.map(([l, q]) => `<button data-q="${esc(q)}">${esc(l)}</button>`).join("");
+    const raccourcis = RACCOURCIS_LOI[etat.loi] || [];
+    $("#csr-raccourcis").hidden = !raccourcis.length;
+    $("#csr-raccourcis").innerHTML = raccourcis.map(([l, q]) => `<button data-q="${esc(q)}">${esc(l)}</button>`).join("");
     $$("#csr-raccourcis button").forEach((b) => b.addEventListener("click", () => { $("#csr-q").value = b.dataset.q; chercherCsr(); }));
     $("#csr-etat").textContent = "Chargement du Code…";
     try {

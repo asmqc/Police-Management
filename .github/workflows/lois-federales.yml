@@ -1,0 +1,28 @@
+name: Lois fédérales (Code criminel, cannabis, drogues)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["outils/lois_federales.py", ".github/workflows/lois-federales.yml"]
+  schedule:
+    - cron: "41 6 * * 1"   # chaque lundi
+permissions:
+  contents: write
+concurrency: lois-federales
+jobs:
+  lois:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Télécharger et convertir
+        run: python outils/lois_federales.py data/lois
+      - name: Enregistrer
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/lois/criminel.json data/lois/cannabis.json data/lois/drogues.json 2>/dev/null || true
+          git commit -qm "Lois fédérales mises à jour [skip ci]" && git pull --rebase -q origin main && git push origin HEAD:main || echo "Aucun changement"
