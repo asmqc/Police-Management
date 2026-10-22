@@ -2096,3 +2096,9 @@ html[data-style="nuit"] .leaflet-overlay-pane { filter: grayscale(1) sepia(1) hu
 .ac-resultats small { color: var(--fg-doux); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ac-resultats .aide { margin: 4px 6px; }
 .ac-recherche svg { z-index: 1; }
+.ac-511-liste .ac-511-plus button { display: block; text-align: center; font-weight: 700; color: var(--marque); background: transparent; padding: 8px; }
+.ac-511 { grid-template-columns: minmax(0, 1fr); }
+.ac-511 > *, .ac-511-tete h3 { min-width: 0; }
+.ac-511-tete h3 { line-height: 1.25; }
+.ac-511-tete h3 small { display: block; font-size: .8rem; font-weight: 600; color: var(--fg-doux); }
+.ac-511-tete .btn-secondaire { flex: none; }

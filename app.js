@@ -555,7 +555,7 @@
   const NOUVEAUTES = [
     { date: "2026-10-22", titre: "Nouvelles lois, recherche et calendrier abonné", points: [
       "Lois : Code criminel, Loi sur le cannabis et Loi réglementant certaines drogues, avec raccourcis (capacité affaiblie, délit de fuite, voies de fait…).",
-      "Accueil : une recherche qui trouve un article, une municipalité ou une section, et les entraves Québec 511 autour de vous.",
+      "Accueil : une recherche qui trouve un article, une municipalité ou une section, et les entraves Québec 511 du territoire de votre unité, actualisées automatiquement.",
       "Horaire : calendrier abonné qui se met à jour tout seul dans le Calendrier de l'iPhone, Google Agenda ou Outlook.",
       "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
@@ -1417,38 +1417,128 @@
     if (g.type === "MultiPolygon") return g.coordinates.flat(2);
     return [];
   }
-  $("#ac-511-btn").addEventListener("click", () => {
-    const etatEl = $("#ac-511-etat"), liste = $("#ac-511-liste"), b = $("#ac-511-btn");
-    if (!navigator.geolocation) { etatEl.textContent = "La localisation n'est pas offerte sur cet appareil."; return; }
-    b.disabled = true; etatEl.textContent = "Localisation…";
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const ici = [pos.coords.longitude, pos.coords.latitude];
-      etatEl.textContent = "Recherche des entraves…";
-      const { data, error } = await sb.functions.invoke("trafic-511", { method: "GET" });
-      b.disabled = false; b.textContent = "Actualiser";
-      if (error || !data || !data.features) { etatEl.textContent = "Québec 511 ne répond pas pour le moment. Réessayez plus tard."; liste.hidden = true; return; }
-      const proches = data.features.map((f) => {
-        let min = Infinity, pt = null;
-        for (const c of pointsGeo(f.geometry)) { const d = kmEntre(ici, c); if (d < min) { min = d; pt = c; } }
-        return { p: f.properties || {}, km: min, pt };
-      }).filter((x) => x.pt && x.km <= 25).sort((a, b) => a.km - b.km).slice(0, 6);
-      etatEl.textContent = proches.length ? `${proches.length} entrave${proches.length > 1 ? "s" : ""} à moins de 25 km · mis à jour à ${new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}` : "Aucune entrave signalée à moins de 25 km.";
-      liste.hidden = !proches.length;
-      liste.innerHTML = proches.map((x, i) => `<li><button type="button" data-511="${i}">
+  // Accueil : entraves Québec 511 sur le territoire de l'unité du membre, actualisées automatiquement.
+  // Aucune localisation : le territoire vient du profil (poste SQ, poste autoroutier ou corps municipal/autochtone).
+  const t511 = { terr: null, cle: "", minuteur: null, enCours: false, tout: false, liste: [] };
+  const ACTU_511_MS = 3 * 60 * 1000;
+  function distSegmentKm(p, a, b) {
+    // Distance approximative (projection locale) entre un point et un segment, en km
+    const kx = 111.32 * Math.cos(p[1] * Math.PI / 180), ky = 110.57;
+    const ax = (a[0] - p[0]) * kx, ay = (a[1] - p[1]) * ky, bx = (b[0] - p[0]) * kx, by = (b[1] - p[1]) * ky;
+    const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / l2)) : 0;
+    return Math.hypot(ax + t * dx, ay + t * dy);
+  }
+  function lignesDe(g) {
+    if (!g) return [];
+    if (g.type === "LineString") return [g.coordinates];
+    if (g.type === "MultiLineString") return g.coordinates;
+    return [];
+  }
+  async function territoire511() {
+    const p = etat.profil || {};
+    const corps = (p.corps_police || "").trim(), unite = (p.unite || "").trim();
+    const cle = corps + "|" + unite;
+    if (t511.cle === cle && t511.terr !== null) return t511.terr;
+    let terr = false;
+    if (/s[ûu]ret[ée] du qu[ée]bec/i.test(corps) && unite) {
+      const bureaux = await charger("sq_bureaux.geojson");
+      const f = bureaux.features.find((x) => norm(nomBureau(x.properties.NOM_ENT || "")) === norm(unite) || norm(x.properties.NOM_UNIT || "") === norm(unite))
+        || bureaux.features.find((x) => norm(nomBureau(x.properties.NOM_ENT || "")).includes(norm(unite)));
+      if (f) {
+        const pp = f.properties, auto = pp.CAT_UNIT === "Poste autoroutier";
+        const fc = await charger(auto ? "sq_autoroutier.geojson" : "sq_postes.geojson");
+        const fs = fc.features.filter((x) => x.properties.NOM_UNIT === pp.NOM_UNIT);
+        if (fs.length) terr = { nom: nomBureau(pp.NOM_ENT), auto, fs };
+      }
+    } else if (corps) {
+      if (!etat.corps) await chargerCorps();
+      const c = (etat.corps || []).find((x) => norm(x.nom) === norm(corps));
+      if (c && (c.municipalites || []).length) {
+        const toutes = await charger("municipalites_hors_sq.geojson");
+        const fs = toutes.features.filter((x) => c._munis.has(norm(x.properties.nom)));
+        if (fs.length) terr = { nom: c.nom, auto: false, fs };
+      }
+    }
+    t511.cle = cle; t511.terr = terr;
+    return terr;
+  }
+  function dansTerritoire(f, terr) {
+    const pts = pointsGeo(f.geometry);
+    if (!pts.length) return false;
+    if (terr.auto) {
+      // Poste autoroutier : entrave à moins de 1 km d'un tronçon patrouillé
+      return pts.some((pt) => terr.fs.some((t) => lignesDe(t.geometry).some((l) => {
+        for (let i = 1; i < l.length; i++) if (distSegmentKm(pt, l[i - 1], l[i]) <= 1) return true;
+        return false;
+      })));
+    }
+    return pts.some((pt) => terr.fs.some((t) => {
+      const bb = bbox(t.geometry);
+      return pt[0] >= bb[0] && pt[0] <= bb[2] && pt[1] >= bb[1] && pt[1] <= bb[3] && dansGeometrie(pt[0], pt[1], t.geometry);
+    }));
+  }
+  function rendre511() {
+    const liste = $("#ac-511-liste"), max = 8;
+    const vus = t511.tout ? t511.liste : t511.liste.slice(0, max);
+    liste.hidden = !vus.length;
+    liste.innerHTML = vus.map((x, i) => `<li><button type="button" data-511="${i}">
         <span class="genre-511 ${esc(x.p.genre || "")}">${x.p.genre === "chantier" ? "Travaux" : "Avertissement"}${x.p.route ? " · route " + esc(x.p.route) : ""}</span>
         <b>${esc(x.p.titre || x.p.travaux || "Entrave")}</b>
-        <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).join(" · "))}</small>
-        <i>${x.km < 1 ? "< 1" : Math.round(x.km)} km</i></button></li>`).join("");
-      $$("[data-511]", liste).forEach((btn) => btn.addEventListener("click", () => {
-        const x = proches[+btn.dataset["511"]];
-        afficherVue("carte");
-        setTimeout(() => {
-          const c = $("#c-511"); if (c && !c.checked) { c.checked = true; c.dispatchEvent(new Event("change")); }
-          if (etat.placer) etat.placer(x.pt[1], x.pt[0], x.p.titre || "Entrave Québec 511", 14);
-        }, 400);
-      }));
-    }, () => { b.disabled = false; etatEl.textContent = "Position refusée ou indisponible. Autorisez la localisation pour ce site."; }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 120000 });
+        <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).join(" · "))}</small></button></li>`).join("")
+      + (t511.liste.length > max ? `<li class="ac-511-plus"><button type="button" id="ac-511-plus">${t511.tout ? "Afficher moins" : `Voir les ${t511.liste.length} entraves`}</button></li>` : "");
+    $$("[data-511]", liste).forEach((btn) => btn.addEventListener("click", () => {
+      const x = t511.liste[+btn.dataset["511"]];
+      afficherVue("carte");
+      setTimeout(() => {
+        const c = $("#c-511"); if (c && !c.checked) { c.checked = true; c.dispatchEvent(new Event("change")); }
+        if (etat.placer) etat.placer(x.pt[1], x.pt[0], x.p.titre || "Entrave Québec 511", 14);
+      }, 400);
+    }));
+    const plus = $("#ac-511-plus");
+    if (plus) plus.addEventListener("click", () => { t511.tout = !t511.tout; rendre511(); });
+  }
+  async function charger511(silencieux) {
+    if (t511.enCours) return;
+    const etatEl = $("#ac-511-etat"), b = $("#ac-511-btn");
+    t511.enCours = true; b.disabled = true;
+    if (!silencieux || !t511.liste.length) etatEl.textContent = "Chargement des entraves…";
+    try {
+      const terr = await territoire511();
+      if (!terr) {
+        $("#ac-511-titre").textContent = "Circulation · Québec 511";
+        etatEl.textContent = "Territoire de votre unité introuvable. Indiquez votre corps de police et votre poste dans Mon compte pour voir les entraves de votre secteur.";
+        $("#ac-511-liste").hidden = true; return;
+      }
+      $("#ac-511-titre").innerHTML = `Circulation · Québec 511<small>${esc(terr.nom)}</small>`;
+      const { data, error } = await sb.functions.invoke("trafic-511", { method: "GET" });
+      if (error || !data || !data.features) {
+        etatEl.textContent = t511.liste.length ? "Québec 511 ne répond pas. Nouvel essai dans quelques minutes." : "Québec 511 ne répond pas pour le moment. Nouvel essai dans quelques minutes.";
+        return;
+      }
+      const rang = (x) => (x.p.genre === "chantier" ? 1 : 0);
+      t511.liste = data.features.filter((f) => dansTerritoire(f, terr)).map((f) => ({ p: f.properties || {}, pt: pointsGeo(f.geometry)[0] }))
+        .sort((a, c) => rang(a) - rang(c) || String(a.p.route || "").localeCompare(String(c.p.route || ""), "fr", { numeric: true }));
+      const n = t511.liste.length, heure = new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" });
+      etatEl.textContent = n ? `${n} entrave${n > 1 ? "s" : ""} sur votre territoire · à jour à ${heure}, actualisé automatiquement` : `Aucune entrave signalée sur votre territoire · vérifié à ${heure}`;
+      rendre511();
+    } catch (e) {
+      console.warn(e);
+      etatEl.textContent = "Impossible de charger les entraves pour le moment.";
+    } finally { t511.enCours = false; b.disabled = false; }
+  }
+  function demarrer511() {
+    charger511(false);
+    clearInterval(t511.minuteur);
+    t511.minuteur = setInterval(() => {
+      if (etat.vue !== "accueil" || $("#ecran-app").hidden) { clearInterval(t511.minuteur); t511.minuteur = null; return; }
+      if (document.visibilityState === "visible") charger511(true);
+    }, ACTU_511_MS);
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && etat.vue === "accueil" && t511.minuteur) charger511(true);
   });
+  $("#ac-511-btn").addEventListener("click", () => charger511(false));
 
   async function initAccueil() {
     const p = etat.profil;
@@ -1458,6 +1548,7 @@
     $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
     $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
+    demarrer511();
     // Quart du jour
     const carte = $("#ac-quart");
     try {

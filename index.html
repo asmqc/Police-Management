@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610221316">
+  <link rel="stylesheet" href="styles.css?v=202610221326">
 </head>
 <body>
   <!-- Chargement -->
@@ -433,9 +433,9 @@
       <section class="panneau ac-511" aria-labelledby="ac-511-titre">
         <div class="ac-511-tete">
           <h3 id="ac-511-titre">Circulation · Québec 511</h3>
-          <button type="button" class="btn-secondaire petit" id="ac-511-btn">Autour de moi</button>
+          <button type="button" class="btn-secondaire petit" id="ac-511-btn" aria-label="Actualiser les entraves">Actualiser</button>
         </div>
-        <p class="aide" id="ac-511-etat">Entraves et travaux routiers à moins de 25 km de vous. Votre position reste sur votre appareil.</p>
+        <p class="aide" id="ac-511-etat">Entraves et travaux routiers sur le territoire de votre unité.</p>
         <ul class="ac-511-liste" id="ac-511-liste" hidden></ul>
       </section>
 
@@ -1504,9 +1504,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610221316"></script>
+  <script src="config.js?v=202610221326"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610221316"></script>
+  <script src="app.js?v=202610221326"></script>
 </body>
 </html>
