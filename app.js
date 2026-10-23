@@ -562,6 +562,7 @@
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
       "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
       "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
+      "Bandeau d'état : si une panne ou une mise à jour des serveurs est en cours, un avis s'affiche en haut de l'app.",
       "Temps supplémentaire payé ou compensé, et nouveau code B · Banque de temps pour les congés pris à même votre banque.",
       "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
@@ -3476,6 +3477,7 @@ Format :
     $$("[data-adm-onglet]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     $$("[data-adm-panneau]").forEach((p) => (p.hidden = p.dataset.admPanneau !== ongletAdmin));
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
+    if (ongletAdmin === "outils") { initAdminEtat(); chargerEtatService(); }
   }));
 
   async function rendreMessagerieAdmin() {
@@ -5545,6 +5547,98 @@ Format :
     const donnees = { title: "Police Management", text: "L'outil de poche des policiers du Québec : horaire, lois, vitesses, carte et Québec 511. Gratuit.", url: "https://policemanagement.ca" };
     try { if (navigator.share) { await navigator.share(donnees); return; } } catch { return; }
     copier(donnees.url); toast("Lien copié");
+  });
+
+  /* ---------------- État du service : panne ou mise à jour des serveurs (publié par l'administrateur) ---------------- */
+  const etatSvc = { mode: "normal", donnees: null, minuteur: null, passe: false };
+  const TEXTES_ETAT = {
+    panne: { titre: "Panne en cours", defaut: "Certaines fonctions peuvent ne pas répondre. Nous travaillons à régler le problème." },
+    maintenance: { titre: "Mise à jour des serveurs en cours", defaut: "L'app peut être lente ou indisponible quelques minutes." },
+    injoignable: { titre: "Serveurs injoignables", defaut: "Impossible de joindre les serveurs pour le moment. Vos données affichées restent sur votre appareil." },
+  };
+  async function chargerEtatService() {
+    let d = null, mode = "normal";
+    try {
+      const { data, error } = await sb.from("etat_service").select("mode, message, fin_prevue, bloquer, depuis").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      d = data; mode = (data && data.mode) || "normal";
+    } catch (e) {
+      mode = navigator.onLine === false ? "normal" : "injoignable"; // hors ligne : ce n'est pas une panne du service
+    }
+    etatSvc.mode = mode; etatSvc.donnees = d;
+    rendreEtatService();
+  }
+  function rendreEtatService() {
+    const m = etatSvc.mode, d = etatSvc.donnees || {}, t = TEXTES_ETAT[m];
+    const cle = `${m}|${d.depuis || ""}`;
+    let masque = false; try { masque = sessionStorage.getItem("pm-etat-masque") === cle; } catch { /* facultatif */ }
+    const bandeau = $("#etat-bandeau");
+    bandeau.hidden = !t || masque;
+    bandeau.className = "etat-bandeau " + m;
+    if (t) {
+      $("#etat-titre").textContent = t.titre;
+      const fin = d.fin_prevue ? ` Retour prévu : ${new Date(d.fin_prevue).toLocaleString("fr-CA", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.` : "";
+      $("#etat-detail").textContent = (d.message || t.defaut) + fin;
+    }
+    // Écran bloquant (membres seulement, pas l'administrateur qui choisit de continuer)
+    const bloque = !!t && m !== "injoignable" && !!d.bloquer && !etatSvc.passe;
+    const admin = !!(etat.profil && etat.profil.role === "admin");
+    $("#etat-voile").hidden = !bloque;
+    if (bloque) {
+      $("#etat-voile-titre").textContent = t.titre;
+      $("#etat-voile-msg").textContent = d.message || t.defaut;
+      $("#etat-voile-fin").textContent = d.fin_prevue ? `Retour prévu : ${new Date(d.fin_prevue).toLocaleString("fr-CA", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}` : "Revenez dans quelques minutes.";
+      $("#etat-admin-passer").hidden = !admin;
+    }
+    document.documentElement.classList.toggle("etat-actif", !!t && !masque);
+    majAdminEtat();
+  }
+  $("#etat-fermer").addEventListener("click", () => {
+    try { sessionStorage.setItem("pm-etat-masque", `${etatSvc.mode}|${(etatSvc.donnees || {}).depuis || ""}`); } catch { /* facultatif */ }
+    rendreEtatService();
+  });
+  $("#etat-reessayer").addEventListener("click", () => { $("#etat-reessayer").disabled = true; chargerEtatService().finally(() => ($("#etat-reessayer").disabled = false)); });
+  $("#etat-admin-passer").addEventListener("click", () => { etatSvc.passe = true; rendreEtatService(); });
+  function surveillerEtatService() {
+    chargerEtatService();
+    clearInterval(etatSvc.minuteur);
+    etatSvc.minuteur = setInterval(() => { if (document.visibilityState === "visible") chargerEtatService(); }, 60000);
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") chargerEtatService(); });
+  window.addEventListener("online", chargerEtatService);
+  surveillerEtatService();
+  // Administration : publier l'état
+  let modeAdminEtat = "normal";
+  function majAdminEtat() {
+    const el = $("#adm-etat-actuel");
+    if (!el) return;
+    const d = etatSvc.donnees;
+    el.textContent = d ? `En ce moment : ${d.mode === "normal" ? "normal" : TEXTES_ETAT[d.mode].titre.toLowerCase()}${d.mode !== "normal" ? ` depuis ${new Date(d.depuis).toLocaleString("fr-CA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}${d.bloquer ? " · accès bloqué aux membres" : ""}.` : "";
+  }
+  function choisirModeAdmin(m) {
+    modeAdminEtat = m;
+    $$("[data-etat-mode]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.etatMode === m)));
+    ["#adm-etat-msg", "#adm-etat-fin", "#adm-etat-bloquer"].forEach((q) => ($(q).disabled = m === "normal"));
+  }
+  $$("[data-etat-mode]").forEach((b) => b.addEventListener("click", () => choisirModeAdmin(b.dataset.etatMode)));
+  function initAdminEtat() {
+    const d = etatSvc.donnees || {};
+    choisirModeAdmin(d.mode || "normal");
+    $("#adm-etat-msg").value = d.message || "";
+    $("#adm-etat-bloquer").checked = !!d.bloquer;
+    if (d.fin_prevue) { const f = new Date(d.fin_prevue); f.setMinutes(f.getMinutes() - f.getTimezoneOffset()); $("#adm-etat-fin").value = f.toISOString().slice(0, 16); } else $("#adm-etat-fin").value = "";
+    majAdminEtat();
+  }
+  $("#adm-etat-ok").addEventListener("click", async () => {
+    const b = $("#adm-etat-ok"); b.disabled = true;
+    const fin = $("#adm-etat-fin").value ? new Date($("#adm-etat-fin").value).toISOString() : null;
+    const { data, error } = await sb.rpc("admin_etat_service", { p_mode: modeAdminEtat, p_message: $("#adm-etat-msg").value, p_fin: fin, p_bloquer: $("#adm-etat-bloquer").checked });
+    b.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    etatSvc.mode = data.mode; etatSvc.donnees = data; etatSvc.passe = true;
+    try { sessionStorage.removeItem("pm-etat-masque"); } catch { /* facultatif */ }
+    rendreEtatService();
+    toast(data.mode === "normal" ? "Service revenu à la normale" : "État publié à tous les membres");
   });
 
   /* ---------------- Administration ---------------- */
