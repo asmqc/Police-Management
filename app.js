@@ -460,6 +460,7 @@
       return;
     }
     await verifierCourriel(); // lien du courriel ouvert : compte marqué confirmé, même en attente d'approbation
+    if (typeof rendreEtatService === "function") rendreEtatService(); // panne : seul l'administrateur garde l'accès
     const p = etat.profil;
     if (!p || p.statut !== "approuve") {
       const st = p ? p.statut : "en_attente";
@@ -5550,96 +5551,142 @@ Format :
     copier(donnees.url); toast("Lien copié");
   });
 
-  /* ---------------- État du service : panne ou mise à jour des serveurs (publié par l'administrateur) ---------------- */
-  const etatSvc = { mode: "normal", donnees: null, minuteur: null, passe: false };
+  /* ---------------- État du service : panne, mise à jour ou panne annoncée (publié par l'administrateur) ----------------
+     Pendant une panne ou une mise à jour, seul l'administrateur a accès à l'app. Une panne annoncée affiche un avis,
+     puis bloque l'app automatiquement de l'heure de début à l'heure de fin. */
+  const etatSvc = { donnees: null, injoignable: false, minuteur: null, passeConnexion: false };
   const TEXTES_ETAT = {
-    panne: { titre: "Panne en cours", defaut: "Certaines fonctions peuvent ne pas répondre. Nous travaillons à régler le problème." },
-    maintenance: { titre: "Mise à jour des serveurs en cours", defaut: "L'app peut être lente ou indisponible quelques minutes." },
-    injoignable: { titre: "Serveurs injoignables", defaut: "Impossible de joindre les serveurs pour le moment. Vos données affichées restent sur votre appareil." },
+    panne: { titre: "Panne en cours", defaut: "Le service est interrompu. Nous travaillons à régler le problème." },
+    maintenance: { titre: "Mise à jour des serveurs en cours", defaut: "Le service est interrompu le temps de la mise à jour." },
+    planifiee: { titre: "Interruption prévue en cours", defaut: "Le service est interrompu pour une intervention planifiée." },
+    annonce: { titre: "Panne de service prévue", defaut: "Le service sera interrompu pendant cette période. Planifiez en conséquence." },
+    injoignable: { titre: "Serveurs injoignables", defaut: "Impossible de joindre les serveurs pour le moment. Réessayez dans quelques minutes." },
   };
-  async function chargerEtatService() {
-    let d = null, mode = "normal";
-    try {
-      const { data, error } = await sb.from("etat_service").select("mode, message, fin_prevue, bloquer, depuis").eq("id", 1).maybeSingle();
-      if (error) throw error;
-      d = data; mode = (data && data.mode) || "normal";
-    } catch (e) {
-      mode = navigator.onLine === false ? "normal" : "injoignable"; // hors ligne : ce n'est pas une panne du service
+  const dateEtat = (iso, long) => new Date(iso).toLocaleString("fr-CA", { weekday: long ? "long" : "short", day: "numeric", month: long ? "long" : "short", hour: "2-digit", minute: "2-digit" });
+  function dansDelai(iso) {
+    const min = Math.round((new Date(iso) - Date.now()) / 60000);
+    if (min <= 0) return "d'un instant à l'autre";
+    if (min < 60) return `dans ${min} min`;
+    const h = Math.floor(min / 60), m = min % 60;
+    return h < 48 ? `dans ${h} h${m ? " " + String(m).padStart(2, "0") : ""}` : `dans ${Math.round(h / 24)} jours`;
+  }
+  function etatEffectif() {
+    if (etatSvc.injoignable) return { type: "injoignable", bloque: false };
+    const d = etatSvc.donnees;
+    if (!d || d.mode === "normal") return { type: "normal", bloque: false };
+    if (d.mode === "annonce") {
+      const maint = Date.now();
+      if (d.debut_prevu && maint < new Date(d.debut_prevu)) return { type: "annonce", bloque: false };
+      if (d.fin_prevue && maint < new Date(d.fin_prevue)) return { type: "planifiee", bloque: true };
+      return { type: "normal", bloque: false };
     }
-    etatSvc.mode = mode; etatSvc.donnees = d;
+    return { type: d.mode, bloque: true };
+  }
+  async function chargerEtatService() {
+    try {
+      const { data, error } = await sb.from("etat_service").select("mode, message, debut_prevu, fin_prevue, depuis").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      etatSvc.donnees = data; etatSvc.injoignable = false;
+    } catch (e) {
+      etatSvc.injoignable = navigator.onLine !== false; // hors ligne : ce n'est pas une panne du service
+    }
     rendreEtatService();
   }
   function rendreEtatService() {
-    const m = etatSvc.mode, d = etatSvc.donnees || {}, t = TEXTES_ETAT[m];
-    const cle = `${m}|${d.depuis || ""}`;
-    let masque = false; try { masque = sessionStorage.getItem("pm-etat-masque") === cle; } catch { /* facultatif */ }
-    const bandeau = $("#etat-bandeau");
-    bandeau.hidden = !t || masque;
-    bandeau.className = "etat-bandeau " + m;
-    if (t) {
-      $("#etat-titre").textContent = t.titre;
-      const fin = d.fin_prevue ? ` Retour prévu : ${new Date(d.fin_prevue).toLocaleString("fr-CA", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.` : "";
-      $("#etat-detail").textContent = (d.message || t.defaut) + fin;
-    }
-    // Écran bloquant (membres seulement, pas l'administrateur qui choisit de continuer)
-    const bloque = !!t && m !== "injoignable" && !!d.bloquer && !etatSvc.passe;
+    const e = etatEffectif(), d = etatSvc.donnees || {}, t = TEXTES_ETAT[e.type];
     const admin = !!(etat.profil && etat.profil.role === "admin");
-    $("#etat-voile").hidden = !bloque;
-    if (bloque) {
+    const cle = `${e.type}|${d.depuis || ""}`;
+    let masque = false; try { masque = sessionStorage.getItem("pm-etat-masque") === cle; } catch { /* facultatif */ }
+    // Bandeau : avis de panne prévue, état en cours (vu par l'admin), serveurs injoignables
+    const bandeau = $("#etat-bandeau");
+    const montrerBandeau = !!t && !masque && (!e.bloque || admin);
+    bandeau.hidden = !montrerBandeau;
+    bandeau.className = "etat-bandeau etat-m-" + (e.type === "planifiee" ? "maintenance" : e.type);
+    if (t) {
+      $("#etat-titre").textContent = t.titre + (e.bloque && admin ? " · accès réservé à l'admin" : "");
+      let detail = d.message || t.defaut;
+      if (e.type === "annonce") detail = `Du ${dateEtat(d.debut_prevu)} au ${dateEtat(d.fin_prevue)} (${dansDelai(d.debut_prevu)}). ` + (d.message || t.defaut);
+      else if (e.bloque && d.fin_prevue) detail += ` Fin prévue : ${dateEtat(d.fin_prevue)}.`;
+      $("#etat-detail").textContent = detail;
+    }
+    // Écran bloquant : tout le monde sauf l'administrateur
+    const nonConnecte = !etat.profil;
+    const bloquer = e.bloque && !admin && !(nonConnecte && etatSvc.passeConnexion);
+    $("#etat-voile").hidden = !bloquer;
+    if (bloquer) {
       $("#etat-voile-titre").textContent = t.titre;
       $("#etat-voile-msg").textContent = d.message || t.defaut;
-      $("#etat-voile-fin").textContent = d.fin_prevue ? `Retour prévu : ${new Date(d.fin_prevue).toLocaleString("fr-CA", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}` : "Revenez dans quelques minutes.";
-      $("#etat-admin-passer").hidden = !admin;
+      $("#etat-voile-fin").innerHTML = d.fin_prevue
+        ? `La panne devrait être terminée le <b>${esc(dateEtat(d.fin_prevue, true))}</b> (${esc(dansDelai(d.fin_prevue))}).`
+        : "Revenez dans quelques minutes.";
+      $("#etat-admin-passer").hidden = !nonConnecte;
     }
-    document.documentElement.classList.toggle("etat-actif", !!t && !masque);
+    document.documentElement.classList.toggle("etat-actif", montrerBandeau);
     majAdminEtat();
   }
   $("#etat-fermer").addEventListener("click", () => {
-    try { sessionStorage.setItem("pm-etat-masque", `${etatSvc.mode}|${(etatSvc.donnees || {}).depuis || ""}`); } catch { /* facultatif */ }
+    const e = etatEffectif();
+    try { sessionStorage.setItem("pm-etat-masque", `${e.type}|${(etatSvc.donnees || {}).depuis || ""}`); } catch { /* facultatif */ }
     rendreEtatService();
   });
   $("#etat-reessayer").addEventListener("click", () => { $("#etat-reessayer").disabled = true; chargerEtatService().finally(() => ($("#etat-reessayer").disabled = false)); });
-  $("#etat-admin-passer").addEventListener("click", () => { etatSvc.passe = true; rendreEtatService(); });
+  // Avant connexion : l'administrateur peut ouvrir l'écran de connexion; tout autre compte est bloqué une fois connecté
+  $("#etat-admin-passer").addEventListener("click", () => { etatSvc.passeConnexion = true; rendreEtatService(); if ($("#ecran-auth").hidden) ouvrirAuth("connexion"); });
   function surveillerEtatService() {
     chargerEtatService();
     clearInterval(etatSvc.minuteur);
-    etatSvc.minuteur = setInterval(() => { if (document.visibilityState === "visible") chargerEtatService(); }, 60000);
+    etatSvc.minuteur = setInterval(() => { if (document.visibilityState === "visible") chargerEtatService(); else rendreEtatService(); }, 60000);
   }
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") chargerEtatService(); });
   window.addEventListener("online", chargerEtatService);
   surveillerEtatService();
+
   // Administration : publier l'état
   let modeAdminEtat = "normal";
+  const valeurDateHeure = (iso) => { if (!iso) return ["", ""]; const f = new Date(iso); f.setMinutes(f.getMinutes() - f.getTimezoneOffset()); const x = f.toISOString(); return [x.slice(0, 10), x.slice(11, 16)]; };
+  const lireDateHeure = (dq, hq) => { const dd = $(dq).value, hh = $(hq).value; return dd ? new Date(`${dd}T${hh || "00:00"}`).toISOString() : null; };
   function majAdminEtat() {
     const el = $("#adm-etat-actuel");
     if (!el) return;
-    const d = etatSvc.donnees;
-    el.textContent = d ? `En ce moment : ${d.mode === "normal" ? "normal" : TEXTES_ETAT[d.mode].titre.toLowerCase()}${d.mode !== "normal" ? ` depuis ${new Date(d.depuis).toLocaleString("fr-CA", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}${d.bloquer ? " · accès bloqué aux membres" : ""}.` : "";
+    const d = etatSvc.donnees, e = etatEffectif();
+    if (!d) { el.textContent = ""; return; }
+    el.textContent = e.type === "normal" ? "En ce moment : service normal." :
+      e.type === "annonce" ? `En ce moment : panne annoncée du ${dateEtat(d.debut_prevu)} au ${dateEtat(d.fin_prevue)}. L'app sera bloquée automatiquement pendant cette période.` :
+      `En ce moment : ${TEXTES_ETAT[e.type].titre.toLowerCase()} depuis ${dateEtat(d.mode === "annonce" ? d.debut_prevu : d.depuis)}. Les membres n'ont pas accès à l'app.`;
   }
   function choisirModeAdmin(m) {
     modeAdminEtat = m;
     $$("[data-etat-mode]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.etatMode === m)));
-    ["#adm-etat-msg", "#adm-etat-fin", "#adm-etat-bloquer"].forEach((q) => ($(q).disabled = m === "normal"));
+    $("#adm-etat-champs").hidden = m === "normal";
+    $("#adm-etat-debut-bloc").hidden = m !== "annonce";
+    $("#adm-etat-fin-titre").textContent = m === "annonce" ? "Fin de la panne prévue" : "La panne sera terminée le (facultatif)";
+    $("#adm-etat-aide").textContent = m === "annonce"
+      ? "Un avis s'affiche dès maintenant. À l'heure du début, l'app se bloque automatiquement pour tout le monde sauf vous, puis se rouvre à l'heure de fin."
+      : m === "normal" ? "Le service revient à la normale pour tout le monde." : "Dès la publication, seuls vous (administrateur) avez accès à l'app. Les membres voient l'écran de panne et l'heure de fin prévue.";
   }
   $$("[data-etat-mode]").forEach((b) => b.addEventListener("click", () => choisirModeAdmin(b.dataset.etatMode)));
   function initAdminEtat() {
     const d = etatSvc.donnees || {};
     choisirModeAdmin(d.mode || "normal");
     $("#adm-etat-msg").value = d.message || "";
-    $("#adm-etat-bloquer").checked = !!d.bloquer;
-    if (d.fin_prevue) { const f = new Date(d.fin_prevue); f.setMinutes(f.getMinutes() - f.getTimezoneOffset()); $("#adm-etat-fin").value = f.toISOString().slice(0, 16); } else $("#adm-etat-fin").value = "";
+    const [fd, fh] = valeurDateHeure(d.fin_prevue); $("#adm-etat-fin-date").value = fd; $("#adm-etat-fin-heure").value = fh;
+    const [dd, dh] = valeurDateHeure(d.debut_prevu); $("#adm-etat-debut-date").value = dd; $("#adm-etat-debut-heure").value = dh;
     majAdminEtat();
   }
   $("#adm-etat-ok").addEventListener("click", async () => {
+    const m = modeAdminEtat;
+    const debut = m === "annonce" ? lireDateHeure("#adm-etat-debut-date", "#adm-etat-debut-heure") : null;
+    const fin = m === "normal" ? null : lireDateHeure("#adm-etat-fin-date", "#adm-etat-fin-heure");
+    if (m === "annonce" && (!debut || !fin)) return toast("Indiquez la date et l'heure du début et de la fin");
+    if (fin && new Date(fin) <= new Date(debut || Date.now())) return toast("La fin doit être après " + (debut ? "le début" : "maintenant"));
     const b = $("#adm-etat-ok"); b.disabled = true;
-    const fin = $("#adm-etat-fin").value ? new Date($("#adm-etat-fin").value).toISOString() : null;
-    const { data, error } = await sb.rpc("admin_etat_service", { p_mode: modeAdminEtat, p_message: $("#adm-etat-msg").value, p_fin: fin, p_bloquer: $("#adm-etat-bloquer").checked });
+    const { data, error } = await sb.rpc("admin_etat_service_v2", { p_mode: m, p_message: $("#adm-etat-msg").value, p_debut: debut, p_fin: fin });
     b.disabled = false;
     if (error) return toast(traduireErreur(error));
-    etatSvc.mode = data.mode; etatSvc.donnees = data; etatSvc.passe = true;
+    etatSvc.donnees = data; etatSvc.injoignable = false;
     try { sessionStorage.removeItem("pm-etat-masque"); } catch { /* facultatif */ }
     rendreEtatService();
-    toast(data.mode === "normal" ? "Service revenu à la normale" : "État publié à tous les membres");
+    toast(m === "normal" ? "Service revenu à la normale" : m === "annonce" ? "Panne annoncée à tous les membres" : "Panne publiée : les membres n'ont plus accès");
   });
 
   /* ---------------- Administration ---------------- */

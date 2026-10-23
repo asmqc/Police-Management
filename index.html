@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230108">
+  <link rel="stylesheet" href="styles.css?v=202610230113">
 </head>
 <body>
   <!-- Chargement -->
@@ -1439,18 +1439,25 @@
       <div class="adm-panneau" data-adm-panneau="outils" hidden>
       <h3 class="intertitre">État du service</h3>
       <div class="panneau formulaire adm-etat">
-        <p class="aide">Affiche un bandeau à tous les membres et sur le site public, en quelques secondes. Revenez à « Normal » quand c'est réglé.</p>
+        <p class="aide">Pendant une panne ou une mise à jour, seul vous (administrateur) avez accès à l'app. Revenez à « Normal » quand c'est réglé.</p>
         <div class="adm-etat-choix" role="radiogroup" aria-label="État du service">
           <button type="button" role="radio" data-etat-mode="normal" aria-checked="true"><b>Normal</b><small>Tout fonctionne</small></button>
-          <button type="button" role="radio" data-etat-mode="panne" aria-checked="false"><b>Panne en cours</b><small>Bandeau rouge</small></button>
-          <button type="button" role="radio" data-etat-mode="maintenance" aria-checked="false"><b>Mise à jour des serveurs</b><small>Bandeau orange</small></button>
+          <button type="button" role="radio" data-etat-mode="panne" aria-checked="false"><b>Panne en cours</b><small>Accès bloqué maintenant</small></button>
+          <button type="button" role="radio" data-etat-mode="maintenance" aria-checked="false"><b>Mise à jour des serveurs</b><small>Accès bloqué maintenant</small></button>
+          <button type="button" role="radio" data-etat-mode="annonce" aria-checked="false"><b>Annoncer une panne</b><small>Prévue à une date et une heure</small></button>
         </div>
-        <label for="adm-etat-msg">Message (facultatif)</label>
-        <textarea id="adm-etat-msg" rows="2" maxlength="500" placeholder="Ex. La messagerie est lente. Nous travaillons à régler le problème."></textarea>
-        <label for="adm-etat-fin">Retour prévu (facultatif)</label>
-        <input id="adm-etat-fin" type="datetime-local">
-        <label class="interrupteur" for="adm-etat-bloquer"><span class="interrupteur-txt"><b>Bloquer l'accès aux membres</b><small>Écran plein « Revenez plus tard ». Vous gardez l'accès.</small></span><input type="checkbox" id="adm-etat-bloquer" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
-        <button type="button" class="btn-principal" id="adm-etat-ok" style="margin:0">Publier l'état</button>
+        <p class="aide" id="adm-etat-aide"></p>
+        <div class="adm-etat-champs" id="adm-etat-champs" hidden>
+          <div id="adm-etat-debut-bloc" hidden>
+            <label>Début de la panne prévue</label>
+            <div class="rangee"><input id="adm-etat-debut-date" type="date" aria-label="Date du début"><input id="adm-etat-debut-heure" type="time" aria-label="Heure du début"></div>
+          </div>
+          <label id="adm-etat-fin-titre">La panne sera terminée le (facultatif)</label>
+          <div class="rangee"><input id="adm-etat-fin-date" type="date" aria-label="Date de fin"><input id="adm-etat-fin-heure" type="time" aria-label="Heure de fin"></div>
+          <label for="adm-etat-msg">Message aux membres (facultatif)</label>
+          <textarea id="adm-etat-msg" rows="2" maxlength="500" placeholder="Ex. Mise à jour de la messagerie et de l'horaire."></textarea>
+        </div>
+        <button type="button" class="btn-principal" id="adm-etat-ok" style="margin:0">Publier</button>
         <p class="aide" id="adm-etat-actuel"></p>
       </div>
 
@@ -1707,13 +1714,13 @@
       <p id="etat-voile-msg"></p>
       <p class="aide" id="etat-voile-fin"></p>
       <button type="button" class="btn-principal" id="etat-reessayer">Réessayer</button>
-      <button type="button" class="lien" id="etat-admin-passer" hidden>Continuer (administrateur)</button>
+      <button type="button" class="lien" id="etat-admin-passer" hidden>Connexion administrateur</button>
     </div>
   </div>
 
-  <script src="config.js?v=202610230108"></script>
+  <script src="config.js?v=202610230113"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230108"></script>
+  <script src="app.js?v=202610230113"></script>
 </body>
 </html>
