@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230138">
+  <link rel="stylesheet" href="styles.css?v=202610230204">
 </head>
 <body>
   <!-- Chargement -->
@@ -501,6 +501,11 @@
 
       <button class="ac-admin ac-msg" id="ac-msg" data-aller="messages" hidden></button>
       <button class="ac-admin" id="ac-admin" data-aller="admin" hidden></button>
+
+      <section class="panneau ac-echeances" id="ac-echeances" aria-labelledby="ac-echeances-titre" hidden>
+        <h3 id="ac-echeances-titre">À ne pas oublier</h3>
+        <ul id="ac-echeances-liste"></ul>
+      </section>
 
       <section class="panneau ac-511" aria-labelledby="ac-511-titre">
         <div class="ac-511-tete">
@@ -1522,6 +1527,10 @@
         <label class="ref" for="hr-jour-debut">Heures (facultatif)<span id="hr-jour-defaut"></span></label>
         <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
       </div>
+      <div class="hr-edition hr-options-quart" id="hr-options-quart" hidden>
+        <label class="hr-tsp-interrupteur" id="hr-repasnp-bloc"><input type="checkbox" id="hr-repasnp"><span><b>Repas ou repos non pris</b><small>À cause du service : payé à temps et demi (12.06)</small></span></label>
+        <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
+      </div>
       <div class="hr-edition hr-tsp" id="hr-tsp-bloc" hidden>
         <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Ajouter du temps supplémentaire</b><small>En plus du quart : avant, après ou rappel</small></span></label>
         <div class="hr-tsp-champs" id="hr-tsp-champs" hidden>
@@ -1529,6 +1538,10 @@
           <select id="hr-tsp-maj" aria-label="Taux du temps supplémentaire">
             <option value="1.5">Temps et demi (1 ½)</option>
             <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
+          </select>
+          <select id="hr-tsp-rappel" aria-label="Situation">
+            <option value="">Prolongation de mon quart (avant ou après)</option>
+            <option value="hors">Rappel après avoir quitté (min. 3 h × 1,5)</option>
           </select>
           <select id="hr-tsp-pris" aria-label="Payé ou compensé">
             <option value="paie">Temps payé (sur la paie)</option>
@@ -1538,6 +1551,14 @@
         </div>
       </div>
       <div class="hr-edition hr-pris" id="hr-jour-pris-bloc" hidden>
+        <label class="ref" for="hr-jour-rappel">Situation</label>
+        <select id="hr-jour-rappel">
+          <option value="">Temps supplémentaire planifié</option>
+          <option value="hors">Rappel en dehors de mon quart (min. 3 h × 1,5)</option>
+          <option value="hebdo12">Rappel sur un congé hebdomadaire, horaire 12 h (min. 4 h × 1,5)</option>
+          <option value="vacances">Rappel pendant mes vacances ou un férié (min. 9 h ou 12 h)</option>
+          <option value="cour-annulee">Cour annulée pendant mon congé (3 h)</option>
+        </select>
         <label class="ref" for="hr-jour-pris">Temps supplémentaire</label>
         <select id="hr-jour-pris">
             <option value="paie">Temps payé (sur la paie)</option>
@@ -1725,9 +1746,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230138"></script>
+  <script src="config.js?v=202610230204"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230138"></script>
+  <script src="app.js?v=202610230204"></script>
 </body>
 </html>

@@ -564,6 +564,7 @@
       "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
       "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
       "Bandeau d'état : si une panne ou une mise à jour des serveurs est en cours, un avis s'affiche en haut de l'app.",
+      "Temps supplémentaire selon l'art. 12 : rappels avec minimum garanti, heure de repas, indemnité de 6 $, repas non pris; congés D; dates limites du contrat à l'accueil et dans le calendrier abonné.",
       "Horaire : tous les congés du contrat SQ avec leur motif (événements familiaux, droits parentaux, congé D, accident de travail, libération syndicale, sans traitement), pris en compte dans la paie.",
       "Temps supplémentaire payé ou compensé, et nouveau code B · Banque de temps pour les congés pris à même votre banque.",
       "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
@@ -1608,6 +1609,36 @@
   });
   $("#ac-511-btn").addEventListener("click", () => charger511(false));
 
+  // Dates limites du contrat de travail SQ (art. 23, 24, 10.15) affichées à l'accueil
+  function echeancesSQ() {
+    const auj = aujourdhuiISO(), an = +auj.slice(0, 4), res = [];
+    const jours = (iso) => Math.round((jourUTC(iso) - jourUTC(auj)));
+    const ajouter = (debutAff, limite, titre, detail, urgent) => { if (auj >= debutAff && auj <= limite) res.push({ limite, titre, detail, j: jours(limite), urgent }); };
+    ajouter(`${an}-01-01`, `${an}-03-15`, "Choix des vacances d'été", "Pour la période du 1ᵉʳ avril au 30 septembre, attribuées par ancienneté (23.06 a).");
+    ajouter(`${an}-07-01`, `${an}-09-15`, "Choix des vacances d'hiver et des Fêtes", "Pour la période du 1ᵉʳ octobre au 31 mars et les Fêtes, attribuées par ancienneté (23.06 b, 24.01 d).");
+    ajouter(`${an}-09-16`, `${an}-10-31`, "Vacances pendant les Fêtes : dernière chance", "Demande au supérieur immédiat au plus tard le 31 octobre, au premier qui la fait (24.01 e).", true);
+    ajouter(`${an}-11-01`, `${an}-11-30`, "Horaire des Fêtes", "Congé de Noël (22 au 28 déc.) ou du Jour de l'An (29 déc. au 4 janv.); horaire affiché au plus tard le 30 novembre (24.02).");
+    // Changement d'heure : 2ᵉ dimanche de mars
+    const m = new Date(an, 2, 1), dim = 1 + ((7 - m.getDay()) % 7) + 7;
+    const heure = `${an}-03-${String(dim).padStart(2, "0")}`;
+    ajouter(isoPlus(heure, -10), heure, "Passage à l'heure avancée", "Si vous travaillez cette nuit-là, l'heure non travaillée se remet la journée même (10.15).");
+    if (etat.paie && etat.paie.date_entree) {
+      try {
+        const B = banquesSQ();
+        if (B.fer.soldeFin > 12) ajouter(`${an}-11-01`, `${an}-12-31`, "Fériés à prendre avant le 31 décembre", `Il vous resterait ${fmtJH(B.fer.soldeFin, B.type === "12" ? 12 : 9)}; au plus 12 h peuvent être reportées ou payées (23.17 c).`, true);
+        if (B.vac.soldeFin > 36) ajouter(`${B.vac.fin.slice(0, 4)}-01-15`, B.vac.fin, "Vacances à prendre avant le 31 mars", `Il vous resterait ${fmtJH(B.vac.soldeFin, B.type === "12" ? 12 : 9)}; au plus 36 h peuvent être reportées (23.13).`, true);
+      } catch { /* horaire pas encore chargé */ }
+    }
+    return res.sort((a, b) => a.j - b.j);
+  }
+  function rendreEcheances() {
+    const sec = $("#ac-echeances");
+    if (!estSQ()) { sec.hidden = true; return; }
+    const l = echeancesSQ();
+    sec.hidden = !l.length;
+    $("#ac-echeances-liste").innerHTML = l.map((e) => `<li class="${e.urgent || e.j <= 10 ? "urgent" : ""}"><span class="ech-j"><b>${e.j <= 0 ? "Auj." : e.j}</b>${e.j > 0 ? `<small>jour${e.j > 1 ? "s" : ""}</small>` : ""}</span><span><b>${esc(e.titre)}</b><small>${esc(e.detail)} Date limite : ${esc(dateCourte(e.limite, true))}.</small></span></li>`).join("");
+  }
+
   async function initAccueil() {
     const p = etat.profil;
     const h = new Date().getHours();
@@ -1617,10 +1648,12 @@
     $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
     demarrer511();
+    try { rendreEcheances(); } catch (e) { console.warn(e); }
     // Quart du jour
     const carte = $("#ac-quart");
     try {
       await chargerMonHoraire();
+      chargerPaie().then(rendreEcheances).catch(() => {});
       if (!hr.config) {
         carte.innerHTML = `<span class="pastille-q q q-C">?</span><span><small>Mon horaire</small><strong>Configurer ma rotation</strong><em>Votre quart du jour s'affichera ici</em></span>`;
       } else {
@@ -2205,12 +2238,12 @@
   const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
   function calculerMois(a, m, src) {
     const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [], tsEq: 0, tsVal: 0, valPaie: 0, eqBanque: 0, valBanque: 0, hPaie: 0, hBanque: 0 };
-    const compter = (pris, d, maj, iso) => {
+    const compter = (pris, d, maj, iso, o) => {
       if (pris === "banque") r.hBanque += d; else r.hPaie += d;
       if (!paie) return;
-      const sal = salaireSQ(paie, iso), h2 = arrondiTS(d), v = h2 * maj * sal.tauxTS;
-      r.tsEq += h2 * maj; r.tsVal += v;
-      if (pris === "banque") { r.eqBanque += h2 * maj; r.valBanque += v; } else r.valPaie += v;
+      const sal = salaireSQ(paie, iso), t = eqTS(d, maj, o), v = t.eq * sal.tauxTS;
+      r.tsEq += t.eq; r.tsVal += v; r.indemnites = (r.indemnites || 0) + t.indemnite;
+      if (pris === "banque") { r.eqBanque += t.eq; r.valBanque += v; } else r.valPaie += v;
     };
     const paie = paieActive() ? etat.paie : null;
     const n = new Date(a, m + 1, 0).getDate();
@@ -2223,7 +2256,12 @@
         const d = dureeH([q.tsp.debut, q.tsp.fin]), maj = +q.tsp.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
         const pris = q.tsp.pris === "banque" ? "banque" : "paie";
         r.ts += d; r.lignesTS.push({ iso, h: [q.tsp.debut, q.tsp.fin], d, note: [`En plus du quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris });
-        compter(pris, d, maj, iso);
+        compter(pris, d, maj, iso, { rappel: q.tsp.rappel, adjacent: !q.tsp.rappel });
+      }
+      if (["J", "S", "N"].includes(q.code) && ((src.exceptions || {})[iso] || {}).repasNP) {
+        const hrp = paie ? heuresRepasNonPris() : 1;
+        r.ts += hrp; r.lignesTS.push({ iso, h: null, d: hrp, note: "Repas ou repos non pris (12.06)", ts: {}, maj: 1.5, pris: "paie" });
+        compter("paie", hrp, 1.5, iso, {});
       }
       if (!["J", "S", "N", "X"].includes(q.code)) continue;
       const h = heuresJour(q.code, iso, src), d = dureeH(h);
@@ -2232,7 +2270,7 @@
         const ex = (src.exceptions || {})[iso] || {}, maj = +ex.maj || 1.5;
         const pris = ex.pris === "banque" ? "banque" : "paie";
         r.ts += d; r.lignesTS.push({ iso, h, d, note: [pris === "banque" ? "Compensé en banque" : "Payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris });
-        compter(pris, d, maj, iso);
+        compter(pris, d, maj, iso, { rappel: ex.rappel });
       }
     }
     for (const [iso, e] of Object.entries(src.exceptions || {})) { // formations avec détails, pour le rapport
@@ -2287,6 +2325,26 @@
   }
   // Art. 12.09 : 1 à 14 min ne comptent pas, 15 à 44 min = ½ h, 45 min et plus = 1 h
   const arrondiTS = (h) => { const t = Math.round(h * 60), r = t % 60; return Math.floor(t / 60) + (r >= 45 ? 1 : r >= 15 ? 0.5 : 0); };
+  // Valeur d'une période de temps supplémentaire selon l'art. 12 : arrondi (12.09), heure de repas (12.08),
+  // minimums de rappel (12.03, 12.04, annexe I 2.1) et indemnité de 6 $ par 4 h (12.08). eq = heures × taux à payer.
+  const RAPPELS_TS = {
+    hors: { nom: "Rappel en dehors de mon quart", min: 3 * 1.5, aide: "Minimum 3 h à temps et demi (12.03)" },
+    hebdo12: { nom: "Rappel sur un congé hebdomadaire (horaire 12 h)", min: 4 * 1.5, aide: "Minimum 4 h à temps et demi (annexe I, 2.1 b)" },
+    vacances: { nom: "Rappel pendant mes vacances ou un férié", min: null, aide: "Minimum 9 h (12 h sur l'horaire de 12 h) au taux régulier (12.04 b); heures travaillées à temps double (12.02)" },
+    "cour-annulee": { nom: "Assignation à la cour annulée pendant mon congé", min: 3, aide: "Indemnité de 3 h au taux régulier (12.03)" },
+  };
+  function eqTS(d, maj, o = {}) {
+    const h = arrondiTS(d);
+    let eq = h * maj, repasH = 0;
+    if (o.rappel !== "cour-annulee" && h > 4) { repasH = h >= 12 ? 1.5 : 1; eq += repasH * maj; } // 12.08 : heure de repas (+ 30 min de repos sur 12 h)
+    const r = RAPPELS_TS[o.rappel];
+    const minimum = r ? (r.min !== null ? r.min : (typeHoraireSQ() === "12" ? 12 : 9)) : 0;
+    const total = Math.max(eq, minimum);
+    const indemnite = o.adjacent && h >= 4 ? Math.floor(h / 4) * 6 : 0; // 12.08 : 6 $ par 4 h avant ou après le quart
+    return { h, eq: total, repasH, minimum: total > eq ? minimum : 0, indemnite };
+  }
+  // Repas ou repos non pris pendant le quart (12.06) : payé à temps et demi
+  const heuresRepasNonPris = () => (typeHoraireSQ() === "12" ? 1.5 : 1);
   async function chargerPaie(forcer) {
     if (!estSQ()) { etat.paie = null; return null; }
     if (etat.paie !== undefined && !forcer) return etat.paie;
@@ -2347,7 +2405,7 @@
     const sal = salaireSQ(paie, jeudi);
     const base = sal.annuel / 26;
     const jours = [];
-    let prNuit = 0, prSoir = 0, prFds = 0, tsVal = 0, tsH = 0, tsBanque = 0, regTrav = 0, regPrevus = 0, retenueST = 0, hST = 0;
+    let prNuit = 0, prSoir = 0, prFds = 0, tsVal = 0, tsH = 0, tsBanque = 0, regTrav = 0, regPrevus = 0, retenueST = 0, hST = 0, indemRepas = 0;
     const autreRegime = new Set();
     for (let i = 0; i < 14; i++) {
       const iso = isoPlus(debut, i), q = quartDu(iso, src);
@@ -2360,10 +2418,10 @@
         if (h) { const pq = primesQuart(iso, h, salJ, ans); prNuit += pq.nuit; prSoir += pq.soir; prFds += pq.fds; ligne.h = h; ligne.primes = pq.nuit + pq.soir + pq.fds; ligne.detail = pq; regTrav++; }
       } else if (q.code === "X") {
         const ex = (src.exceptions || {})[iso] || {}, h = heuresJour("X", iso, src) || (ex.debut ? [ex.debut, ex.fin] : null);
-        const d = h ? arrondiTS(dureeH(h)) : 0, maj = +ex.maj || 1.5;
-        ligne.h = h; ligne.maj = maj;
-        if (ex.pris === "banque") { tsBanque += d * maj; ligne.banque = d * maj; }
-        else { tsH += d; tsVal += d * maj * salJ.tauxTS; ligne.ts = d * maj * salJ.tauxTS; }
+        const maj = +ex.maj || 1.5, t = eqTS(h ? dureeH(h) : 0, maj, { rappel: ex.rappel }), d = t.h;
+        ligne.h = h; ligne.maj = maj; ligne.rappel = ex.rappel; ligne.minimum = t.minimum; ligne.repasH = t.repasH;
+        if (ex.pris === "banque") { tsBanque += t.eq; ligne.banque = t.eq; }
+        else { tsH += d; tsVal += t.eq * salJ.tauxTS; ligne.ts = t.eq * salJ.tauxTS; }
       } else if (prevuTravail && q.code && q.code !== q.prevu) {
         const h = heuresJour(q.prevu, iso, src);
         if (h) { const pq = primesQuart(iso, h, salJ, ans); ligne.perdu = pq.nuit + pq.soir + pq.fds; ligne.hPrevu = h; }
@@ -2377,17 +2435,19 @@
       }
       if ((q.code === "P" && RQAP_P.includes(q.motifCle)) || q.code === "A") autreRegime.add(q.code === "A" ? "CNESST (accident de travail)" : "RQAP et indemnité de la Sûreté (art. 33)");
       if (q.tsp && q.code !== "X") {
-        const d = arrondiTS(dureeH([q.tsp.debut, q.tsp.fin])), maj = +q.tsp.maj || 1.5, v = d * maj * salJ.tauxTS;
-        ligne.tspMaj = maj;
-        if (q.tsp.pris === "banque") { tsBanque += d * maj; ligne.tspBanque = d * maj; }
+        const maj = +q.tsp.maj || 1.5, t = eqTS(dureeH([q.tsp.debut, q.tsp.fin]), maj, { rappel: q.tsp.rappel, adjacent: !q.tsp.rappel }), d = t.h, v = t.eq * salJ.tauxTS;
+        ligne.tspMaj = maj; indemRepas += t.indemnite;
+        if (q.tsp.pris === "banque") { tsBanque += t.eq; ligne.tspBanque = t.eq; }
         else { tsH += d; tsVal += v; ligne.tsp = v; }
       }
+      const exJ = (src.exceptions || {})[iso] || {};
+      if (exJ.repasNP && ["J", "S", "N"].includes(q.code)) { const v = heuresRepasNonPris() * 1.5 * salJ.tauxTS; tsVal += v; ligne.repasNP = v; }
       jours.push(ligne);
     }
     const primes = prNuit + prSoir + prFds;
-    const brut = Math.max(0, base - retenueST) + primes + tsVal;
+    const brut = Math.max(0, base - retenueST) + primes + tsVal + indemRepas;
     const rotation = sal.annuel * 0.018 / 26 * (regPrevus ? Math.min(1, regTrav / regPrevus) : 0); // 16.04 : versée au REER collectif
-    return { k, jeudi, verse, debut, fin, sal, base, prNuit, prSoir, prFds, primes, tsVal, tsH, tsBanque, brut, rotation, jours, r, retenueST, hST, autreRegime: [...autreRegime] };
+    return { k, jeudi, verse, debut, fin, sal, base, prNuit, prSoir, prFds, primes, tsVal, tsH, tsBanque, brut, rotation, jours, r, retenueST, hST, indemRepas, autreRegime: [...autreRegime] };
   }
   function retenuesPaie(p) {
     const F = FISC_2026, an = p.verse.slice(0, 4);
@@ -2492,14 +2552,24 @@
         return;
       }
       let eq = 0;
-      if (e.type === "X" && e.pris === "banque") { const h = heuresJour("X", iso, hr); if (h) eq += arrondiTS(dureeH(h)) * (+e.maj || 1.5); }
-      if (e.type !== "X" && e.tsp && e.tsp.pris === "banque" && e.tsp.debut) eq += arrondiTS(dureeH([e.tsp.debut, e.tsp.fin])) * (+e.tsp.maj || 1.5);
+      if (e.type === "X" && e.pris === "banque") { const h = heuresJour("X", iso, hr); eq += eqTS(h ? dureeH(h) : 0, +e.maj || 1.5, { rappel: e.rappel }).eq; }
+      if (e.type !== "X" && e.tsp && e.tsp.pris === "banque" && e.tsp.debut) eq += eqTS(dureeH([e.tsp.debut, e.tsp.fin]), +e.tsp.maj || 1.5, { rappel: e.tsp.rappel, adjacent: !e.tsp.rappel }).eq;
       if (!eq) return;
       if (iso <= auj) { tsb.annee += eq; if (b.ts189 && iso > b.ts189.date) tsb.apresSolde += eq; } else tsb.prevu += eq;
     });
     tsb.solde = b.ts189 ? +b.ts189.h + tsb.apresSolde : null;
     tsb.soldeFin = tsb.solde === null ? null : tsb.solde + tsb.prevu - tsb.utilisePrevu;
-    return { type, vac, fer, mal, b, fDebut, fFin, tsb };
+    // Congés D : congés hebdomadaires travaillés accumulés (10.11) et repris (code D); max. 45 h (9 h) ou 60 h (12 h ou hybride) (10.21)
+    const cd = { gagne: 0, repris: 0, gagnePrevu: 0, reprisPrevu: 0, max: type === "12" || (hr.config && hr.config.hybride) ? 60 : 45 };
+    const depD = b.dSolde && b.dSolde.date ? b.dSolde.date : "0000-00-00";
+    for (const [iso, e] of Object.entries(hr.exceptions || {})) {
+      if (iso <= depD) continue;
+      if (e.gainD && ["J", "S", "N"].includes(e.type)) { const h = heuresJour(e.type, iso, hr); const n = h ? dureeH(h) : 0; if (iso <= auj) cd.gagne += n; else cd.gagnePrevu += n; }
+      if (e.type === "D") { const n = heuresAbsence(iso); if (iso <= auj) cd.repris += n; else cd.reprisPrevu += n; }
+    }
+    cd.solde = (b.dSolde ? +b.dSolde.h : 0) + cd.gagne - cd.repris;
+    cd.soldeFin = cd.solde + cd.gagnePrevu - cd.reprisPrevu;
+    return { type, vac, fer, mal, b, fDebut, fFin, tsb, cd };
   }
   function barreBanque(utilise, total) {
     const p = total > 0 ? Math.max(0, Math.min(100, utilise / total * 100)) : 0;
@@ -2587,6 +2657,20 @@
         <p class="aide">Dans l'horaire, choisissez le code puis le motif (événement familial, droits parentaux, sans traitement…). L'app applique les règles du contrat et ajuste la paie.</p>
       </section>`;
       })()}
+      <section class="banque">
+        <h4>Congés D <small>congés hebdomadaires travaillés</small></h4>
+        <div class="banque-chiffre"><b>${B.cd.solde < 0 ? "− " + jh(-B.cd.solde) : jh(B.cd.solde)}</b><span>à reprendre · max. ${B.cd.max} h (10.21)</span></div>
+        ${barreBanque(B.cd.solde, B.cd.max)}
+        <dl class="vt-detail">
+          ${b.dSolde ? `<dt>Solde au ${esc(dc(b.dSolde.date))} (talon)</dt><dd>${jh(+b.dSolde.h)}</dd>` : ""}
+          <dt>Accumulés</dt><dd>${jh(B.cd.gagne)}</dd>
+          <dt>Repris (code D)</dt><dd>${jh(B.cd.repris)}</dd>
+          ${B.cd.gagnePrevu || B.cd.reprisPrevu ? `<dt>Après ce qui est prévu à l'horaire</dt><dd>${jh(B.cd.soldeFin)}</dd>` : ""}
+        </dl>
+        ${B.cd.soldeFin > B.cd.max ? `<p class="banque-avis">Vous dépasseriez le maximum de ${B.cd.max} h de congés hebdomadaires travaillés (10.21).</p>` : ""}
+        ${B.cd.solde < 0 ? `<p class="banque-avis">Vous avez repris plus de congés D que vous en avez accumulés.</p>` : ""}
+        <p class="aide">Quand vous travaillez un congé hebdomadaire avec l'accord de la Sûreté, cochez « accumuler en congé D » dans la journée. Reprenez-le avec le code D.</p>
+      </section>
       <section class="banque">
         <h4>Banques de temps supplémentaire</h4>
         <dl class="vt-detail">
@@ -2690,10 +2774,11 @@
     const lignesJours = p.jours.map((j) => {
       let quoi = "", val = "";
       if (j.primes !== undefined) { quoi = `${esc(nomQ(j.code))} ${j.h ? `<small>${esc(j.h[0])}–${esc(j.h[1])}</small>` : ""}`; val = j.primes ? "+ " + $$d(j.primes) : "—"; }
-      else if (j.ts !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"} <small>payé</small>`; val = "+ " + $$d(j.ts); }
+      else if (j.ts !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"} <small>payé${j.rappel && RAPPELS_TS[j.rappel] ? " · " + esc(RAPPELS_TS[j.rappel].nom.toLowerCase()) : ""}${j.minimum ? " · minimum appliqué" : ""}${j.repasH ? ` · repas ${fmtH(j.repasH)}` : ""}</small>`; val = "+ " + $$d(j.ts); }
       else if (j.banque !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"} <small>compensé</small>`; val = `<span class="perdu">+ ${fmtH(j.banque)} en banque</span>`; }
       else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
       else { quoi = esc(nomQ(j.code)); val = ""; }
+      if (j.repasNP) { quoi += `<small>+ repas non pris (12.06)</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.repasNP); }
       if (j.sansTraitement) val = (val ? val + "<br>" : "") + `<span class="perdu">− ${$$d(j.sansTraitement)} sans traitement</span>`;
       if (j.tsp) { quoi += `<small>+ temps supp. payé ${j.tspMaj === 2 ? "× 2" : "× 1,5"}</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.tsp); }
       if (j.tspBanque) { quoi += `<small>+ temps supp. compensé ${j.tspMaj === 2 ? "× 2" : "× 1,5"}</small>`; val = (val ? val + "<br>" : "") + `<span class="perdu">+ ${fmtH(j.tspBanque)} en banque</span>`; }
@@ -2712,6 +2797,7 @@
         <dt>Prime de soir (16.01, 0,73 $/h)</dt><dd>${$$d(p.prSoir)}</dd>
         <dt>Prime de fin de semaine (16.03, 4 %)</dt><dd>${$$d(p.prFds)}</dd>
         ${p.tsVal ? `<dt>Temps supplémentaire payé (${fmtH(p.tsH)})</dt><dd>${$$d(p.tsVal)}</dd>` : ""}
+        ${p.indemRepas ? `<dt>Indemnités de repas (12.08)</dt><dd>${$$d(p.indemRepas)}</dd>` : ""}
         <dt class="total">Brut</dt><dd class="total">${$$d(p.brut)}</dd>
       </dl>
       <h4 class="paie-inter">Retenues</h4>
@@ -3841,6 +3927,9 @@ Format :
     $("#hr-tsp-debut").value = (ex.tsp && ex.tsp.debut) || ""; $("#hr-tsp-fin").value = (ex.tsp && ex.tsp.fin) || "";
     $("#hr-tsp-maj").value = String((ex.tsp && +ex.tsp.maj) || 1.5);
     $("#hr-jour-pris").value = ex.pris === "banque" ? "banque" : "paie";
+    $("#hr-jour-rappel").value = ex.rappel && RAPPELS_TS[ex.rappel] ? ex.rappel : "";
+    $("#hr-tsp-rappel").value = ex.tsp && ex.tsp.rappel === "hors" ? "hors" : "";
+    $("#hr-repasnp").checked = !!ex.repasNP; $("#hr-gaind").checked = !!ex.gainD;
     $("#hr-tsp-pris").value = ex.tsp && ex.tsp.pris === "banque" ? "banque" : "paie";
     $("#hr-jour-retirer").hidden = !q.exception;
     $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
@@ -3874,6 +3963,10 @@ Format :
     }
     $("#hr-tsp-bloc").hidden = !!hr.vue || !t || t === "X";
     $("#hr-jour-pris-bloc").hidden = !!hr.vue || t !== "X";
+    const sqEdition = estSQ() && cibleEdition() === hr;
+    const prevuJour = quartDu(hr.jourChoisi, cibleEdition()).prevu;
+    $("#hr-options-quart").hidden = !!hr.vue || !sqEdition || !["J", "S", "N"].includes(t);
+    $("#hr-gaind-bloc").hidden = !(["J", "S", "N"].includes(t) && prevuJour === "C");
     $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
     $("#hr-jour-ts").hidden = !!hr.vue || !(["X", "F"].includes(t) || !$("#hr-tsp-champs").hidden);
     majValeurJour();
@@ -3888,15 +3981,16 @@ Format :
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
   function majValeurJour() {
     majValeurTsp();
-    const bloc = $("#hr-ts-valeur"), t = typeChoisi();
-    const actif = !hr.vue && cibleEdition() === hr && t === "X" && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
+    const bloc = $("#hr-ts-valeur"), tq = typeChoisi();
+    const actif = !hr.vue && cibleEdition() === hr && tq === "X" && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
     bloc.hidden = !actif;
     if (!actif) return;
     const sal = salaireSQ(etat.paie, hr.jourChoisi);
     const debut = $("#hr-jour-debut").value || $("#hr-jour-debut").placeholder, fin = $("#hr-jour-fin").value || $("#hr-jour-fin").placeholder;
-    const d = debut && fin ? dureeH([debut, fin]) : 0, h = arrondiTS(d), maj = +$("#hr-jour-maj").value || 1.5;
-    $("#hr-ts-montant").innerHTML = d
-      ? `<b>${dollarsTS(h * maj * sal.tauxTS)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (art. 12.09)` : ""}</span><small>${$("#hr-jour-pris").value === "banque" ? `Compensé : ${fmtH(h * maj)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(h * maj)}`} · estimation</small>`
+    const d = debut && fin ? dureeH([debut, fin]) : 0, maj = +$("#hr-jour-maj").value || 1.5, rap = $("#hr-jour-rappel").value;
+    const t = eqTS(d, maj, { rappel: rap }), h = t.h;
+    $("#hr-ts-montant").innerHTML = d || rap
+      ? `<b>${dollarsTS(t.eq * sal.tauxTS)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")}${t.repasH ? ` + repas ${fmtH(t.repasH)} (12.08)` : ""} × ${dollarsTS(sal.tauxTS)}/h${h !== d && d ? ` · ${fmtH(d)} arrondies (12.09)` : ""}</span>${t.minimum ? `<small class="tsp-ligne">Minimum garanti appliqué : ${RAPPELS_TS[rap].aide}</small>` : rap ? `<small>${RAPPELS_TS[rap].aide}</small>` : ""}<small>${$("#hr-jour-pris").value === "banque" ? `Compensé : ${fmtH(t.eq)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(t.eq)}`} · estimation</small>`
       : `<span>Indiquez les heures pour voir la valeur estimée.</span>`;
   }
   ["#hr-jour-debut", "#hr-jour-fin", "#hr-jour-maj"].forEach((q) => $(q).addEventListener("input", majValeurJour));
@@ -3913,10 +4007,12 @@ Format :
     const deb = $("#hr-tsp-debut").value, fin = $("#hr-tsp-fin").value;
     out.hidden = !actif || !deb || !fin;
     if (out.hidden) return;
-    const sal = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), h = arrondiTS(d), maj = +$("#hr-tsp-maj").value || 1.5;
-    out.innerHTML = `<b>${dollarsTS(h * maj * sal.tauxTS)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (art. 12.09)` : ""}</span><small>${$("#hr-tsp-pris").value === "banque" ? `Compensé : ${fmtH(h * maj)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(h * maj)}`} · estimation</small>`;
+    const sal = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), maj = +$("#hr-tsp-maj").value || 1.5, rap = $("#hr-tsp-rappel").value;
+    const t = eqTS(d, maj, { rappel: rap, adjacent: !rap }), h = t.h;
+    out.innerHTML = `<b>${dollarsTS(t.eq * sal.tauxTS + t.indemnite)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")}${t.repasH ? ` + repas ${fmtH(t.repasH)} (12.08)` : ""} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (12.09)` : ""}${t.indemnite ? ` + ${dollarsTS(t.indemnite)} d'indemnité de repas` : ""}</span>${t.minimum ? `<small class="tsp-ligne">Minimum garanti appliqué : ${RAPPELS_TS[rap].aide}</small>` : ""}<small>${$("#hr-tsp-pris").value === "banque" ? `Compensé : ${fmtH(t.eq)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(t.eq)}`} · estimation</small>`;
   }
-  ["#hr-tsp-debut", "#hr-tsp-fin", "#hr-tsp-maj", "#hr-tsp-pris"].forEach((q) => $(q).addEventListener("input", majValeurTsp));
+  ["#hr-tsp-debut", "#hr-tsp-fin", "#hr-tsp-maj", "#hr-tsp-pris", "#hr-tsp-rappel"].forEach((q) => $(q).addEventListener("input", majValeurTsp));
+  $("#hr-jour-rappel").addEventListener("input", () => { if ($("#hr-jour-rappel").value === "vacances") $("#hr-jour-maj").value = "2"; majValeurJour(); });
   $("#hr-jour-pris").addEventListener("input", () => majValeurJour());
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   const fermerJour = () => ($("#hr-voile").hidden = true);
@@ -3936,11 +4032,14 @@ Format :
     if (!$("#hr-tsp-champs").hidden) {
       const td = $("#hr-tsp-debut").value, tf = $("#hr-tsp-fin").value;
       if (!td || !tf) return toast("Indiquez le début et la fin du temps supplémentaire");
-      tsp = { debut: td, fin: tf, ...($("#hr-tsp-maj").value === "2" ? { maj: 2 } : {}), ...($("#hr-tsp-pris").value === "banque" ? { pris: "banque" } : {}) };
+      tsp = { debut: td, fin: tf, ...($("#hr-tsp-maj").value === "2" ? { maj: 2 } : {}), ...($("#hr-tsp-pris").value === "banque" ? { pris: "banque" } : {}), ...($("#hr-tsp-rappel").value ? { rappel: $("#hr-tsp-rappel").value } : {}) };
     }
     const avant = cible.exceptions[iso], sauvegarde = { ...cible.exceptions };
-    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}) };
+    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked)) delete cible.exceptions[iso];
+    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
+      ...(type === "X" && $("#hr-jour-rappel").value ? { rappel: $("#hr-jour-rappel").value } : {}),
+      ...(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked ? { repasNP: true } : {}),
+      ...(!$("#hr-options-quart").hidden && !$("#hr-gaind-bloc").hidden && $("#hr-gaind").checked ? { gainD: true } : {}) };
     // Congé de plusieurs jours : inscrire chaque journée de la période
     let nbJours = 1, sautes = 0;
     const cleMotif = MOTIFS[type] ? `${type}:${$("#hr-jour-motif").value}` : "";
@@ -5521,6 +5620,7 @@ Format :
           <label><span>Fériés reportés (max. 12 h)</span><input type="number" inputmode="decimal" min="0" max="12" step="0.25" data-banq="ferReport" value="${b.ferReport || ""}"></label>
           <label><span>Banque TS 189 h (solde)</span><input type="number" inputmode="decimal" min="0" max="189" step="0.25" data-banq="ts189" value="${b.ts189 ? b.ts189.h : ""}"></label>
           <label><span>Banque 1 040 h (solde)</span><input type="number" inputmode="decimal" min="0" max="1040" step="0.25" data-banq="ts1040" value="${b.ts1040 ? b.ts1040.h : ""}"></label>
+          <label><span>Congés D à reprendre (h)</span><input type="number" inputmode="decimal" min="0" max="60" step="0.25" data-banq="dSolde" value="${b.dSolde ? b.dSolde.h : ""}"></label>
         </div>
         <button type="button" class="btn-secondaire" id="banq-ok">Enregistrer mes soldes</button>
 `;
@@ -5535,7 +5635,8 @@ Format :
       };
       const nouv = { horaire: v("horaire") || "auto", vacReport: num("vacReport", 36) || 0, ferReport: num("ferReport", 12) || 0,
         vacSolde: solde("vacSoldeJ", "vacSoldeH", "vacSoldeD", 400), ferSolde: solde("ferSoldeJ", "ferSoldeH", "ferSoldeD", 200),
-        ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj } };
+        ts189: v("ts189") === "" ? null : { h: num("ts189", 189) || 0, date: auj }, ts1040: v("ts1040") === "" ? null : { h: num("ts1040", 1040) || 0, date: auj },
+        dSolde: v("dSolde") === "" ? null : { h: num("dSolde", 60) || 0, date: auj } };
       const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, banques: nouv, maj_le: new Date().toISOString() });
       if (error) return toast(traduireErreur(error));
       etat.paie = { ...(etat.paie || {}), banques: nouv }; toast("Soldes enregistrés"); rendreSoldesReglages();

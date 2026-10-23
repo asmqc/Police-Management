@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: j } = await sb.from("calendrier_jetons").select("user_id").eq("jeton", jeton).maybeSingle();
   if (!j) return new Response("Lien désactivé ou remplacé", { status: 404, headers: entetes });
-  const { data: p } = await sb.from("profiles").select("statut").eq("id", j.user_id).maybeSingle();
+  const { data: p } = await sb.from("profiles").select("statut, corps_police").eq("id", j.user_id).maybeSingle();
   if (!p || p.statut !== "approuve") return new Response("Compte inactif", { status: 404, headers: entetes });
   const { data: h } = await sb.from("horaires").select("config, exceptions").eq("user_id", j.user_id).maybeSingle();
   const c: Config | null = h && h.config && h.config.cycle ? h.config : null;
@@ -77,6 +77,24 @@ Deno.serve(async (req) => {
       lignes.push("BEGIN:VEVENT", `UID:${date}-TSP@policemanagement.ca`, `DTSTAMP:${maintenant}`,
         `DTSTART;TZID=America/Toronto:${date}T${t.debut.replace(":", "")}00`, `DTEND;TZID=America/Toronto:${finT}T${t.fin.replace(":", "")}00`,
         "SUMMARY:Temps supp.", "TRANSP:OPAQUE", "END:VEVENT");
+    }
+  }
+  // Membres de la Sûreté du Québec : dates limites du contrat de travail (art. 23 et 24)
+  if (/s[ûu]ret[ée] du qu[ée]bec/i.test(p.corps_police || "")) {
+    const an0 = new Date().getUTCFullYear();
+    const echeances: [string, string][] = [
+      ["03-15", "Date limite : choix des vacances d'été (23.06)"],
+      ["03-31", "Fin de l'année de vacances : 36 h reportables au plus (23.13)"],
+      ["09-15", "Date limite : choix des vacances d'hiver et des Fêtes (23.06, 24.01)"],
+      ["10-31", "Date limite : demande de vacances pendant les Fêtes (24.01 e)"],
+      ["12-31", "Fin de l'année des fériés : 12 h reportables au plus (23.17)"],
+    ];
+    for (const an of [an0, an0 + 1]) for (const [md, titre] of echeances) {
+      const iso = `${an}-${md}`, n = jourUTC(iso);
+      if (n < n0 - 30 || n > n0 + 365) continue;
+      const date = iso.replace(/-/g, "");
+      lignes.push("BEGIN:VEVENT", `UID:${date}-ECH@policemanagement.ca`, `DTSTAMP:${maintenant}`, `DTSTART;VALUE=DATE:${date}`,
+        `DTEND;VALUE=DATE:${isoDe(n + 1).replace(/-/g, "")}`, `SUMMARY:${titre.replace(/[,;]/g, (c) => "\\" + c)}`, "TRANSP:TRANSPARENT", "END:VEVENT");
     }
   }
   lignes.push("END:VCALENDAR");

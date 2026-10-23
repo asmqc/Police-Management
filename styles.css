@@ -2330,3 +2330,18 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .hr-motif { display: grid; gap: 6px; }
 .hr-motif select { width: 100%; }
 .hr-motif .aide { margin: 0; }
+
+/* Accueil : dates limites du contrat */
+.ac-echeances { display: grid; gap: 8px; }
+.ac-echeances h3 { margin: 0; font-size: 1.05rem; }
+.ac-echeances ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ac-echeances li { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.ac-echeances li > span:last-child { display: grid; gap: 2px; }
+.ac-echeances li small { color: var(--fg-doux); font-size: .84rem; line-height: 1.35; }
+.ech-j { display: grid; justify-items: center; line-height: 1; padding: 6px 0; border-radius: 12px; background: rgba(37, 99, 235, .12); color: #2563EB; }
+.ech-j b { font-size: 1.3rem; }
+.ech-j small { font-size: .68rem !important; color: inherit !important; }
+.ac-echeances li.urgent .ech-j { background: rgba(198, 47, 58, .14); color: var(--rouge); }
+.hr-options-quart { display: grid; gap: 8px; }
+.hr-options-quart[hidden] { display: none; }
+#hr-jour-rappel, #hr-tsp-rappel { width: 100%; }
