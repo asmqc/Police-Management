@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610232058">
+  <link rel="stylesheet" href="styles.css?v=202610232238">
 </head>
 <body>
   <!-- Chargement -->
@@ -84,8 +84,8 @@
           </ul>
         </div>
         <div class="site-hero-visuel" aria-hidden="true">
-          <figure class="site-tel incline-g"><img src="assets/site/horaire.webp" alt=""></figure>
-          <figure class="site-tel avant"><img src="assets/site/accueil.webp" alt=""></figure>
+          <figure class="site-tel site-appareil incline-g"><img src="assets/site/appareil-horaire.webp" width="620" height="1155" alt=""></figure>
+          <figure class="site-tel site-appareil avant"><img src="assets/site/appareil-accueil.webp" width="620" height="1155" alt="" fetchpriority="high"></figure>
         </div>
       </section>
 
@@ -146,6 +146,8 @@
           <article><b>Feuille de poste</b><p>La feuille de votre poste, partagée entre les membres du même poste seulement, toujours à jour.</p></article>
           <article><b>Idées et sondages</b><p>Proposez des nouveautés, votez pour celles des autres et répondez aux sondages de l'administration.</p></article>
           <article><b>Rappels et notifications</b><p>Rappel avant chaque quart, rappels d'événements, messages et annonces, même quand l'app est fermée.</p></article>
+          <article><b>Paie et banques (SQ)</b><p>Paie aux deux semaines estimée selon le contrat de travail, banques de vacances, de fériés et de temps en jours et en heures.</p></article>
+          <article><b>IA du contrat de travail (SQ)</b><p>Posez votre question en mots de tous les jours : l'IA cite mot pour mot les clauses qui répondent, avec la page du PDF officiel.</p></article>
           <article><b>Québec 511 de votre secteur</b><p>Entraves et travaux sur le territoire de votre unité, actualisés automatiquement. Mode nuit rouge pour garder la vision nocturne.</p></article>
         </div>
       </section>
@@ -161,7 +163,7 @@
             <li>Calendrier abonné : votre horaire dans l'iPhone, Google ou Outlook, mis à jour tout seul</li>
           </ul>
         </div>
-        <figure class="site-tel"><img src="assets/site/horaire.webp" alt="Vue semaine de l'horaire avec les quarts de jour et de nuit"></figure>
+        <figure class="site-tel site-appareil"><img src="assets/site/appareil-horaire.webp" width="620" height="1155" loading="lazy" decoding="async" alt="L'horaire du mois sur un iPhone, avec la rotation et les congés"></figure>
       </section>
 
       <section class="site-bande inverse" id="site-carte">
@@ -175,7 +177,7 @@
             <li>Votre position reste sur votre appareil</li>
           </ul>
         </div>
-        <figure class="site-tel"><img src="assets/site/carte.webp" alt="Carte avec les couches de la Sûreté du Québec"></figure>
+        <figure class="site-tel site-appareil"><img src="assets/site/appareil-carte.webp" width="620" height="1155" loading="lazy" decoding="async" alt="La carte des territoires et des postes sur un iPhone"></figure>
       </section>
 
       <section class="site-bande" id="site-lois">
@@ -185,8 +187,8 @@
           <p>Cherchez un article par numéro ou par mot-clé, copiez-le, ouvrez le texte officiel. Pour la vitesse, entrez la limite et la vitesse mesurée : amende, frais, points et grand excès sont calculés.</p>
         </div>
         <div class="site-duo">
-          <figure class="site-tel"><img src="assets/site/vitesse.webp" alt="Calculateur de vitesse"></figure>
-          <figure class="site-tel decale"><img src="assets/site/lois.webp" alt="Recherche dans la Loi sur les véhicules hors route"></figure>
+          <figure class="site-tel site-appareil"><img src="assets/site/appareil-vitesse.webp" width="620" height="1155" loading="lazy" decoding="async" alt="Le calculateur d'excès de vitesse sur un iPhone : amende, frais et points"></figure>
+          <figure class="site-tel site-appareil decale"><img src="assets/site/appareil-lois.webp" width="620" height="1155" loading="lazy" decoding="async" alt="Recherche « cellulaire » dans le Code de la sécurité routière sur un iPhone"></figure>
         </div>
       </section>
 
@@ -214,7 +216,37 @@
           <p>Postes MRC et autoroutiers, horaire hybride autoroutier et territoires de desserte de la SQ sont intégrés. Les corps de police municipaux et autochtones ont leur propre espace : territoire sur la carte, forum, idées et annonces.</p>
           <div class="site-cta"><button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès pour mon corps</button></div>
         </div>
-        <figure class="site-tel"><img src="assets/site/forum.webp" alt="Forum d'un corps de police"></figure>
+        <figure class="site-tel site-appareil"><img src="assets/site/appareil-forum.webp" width="620" height="1155" loading="lazy" decoding="async" alt="Le forum d'un corps de police sur un iPhone"></figure>
+      </section>
+
+      <section class="site-bande" id="site-sq">
+        <div>
+          <p class="site-sur">Membres de la Sûreté du Québec</p>
+          <h2>Votre paie et votre contrat de travail, dans votre poche</h2>
+          <p>Paie aux deux semaines estimée selon le contrat de travail, avec les primes, le temps supplémentaire, les impôts et vos retenues. Banques de vacances, de fériés et de temps en jours et en heures, comme soldes officiels.</p>
+          <ul class="site-liste">
+            <li>IA Police Management : posez votre question comme à un collègue, elle cite mot pour mot les clauses du contrat, sans rien inventer</li>
+            <li>Tous les congés du contrat (événements familiaux, parental, banque de temps) appliqués à votre horaire</li>
+            <li>Rappels avant de perdre vos vacances ou vos fériés</li>
+          </ul>
+        </div>
+        <div class="site-duo">
+          <figure class="site-tel site-appareil"><img src="assets/site/appareil-remuneration.webp" width="620" height="1155" loading="lazy" decoding="async" alt="Les banques de vacances en jours et en heures sur un iPhone"></figure>
+          <figure class="site-tel site-appareil decale"><img src="assets/site/appareil-convention.webp" width="620" height="1155" loading="lazy" decoding="async" alt="L'IA Police Management cite la clause 23.03 du contrat de travail sur un iPhone"></figure>
+        </div>
+      </section>
+
+      <section class="site-bande inverse site-bande-duo" id="site-duo">
+        <div>
+          <p class="site-sur">Nouveau · iPhone Duo</p>
+          <h2>S'adapte à l'iPhone Duo</h2>
+          <p>Dépliez-le : le calendrier, les lois et la carte profitent du grand écran de 7,6 po. Repliez-le : tout reste à portée de pouce sur l'écran de 5,4 po. En écran partagé, gardez Police Management ouverte à côté d'une autre app.</p>
+          <ul class="site-liste">
+            <li>Déplié, plié ou en écran partagé : l'interface s'ajuste d'elle-même</li>
+            <li>Le même compte sur l'iPhone, l'iPad, Android et l'ordinateur</li>
+          </ul>
+        </div>
+        <figure class="site-appareil-large"><img src="assets/site/appareil-duo.webp" width="1400" height="1317" loading="lazy" decoding="async" alt="Police Management sur l'iPhone Duo : l'horaire sur l'écran déplié et l'accueil sur l'écran plié"></figure>
       </section>
 
       <section class="site-section" id="site-installer">
@@ -1950,9 +1982,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610232058"></script>
+  <script src="config.js?v=202610232238"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610232058"></script>
+  <script src="app.js?v=202610232238"></script>
 </body>
 </html>

@@ -2438,3 +2438,17 @@ html.visite-active, html.visite-active body { overflow: hidden; }
 .ct-form #ct-numero { font-family: var(--f-mono); font-weight: 600; }
 .ct-position { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .btn-secondaire.rouge, .lien.rouge { color: var(--rouge); }
+
+/* ---------- Maquettes d'appareils réalistes (site public) ---------- */
+.site-tel.site-appareil { width: 300px; aspect-ratio: auto; padding: 0; background: none; border-radius: 0; box-shadow: none; overflow: visible; }
+.site-tel.site-appareil img { width: 100%; height: auto; border-radius: 0; object-fit: contain; }
+.site-hero-visuel .site-appareil.avant { width: 330px; }
+.site-hero-visuel .site-appareil.incline-g { transform: translateX(-112%) rotate(-6deg) scale(.88); }
+.site-duo .site-tel.site-appareil { width: min(48%, 250px); }
+.site-appareil-large { margin: 0; justify-self: center; width: min(100%, 560px); }
+.site-appareil-large img { width: 100%; height: auto; display: block; }
+@media (max-width: 860px) {
+  .site-hero-visuel .site-appareil.avant { width: 270px; }
+  .site-duo .site-tel.site-appareil { width: 48%; }
+}
+html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }
