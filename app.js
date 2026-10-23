@@ -539,7 +539,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.10.22";
+  const VERSION_POLITIQUE = "2026.10.23";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
