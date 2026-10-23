@@ -1677,17 +1677,40 @@
     if (etat.paie && etat.paie.date_entree) {
       try {
         const B = banquesSQ();
-        if (B.fer.soldeFin > 12) ajouter(`${an}-11-01`, `${an}-12-31`, "Fériés à prendre avant le 31 décembre", `Il vous resterait ${fmtJH(B.fer.soldeFin, B.type === "12" ? 12 : 9)}; au plus 12 h peuvent être reportées ou payées (23.17 c).`, true);
-        if (B.vac.soldeFin > 36) ajouter(`${B.vac.fin.slice(0, 4)}-01-15`, B.vac.fin, "Vacances à prendre avant le 31 mars", `Il vous resterait ${fmtJH(B.vac.soldeFin, B.type === "12" ? 12 : 9)}; au plus 36 h peuvent être reportées (23.13).`, true);
+        // Rappel quand il reste moins de 3 fois plus de jours que de jours de congé à placer (au-delà de ce qui est reportable)
+        const base = B.type === "12" ? 12 : 9;
+        const rappel = (soldeH, reportable, fin, titre, regle, cle) => {
+          const aPlacer = Math.max(0, soldeH - reportable), joursConge = aPlacer / base, joursRestants = jourUTC(fin) - jourUTC(auj) + 1;
+          if (aPlacer > 0 && joursRestants > 0 && joursRestants < 3 * joursConge) {
+            res.push({ limite: fin, titre, detail: `Il vous reste ${fmtJH(aPlacer, base)} à placer (${Math.ceil(joursConge)} jour${Math.ceil(joursConge) > 1 ? "s" : ""}) et ${joursRestants} jours pour les prendre. ${regle}`, j: joursRestants - 1, urgent: true, cle, aPlacer, base });
+          }
+        };
+        rappel(B.fer.soldeFin, 12, B.fer.fin, "Fériés à planifier", "Au plus 12 h peuvent être reportées ou payées au 31 décembre (23.17 c).", "fer");
+        rappel(B.vac.soldeFin, 36, B.vac.fin, "Vacances à planifier", "Au plus 36 h peuvent être reportées au 31 mars (23.13).", "vac");
       } catch { /* horaire pas encore chargé */ }
     }
     return res.sort((a, b) => a.j - b.j);
+  }
+  // Notification de l'appareil (si permise), au plus une fois par semaine pour chaque banque
+  async function notifierRappelsConges(rappels) {
+    if (!rappels.length || !("Notification" in window) || Notification.permission !== "granted" || !("serviceWorker" in navigator)) return;
+    for (const r of rappels) {
+      const cle = `pm-rappel-${r.cle}`;
+      let dernier = null; try { dernier = localStorage.getItem(cle); } catch { /* facultatif */ }
+      if (dernier && jourUTC(aujourdhuiISO()) - jourUTC(dernier) < 7) continue;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(r.titre, { body: r.detail, tag: cle, icon: "assets/icone-192.png", badge: "assets/icone-192.png", data: { url: "#horaire" } });
+        localStorage.setItem(cle, aujourdhuiISO());
+      } catch { /* notification indisponible */ }
+    }
   }
   function rendreEcheances() {
     const sec = $("#ac-echeances");
     if (!estSQ()) { sec.hidden = true; return; }
     const l = echeancesSQ();
     sec.hidden = !l.length;
+    notifierRappelsConges(l.filter((e) => e.cle));
     $("#ac-echeances-liste").innerHTML = l.map((e) => `<li class="${e.urgent || e.j <= 10 ? "urgent" : ""}"><span class="ech-j"><b>${e.j <= 0 ? "Auj." : e.j}</b>${e.j > 0 ? `<small>jour${e.j > 1 ? "s" : ""}</small>` : ""}</span><span><b>${esc(e.titre)}</b><small>${esc(e.detail)} Date limite : ${esc(dateCourte(e.limite, true))}.</small></span></li>`).join("");
   }
 
