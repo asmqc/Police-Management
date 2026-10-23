@@ -555,31 +555,49 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
-    { date: "2026-10-22", titre: "Nouvelles lois, recherche et calendrier abonné", points: [
-      "Lois : Code criminel, Loi sur le cannabis et Loi réglementant certaines drogues, avec raccourcis (capacité affaiblie, délit de fuite, voies de fait…).",
-      "Accueil : une recherche qui trouve un article, une municipalité ou une section, et les entraves Québec 511 du territoire de votre unité, actualisées automatiquement.",
-      "Horaire : calendrier abonné qui se met à jour tout seul dans le Calendrier de l'iPhone, Google Agenda ou Outlook.",
-      "Statistiques : valeur du temps supplémentaire (paie ou banque de temps).",
+    { id: "2026-10-22-c", date: "2026-10-22", titre: "Horaire", points: [
+      "Le « + » propose : modifier le quart, planifier le congé des Fêtes ou ajouter un événement.",
+      "Ajoutez du temps supplémentaire à un quart (avant, après ou rappel), payé ou compensé en banque.",
+      "Nouveaux codes : B · Banque de temps, E · Événement familial, P · Congé parental, D · Congé D repris, A · Accident de travail, Y · Libération syndicale, U · Sans traitement, chacun avec son motif selon le contrat.",
+      "Congés de plusieurs jours inscrits d'un coup : mariage (7 jours), décès, déménagement, maternité, paternité, adoption.",
+      "Plus de 20 modèles de rotation (Pitman, DuPont, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et, pour la SQ, l'horaire hybride H1 avec le choix de l'équipe, plus des gabarits H2, H3, annexe I, 13-15-28, 16-19-35, Alma et 4-3.",
+      "Heures facultatives pour une demi-journée de V, H ou B.",
+      "Alertes de repos : travail continu de 17 h, plus de 14 h dans la journée, moins de 8 h avant le quart suivant (12.16).",
+      "Calendrier abonné : votre horaire dans le Calendrier de l'iPhone, Google Agenda ou Outlook, avec le temps supplémentaire et les dates limites du contrat.",
+    ] },
+    { date: "2026-10-22", titre: "Paie et temps supplémentaire (Sûreté du Québec)", points: [
+      "Paie aux deux semaines dans Horaire › Statistiques › Paie : brut et net, primes de nuit, de soir et de fin de semaine (selon le quart remplacé pour un V ou une maladie), impôts et cotisations 2026, retenues de votre talon.",
+      "Temps supplémentaire calculé selon l'art. 12 : taux et demi ou double, arrondi (12.09), heure de repas et indemnité de 6 $ (12.08), repas non pris (12.06), minimums de rappel (12.03, 12.04, annexe I).",
+      "Disponibilité de service (art. 13), remplacement temporaire d'un grade supérieur (17.04), allocations régionales (art. 18), allocation vestimentaire (19.01), repas de nuit (21.07).",
+      "Absences sans traitement déduites de la paie; congés payés par le RQAP ou la CNESST signalés.",
+    ] },
+    { date: "2026-10-22", titre: "Banques et dates limites (Sûreté du Québec)", points: [
+      "Mes banques en jours et heures, comme soldes officiels : vacances, fériés, maladie (avec avis de certificat médical), banques de temps de 189 h et 1 040 h, congés D et autres congés de l'année.",
+      "Vos soldes, votre rémunération, vos retenues et vos allocations se modifient dans Mon compte.",
+      "À l'accueil, « À ne pas oublier » : choix des vacances, demande des Fêtes avant le 31 octobre, fériés et vacances à prendre, changement d'heure.",
+      "Échelle salariale de l'annexe T dans Convention.",
+    ] },
+    { date: "2026-10-22", titre: "Outils et lois", points: [
+      "Convention : calculateur de frais (repas, kilométrage, coucher, annexe K) et délai de grief (art. 31).",
+      "Lois : Code criminel, Loi sur le cannabis et Loi réglementant certaines drogues, avec raccourcis.",
+      "Accueil : recherche d'un article, d'une municipalité ou d'une section, et entraves Québec 511 du territoire de votre unité, actualisées automatiquement.",
+    ] },
+    { date: "2026-10-22", titre: "App et service", points: [
+      "Bandeau d'état du service : avis d'une panne prévue, et écran d'attente pendant une panne ou une mise à jour des serveurs.",
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
-      "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
-      "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
-      "Bandeau d'état : si une panne ou une mise à jour des serveurs est en cours, un avis s'affiche en haut de l'app.",
-      "Sûreté du Québec : disponibilité de service, remplacement temporaire, allocations régionales et vestimentaires, repas de nuit, assistant du congé des Fêtes, alertes de repos, calculateur de frais et délai de grief.",
-      "Temps supplémentaire selon l'art. 12 : rappels avec minimum garanti, heure de repas, indemnité de 6 $, repas non pris; congés D; dates limites du contrat à l'accueil et dans le calendrier abonné.",
-      "Horaire : tous les congés du contrat SQ avec leur motif (événements familiaux, droits parentaux, congé D, accident de travail, libération syndicale, sans traitement), pris en compte dans la paie.",
-      "Temps supplémentaire payé ou compensé, et nouveau code B · Banque de temps pour les congés pris à même votre banque.",
-      "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
-      "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
+      "Les pages ne glissent plus de côté sur iPhone.",
+      "App iPhone : « Dis Siri, mon prochain quart dans Police Management ».",
+    ] },
   ];
   function ouvrirNouveautes() {
     $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
       <b>${esc(n.titre)}</b><ul>${n.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></article>`).join("");
     $("#nouv-voile").hidden = false;
-    try { localStorage.setItem("pm-nouv-vu", NOUVEAUTES[0].date); } catch { /* facultatif */ }
+    try { localStorage.setItem("pm-nouv-vu", NOUVEAUTES[0].id || NOUVEAUTES[0].date); } catch { /* facultatif */ }
   }
   function montrerNouveautesUneFois() {
     let vu = null; try { vu = localStorage.getItem("pm-nouv-vu"); } catch { return; }
-    if (vu !== NOUVEAUTES[0].date && $("#consent-voile").hidden && $("#avert-voile").hidden) ouvrirNouveautes();
+    if (vu !== (NOUVEAUTES[0].id || NOUVEAUTES[0].date) && $("#consent-voile").hidden && $("#avert-voile").hidden) ouvrirNouveautes();
   }
   $$("[data-action='nouveautes']").forEach((b) => b.addEventListener("click", ouvrirNouveautes));
   $("#nouv-fermer").addEventListener("click", () => ($("#nouv-voile").hidden = true));
