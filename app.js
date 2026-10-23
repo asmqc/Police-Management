@@ -564,6 +564,7 @@
       "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
       "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
       "Bandeau d'état : si une panne ou une mise à jour des serveurs est en cours, un avis s'affiche en haut de l'app.",
+      "Horaire : tous les congés du contrat SQ avec leur motif (événements familiaux, droits parentaux, congé D, accident de travail, libération syndicale, sans traitement), pris en compte dans la paie.",
       "Temps supplémentaire payé ou compensé, et nouveau code B · Banque de temps pour les congés pris à même votre banque.",
       "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
@@ -961,7 +962,47 @@
     J: { nom: "Jour" }, S: { nom: "Soir" }, N: { nom: "Nuit" }, C: { nom: "Congé" },
     V: { nom: "Vacances" }, M: { nom: "Maladie" }, F: { nom: "Formation" }, T: { nom: "Cour" }, X: { nom: "Temps supp." },
     O: { nom: "Obligation familiale" }, H: { nom: "Férié" }, L: { nom: "Maladie longue durée" }, B: { nom: "Banque de temps" },
+    E: { nom: "Événement familial" }, P: { nom: "Congé parental" }, D: { nom: "Congé D repris" }, A: { nom: "Accident de travail" },
+    Y: { nom: "Libération syndicale" }, U: { nom: "Sans traitement" },
   };
+  // Motifs des congés selon le contrat de travail APPQ (art. 25, 26, 27, 33, 36) : [clé, libellé, jours, payé]
+  const MOTIFS = {
+    E: [
+      ["mariage", "Mon mariage ou union civile", "7 jours consécutifs, payés (25.01 a)"],
+      ["mariage-famille", "Mariage de mon père, ma mère, mon enfant, mon frère ou ma sœur", "Le jour du mariage, payé, si j'y assiste (25.01 b)"],
+      ["deces-conjoint", "Décès de mon conjoint ou de mon enfant", "7 jours consécutifs, payés (25.01 c)"],
+      ["deces-parent", "Décès de mon père, ma mère, mon frère ou ma sœur", "3 jours payés, plus 2 jours sans traitement au besoin (25.01 d)"],
+      ["deces-beaux", "Décès de mon beau-père ou de ma belle-mère", "3 jours consécutifs, payés (25.01 e)"],
+      ["deces-domicile", "Décès d'un beau-frère, belle-sœur, gendre, bru ou grand-parent qui habitait chez moi", "3 jours consécutifs, payés (25.01 f)"],
+      ["deces-autre", "Décès d'un beau-frère, belle-sœur, gendre, bru ou grand-parent", "Le jour des funérailles ou du décès, payé (25.01 g)"],
+      ["deces-enfant-conjoint", "Décès de l'enfant de mon conjoint", "5 jours, dont 2 payés (25.03)"],
+      ["distance", "Jour additionnel : événement à plus de 240 km", "1 jour payé (25.04)"],
+      ["demenagement", "Mon déménagement", "2 jours payés, au plus 2 jours par année civile (25.05)"],
+      ["serieux", "Présence requise auprès de ma famille immédiate (raisons sérieuses)", "Payé, sur demande écrite motivée (25.07)"],
+    ],
+    P: [
+      ["naissance", "Naissance de mon enfant", "5 jours ouvrables payés, entre l'accouchement et le 15ᵉ jour après le retour à la maison (33.32)"],
+      ["maternite", "Congé de maternité", "21 semaines; indemnité de 93 % du traitement moins le RQAP (33.09, 33.19)"],
+      ["paternite", "Congé de paternité", "5 semaines; traitement complété au-delà du RQAP (33.33, 33.34)"],
+      ["adoption-jours", "Adoption : congé de 5 jours", "5 jours ouvrables payés (33.37)"],
+      ["adoption", "Congé pour adoption", "5 semaines (33.38)"],
+      ["adoption-prep", "En vue d'une adoption", "Jusqu'à 10 semaines sans traitement (33.43)"],
+      ["parental", "Congé parental sans traitement", "Jusqu'à 104 semaines après la maternité, la paternité ou l'adoption (33.44)"],
+      ["grossesse", "Congé spécial : complication de grossesse", "Durée prescrite par certificat médical (33.30)"],
+      ["retrait", "Retrait préventif (grossesse ou allaitement)", "Affectation ou congé spécial (33.29)"],
+      ["enfant-malade", "Enfant mineur malade ou handicapé ayant besoin de moi", "Jusqu'à 1 an sans traitement (33.47)"],
+    ],
+    U: [
+      ["general", "Congé sans traitement", "Jusqu'à 12 mois, sur demande écrite (26.01)"],
+      ["dix-ans", "Congé sans traitement : 10 ans de service", "Jusqu'à 12 mois, demande 30 jours avant, une fois par 10 ans (26.02)"],
+      ["evenement", "Événement familial sans traitement", "Décès d'un petit-enfant, mariage de l'enfant du conjoint, jours additionnels (25.01 d, 25.02, 25.03)"],
+      ["obligation", "Obligation familiale non payée", "Au-delà des 2 premières journées payées (25.08)"],
+      ["differe", "Congé à traitement différé", "Selon l'entente (art. 27)"],
+      ["ecole", "Libération : École nationale de police", "Sans traitement (art. 36)"],
+    ],
+  };
+  const NON_PAYES_P = ["adoption-prep", "parental", "enfant-malade"];
+  const RQAP_P = ["maternite", "paternite", "adoption", "grossesse", "retrait"];
   const QUARTS_CYCLE = ["J", "S", "N", "C"];
   const HEURES_DEFAUT = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
   const MODELES = {
@@ -999,7 +1040,8 @@
       const n = jourUTC(iso) - jourUTC(c.debut);
       prevu = c.cycle[((n % c.cycle.length) + c.cycle.length) % c.cycle.length];
     }
-    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e, tsp: e && e.tsp && e.tsp.debut ? e.tsp : null };
+    const mo = e && e.motif && MOTIFS[e.type] ? MOTIFS[e.type].find(([k]) => k === e.motif) : null;
+    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e, tsp: e && e.tsp && e.tsp.debut ? e.tsp : null, motif: mo ? mo[1] : "", motifCle: e && e.motif || "" };
   }
   // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
   function heuresJour(code, iso, src = affichee()) {
@@ -1855,7 +1897,7 @@
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.tsp ? `<small class="tsp-ligne">+ Temps supp. ${esc(qq.tsp.debut)} – ${esc(qq.tsp.fin)}${+qq.tsp.maj === 2 ? " (× 2)" : ""}</small>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsp ? `<small class="tsp-ligne">+ Temps supp. ${esc(qq.tsp.debut)} – ${esc(qq.tsp.fin)}${+qq.tsp.maj === 2 ? " (× 2)" : ""}</small>` : ""}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
         <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
@@ -2300,7 +2342,8 @@
     const sal = salaireSQ(paie, jeudi);
     const base = sal.annuel / 26;
     const jours = [];
-    let prNuit = 0, prSoir = 0, prFds = 0, tsVal = 0, tsH = 0, tsBanque = 0, regTrav = 0, regPrevus = 0;
+    let prNuit = 0, prSoir = 0, prFds = 0, tsVal = 0, tsH = 0, tsBanque = 0, regTrav = 0, regPrevus = 0, retenueST = 0, hST = 0;
+    const autreRegime = new Set();
     for (let i = 0; i < 14; i++) {
       const iso = isoPlus(debut, i), q = quartDu(iso, src);
       const salJ = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
@@ -2320,6 +2363,14 @@
         const h = heuresJour(q.prevu, iso, src);
         if (h) { const pq = primesQuart(iso, h, salJ, ans); ligne.perdu = pq.nuit + pq.soir + pq.fds; ligne.hPrevu = h; }
       }
+      // Absences sans traitement (art. 25, 26, 33) et congés payés par d'autres régimes (RQAP, CNESST)
+      const rangO = q.code === "O" ? Object.entries(src.exceptions || {}).filter(([k, e]) => e.type === "O" && k.slice(0, 4) === iso.slice(0, 4) && k <= iso).length : 0;
+      const sansTraitement = q.code === "U" || (q.code === "P" && NON_PAYES_P.includes(q.motifCle)) || (q.code === "O" && rangO > 2);
+      if (sansTraitement && prevuTravail) {
+        const hp = heuresJour(q.prevu, iso, src);
+        if (hp) { const m = dureeH(hp) * salJ.annuel / 2080; retenueST += m; hST += dureeH(hp); ligne.sansTraitement = m; }
+      }
+      if ((q.code === "P" && RQAP_P.includes(q.motifCle)) || q.code === "A") autreRegime.add(q.code === "A" ? "CNESST (accident de travail)" : "RQAP et indemnité de la Sûreté (art. 33)");
       if (q.tsp && q.code !== "X") {
         const d = arrondiTS(dureeH([q.tsp.debut, q.tsp.fin])), maj = +q.tsp.maj || 1.5, v = d * maj * salJ.tauxTS;
         ligne.tspMaj = maj;
@@ -2329,9 +2380,9 @@
       jours.push(ligne);
     }
     const primes = prNuit + prSoir + prFds;
-    const brut = base + primes + tsVal;
+    const brut = Math.max(0, base - retenueST) + primes + tsVal;
     const rotation = sal.annuel * 0.018 / 26 * (regPrevus ? Math.min(1, regTrav / regPrevus) : 0); // 16.04 : versée au REER collectif
-    return { k, jeudi, verse, debut, fin, sal, base, prNuit, prSoir, prFds, primes, tsVal, tsH, tsBanque, brut, rotation, jours, r };
+    return { k, jeudi, verse, debut, fin, sal, base, prNuit, prSoir, prFds, primes, tsVal, tsH, tsBanque, brut, rotation, jours, r, retenueST, hST, autreRegime: [...autreRegime] };
   }
   function retenuesPaie(p) {
     const F = FISC_2026, an = p.verse.slice(0, 4);
@@ -2502,6 +2553,35 @@
         <p class="aide">À la SQ, la maladie est payée par la banque collective (annexe C) : aucun solde personnel ne diminue. Avisez au moins 1 heure avant votre quart (2.09). Une déclaration écrite suffit jusqu'à 3 jours (2.03).</p>
         ${mal.avis.length ? `<ul class="banque-avis-liste">${mal.avis.map((a) => `<li class="${a.fort ? "fort" : ""}">${esc(a.texte)}</li>`).join("")}</ul>` : `<p class="aide">Aucun certificat médical à prévoir selon votre horaire.</p>`}
       </section>
+      ${(() => {
+        // Autres congés de l'année civile (art. 25, 26, 33, annexe C)
+        const an = aujourdhuiISO().slice(0, 4), c = {}, motifs = {};
+        for (const [iso, e] of Object.entries(hr.exceptions || {})) {
+          if (iso.slice(0, 4) !== an || !["E", "O", "P", "U", "D", "A", "Y"].includes(e.type)) continue;
+          c[e.type] = (c[e.type] || 0) + 1;
+          if (e.motif) motifs[e.type + ":" + e.motif] = (motifs[e.type + ":" + e.motif] || 0) + 1;
+        }
+        const dem = motifs["E:demenagement"] || 0, o = c.O || 0;
+        const lignes = [];
+        if (c.E) lignes.push(`<dt>Événements familiaux (25.01)</dt><dd>${c.E} j</dd>`);
+        lignes.push(`<dt>Obligations familiales (25.08)</dt><dd>${o} / 10 j</dd>`);
+        if (dem) lignes.push(`<dt>Déménagement (25.05)</dt><dd>${dem} / 2 j</dd>`);
+        if (c.P) lignes.push(`<dt>Droits parentaux (art. 33)</dt><dd>${c.P} j</dd>`);
+        if (c.D) lignes.push(`<dt>Congés D repris</dt><dd>${c.D} j</dd>`);
+        if (c.U) lignes.push(`<dt>Sans traitement</dt><dd>${c.U} j</dd>`);
+        if (c.A) lignes.push(`<dt>Accident de travail</dt><dd>${c.A} j</dd>`);
+        if (c.Y) lignes.push(`<dt>Libération syndicale (art. 8)</dt><dd>${c.Y} j</dd>`);
+        const avis = [];
+        if (o > 2) avis.push(`Obligations familiales : seules les 2 premières journées de l'année sont payées (25.08). ${o - 2} journée${o - 2 > 1 ? "s" : ""} sans traitement.`);
+        if (o > 10) avis.push("Obligations familiales : le maximum est de 10 journées par année (25.08).");
+        if (dem > 2) avis.push("Déménagement : au plus 2 jours par année civile (25.05).");
+        return `<section class="banque">
+        <h4>Autres congés <small>année ${an}</small></h4>
+        <dl class="vt-detail">${lignes.join("")}</dl>
+        ${avis.map((a) => `<p class="banque-avis">${esc(a)}</p>`).join("")}
+        <p class="aide">Dans l'horaire, choisissez le code puis le motif (événement familial, droits parentaux, sans traitement…). L'app applique les règles du contrat et ajuste la paie.</p>
+      </section>`;
+      })()}
       <section class="banque">
         <h4>Banques de temps supplémentaire</h4>
         <dl class="vt-detail">
@@ -2609,6 +2689,7 @@
       else if (j.banque !== undefined) { quoi = `Temps supp. ${j.maj === 2 ? "× 2" : "× 1,5"} <small>compensé</small>`; val = `<span class="perdu">+ ${fmtH(j.banque)} en banque</span>`; }
       else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
       else { quoi = esc(nomQ(j.code)); val = ""; }
+      if (j.sansTraitement) val = (val ? val + "<br>" : "") + `<span class="perdu">− ${$$d(j.sansTraitement)} sans traitement</span>`;
       if (j.tsp) { quoi += `<small>+ temps supp. payé ${j.tspMaj === 2 ? "× 2" : "× 1,5"}</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.tsp); }
       if (j.tspBanque) { quoi += `<small>+ temps supp. compensé ${j.tspMaj === 2 ? "× 2" : "× 1,5"}</small>`; val = (val ? val + "<br>" : "") + `<span class="perdu">+ ${fmtH(j.tspBanque)} en banque</span>`; }
       return `<tr><td>${esc(dateCourte(j.iso, "jour"))}</td><td>${quoi}</td><td>${val}</td></tr>`;
@@ -2621,6 +2702,7 @@
       <p class="aide paie-periode">Versée le ${esc(dateCourte(p.verse, true))}${p.verse !== p.jeudi ? " (jour férié le jeudi)" : ""} · primes et temps supp. de la période du ${esc(dateCourte(p.debut))} au ${esc(dateCourte(p.fin, true))}</p>
       <dl class="vt-detail">
         <dt>Traitement (${$$d(p.sal.annuel)} ÷ 26)</dt><dd>${$$d(p.base)}</dd>
+        ${p.retenueST ? `<dt>Absence sans traitement (${fmtH(p.hST)})</dt><dd>− ${$$d(p.retenueST)}</dd>` : ""}
         <dt>Prime de nuit (16.02, ${Math.round((p.jours.find((j) => j.detail) || { detail: { pctNuit: 0.11 } }).detail.pctNuit * 100)} %)</dt><dd>${$$d(p.prNuit)}</dd>
         <dt>Prime de soir (16.01, 0,73 $/h)</dt><dd>${$$d(p.prSoir)}</dd>
         <dt>Prime de fin de semaine (16.03, 4 %)</dt><dd>${$$d(p.prFds)}</dd>
@@ -2637,6 +2719,7 @@
         <dt>Mes retenues du talon</dt><dd>${ret.autres ? $$d(ret.autres) : `<span class="perdu">à inscrire</span>`}</dd>
         <dt class="total">Net estimé</dt><dd class="total">${$$d(ret.net)}</dd>
       </dl>
+      ${p.autreRegime.length ? `<p class="banque-avis">Cette période comprend un congé payé en partie par ${esc(p.autreRegime.join(" et par "))}. Ces montants ne sont pas estimés ici : la paie réelle sera différente.</p>` : ""}
       ${p.tsBanque ? `<p class="aide">Temps compensé : ${fmtH(p.tsBanque)} ajoutées à votre banque de temps (pas sur cette paie).</p>` : ""}
       ${p.rotation ? `<p class="aide">Prime de rotation (16.04) : environ ${$$d(p.rotation)} versés directement au REER collectif de l'APPQ, hors de votre paie nette.</p>` : ""}
       <details class="paie-jours"><summary>Détail des 14 jours</summary>
@@ -3742,6 +3825,7 @@ Format :
     $("#hr-jour-choix").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<button type="button" class="q q-${k}" data-q="${k}" aria-pressed="${String(q.code === k)}">${k} · ${esc(v.nom)}</button>`).join("");
     $$("#hr-jour-choix button").forEach((b) => b.addEventListener("click", () => $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)))));
     $("#hr-jour-note").value = q.note || "";
+    hr.motifInitial = (((cibleEdition().exceptions || {})[iso]) || {}).motif || "";
     const ex = (cibleEdition().exceptions || {})[iso] || {};
     $("#hr-jour-debut").value = ex.debut || ""; $("#hr-jour-fin").value = ex.fin || "";
     $$("#hr-ts-champs input").forEach((i) => (i.value = (ex.ts && ex.ts[i.dataset.ts]) || ""));
@@ -3763,7 +3847,16 @@ Format :
   const typeChoisi = () => { const b = $("#hr-jour-choix button[aria-pressed='true']"); return b ? b.dataset.q : quartDu(hr.jourChoisi, cibleEdition()).prevu; };
   function majChampsJour() {
     const t = typeChoisi();
-    $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T", "B", "V", "H"].includes(t);
+    $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T", "B", "V", "H", "D", "Y", "O"].includes(t);
+    const motifs = MOTIFS[t];
+    $("#hr-motif-bloc").hidden = !!hr.vue || !motifs;
+    if (motifs) {
+      const sel = $("#hr-jour-motif"), avant = sel.dataset.type === t ? sel.value : hr.motifInitial;
+      if (sel.dataset.type !== t) { sel.innerHTML = motifs.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join(""); sel.dataset.type = t; }
+      if (avant && motifs.some(([k]) => k === avant)) sel.value = avant;
+      const m = motifs.find(([k]) => k === sel.value);
+      $("#hr-motif-aide").textContent = m ? m[2] : "";
+    }
     $("#hr-tsp-bloc").hidden = !!hr.vue || !t || t === "X";
     $("#hr-jour-pris-bloc").hidden = !!hr.vue || t !== "X";
     $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
@@ -3775,6 +3868,7 @@ Format :
     $("#hr-jour-defaut").textContent = h ? ` · par défaut ${h[0]} – ${h[1]}` : "";
   }
   $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
+  $("#hr-jour-motif").addEventListener("change", () => { hr.motifInitial = $("#hr-jour-motif").value; majChampsJour(); });
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
   function majValeurJour() {
     majValeurTsp();
@@ -3830,7 +3924,7 @@ Format :
     }
     const avant = cible.exceptions[iso];
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}) };
+    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}) };
     try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
     catch (e) { if (avant) cible.exceptions[iso] = avant; else delete cible.exceptions[iso]; toast(traduireErreur(e)); }
   });

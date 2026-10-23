@@ -2321,3 +2321,12 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .adm-etat-champs { display: grid; gap: 8px; }
 .adm-etat-champs[hidden] { display: none; }
 #etat-voile-fin b { color: var(--fg); }
+.q-E { --q: #6D4C41; --qt: #fff; }
+.q-P { --q: #EC407A; --qt: #fff; }
+.q-D { --q: #00897B; --qt: #fff; }
+.q-A { --q: #E65100; --qt: #fff; }
+.q-Y { --q: #546E7A; --qt: #fff; }
+.q-U { --q: #9E9E9E; --qt: #1A1A1A; }
+.hr-motif { display: grid; gap: 6px; }
+.hr-motif select { width: 100%; }
+.hr-motif .aide { margin: 0; }

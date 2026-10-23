@@ -6,6 +6,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const NOMS: Record<string, string> = {
   J: "Jour", S: "Soir", N: "Nuit", C: "Congé", V: "Vacances", M: "Maladie", F: "Formation", T: "Cour",
   X: "Temps supp.", O: "Obligation familiale", H: "Férié", L: "Maladie longue durée", B: "Banque de temps",
+  E: "Événement familial", P: "Congé parental", D: "Congé D repris", A: "Accident de travail", Y: "Libération syndicale", U: "Sans traitement",
 };
 const HEURES_DEFAUT: Record<string, [string, string]> = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
 const MS_JOUR = 86400000;
