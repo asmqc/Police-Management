@@ -1027,7 +1027,20 @@
     // Sûreté du Québec : horaire hybride H1 (annexe J), cycle de 35 jours, 3 fins de semaine de congé sur 5
     "SQ-H1": "JJJJCCCSSCCJJJCCSSSCCNNNNNNNCCCCCCC",
   };
-  const MODELES_SQ = { "SQ-H1": { debut: "2026-10-05", hybride: true } };
+  // Référence : l'équipe 2 commence le cycle le lundi 5 octobre 2026; chaque équipe suivante une semaine plus tard
+  const MODELES_SQ = { "SQ-H1": { debut: "2026-10-05", equipeRef: 2, hybride: true } };
+  document.getElementById("hr-equipe").addEventListener("change", () => {
+    const m = document.getElementById("hr-modele").value;
+    if (!MODELES_SQ[m]) return;
+    const deb = debutEquipeSQ(m, document.getElementById("hr-equipe").value);
+    hr.brouillon.debut = deb; document.getElementById("hr-debut").value = deb; rendreBrouillon();
+  });
+  function debutEquipeSQ(modele, equipe) {
+    const sq = MODELES_SQ[modele], L = MODELES[modele].length;
+    const ref = jourUTC(sq.debut) + ((+equipe || sq.equipeRef) - sq.equipeRef) * 7;
+    const n = Math.floor((jourUTC(aujourdhuiISO()) - ref) / L);
+    return isoDe(ref + n * L);
+  }
   const H8 = { J: ["07:00", "15:00"], S: ["15:00", "23:00"], N: ["23:00", "07:00"] };
   const H12 = { J: ["07:00", "19:00"], S: ["11:00", "23:00"], N: ["19:00", "07:00"] };
   const MODELES_HEURES = { dupont: H12, "3-3JN": H12, "4-3-3-4": H12, "4-3-3-4JN": H12, "2-3-2": H12, "5-5-4-4": H12, "223J": H12, "223": H12, "4-4JN": H12, "7-7": H12,
@@ -3959,6 +3972,8 @@ Format :
     $("#hr-modele").value = c ? (c.modele || "perso") : "4-4J";
     $("#hr-debut").value = hr.brouillon.debut;
     { const og = $("#hr-modele optgroup.seulement-sq"); if (og) { og.hidden = og.disabled = !estSQ(); } }
+    $("#hr-equipe-bloc").hidden = !MODELES_SQ[$("#hr-modele").value];
+    if (c && c.equipe) $("#hr-equipe").value = String(c.equipe);
     $("#hr-form").hidden = false;
     rendreBrouillon();
     rendreHoraire();
@@ -3987,14 +4002,12 @@ Format :
       const sq = MODELES_SQ[e.target.value];
       if (sq) {
         hr.brouillon.hybride = !!sq.hybride; if ($("#hr-hybride")) $("#hr-hybride").checked = !!sq.hybride;
-        // Début de cycle de référence, ramené au cycle en cours
-        const n = Math.floor((jourUTC(aujourdhuiISO()) - jourUTC(sq.debut)) / hr.brouillon.cycle.length);
-        const deb = isoDe(jourUTC(sq.debut) + n * hr.brouillon.cycle.length);
-        hr.brouillon.debut = deb; if ($("#hr-debut")) $("#hr-debut").value = deb;
-        toast("Horaire H1 hybride : vérifiez que le 1ᵉʳ jour correspond à votre équipe");
+        const deb = debutEquipeSQ(e.target.value, $("#hr-equipe").value);
+        hr.brouillon.debut = deb; $("#hr-debut").value = deb;
       }
+      $("#hr-equipe-bloc").hidden = !sq;
       rendreBrouillon();
-    }
+    } else $("#hr-equipe-bloc").hidden = true;
     const m = e.target.value.startsWith("m:") && modelesAdmin.find((x) => "m:" + x.id === e.target.value);
     if (m) {
       hr.brouillon.cycle = [...m.cycle];
@@ -4015,7 +4028,8 @@ Format :
     if (!debut) { $("#hr-debut").focus(); return toast("Choisissez le premier jour du cycle"); }
     const cible = cibleEdition();
     const ancien = cible.config;
-    cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride };
+    cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride,
+      ...(MODELES_SQ[$("#hr-modele").value] ? { equipe: +$("#hr-equipe").value } : {}) };
     try {
       await sauverHoraire();
       $("#hr-form").hidden = true;

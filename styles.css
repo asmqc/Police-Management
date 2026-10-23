@@ -2356,3 +2356,4 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .cv-outil-corps .aide { margin: 0; }
 #grief-date, #grief-type { width: 100%; }
 #grief-res.depasse b { color: var(--rouge); }
+.hr-equipe { display: grid; gap: 6px; } .hr-equipe select { width: 100%; } .hr-equipe .aide { margin: 0; }

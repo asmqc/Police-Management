@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230219">
+  <link rel="stylesheet" href="styles.css?v=202610230221">
 </head>
 <body>
   <!-- Chargement -->
@@ -1025,6 +1025,13 @@
           <option value="perso">Personnalisé</option>
           <optgroup label="Modèles de l'administration" id="hr-modeles-admin" hidden></optgroup>
         </select>
+        <div class="hr-equipe" id="hr-equipe-bloc" hidden>
+          <label for="hr-equipe">Mon équipe</label>
+          <select id="hr-equipe">
+            <option value="1">Équipe 1</option><option value="2" selected>Équipe 2</option><option value="3">Équipe 3</option><option value="4">Équipe 4</option><option value="5">Équipe 5</option>
+          </select>
+          <p class="aide">L'équipe 2 commence son cycle le lundi 5 octobre 2026. Chaque équipe est décalée d'une semaine : vérifiez votre premier quart avec l'horaire affiché à votre poste.</p>
+        </div>
         <label for="hr-debut">Premier jour du cycle</label>
         <input id="hr-debut" type="date" required>
         <p class="aide">C'est la date où commence la case n° 1 ci-dessous.</p>
@@ -1832,9 +1839,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230219"></script>
+  <script src="config.js?v=202610230221"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230219"></script>
+  <script src="app.js?v=202610230221"></script>
 </body>
 </html>
