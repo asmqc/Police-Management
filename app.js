@@ -555,6 +555,11 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-10-23-constats", date: "2026-10-23", titre: "Registre des constats (app iPhone et iPad)", points: [
+      "Nouvel onglet Lois › Constats d'infraction : inscrivez le numéro du constat, le type (100400 ou 100391), la date, l'article du CSR, l'emplacement exact (et votre position GPS) et votre narration.",
+      "Retrouvez un constat par son numéro, un article ou un lieu, puis copiez votre narration en un toucher.",
+      "Tout reste sur votre appareil : fichier chiffré, exclu d'iCloud et protégé par Face ID. Rien n'est envoyé au serveur. Pas offert sur le site web pour l'instant.",
+    ] },
     { id: "2026-10-23-ia", date: "2026-10-23", titre: "IA Police Management (SQ)", points: [
       "Posez votre question sur le contrat de travail comme vous la diriez à un collègue (« je me marie, j'ai combien de jours ? », « on m'appelle chez nous pour rentrer »).",
       "L'IA trouve les passages exacts qui répondent et les cite mot pour mot, avec le numéro de clause et la page du PDF. Elle n'écrit jamais ses propres phrases : rien n'est inventé.",
@@ -4995,6 +5000,8 @@ Format :
   }
   function ongletLois(nom) {
     $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.csrOnglet === nom)));
+    $("#csr-constats").hidden = nom !== "constats";
+    if (nom === "constats") initConstats();
     $("#csr-vitesse").hidden = nom !== "vitesse";
     $("#csr-articles").hidden = nom !== "articles";
     $("#csr-favoris").hidden = nom !== "favoris";
@@ -5004,6 +5011,171 @@ Format :
     if (nom === "favoris") rendreFavoris();
   }
   $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => ongletLois(b.dataset.csrOnglet)));
+
+  /* ---------------- Registre des constats d'infraction (app iPhone et iPad seulement) ----------------
+     Stocké par l'app, sur l'appareil seulement (Registre.swift) : fichier chiffré par iOS, exclu des sauvegardes,
+     ouvert avec Face ID. Rien n'est envoyé à Supabase. Sur le site web, l'onglet n'apparaît pas. */
+  const pontRegistre = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.registre;
+  const ct = { liste: [], ouvert: false, edition: null, type: "100400", lat: null, lon: null };
+  $("#csr-onglet-constats").hidden = !estAppIOS;
+  const compteRegistre = () => (etat.profil && etat.profil.id) || (etat.session && etat.session.user && etat.session.user.id) || "";
+  async function appelRegistre(action, extra = {}) {
+    return pontRegistre.postMessage({ action, compte: compteRegistre(), ...extra });
+  }
+  async function initConstats() {
+    $("#ct-maj").hidden = !!pontRegistre;
+    if (!pontRegistre) { $("#ct-verrou").hidden = true; $("#ct-registre").hidden = true; return; }
+    try {
+      const e = await appelRegistre("etat");
+      ct.ouvert = !!(e && e.deverrouille);
+    } catch { ct.ouvert = false; }
+    if (ct.ouvert) await lireConstats(); else afficherVerrouConstats();
+  }
+  function afficherVerrouConstats() { ct.ouvert = false; ct.liste = []; $("#ct-verrou").hidden = false; $("#ct-registre").hidden = true; }
+  async function ouvrirConstats() {
+    try { await appelRegistre("deverrouiller"); ct.ouvert = true; await lireConstats(); }
+    catch (e) { const m = String((e && e.message) || e); if (!/annule/.test(m)) toast(m.replace(/^Error:\s*/, "")); afficherVerrouConstats(); }
+  }
+  async function lireConstats() {
+    try {
+      const t = await appelRegistre("lire");
+      const l = JSON.parse(t || "[]");
+      ct.liste = Array.isArray(l) ? l : [];
+      $("#ct-verrou").hidden = true; $("#ct-registre").hidden = false;
+      rendreConstats();
+    } catch (e) {
+      if (/verrouille/.test(String(e && e.message || e))) return afficherVerrouConstats();
+      toast("Lecture du registre impossible.");
+    }
+  }
+  async function sauverConstats() {
+    try { await appelRegistre("ecrire", { donnees: JSON.stringify(ct.liste) }); return true; }
+    catch (e) {
+      if (/verrouille/.test(String(e && e.message || e))) { afficherVerrouConstats(); toast("Le registre s'est verrouillé. Déverrouillez-le, puis recommencez."); return false; }
+      toast("Enregistrement impossible sur cet appareil."); return false;
+    }
+  }
+  const dateConstat = (d) => { try { return new Date(d).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }); } catch { return d; } };
+  function rendreConstats() {
+    const q = norm($("#ct-q").value.trim());
+    const tries = [...ct.liste].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    const liste = q ? tries.filter((c) => norm([c.numero, c.article, "art " + c.article, c.lieu, c.narration, c.type].join(" ")).includes(q)) : tries;
+    $("#ct-compte").textContent = ct.liste.length ? (q ? `${liste.length} résultat${liste.length > 1 ? "s" : ""} sur ${ct.liste.length}` : `${ct.liste.length} constat${ct.liste.length > 1 ? "s" : ""} sur cet appareil`) : "";
+    $("#ct-liste").innerHTML = liste.length ? liste.map((c) => `
+      <article class="panneau ct-item" data-ct="${esc(c.id)}">
+        <button type="button" class="ct-tete" data-ct-ouvrir="${esc(c.id)}" aria-expanded="false">
+          <span class="ct-num">${esc(c.numero)}</span>
+          <span class="ct-art">CSR art. ${esc(c.article)}</span>
+          <small>${esc(dateConstat(c.date))} · ${c.type === "100391" ? "Municipal" : "National"}${c.lieu ? " · " + esc(c.lieu.slice(0, 60)) : ""}</small>
+        </button>
+        <div class="ct-detail" hidden>
+          ${c.lieu ? `<p><b>Emplacement</b><br>${esc(c.lieu)}</p>` : ""}
+          ${c.lat != null ? `<p class="aide">GPS : ${c.lat.toFixed(5)}, ${c.lon.toFixed(5)}</p>` : ""}
+          ${c.narration ? `<p><b>Narration</b></p><p class="ct-narr">${esc(c.narration)}</p>` : `<p class="aide">Aucune narration.</p>`}
+          <div class="ct-actions">
+            ${c.narration ? `<button type="button" class="btn-principal" data-ct-copier="${esc(c.id)}">Copier la narration</button>` : ""}
+            <button type="button" class="btn-secondaire" data-ct-article="${esc(c.article)}">Voir l'article</button>
+            ${c.lat != null ? `<button type="button" class="btn-secondaire" data-ct-carte="${esc(c.id)}">Sur la carte</button>` : ""}
+            <button type="button" class="btn-secondaire" data-ct-modifier="${esc(c.id)}">Modifier</button>
+          </div>
+        </div>
+      </article>`).join("")
+      : `<p class="vide">${ct.liste.length ? "Aucun constat ne correspond à cette recherche." : "Aucun constat. Touchez « + Nouveau » pour inscrire votre premier constat."}</p>`;
+    const trouve = (id) => ct.liste.find((x) => x.id === id);
+    $$("[data-ct-ouvrir]").forEach((b) => b.addEventListener("click", () => {
+      const d = b.nextElementSibling, ouvrir = d.hidden;
+      d.hidden = !ouvrir; b.setAttribute("aria-expanded", String(ouvrir));
+    }));
+    $$("[data-ct-copier]").forEach((b) => b.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(trouve(b.dataset.ctCopier).narration); toast("Narration copiée."); }
+      catch { toast("Copie impossible sur cet appareil."); }
+    }));
+    $$("[data-ct-article]").forEach((b) => b.addEventListener("click", () => ouvrirFavori("csr", b.dataset.ctArticle)));
+    $$("[data-ct-modifier]").forEach((b) => b.addEventListener("click", () => editerConstat(trouve(b.dataset.ctModifier))));
+    $$("[data-ct-carte]").forEach((b) => b.addEventListener("click", () => {
+      const c = trouve(b.dataset.ctCarte);
+      afficherVue("carte");
+      setTimeout(() => etat.placer && etat.placer(c.lat, c.lon, "Constat " + c.numero, 16), 500);
+    }));
+    // Une seule correspondance exacte au numéro : on l'ouvre directement
+    if (q && liste.length === 1 && norm(liste[0].numero) === q) { const b = $(`[data-ct-ouvrir="${CSS.escape(liste[0].id)}"]`); if (b && b.nextElementSibling.hidden) b.click(); }
+  }
+  let articlesCsr = null;
+  async function remplirArticlesCsr() {
+    if (articlesCsr) return;
+    try {
+      const d = await charger("csr.json");
+      articlesCsr = new Map(d.map((a) => [String(a.numero), a]));
+      $("#ct-articles").innerHTML = d.map((a) => `<option value="${esc(a.numero)}"></option>`).join("");
+    } catch { articlesCsr = new Map(); }
+  }
+  function majArticleConstat() {
+    const no = $("#ct-article").value.trim().replace(/^art\.?\s*/i, "");
+    const a = articlesCsr && articlesCsr.get(no);
+    $("#ct-article-texte").textContent = a ? (a.texte || "").replace(/\s+/g, " ").slice(0, 160) + ((a.texte || "").length > 160 ? "…" : "") : no ? "Article introuvable dans le CSR de l'app : vérifiez le numéro." : "";
+  }
+  function choisirTypeConstat(t) { ct.type = t; $$("[data-ct-type]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.ctType === t))); }
+  function majCoordConstat() { $("#ct-coord").textContent = ct.lat != null ? `${ct.lat.toFixed(5)}, ${ct.lon.toFixed(5)}` : ""; $("#ct-position").textContent = ct.lat != null ? "Mettre à jour ma position" : "Ajouter ma position GPS"; }
+  function editerConstat(c) {
+    remplirArticlesCsr();
+    ct.edition = c ? c.id : null;
+    $("#ct-titre").textContent = c ? "Modifier le constat" : "Nouveau constat";
+    $("#ct-numero").value = c ? c.numero : "";
+    choisirTypeConstat(c ? c.type || "100400" : "100400");
+    const maintenant = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    $("#ct-date").value = c ? c.date : maintenant;
+    $("#ct-article").value = c ? c.article : "";
+    $("#ct-lieu").value = c ? c.lieu || "" : "";
+    $("#ct-narration").value = c ? c.narration || "" : "";
+    ct.lat = c && c.lat != null ? c.lat : null; ct.lon = c && c.lon != null ? c.lon : null;
+    majCoordConstat(); majArticleConstat();
+    $("#ct-supprimer").hidden = !c;
+    $("#ct-voile").hidden = false;
+    if (!c) setTimeout(() => $("#ct-numero").focus(), 50);
+  }
+  $("#ct-ouvrir").addEventListener("click", ouvrirConstats);
+  $("#ct-verrouiller").addEventListener("click", async () => { try { await appelRegistre("verrouiller"); } catch { /* déjà verrouillé */ } afficherVerrouConstats(); });
+  $("#ct-q").addEventListener("input", rendreConstats);
+  $("#ct-nouveau").addEventListener("click", () => editerConstat(null));
+  $("#ct-fermer").addEventListener("click", () => ($("#ct-voile").hidden = true));
+  $$("[data-ct-type]").forEach((b) => b.addEventListener("click", () => choisirTypeConstat(b.dataset.ctType)));
+  $("#ct-article").addEventListener("input", majArticleConstat);
+  $("#ct-position").addEventListener("click", () => {
+    if (!navigator.geolocation) return toast("La localisation n'est pas offerte sur cet appareil.");
+    toast("Recherche de votre position…");
+    navigator.geolocation.getCurrentPosition(
+      (p) => { ct.lat = Math.round(p.coords.latitude * 1e6) / 1e6; ct.lon = Math.round(p.coords.longitude * 1e6) / 1e6; majCoordConstat(); },
+      () => toast("Position refusée ou introuvable."),
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  });
+  $("#ct-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const numero = $("#ct-numero").value.trim().toUpperCase();
+    const article = $("#ct-article").value.trim().replace(/^art\.?\s*/i, "");
+    if (!numero || !article) return toast("Inscrivez le numéro du constat et l'article.");
+    if (ct.liste.some((x) => x.id !== ct.edition && norm(x.numero) === norm(numero))) return toast("Ce numéro de constat est déjà dans le registre.");
+    const fiche = { numero, type: ct.type, date: $("#ct-date").value, article, lieu: $("#ct-lieu").value.trim(), lat: ct.lat, lon: ct.lon, narration: $("#ct-narration").value.trim(), modifie: new Date().toISOString() };
+    const avant = ct.liste.slice();
+    if (ct.edition) ct.liste = ct.liste.map((x) => (x.id === ct.edition ? { ...x, ...fiche } : x));
+    else ct.liste.push({ id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), cree: fiche.modifie, ...fiche });
+    if (!(await sauverConstats())) { ct.liste = avant; return; }
+    $("#ct-voile").hidden = true;
+    toast(ct.edition ? "Constat modifié." : "Constat enregistré sur cet appareil.");
+    rendreConstats();
+  });
+  $("#ct-supprimer").addEventListener("click", async () => {
+    const c = ct.liste.find((x) => x.id === ct.edition);
+    if (!c || !confirm(`Supprimer le constat ${c.numero} de cet appareil ?`)) return;
+    const avant = ct.liste.slice();
+    ct.liste = ct.liste.filter((x) => x.id !== c.id);
+    if (!(await sauverConstats())) { ct.liste = avant; return; }
+    $("#ct-voile").hidden = true; toast("Constat supprimé."); rendreConstats();
+  });
+  $("#ct-tout-effacer").addEventListener("click", async () => {
+    if (!ct.liste.length || !confirm(`Effacer les ${ct.liste.length} constats de cet appareil ? Cette action est définitive.`)) return;
+    try { await appelRegistre("effacer"); ct.liste = []; rendreConstats(); toast("Registre effacé."); } catch { toast("Effacement impossible."); }
+  });
 
   /* ---------------- Code de la sécurité routière ---------------- */
   const RACCOURCIS = [

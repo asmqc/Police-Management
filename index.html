@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610232005">
+  <link rel="stylesheet" href="styles.css?v=202610232058">
 </head>
 <body>
   <!-- Chargement -->
@@ -580,6 +580,31 @@
         <button role="tab" data-csr-onglet="vitesse" aria-selected="false">Vitesses</button>
         <button role="tab" data-csr-onglet="frais" aria-selected="false">Frais</button>
         <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
+        <button role="tab" data-csr-onglet="constats" aria-selected="false" id="csr-onglet-constats" hidden>Constats d'infraction</button>
+      </div>
+
+      <div id="csr-constats" class="constats" hidden>
+        <div class="ct-avis">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          <p><b>Sur cet appareil seulement.</b> Jamais envoyé au serveur ni à iCloud, chiffré par l'iPhone et protégé par Face ID. N'inscrivez aucun nom, date de naissance, plaque ni numéro de permis : le numéro de constat suffit pour retrouver le dossier dans BERA.</p>
+        </div>
+        <div id="ct-maj" class="panneau" hidden><p>Le registre des constats demande la dernière version de l'app Police Management. Mettez l'app à jour, puis rouvrez cet onglet.</p></div>
+        <div id="ct-verrou" class="panneau ct-verrou" hidden>
+          <p><b>Registre verrouillé</b></p>
+          <button type="button" class="btn-principal" id="ct-ouvrir">Déverrouiller</button>
+        </div>
+        <div id="ct-registre" hidden>
+          <div class="ct-barre">
+            <input type="search" id="ct-q" placeholder="N° de constat, article, lieu, mot…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans le registre">
+            <button type="button" class="btn-principal" id="ct-nouveau">+ Nouveau</button>
+          </div>
+          <p class="aide" id="ct-compte"></p>
+          <div id="ct-liste" class="ct-liste"></div>
+          <div class="ct-pied">
+            <button type="button" class="lien" id="ct-verrouiller">Verrouiller</button>
+            <button type="button" class="lien rouge" id="ct-tout-effacer">Effacer tout le registre</button>
+          </div>
+        </div>
       </div>
 
       <div id="csr-frais" class="frais" hidden>
@@ -1770,6 +1795,37 @@
   </div>
 
 
+  <div id="ct-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="ct-titre">
+      <button class="btn-icone fermer" id="ct-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="ct-titre">Nouveau constat</h3>
+      <form id="ct-form" class="ct-form" autocomplete="off">
+        <label for="ct-numero">Numéro du constat</label>
+        <input id="ct-numero" required maxlength="40" autocapitalize="characters" spellcheck="false" placeholder="Numéro inscrit au constat">
+        <div class="segmente ct-type" role="radiogroup" aria-label="Type de constat">
+          <button type="button" role="radio" data-ct-type="100400" aria-checked="true">National · 100400</button>
+          <button type="button" role="radio" data-ct-type="100391" aria-checked="false">Municipal · 100391</button>
+        </div>
+        <label for="ct-date">Date et heure</label>
+        <input id="ct-date" type="datetime-local" required>
+        <label for="ct-article">Article du CSR</label>
+        <input id="ct-article" list="ct-articles" maxlength="20" inputmode="text" placeholder="Ex. 443.1" required>
+        <datalist id="ct-articles"></datalist>
+        <p class="aide" id="ct-article-texte"></p>
+        <label for="ct-lieu">Emplacement exact</label>
+        <textarea id="ct-lieu" rows="2" maxlength="300" placeholder="Ex. A-40 direction est, borne 112, Saint-Sulpice"></textarea>
+        <div class="ct-position">
+          <button type="button" class="btn-secondaire" id="ct-position">Ajouter ma position GPS</button>
+          <span class="aide" id="ct-coord"></span>
+        </div>
+        <label for="ct-narration">Ma narration</label>
+        <textarea id="ct-narration" rows="8" maxlength="8000" placeholder="Votre narration, sans nom, date de naissance, plaque ni numéro de permis."></textarea>
+        <button type="submit" class="btn-principal">Enregistrer sur cet appareil</button>
+        <button type="button" class="btn-secondaire rouge" id="ct-supprimer" hidden>Supprimer ce constat</button>
+      </form>
+    </section>
+  </div>
+
   <div id="fetes-voile" class="voile" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="fetes-titre">
       <button class="btn-icone fermer" id="fetes-fermer" aria-label="Fermer">✕</button>
@@ -1894,9 +1950,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610232005"></script>
+  <script src="config.js?v=202610232058"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610232005"></script>
+  <script src="app.js?v=202610232058"></script>
 </body>
 </html>
