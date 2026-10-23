@@ -2286,3 +2286,4 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .rg-paie #rg-retenues .btn-secondaire, .rg-paie #rg-soldes .btn-secondaire { margin: 0; }
 .banque-modifier { margin-top: 12px; width: 100%; }
 .hr-pris { display: grid; gap: 6px; } .hr-pris select, #hr-tsp-pris { width: 100%; }
+.q-B { --q: #5C6BC0; --qt: #fff; }

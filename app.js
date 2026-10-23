@@ -562,6 +562,7 @@
       "Mode nuit rouge dans le menu du compte, pour la nuit en auto-patrouille.",
       "Sûreté du Québec : échelle salariale dans Convention, votre traitement dans Mon compte, valeur du temps supplémentaire et paie aux deux semaines (brut et net, avec les primes) dans Horaire › Statistiques › Paie.",
       "Sûreté du Québec : Mes banques (vacances, fériés, maladie avec avis de certificat médical, banques de TS) dans Horaire › Statistiques › Banques.",
+      "Temps supplémentaire payé ou compensé, et nouveau code B · Banque de temps pour les congés pris à même votre banque.",
       "Horaire : plus de 20 modèles de rotation (DuPont, Pitman, 4-3/3-4, Southern swing, 6-2, 5-4/9…) et le « + » pour ajouter du temps supplémentaire à un quart.",
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management »."] },
   ];
@@ -957,7 +958,7 @@
   const QUARTS = {
     J: { nom: "Jour" }, S: { nom: "Soir" }, N: { nom: "Nuit" }, C: { nom: "Congé" },
     V: { nom: "Vacances" }, M: { nom: "Maladie" }, F: { nom: "Formation" }, T: { nom: "Cour" }, X: { nom: "Temps supp." },
-    O: { nom: "Obligation familiale" }, H: { nom: "Férié" }, L: { nom: "Maladie longue durée" },
+    O: { nom: "Obligation familiale" }, H: { nom: "Férié" }, L: { nom: "Maladie longue durée" }, B: { nom: "Banque de temps" },
   };
   const QUARTS_CYCLE = ["J", "S", "N", "C"];
   const HEURES_DEFAUT = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
@@ -2423,10 +2424,15 @@
       if (n >= 36) mal.avis.push({ iso, texte: `Absence de ${n} jours : à partir du 36ᵉ jour, votre régime de rotation change (annexe C-1).` });
     });
     // Temps compensé : heures ajoutées à la banque de temps (12.11)
-    const tsb = { annee: 0, apresSolde: 0, prevu: 0 };
+    const tsb = { annee: 0, apresSolde: 0, prevu: 0, utilise: 0, utilisePrevu: 0 };
     jours(fDebut, fFin, (iso) => {
       const e = (hr.exceptions || {})[iso];
       if (!e) return;
+      if (e.type === "B") { // congé pris à même la banque de temps : heures du quart remplacé
+        const hb = heuresAbsence(iso);
+        if (iso <= auj) { tsb.utilise += hb; if (b.ts189 && iso > b.ts189.date) tsb.apresSolde -= hb; } else tsb.utilisePrevu += hb;
+        return;
+      }
       let eq = 0;
       if (e.type === "X" && e.pris === "banque") { const h = heuresJour("X", iso, hr); if (h) eq += arrondiTS(dureeH(h)) * (+e.maj || 1.5); }
       if (e.type !== "X" && e.tsp && e.tsp.pris === "banque" && e.tsp.debut) eq += arrondiTS(dureeH([e.tsp.debut, e.tsp.fin])) * (+e.tsp.maj || 1.5);
@@ -2434,6 +2440,7 @@
       if (iso <= auj) { tsb.annee += eq; if (b.ts189 && iso > b.ts189.date) tsb.apresSolde += eq; } else tsb.prevu += eq;
     });
     tsb.solde = b.ts189 ? +b.ts189.h + tsb.apresSolde : null;
+    tsb.soldeFin = tsb.solde === null ? null : tsb.solde + tsb.prevu - tsb.utilisePrevu;
     return { type, vac, fer, mal, b, fDebut, fFin, tsb };
   }
   function barreBanque(utilise, total) {
@@ -2498,11 +2505,16 @@
         <dl class="vt-detail">
           <dt>Compensé cette année (selon l'horaire)</dt><dd>${fmtH(B.tsb.annee)}</dd>
           ${B.tsb.prevu ? `<dt>Compensé à venir</dt><dd>${fmtH(B.tsb.prevu)}</dd>` : ""}
-          <dt>Banque régulière (max. 189 h, 12.11)</dt><dd>${B.tsb.solde !== null ? fmtH(B.tsb.solde) : "—"}</dd>
+          <dt>Congés pris en banque (B)</dt><dd>${fmtH(B.tsb.utilise)}</dd>
+          ${B.tsb.utilisePrevu ? `<dt>Congés B prévus</dt><dd>${fmtH(B.tsb.utilisePrevu)}</dd>` : ""}
+          <dt class="total">Banque régulière (max. 189 h, 12.11)</dt><dd class="total">${B.tsb.solde !== null ? (B.tsb.solde < 0 ? "− " + fmtH(-B.tsb.solde) : fmtH(B.tsb.solde)) : "—"}</dd>
+          ${B.tsb.soldeFin !== null && B.tsb.soldeFin !== B.tsb.solde ? `<dt>Après ce qui est prévu à l'horaire</dt><dd>${B.tsb.soldeFin < 0 ? "− " + fmtH(-B.tsb.soldeFin) : fmtH(B.tsb.soldeFin)}</dd>` : ""}
           <dt>Banque de fin de carrière (max. 1 040 h, 12.12)</dt><dd>${b.ts1040 ? fmtH(+b.ts1040.h) : "—"}</dd>
         </dl>
         ${B.tsb.solde !== null ? barreBanque(B.tsb.solde, 189) : `<p class="aide">Inscrivez le solde de votre banque dans Réglages : l'app y ajoutera ensuite le temps compensé de votre horaire.</p>`}
         ${B.tsb.solde > 189 ? `<p class="banque-avis">Votre banque dépasserait 189 h : l'excédent ne peut pas y être accumulé (12.11).</p>` : ""}
+        ${B.tsb.soldeFin !== null && B.tsb.soldeFin < 0 ? `<p class="banque-avis">Vos congés B prévus dépassent le solde de votre banque de temps.</p>` : ""}
+        <p class="aide">Pour prendre un congé à même votre banque, mettez la journée en <b>B · Banque de temps</b> dans l'horaire. Minimum d'une demi-journée (12.11).</p>
         <p class="aide">Chaque heure de temps supplémentaire mise en banque vaut 1 h 30 (ou 2 h) (12.11). La banque de 1 040 h est offerte au maximum de l'échelle (12.12).</p>
       </section>
       <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-soldes-bloc">Modifier mes soldes dans Réglages</button>
@@ -3748,13 +3760,14 @@ Format :
   const typeChoisi = () => { const b = $("#hr-jour-choix button[aria-pressed='true']"); return b ? b.dataset.q : quartDu(hr.jourChoisi, cibleEdition()).prevu; };
   function majChampsJour() {
     const t = typeChoisi();
-    $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T"].includes(t);
+    $("#hr-jour-heures").hidden = !!hr.vue || !["J", "S", "N", "X", "F", "T", "B", "V", "H"].includes(t);
     $("#hr-tsp-bloc").hidden = !!hr.vue || !t || t === "X";
     $("#hr-jour-pris-bloc").hidden = !!hr.vue || t !== "X";
     $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
     $("#hr-jour-ts").hidden = !!hr.vue || !(["X", "F"].includes(t) || !$("#hr-tsp-champs").hidden);
     majValeurJour();
-    const h = heuresJour(t, null, cibleEdition());
+    const prevuJ = quartDu(hr.jourChoisi, cibleEdition()).prevu;
+    const h = ["B", "V", "H"].includes(t) ? heuresJour(prevuJ, hr.jourChoisi, { ...cibleEdition(), exceptions: {} }) : heuresJour(t, null, cibleEdition());
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
     $("#hr-jour-defaut").textContent = h ? ` · par défaut ${h[0]} – ${h[1]}` : "";
   }
