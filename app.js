@@ -857,7 +857,7 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { initPaieReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
+    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
@@ -2459,8 +2459,8 @@
     const el = $("#stats-contenu");
     $("#stats-periode").textContent = "Mes banques";
     if (!etat.paie || !etat.paie.date_entree) {
-      el.innerHTML = `<div class="paie-vide"><p>Pour calculer vos banques, indiquez d'abord votre date d'entrée dans <b>Réglages › Paie et banques</b>.</p><button type="button" class="btn-principal" id="banq-aller">Configurer</button></div>`;
-      $("#banq-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer vos banques, indiquez d'abord votre date d'entrée dans <b>Mon compte › Paie et banques</b>.</p><button type="button" class="btn-principal" id="banq-aller">Configurer</button></div>`;
+      $("#banq-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
       return;
     }
     const B = banquesSQ(), { vac, fer, mal, b } = B;
@@ -2512,13 +2512,13 @@
           ${B.tsb.soldeFin !== null && B.tsb.soldeFin !== B.tsb.solde ? `<dt>Après ce qui est prévu à l'horaire</dt><dd>${B.tsb.soldeFin < 0 ? "− " + fmtH(-B.tsb.soldeFin) : fmtH(B.tsb.soldeFin)}</dd>` : ""}
           <dt>Banque de fin de carrière (max. 1 040 h, 12.12)</dt><dd>${b.ts1040 ? fmtH(+b.ts1040.h) : "—"}</dd>
         </dl>
-        ${B.tsb.solde !== null ? barreBanque(B.tsb.solde, 189) : `<p class="aide">Inscrivez le solde de votre banque dans Réglages : l'app y ajoutera ensuite le temps compensé de votre horaire.</p>`}
+        ${B.tsb.solde !== null ? barreBanque(B.tsb.solde, 189) : `<p class="aide">Inscrivez le solde de votre banque dans Mon compte : l'app y ajoutera ensuite le temps compensé de votre horaire.</p>`}
         ${B.tsb.solde > 189 ? `<p class="banque-avis">Votre banque dépasserait 189 h : l'excédent ne peut pas y être accumulé (12.11).</p>` : ""}
         ${B.tsb.soldeFin !== null && B.tsb.soldeFin < 0 ? `<p class="banque-avis">Vos congés B prévus dépassent le solde de votre banque de temps.</p>` : ""}
         <p class="aide">Pour prendre un congé à même votre banque, mettez la journée en <b>B · Banque de temps</b> dans l'horaire. Minimum d'une demi-journée (12.11).</p>
         <p class="aide">Chaque heure de temps supplémentaire mise en banque vaut 1 h 30 (ou 2 h) (12.11). La banque de 1 040 h est offerte au maximum de l'échelle (12.12).</p>
       </section>
-      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-soldes-bloc">Modifier mes soldes dans Réglages</button>
+      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-soldes-bloc">Modifier mes soldes dans Mon compte</button>
       <p class="aide">Estimation selon le contrat de travail APPQ 2022-2028. Le service continu est compté à partir de votre date d'entrée. Votre talon de paie et votre gestionnaire font foi.</p>`;
     brancherAllerReglages(el);
   }
@@ -2593,8 +2593,8 @@
     const el = $("#stats-contenu");
     if (!etat.paie || !salaireSQ(etat.paie)) {
       $("#stats-periode").textContent = "Paie aux deux semaines";
-      el.innerHTML = `<div class="paie-vide"><p>Pour calculer votre paie, indiquez d'abord votre date d'entrée et votre emploi dans <b>Réglages › Paie et banques</b>.</p><button type="button" class="btn-principal" id="paie-aller">Configurer ma rémunération</button></div>`;
-      $("#paie-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      el.innerHTML = `<div class="paie-vide"><p>Pour calculer votre paie, indiquez d'abord votre date d'entrée et votre emploi dans <b>Mon compte › Paie et banques</b>.</p><button type="button" class="btn-principal" id="paie-aller">Configurer ma rémunération</button></div>`;
+      $("#paie-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
       return;
     }
     const p = calculPaie(stats.paie), ret = retenuesPaie(p), r = p.r;
@@ -2642,7 +2642,7 @@
         <div class="table-defile"><table class="table-vitesse paie-table"><tbody>${lignesJours}</tbody></table></div>
         <p class="aide">Les primes sont versées seulement pour les heures régulières effectivement travaillées. Pour un V, une maladie ou une formation, l'app prend le quart prévu à votre rotation pour montrer la prime qui n'est pas versée.</p>
       </details>
-      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-paie-bloc">Modifier mes retenues dans Réglages</button>
+      <button type="button" class="btn-secondaire banque-modifier" data-aller-reglages="rg-paie-bloc">Modifier mes retenues dans Mon compte</button>
       <p class="aide">Estimation : impôts calculés avec les taux 2026 sur la paie annualisée (méthode simplifiée), RRQ, assurance-emploi et RQAP avec leurs maximums annuels. Le temps supplémentaire est compté dans la paie de sa période, mais la Sûreté peut le verser jusqu'à 45 jours après la réclamation (20.03). Votre talon de paie fait foi.</p>`;
     brancherAllerReglages(el);
   }
@@ -4065,6 +4065,7 @@ Format :
 
   async function initCompte() {
     const p = etat.profil;
+    initPaieReglages();
     $("#mc-courriel").textContent = p.email;
     $("#mc-nom").value = p.nom_complet || "";
     $("#mc-matricule").value = p.matricule || "";
@@ -5341,7 +5342,7 @@ Format :
   /* ---------------- Réglages : retenues et soldes (SQ) ---------------- */
   function brancherAllerReglages(racine) {
     $$("[data-aller-reglages]", racine).forEach((b) => b.addEventListener("click", () => {
-      $("#stats-voile").hidden = true; afficherVue("reglages");
+      $("#stats-voile").hidden = true; afficherVue("compte");
       setTimeout(() => { const c = document.getElementById(b.dataset.allerReglages); if (c) c.scrollIntoView({ behavior: "smooth", block: "start" }); }, 250);
     }));
   }
@@ -5492,7 +5493,7 @@ Format :
       </ul>
       <button type="button" class="btn-secondaire" id="cv-mon-salaire">Calculer mon salaire</button>`;
     el.dataset.fait = "1";
-    $("#cv-mon-salaire").addEventListener("click", () => { afficherVue("reglages"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+    $("#cv-mon-salaire").addEventListener("click", () => { afficherVue("compte"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
   }
 
   /* ---------------- Site public : outils à essayer sans compte (données publiques, aucun appel au serveur) ---------------- */
