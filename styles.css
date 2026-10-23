@@ -2357,3 +2357,13 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 #grief-date, #grief-type { width: 100%; }
 #grief-res.depasse b { color: var(--rouge); }
 .hr-equipe { display: grid; gap: 6px; } .hr-equipe select { width: 100%; } .hr-equipe .aide { margin: 0; }
+
+/* Fiche de la journée : onglets Quart / Temps supp. */
+.hr-onglets { margin: 4px 0 6px; }
+.hr-onglets button { position: relative; }
+.hr-onglet-point { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #C2410C; margin-left: 6px; vertical-align: middle; }
+.hr-onglet-point[hidden] { display: none; }
+.hr-fiche-jour[data-onglet="quart"] [data-tab="ts"], .hr-fiche-jour[data-onglet="ts"] [data-tab="quart"] { display: none !important; }
+.hr-ts-vide { margin: 8px 0; }
+.hr-onglets { display: grid; grid-template-columns: 1fr 1fr; }
+.hr-onglets button { display: flex; align-items: center; justify-content: center; gap: 2px; }

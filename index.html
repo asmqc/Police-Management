@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230234">
+  <link rel="stylesheet" href="styles.css?v=202610230349">
 </head>
 <body>
   <!-- Chargement -->
@@ -1566,26 +1566,30 @@
   </div>
 
   <div id="hr-voile" class="voile" hidden>
-    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="hr-jour-titre">
+    <section class="fiche-compte hr-fiche-jour" id="hr-fiche-jour" data-onglet="quart" role="dialog" aria-modal="true" aria-labelledby="hr-jour-titre">
       <button class="btn-icone fermer" id="hr-jour-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="hr-jour-titre"></h3>
       <p class="aide" id="hr-jour-prevu"></p>
       <div id="hr-jour-lecture" class="hr-jour-lecture" hidden></div>
-      <div class="hr-choix hr-edition" id="hr-jour-choix"></div>
-      <div class="hr-edition hr-motif" id="hr-motif-bloc" hidden>
+      <div class="segmente hr-onglets hr-edition" id="hr-onglets" role="tablist" aria-label="Sections de la journée">
+        <button type="button" role="tab" data-hr-onglet="quart" aria-checked="true">Quart</button>
+        <button type="button" role="tab" data-hr-onglet="ts" aria-checked="false">Temps supp.<i class="hr-onglet-point" id="hr-onglet-point" hidden></i></button>
+      </div>
+      <div class="hr-choix hr-edition" id="hr-jour-choix" data-tab="quart"></div>
+      <div class="hr-edition hr-motif" id="hr-motif-bloc" data-tab="quart" hidden>
         <label class="ref" for="hr-jour-motif">Motif (contrat de travail)</label>
         <select id="hr-jour-motif"></select>
         <p class="aide" id="hr-motif-aide"></p>
         <label class="hr-tsp-interrupteur" id="hr-periode-bloc" hidden><input type="checkbox" id="hr-periode" checked><span><b id="hr-periode-titre"></b><small id="hr-periode-aide"></small></span></label>
         <label class="hr-tsp-interrupteur" id="hr-periode-extra-bloc" hidden><input type="checkbox" id="hr-periode-extra"><span><b>Ajouter les 2 jours sans traitement</b><small>Consécutifs, après les 3 jours payés (25.01 d)</small></span></label>
       </div>
-      <label class="ref hr-edition" for="hr-jour-note">Note (facultatif)</label>
-      <input id="hr-jour-note" class="hr-edition" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
-      <div class="hr-edition hr-jour-heures" id="hr-jour-heures">
+      <label class="ref hr-edition" for="hr-jour-note" data-tab="quart">Note (facultatif)</label>
+      <input id="hr-jour-note" class="hr-edition" data-tab="quart" type="text" maxlength="120" placeholder="Ex. Échange avec Tremblay, Palais de justice 9 h">
+      <div class="hr-edition hr-jour-heures" id="hr-jour-heures" data-tab="quart">
         <label class="ref" for="hr-jour-debut">Heures (facultatif)<span id="hr-jour-defaut"></span></label>
         <div class="fc-ligne"><input type="time" id="hr-jour-debut" aria-label="Heure de début"><span>à</span><input type="time" id="hr-jour-fin" aria-label="Heure de fin"></div>
       </div>
-      <div class="hr-edition hr-options-quart" id="hr-options-quart" hidden>
+      <div class="hr-edition hr-options-quart" id="hr-options-quart" data-tab="quart" hidden>
         <label class="hr-tsp-interrupteur" id="hr-repasnp-bloc"><input type="checkbox" id="hr-repasnp"><span><b>Repas ou repos non pris</b><small>À cause du service : payé à temps et demi (12.06)</small></span></label>
         <label class="ref" for="hr-remplace">Remplacement temporaire (17.04)</label>
         <select id="hr-remplace">
@@ -1598,20 +1602,8 @@
         </select>
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
       </div>
-      <div class="hr-edition hr-tsp" id="hr-dispo-bloc" hidden>
-        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-dispo-actif"><span><b>Disponibilité de service</b><small>Temps où la Sûreté vous demande d'être joignable (art. 13)</small></span></label>
-        <div class="hr-tsp-champs" id="hr-dispo-champs" hidden>
-          <select id="hr-dispo-type" aria-label="Type de disponibilité">
-            <option value="domicile">À ma résidence : 1 h payée par 4 h (13.01)</option>
-            <option value="hebergement">Dans un hébergement temporaire : 1 h par 3 h (13.02)</option>
-            <option value="reguliere">Disponibilité régulière, annexe V : 1 h par 8 h (13.18)</option>
-          </select>
-          <label class="ref" for="hr-dispo-h">Heures de disponibilité</label>
-          <input id="hr-dispo-h" type="number" inputmode="decimal" min="0" max="24" step="0.5" placeholder="Ex. 24">
-          <div class="ts-valeur" id="hr-dispo-montant" hidden></div>
-        </div>
-      </div>
-      <div class="hr-edition hr-tsp" id="hr-tsp-bloc" hidden>
+      <p class="aide hr-ts-vide hr-edition" id="hr-ts-vide" data-tab="ts" hidden></p>
+      <div class="hr-edition hr-tsp" id="hr-tsp-bloc" data-tab="ts" hidden>
         <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Ajouter du temps supplémentaire</b><small>En plus du quart : avant, après ou rappel</small></span></label>
         <div class="hr-tsp-champs" id="hr-tsp-champs" hidden>
           <div class="fc-ligne"><input type="time" id="hr-tsp-debut" aria-label="Début du temps supplémentaire"><span>à</span><input type="time" id="hr-tsp-fin" aria-label="Fin du temps supplémentaire"></div>
@@ -1630,7 +1622,7 @@
           <div class="ts-valeur" id="hr-tsp-montant" aria-live="polite" hidden></div>
         </div>
       </div>
-      <div class="hr-edition hr-pris" id="hr-jour-pris-bloc" hidden>
+      <div class="hr-edition hr-pris" id="hr-jour-pris-bloc" data-tab="ts" hidden>
         <label class="ref" for="hr-jour-rappel">Situation</label>
         <select id="hr-jour-rappel">
           <option value="">Temps supplémentaire planifié</option>
@@ -1645,7 +1637,7 @@
             <option value="banque">Temps compensé (banque de temps)</option>
         </select>
       </div>
-      <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" hidden>
+      <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" data-tab="ts" hidden>
         <label class="ref" for="hr-jour-maj">Taux du temps supplémentaire</label>
         <select id="hr-jour-maj">
           <option value="1.5">Temps et demi (1 ½)</option>
@@ -1653,11 +1645,24 @@
         </select>
         <div class="ts-valeur" id="hr-ts-montant" aria-live="polite"></div>
       </div>
-      <details class="hr-edition hr-ts" id="hr-jour-ts">
+      <details class="hr-edition hr-ts" id="hr-jour-ts" data-tab="ts">
         <summary>Détails de temps supplémentaire</summary>
         <p class="aide">Champs facultatifs repris de la feuille de temps supplémentaire (SQ). Ils servent au rapport mensuel.</p>
         <div class="ts-grille" id="hr-ts-champs"></div>
       </details>
+      <div class="hr-edition hr-tsp" id="hr-dispo-bloc" data-tab="ts" hidden>
+        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-dispo-actif"><span><b>Disponibilité de service</b><small>Temps où la Sûreté vous demande d'être joignable (art. 13)</small></span></label>
+        <div class="hr-tsp-champs" id="hr-dispo-champs" hidden>
+          <select id="hr-dispo-type" aria-label="Type de disponibilité">
+            <option value="domicile">À ma résidence : 1 h payée par 4 h (13.01)</option>
+            <option value="hebergement">Dans un hébergement temporaire : 1 h par 3 h (13.02)</option>
+            <option value="reguliere">Disponibilité régulière, annexe V : 1 h par 8 h (13.18)</option>
+          </select>
+          <label class="ref" for="hr-dispo-h">Heures de disponibilité</label>
+          <input id="hr-dispo-h" type="number" inputmode="decimal" min="0" max="24" step="0.5" placeholder="Ex. 24">
+          <div class="ts-valeur" id="hr-dispo-montant" hidden></div>
+        </div>
+      </div>
       <div class="fc-ligne hr-edition">
         <button class="btn-principal" id="hr-jour-ok" style="margin:0">Enregistrer</button>
         <button class="btn-secondaire" id="hr-jour-retirer">Revenir à la rotation</button>
@@ -1847,9 +1852,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230234"></script>
+  <script src="config.js?v=202610230349"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230234"></script>
+  <script src="app.js?v=202610230349"></script>
 </body>
 </html>

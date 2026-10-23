@@ -4110,6 +4110,7 @@ Format :
     $("#hr-tsp-pris").value = ex.tsp && ex.tsp.pris === "banque" ? "banque" : "paie";
     $("#hr-jour-retirer").hidden = !q.exception;
     $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
+    $("#hr-fiche-jour").dataset.onglet = "quart"; $$("[data-hr-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrOnglet === "quart")));
     majChampsJour();
     $("#hr-voile").hidden = false;
   }
@@ -4147,6 +4148,14 @@ Format :
     $("#hr-dispo-bloc").hidden = !!hr.vue || !sqEdition || !t;
     $("#hr-dispo-champs").hidden = $("#hr-dispo-bloc").hidden || !$("#hr-dispo-actif").checked;
     majValeurDispo();
+    // Les heures d'une journée de temps supplémentaire (X) se règlent dans l'onglet Temps supp.
+    $("#hr-jour-heures").dataset.tab = t === "X" ? "ts" : "quart";
+    $("#hr-jour-ts").dataset.tab = t === "F" ? "quart" : "ts";
+    const tsActif = t === "X" || $("#hr-tsp-actif").checked || $("#hr-dispo-actif").checked;
+    $("#hr-onglet-point").hidden = !tsActif;
+    const rienTs = ["#hr-dispo-bloc", "#hr-tsp-bloc", "#hr-jour-pris-bloc", "#hr-ts-valeur"].every((q) => $(q).hidden) && t !== "X";
+    $("#hr-ts-vide").hidden = !rienTs;
+    $("#hr-ts-vide").textContent = rienTs ? "Choisissez d'abord le quart dans l'onglet Quart. Pour une journée complète de temps supplémentaire, choisissez X · Temps supp." : "";
     $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
     $("#hr-jour-ts").hidden = !!hr.vue || !(["X", "F"].includes(t) || !$("#hr-tsp-champs").hidden);
     majValeurJour();
@@ -4155,7 +4164,17 @@ Format :
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
     $("#hr-jour-defaut").textContent = h ? ` · par défaut ${h[0]} – ${h[1]}` : "";
   }
-  $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
+  // Onglets de la fiche de la journée : Quart / Temps supp.
+  function ongletJour(nom) {
+    $("#hr-fiche-jour").dataset.onglet = nom;
+    $$("[data-hr-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrOnglet === nom)));
+    majChampsJour();
+  }
+  $$("[data-hr-onglet]").forEach((b) => b.addEventListener("click", () => ongletJour(b.dataset.hrOnglet)));
+  $("#hr-jour-choix").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-q]");
+    setTimeout(() => { if (b && b.dataset.q === "X") ongletJour("ts"); else majChampsJour(); }, 0);
+  });
   $("#hr-jour-motif").addEventListener("change", () => { hr.motifInitial = $("#hr-jour-motif").value; majChampsJour(); });
   $("#hr-periode").addEventListener("change", () => ($("#hr-periode-extra").disabled = !$("#hr-periode").checked));
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
