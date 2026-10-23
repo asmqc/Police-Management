@@ -2367,3 +2367,13 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .hr-ts-vide { margin: 8px 0; }
 .hr-onglets { display: grid; grid-template-columns: 1fr 1fr; }
 .hr-onglets button { display: flex; align-items: center; justify-content: center; gap: 2px; }
+
+/* Onglets de l'horaire : Calendrier / Rémunération (ou Statistiques) */
+.hr-onglets-vue { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 12px; }
+.hr-stats-vue { display: grid; gap: 10px; padding: 14px; border-radius: 22px; background: var(--surface); box-shadow: var(--ombre-carte); }
+.hr-stats-vue[hidden] { display: none; }
+.hr-stats-vue .hr-mois-tete { margin: 0; }
+.hr-stats-vue .stats-mode.quatre { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hr-stats-vue .stats-mode.quatre button { font-size: .8rem; padding-inline: 2px; white-space: normal; line-height: 1.15; }
+#stats-periode { text-transform: none; }
+#stats-periode::first-letter { text-transform: uppercase; }

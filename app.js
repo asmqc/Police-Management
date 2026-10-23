@@ -557,6 +557,7 @@
   const NOUVEAUTES = [
     { id: "2026-10-22-c", date: "2026-10-22", titre: "Horaire", points: [
       "Le « + » propose : modifier le quart, planifier le congé des Fêtes ou ajouter un événement.",
+      "Nouvel onglet Rémunération dans l'horaire (Statistiques pour les autres corps) : paie, banques, heures du mois et de l'année. La fiche d'une journée a deux onglets : Quart et Temps supp.",
       "Ajoutez du temps supplémentaire à un quart (avant, après ou rappel), payé ou compensé en banque.",
       "Nouveaux codes : B · Banque de temps, E · Événement familial, P · Congé parental, D · Congé D repris, A · Accident de travail, Y · Libération syndicale, U · Sans traitement, chacun avec son motif selon le contrat.",
       "Congés de plusieurs jours inscrits d'un coup : mariage (7 jours), décès, déménagement, maternité, paternité, adoption.",
@@ -566,7 +567,7 @@
       "Calendrier abonné : votre horaire dans le Calendrier de l'iPhone, Google Agenda ou Outlook, avec le temps supplémentaire et les dates limites du contrat.",
     ] },
     { date: "2026-10-22", titre: "Paie et temps supplémentaire (Sûreté du Québec)", points: [
-      "Paie aux deux semaines dans Horaire › Statistiques › Paie : brut et net, primes de nuit, de soir et de fin de semaine (selon le quart remplacé pour un V ou une maladie), impôts et cotisations 2026, retenues de votre talon.",
+      "Paie aux deux semaines dans Horaire › Rémunération › Paie : brut et net, primes de nuit, de soir et de fin de semaine (selon le quart remplacé pour un V ou une maladie), impôts et cotisations 2026, retenues de votre talon.",
       "Temps supplémentaire calculé selon l'art. 12 : taux et demi ou double, arrondi (12.09), heure de repas et indemnité de 6 $ (12.08), repas non pris (12.06), minimums de rappel (12.03, 12.04, annexe I).",
       "Disponibilité de service (art. 13), remplacement temporaire d'un grade supérieur (17.04), allocations régionales (art. 18), allocation vestimentaire (19.01), repas de nuit (21.07).",
       "Absences sans traitement déduites de la paie; congés payés par le RQAP ou la CNESST signalés.",
@@ -1839,14 +1840,20 @@
     $$("[data-cible]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cible === (conj ? "conjoint" : "moi"))));
     if (hr.conj) $("#hr-cible-conj").textContent = hr.conj.nom;
     $("#hr-qui-bloc").hidden = conj || !hr.quiVisible;
-    $("#hr-echanges").hidden = lecture || conj || enConfig;
+    $("#hr-echanges").hidden = lecture || conj || enConfig || (hr.onglet === "stats" && !!affichee().config);
     $$(".hr-moi-seul").forEach((el) => (el.hidden = conj));
     $("#hr-vide-aide").textContent = conj ? `Entrez la rotation de ${hr.conj.nom} une seule fois : vous verrez ses quarts à côté des vôtres. Ce calendrier reste privé.` : "Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.";
     $("#hr-commencer").textContent = conj ? `Configurer la rotation de ${hr.conj.nom}` : "Configurer ma rotation";
     $("#hr-vide").hidden = lecture || !!affichee().config || enConfig;
-    $("#hr-principal").hidden = !src.config || enConfig;
+    const ongletStats = hr.onglet === "stats" && !!src.config && !enConfig;
+    $("#hr-onglets-vue").hidden = !src.config || enConfig;
+    $("[data-hr-vue='stats']").textContent = estSQ() && !lecture && !conj ? "Rémunération" : "Statistiques";
+    $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === (ongletStats ? "stats" : "calendrier"))));
+    $("#stats-voile").hidden = !ongletStats;
+    if (ongletStats) setTimeout(() => { try { rendreStats(); } catch (e) { console.warn(e); } }, 0);
+    $("#hr-principal").hidden = !src.config || enConfig || ongletStats;
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
-    $("#hr-partage").hidden = lecture || conj || enConfig;
+    $("#hr-partage").hidden = lecture || conj || enConfig || ongletStats;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
     $("#hr-astuce").textContent = lecture ? "Rotation seulement, en lecture seule. Les vacances, congés personnels et notes de votre collègue restent privés." : "Touchez une journée pour voir son agenda ou noter une exception. Glissez pour changer de période.";
     if (!src.config) { $("#hr-resume").textContent = lecture ? "Horaire partagé" : "Aucune rotation configurée"; return; }
@@ -3013,9 +3020,19 @@
       brancherCalculTS();
     }
   }
-  $("#hr-stats").addEventListener("click", async () => { const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); stats.paie = 0; try { await chargerPaie(); } catch { /* facultatif */ } rendreStats(); $("#stats-voile").hidden = false; });
-  $("#stats-fermer").addEventListener("click", () => ($("#stats-voile").hidden = true));
-  $("#stats-voile").addEventListener("click", (e) => { if (e.target.id === "stats-voile") e.target.hidden = true; });
+  // Onglet Rémunération (SQ) ou Statistiques de l'horaire
+  async function ouvrirOngletStats() {
+    const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); stats.paie = 0;
+    if (!stats.dejaOuvert) { stats.mode = estSQ() && affichee() === hr ? "paie" : "mois"; stats.dejaOuvert = true; }
+    try { await chargerPaie(); } catch { /* facultatif */ }
+    rendreStats();
+  }
+  $$("[data-hr-vue]").forEach((b) => b.addEventListener("click", () => {
+    hr.onglet = b.dataset.hrVue;
+    rendreHoraire();
+    if (hr.onglet === "stats") ouvrirOngletStats();
+    $("#vue-horaire").scrollTop = 0;
+  }));
   $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
   $("#stats-prec").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie--; rendreStats(); return; } if (stats.mode === "annee") stats.a--; else if (stats.m === 0) { stats.m = 11; stats.a--; } else stats.m--; rendreStats(); });
   $("#stats-suiv").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie++; rendreStats(); return; } if (stats.mode === "annee") stats.a++; else if (stats.m === 11) { stats.m = 0; stats.a++; } else stats.m++; rendreStats(); });

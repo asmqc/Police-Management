@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230349">
+  <link rel="stylesheet" href="styles.css?v=202610230356">
 </head>
 <body>
   <!-- Chargement -->
@@ -890,6 +890,10 @@
         <button type="button" role="radio" data-cible="conjoint" aria-checked="false" id="hr-cible-conj">Conjoint·e</button>
       </div>
       <p id="hr-lecture-vide" class="vide" hidden>Ce collègue n'a pas encore configuré sa rotation.</p>
+      <div class="segmente hr-onglets-vue" id="hr-onglets-vue" role="tablist" aria-label="Sections de l'horaire" hidden>
+        <button type="button" role="tab" data-hr-vue="calendrier" aria-checked="true">Calendrier</button>
+        <button type="button" role="tab" data-hr-vue="stats" aria-checked="false">Statistiques</button>
+      </div>
 
       <div id="hr-vide" class="panneau" hidden>
         <p class="aide" id="hr-vide-aide">Configurez votre rotation une seule fois. L'app calcule ensuite votre horaire pour les mois à venir.</p>
@@ -940,7 +944,6 @@
         <p class="aide" id="hr-astuce">Touchez une journée pour noter une exception : vacances, maladie, cour, formation, échange ou temps supplémentaire.</p>
         <div class="hr-actions hr-mes-actions">
           <button class="btn-secondaire petit" id="hr-config">Modifier ma rotation</button>
-          <button class="btn-secondaire petit" id="hr-stats">Statistiques d'heures</button>
           <button class="btn-secondaire petit hr-moi-seul" id="hr-offrir">Offrir un quart</button>
           <button class="btn-secondaire petit" id="hr-ics">Exporter (.ics)</button>
           <button class="btn-secondaire petit hr-moi-seul" id="hr-abo-btn" aria-expanded="false" aria-controls="hr-abo">Calendrier abonné</button>
@@ -952,6 +955,14 @@
           <p class="aide hr-abo-avert"><b>Ce lien est personnel.</b> Toute personne qui l'a peut voir votre horaire de travail. Partagez-le seulement avec vos proches. Si vous croyez qu'il a circulé, créez-en un nouveau : l'ancien cesse de fonctionner.</p>
         </div>
       </div>
+
+      <div id="stats-voile" class="hr-stats-vue" hidden>
+      
+      <div class="segmente stats-mode" role="radiogroup"><button type="button" role="radio" data-stats="paie" aria-checked="false" hidden>Paie</button><button type="button" role="radio" data-stats="banques" aria-checked="false" hidden>Banques</button><button type="button" role="radio" data-stats="mois" aria-checked="true">Heures du mois</button><button type="button" role="radio" data-stats="annee" aria-checked="false">Année</button></div>
+      <div class="hr-mois-tete"><button class="btn-icone" id="stats-prec" aria-label="Précédent">‹</button><h3 id="stats-periode"></h3><button class="btn-icone" id="stats-suiv" aria-label="Suivant">›</button></div>
+      <div id="stats-contenu"></div>
+      <button type="button" class="btn-secondaire" id="stats-rapport">Rapport de temps supplémentaire (PDF)</button>
+          </div>
 
       <details id="hr-partage" class="hr-partage hr-plier" hidden>
         <summary><span><b>Mon poste et partages</b><small>Voir l'horaire de vos collègues, partager le vôtre</small></span></summary>
@@ -1732,16 +1743,6 @@
     </section>
   </div>
 
-  <div id="stats-voile" class="voile" hidden>
-    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="stats-titre">
-      <button class="btn-icone fermer" id="stats-fermer" aria-label="Fermer">✕</button>
-      <h3 class="titre-voile" id="stats-titre">Statistiques d'heures et paie</h3>
-      <div class="segmente stats-mode" role="radiogroup"><button type="button" role="radio" data-stats="mois" aria-checked="true">Mois</button><button type="button" role="radio" data-stats="annee" aria-checked="false">Année</button><button type="button" role="radio" data-stats="paie" aria-checked="false" hidden>Paie</button><button type="button" role="radio" data-stats="banques" aria-checked="false" hidden>Banques</button></div>
-      <div class="hr-mois-tete"><button class="btn-icone" id="stats-prec" aria-label="Précédent">‹</button><h3 id="stats-periode"></h3><button class="btn-icone" id="stats-suiv" aria-label="Suivant">›</button></div>
-      <div id="stats-contenu"></div>
-      <button type="button" class="btn-secondaire" id="stats-rapport">Rapport de temps supplémentaire (PDF)</button>
-    </section>
-  </div>
 
   <div id="fetes-voile" class="voile" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="fetes-titre">
@@ -1852,9 +1853,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230349"></script>
+  <script src="config.js?v=202610230356"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230349"></script>
+  <script src="app.js?v=202610230356"></script>
 </body>
 </html>
