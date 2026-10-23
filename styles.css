@@ -2377,3 +2377,4 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .hr-stats-vue .stats-mode.quatre button { font-size: .8rem; padding-inline: 2px; white-space: normal; line-height: 1.15; }
 #stats-periode { text-transform: none; }
 #stats-periode::first-letter { text-transform: uppercase; }
+.ag-quart small.tsp-ligne { white-space: normal; overflow: visible; text-overflow: clip; }

@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230359">
+  <link rel="stylesheet" href="styles.css?v=202610230412">
 </head>
 <body>
   <!-- Chargement -->
@@ -1614,8 +1614,27 @@
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
       </div>
       <p class="aide hr-ts-vide hr-edition" id="hr-ts-vide" data-tab="ts" hidden></p>
+      <div class="hr-edition hr-tsp" id="hr-tspa-bloc" data-tab="ts" hidden>
+        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tspa-actif"><span><b>Temps supplémentaire avant mon quart</b><small id="hr-tspa-aide">Arrivé plus tôt ou rappelé avant le début</small></span></label>
+        <div class="hr-tsp-champs" id="hr-tspa-champs" hidden>
+          <div class="fc-ligne"><input type="time" id="hr-tspa-debut" aria-label="Début du temps supplémentaire"><span>à</span><input type="time" id="hr-tspa-fin" aria-label="Fin du temps supplémentaire"></div>
+          <select id="hr-tspa-maj" aria-label="Taux du temps supplémentaire">
+            <option value="1.5">Temps et demi (1 ½)</option>
+            <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
+          </select>
+          <select id="hr-tspa-rappel" aria-label="Situation">
+            <option value="">Juste avant mon quart (en continu)</option>
+            <option value="hors">Rappel plus tôt, séparé de mon quart (min. 3 h × 1,5)</option>
+          </select>
+          <select id="hr-tspa-pris" aria-label="Payé ou compensé">
+            <option value="paie">Temps payé (sur la paie)</option>
+            <option value="banque">Temps compensé (banque de temps)</option>
+          </select>
+          <div class="ts-valeur" id="hr-tspa-montant" aria-live="polite" hidden></div>
+        </div>
+      </div>
       <div class="hr-edition hr-tsp" id="hr-tsp-bloc" data-tab="ts" hidden>
-        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Ajouter du temps supplémentaire</b><small>En plus du quart : avant, après ou rappel</small></span></label>
+        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Temps supplémentaire après mon quart</b><small id="hr-tsp-aide">Prolongation ou rappel après la fin</small></span></label>
         <div class="hr-tsp-champs" id="hr-tsp-champs" hidden>
           <div class="fc-ligne"><input type="time" id="hr-tsp-debut" aria-label="Début du temps supplémentaire"><span>à</span><input type="time" id="hr-tsp-fin" aria-label="Fin du temps supplémentaire"></div>
           <select id="hr-tsp-maj" aria-label="Taux du temps supplémentaire">
@@ -1623,7 +1642,7 @@
             <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
           </select>
           <select id="hr-tsp-rappel" aria-label="Situation">
-            <option value="">Prolongation de mon quart (avant ou après)</option>
+            <option value="">Prolongation de mon quart (en continu)</option>
             <option value="hors">Rappel après avoir quitté (min. 3 h × 1,5)</option>
           </select>
           <select id="hr-tsp-pris" aria-label="Payé ou compensé">
@@ -1853,9 +1872,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230359"></script>
+  <script src="config.js?v=202610230412"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230359"></script>
+  <script src="app.js?v=202610230412"></script>
 </body>
 </html>
