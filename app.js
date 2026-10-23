@@ -1002,6 +1002,11 @@
     ],
   };
   const NON_PAYES_P = ["adoption-prep", "parental", "enfant-malade"];
+  // Congés de plusieurs jours consécutifs (les jours de congé hebdomadaire sont inclus, 25.06) : [jours, jours payés]
+  const DUREES_MOTIF = {
+    "E:mariage": [7, 7], "E:deces-conjoint": [7, 7], "E:deces-parent": [3, 3], "E:deces-beaux": [3, 3], "E:deces-domicile": [3, 3],
+    "E:deces-enfant-conjoint": [5, 2], "E:demenagement": [2, 2], "P:maternite": [147, 147], "P:paternite": [35, 35], "P:adoption": [35, 35],
+  };
   const RQAP_P = ["maternite", "paternite", "adoption", "grossesse", "retrait"];
   const QUARTS_CYCLE = ["J", "S", "N", "C"];
   const HEURES_DEFAUT = { J: ["07:00", "19:00"], S: ["15:00", "23:00"], N: ["19:00", "07:00"] };
@@ -3826,6 +3831,7 @@ Format :
     $$("#hr-jour-choix button").forEach((b) => b.addEventListener("click", () => $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)))));
     $("#hr-jour-note").value = q.note || "";
     hr.motifInitial = (((cibleEdition().exceptions || {})[iso]) || {}).motif || "";
+    $("#hr-periode").checked = !(((cibleEdition().exceptions || {})[iso]) || {}).motif; $("#hr-periode-extra").checked = false; $("#hr-periode-extra").disabled = !$("#hr-periode").checked;
     const ex = (cibleEdition().exceptions || {})[iso] || {};
     $("#hr-jour-debut").value = ex.debut || ""; $("#hr-jour-fin").value = ex.fin || "";
     $$("#hr-ts-champs input").forEach((i) => (i.value = (ex.ts && ex.ts[i.dataset.ts]) || ""));
@@ -3857,6 +3863,15 @@ Format :
       const m = motifs.find(([k]) => k === sel.value);
       $("#hr-motif-aide").textContent = m ? m[2] : "";
     }
+    const duree = motifs ? DUREES_MOTIF[`${t}:${$("#hr-jour-motif").value}`] : null;
+    $("#hr-periode-bloc").hidden = !!hr.vue || !duree;
+    $("#hr-periode-extra-bloc").hidden = !!hr.vue || !duree || `${t}:${$("#hr-jour-motif").value}` !== "E:deces-parent";
+    if (duree) {
+      const [n, payes] = duree, fin = isoPlus(hr.jourChoisi, n - 1);
+      const txt = n >= 14 ? `${n / 7} semaines` : `${n} jours`;
+      $("#hr-periode-titre").textContent = `Inscrire les ${txt} d'un coup`;
+      $("#hr-periode-aide").textContent = `Du ${dateCourte(hr.jourChoisi)} au ${dateCourte(fin, true)}, congés hebdomadaires inclus (25.06)${payes < n ? ` · ${payes} jours payés, ${n - payes} sans traitement` : ""}.`;
+    }
     $("#hr-tsp-bloc").hidden = !!hr.vue || !t || t === "X";
     $("#hr-jour-pris-bloc").hidden = !!hr.vue || t !== "X";
     $("#hr-tsp-champs").hidden = $("#hr-tsp-bloc").hidden || !$("#hr-tsp-actif").checked;
@@ -3869,6 +3884,7 @@ Format :
   }
   $("#hr-jour-choix").addEventListener("click", () => setTimeout(majChampsJour, 0));
   $("#hr-jour-motif").addEventListener("change", () => { hr.motifInitial = $("#hr-jour-motif").value; majChampsJour(); });
+  $("#hr-periode").addEventListener("change", () => ($("#hr-periode-extra").disabled = !$("#hr-periode").checked));
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
   function majValeurJour() {
     majValeurTsp();
@@ -3922,11 +3938,24 @@ Format :
       if (!td || !tf) return toast("Indiquez le début et la fin du temps supplémentaire");
       tsp = { debut: td, fin: tf, ...($("#hr-tsp-maj").value === "2" ? { maj: 2 } : {}), ...($("#hr-tsp-pris").value === "banque" ? { pris: "banque" } : {}) };
     }
-    const avant = cible.exceptions[iso];
+    const avant = cible.exceptions[iso], sauvegarde = { ...cible.exceptions };
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp) delete cible.exceptions[iso];
     else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}) };
-    try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast("Journée mise à jour"); }
-    catch (e) { if (avant) cible.exceptions[iso] = avant; else delete cible.exceptions[iso]; toast(traduireErreur(e)); }
+    // Congé de plusieurs jours : inscrire chaque journée de la période
+    let nbJours = 1, sautes = 0;
+    const cleMotif = MOTIFS[type] ? `${type}:${$("#hr-jour-motif").value}` : "";
+    if (cleMotif && DUREES_MOTIF[cleMotif] && !$("#hr-periode-bloc").hidden && $("#hr-periode").checked) {
+      const [n, payes] = DUREES_MOTIF[cleMotif];
+      const extra = cleMotif === "E:deces-parent" && $("#hr-periode-extra").checked ? 2 : 0;
+      for (let i = 1; i < n + extra; i++) {
+        const j = isoPlus(iso, i), deja = sauvegarde[j];
+        if (deja && deja.type !== type && deja.type !== "U") { sautes++; continue; } // ne pas écraser une journée déjà modifiée (TS, cour…)
+        cible.exceptions[j] = i < payes ? { type, note: "", motif: $("#hr-jour-motif").value } : { type: "U", note: "", motif: "evenement" };
+      }
+      nbJours = n + extra;
+    }
+    try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast(nbJours > 1 ? `${nbJours - sautes} journées inscrites à l'horaire${sautes ? ` · ${sautes} journée${sautes > 1 ? "s" : ""} déjà modifiée${sautes > 1 ? "s" : ""} laissée${sautes > 1 ? "s" : ""} telle${sautes > 1 ? "s" : ""} quelle${sautes > 1 ? "s" : ""}` : ""}` : "Journée mise à jour"); }
+    catch (e) { cible.exceptions = sauvegarde; toast(traduireErreur(e)); }
   });
   $("#hr-jour-retirer").addEventListener("click", async () => {
     const iso = hr.jourChoisi, cible = cibleEdition(), avant = cible.exceptions[iso];
