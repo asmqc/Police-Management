@@ -2345,3 +2345,14 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 .hr-options-quart { display: grid; gap: 8px; }
 .hr-options-quart[hidden] { display: none; }
 #hr-jour-rappel, #hr-tsp-rappel { width: 100%; }
+#hr-remplace, #hr-dispo-type, #hr-dispo-h { width: 100%; }
+.ag-alerte { margin: 6px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(242, 179, 61, .18); font-size: .88rem; font-weight: 600; line-height: 1.4; }
+.fetes-liste { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.fetes-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
+.fetes-liste li .q { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: var(--q); color: var(--qt); font-weight: 800; }
+.fetes-liste li small { grid-column: 1 / -1; color: var(--fg-doux); }
+#fetes-reste { width: 100%; }
+.cv-outil-corps { padding: 0 14px 14px; display: grid; gap: 10px; }
+.cv-outil-corps .aide { margin: 0; }
+#grief-date, #grief-type { width: 100%; }
+#grief-res.depasse b { color: var(--rouge); }

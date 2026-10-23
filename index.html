@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230204">
+  <link rel="stylesheet" href="styles.css?v=202610230211">
 </head>
 <body>
   <!-- Chargement -->
@@ -914,6 +914,7 @@
           <button class="btn-icone cal-outil" id="cal-calendriers" aria-label="Calendriers affichés"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
           <div class="cal-plus-menu" id="cal-plus-menu" role="menu" hidden>
             <button type="button" role="menuitem" data-plus="quart"><b>Modifier le quart</b><small>Vacances, maladie, temps supp., formation, échange…</small></button>
+            <button type="button" role="menuitem" data-plus="fetes" class="seulement-sq"><b>Planifier mon congé des Fêtes</b><small>Noël ou Jour de l'An, 7 jours regroupés (art. 24)</small></button>
             <button type="button" role="menuitem" data-plus="evenement"><b>Nouvel événement</b><small>Rendez-vous, rappel, événement personnel</small></button>
           </div>
           <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Ajouter" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
@@ -1343,6 +1344,45 @@
         <summary><b>Échelle salariale</b><span>Annexe T · taux annuels des membres policiers</span></summary>
         <div id="cv-echelle-contenu"></div>
       </details>
+      <details class="panneau cv-echelle cv-outil" id="cv-frais">
+        <summary><b>Calculateur de frais</b><span>Repas, kilométrage, coucher · art. 21 et annexe K</span></summary>
+        <div class="cv-outil-corps">
+          <div class="paie-champs">
+            <label><span>Déjeuners (14,70 $)</span><input type="number" inputmode="numeric" min="0" max="99" data-frais="dej" value="0"></label>
+            <label><span>Dîners (20,20 $)</span><input type="number" inputmode="numeric" min="0" max="99" data-frais="din" value="0"></label>
+            <label><span>Soupers (30,50 $)</span><input type="number" inputmode="numeric" min="0" max="99" data-frais="soup" value="0"></label>
+            <label><span>Repas de nuit (30,50 $)</span><input type="number" inputmode="numeric" min="0" max="99" data-frais="nuit" value="0"></label>
+            <label class="large"><span>Lieu des repas (21.02 b)</span><select data-frais="zone">
+              <option value="0">Au sud du 49ᵉ parallèle</option>
+              <option value="30">Entre le 49ᵉ et le 50ᵉ parallèle (+30 %)</option>
+              <option value="50">Au nord du 50ᵉ parallèle, sauf Baie-Comeau, Port-Cartier et Sept-Îles (+50 %)</option>
+            </select></label>
+            <label><span>Km, véhicule personnel</span><input type="number" inputmode="decimal" min="0" data-frais="km" value="0"></label>
+            <label><span>Km déjà parcourus cette année</span><input type="number" inputmode="decimal" min="0" data-frais="kmAvant" value="0"></label>
+            <label><span>Km en forêt, gravier ou avec remorque</span><input type="number" inputmode="decimal" min="0" data-frais="kmExtra" value="0"></label>
+            <label><span>Péages ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" data-frais="peage" value="0"></label>
+            <label><span>Couchers</span><input type="number" inputmode="numeric" min="0" max="99" data-frais="couchers" value="0"></label>
+            <label class="large hr-tsp-interrupteur"><input type="checkbox" data-frais="horsHotel"><span><b>Logé ailleurs qu'à l'hôtel</b><small>22,25 $ de plus par jour (21.05)</small></span></label>
+          </div>
+          <dl class="vt-detail" id="frais-res"></dl>
+          <p class="aide">Taux de l'annexe K (repas au 1ᵉʳ avril 2024, kilométrage au 1ᵉʳ octobre 2024). Au plus un déjeuner, un dîner et un souper par 24 h en voyage (21.08). Repas d'enfants de moins de 5 ans : moitié prix (21.02 d).</p>
+        </div>
+      </details>
+      <details class="panneau cv-echelle cv-outil" id="cv-grief">
+        <summary><b>Délai de grief</b><span>Date limite pour déposer un grief · art. 31</span></summary>
+        <div class="cv-outil-corps">
+          <label class="ref" for="grief-date">Date où le grief a pris naissance</label>
+          <input id="grief-date" type="date">
+          <label class="ref" for="grief-type">Type de grief</label>
+          <select id="grief-type">
+            <option value="general">Grief régulier : 90 jours (31.02 a)</option>
+            <option value="accelere">Gestion des ressources humaines, placement : 10 jours (31.03)</option>
+            <option value="harcelement">Harcèlement psychologique : 24 mois après la dernière manifestation (31.02 a)</option>
+          </select>
+          <div class="ts-valeur" id="grief-res"></div>
+          <p class="aide">Seul le délai de dépôt est de rigueur : il ne peut être prolongé que par entente écrite entre la Sûreté et l'Association (31.05). En cas de doute, communiquez avec l'APPQ.</p>
+        </div>
+      </details>
       <div class="puces cv-suggestions" id="cv-suggestions">
         <button type="button" data-cv-q="Combien d'heures de vacances annuelles ai-je selon mes années de service?">Vacances annuelles</button>
         <button type="button" data-cv-q="Comment est payé le temps supplémentaire?">Temps supplémentaire</button>
@@ -1529,7 +1569,29 @@
       </div>
       <div class="hr-edition hr-options-quart" id="hr-options-quart" hidden>
         <label class="hr-tsp-interrupteur" id="hr-repasnp-bloc"><input type="checkbox" id="hr-repasnp"><span><b>Repas ou repos non pris</b><small>À cause du service : payé à temps et demi (12.06)</small></span></label>
+        <label class="ref" for="hr-remplace">Remplacement temporaire (17.04)</label>
+        <select id="hr-remplace">
+          <option value="">Je ne remplace personne</option>
+          <option value="agent_specialiste">Je remplace un agent spécialiste</option>
+          <option value="sergent_gestionnaire">Je remplace un sergent gestionnaire</option>
+          <option value="sergent_enqueteur">Je remplace un sergent enquêteur</option>
+          <option value="sergent_gestionnaire_enquete">Je remplace un sergent gestionnaire enquête</option>
+          <option value="sergent_responsable">Je remplace un sergent responsable d'unité</option>
+        </select>
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
+      </div>
+      <div class="hr-edition hr-tsp" id="hr-dispo-bloc" hidden>
+        <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-dispo-actif"><span><b>Disponibilité de service</b><small>Temps où la Sûreté vous demande d'être joignable (art. 13)</small></span></label>
+        <div class="hr-tsp-champs" id="hr-dispo-champs" hidden>
+          <select id="hr-dispo-type" aria-label="Type de disponibilité">
+            <option value="domicile">À ma résidence : 1 h payée par 4 h (13.01)</option>
+            <option value="hebergement">Dans un hébergement temporaire : 1 h par 3 h (13.02)</option>
+            <option value="reguliere">Disponibilité régulière, annexe V : 1 h par 8 h (13.18)</option>
+          </select>
+          <label class="ref" for="hr-dispo-h">Heures de disponibilité</label>
+          <input id="hr-dispo-h" type="number" inputmode="decimal" min="0" max="24" step="0.5" placeholder="Ex. 24">
+          <div class="ts-valeur" id="hr-dispo-montant" hidden></div>
+        </div>
       </div>
       <div class="hr-edition hr-tsp" id="hr-tsp-bloc" hidden>
         <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tsp-actif"><span><b>Ajouter du temps supplémentaire</b><small>En plus du quart : avant, après ou rappel</small></span></label>
@@ -1658,6 +1720,27 @@
     </section>
   </div>
 
+  <div id="fetes-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="fetes-titre">
+      <button class="btn-icone fermer" id="fetes-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="fetes-titre">Mon congé des Fêtes</h3>
+      <p class="aide">Selon l'article 24 : 7 jours de congé regroupés pendant l'une des deux périodes. Les congés hebdomadaires sont utilisés d'abord, puis vos congés D, puis ce que vous choisissez.</p>
+      <div class="segmente" role="radiogroup" aria-label="Période">
+        <button type="button" role="radio" data-fetes="noel" aria-checked="true">Noël (22 au 28 déc.)</button>
+        <button type="button" role="radio" data-fetes="an" aria-checked="false">Jour de l'An (29 déc. au 4 janv.)</button>
+      </div>
+      <label class="ref" for="fetes-reste">Pour les autres jours, utiliser</label>
+      <select id="fetes-reste">
+        <option value="H">Mes congés fériés (H)</option>
+        <option value="V">Mes vacances (V)</option>
+        <option value="B">Ma banque de temps (B)</option>
+      </select>
+      <ul class="fetes-liste" id="fetes-liste"></ul>
+      <p class="aide" id="fetes-note"></p>
+      <button type="button" class="btn-principal" id="fetes-ok">Inscrire à mon horaire</button>
+    </section>
+  </div>
+
   <div id="offre-voile" class="voile" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="offre-titre">
       <button class="btn-icone fermer" id="offre-fermer" aria-label="Fermer">✕</button>
@@ -1746,9 +1829,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230204"></script>
+  <script src="config.js?v=202610230211"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230204"></script>
+  <script src="app.js?v=202610230211"></script>
 </body>
 </html>
