@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610230221">
+  <link rel="stylesheet" href="styles.css?v=202610230226">
 </head>
 <body>
   <!-- Chargement -->
@@ -993,6 +993,14 @@
           <option value="">Choisir un modèle…</option>
           <optgroup label="Sûreté du Québec" class="seulement-sq">
             <option value="SQ-H1">H1 · Horaire hybride (annexe J, 35 jours)</option>
+            <option value="SQ-H2">H2 · Soutien, 12 h de jour : 16 jours / 35 (gabarit)</option>
+            <option value="SQ-H3-9">H3 · Flexible 9 h : 21 jours / 35 (gabarit)</option>
+            <option value="SQ-H3-12">H3 · Flexible 12 h : 16 jours / 35 (gabarit)</option>
+            <option value="SQ-I12">12 h, annexe I : cycle de 28 jours (gabarit)</option>
+            <option value="SQ-13-15-28">12 h SQ 13-15-28 (gabarit)</option>
+            <option value="SQ-16-19-35">12 h 16-19-35 (gabarit)</option>
+            <option value="SQ-ALMA">12 h Alma 3-2-2-3 (gabarit)</option>
+            <option value="SQ-4-3">9 h 4-3 (gabarit)</option>
           </optgroup>
           <optgroup label="Rotations de 12 heures">
             <option value="223">2-2-3 Pitman / Panama, jour et nuit (28 jours)</option>
@@ -1839,9 +1847,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610230221"></script>
+  <script src="config.js?v=202610230226"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610230221"></script>
+  <script src="app.js?v=202610230226"></script>
 </body>
 </html>

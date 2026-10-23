@@ -1026,9 +1026,25 @@
     "4-3": "JJJJCCC", "5-4-9": "JJJJJCCJJJJCCC", "4-4S": "SSSSCCCC", "4-4N": "NNNNCCCC",
     // Sûreté du Québec : horaire hybride H1 (annexe J), cycle de 35 jours, 3 fins de semaine de congé sur 5
     "SQ-H1": "JJJJCCCSSCCJJJCCSSSCCNNNNNNNCCCCCCC",
+    // Gabarits conformes aux règles du contrat (10.15, annexe I) : l'ordre exact des jours est à l'annexe J et à l'horaire affiché
+    "SQ-H2": "CCJJJCCCCJJJCCCCJJJCCCCJJJCCCJJJJCC",
+    "SQ-H3-9": "CJJJJCCCSSSSCCCNNNNCCCJJJJCCSSSSSCC",
+    "SQ-H3-12": "CCCCJJCCCNNNCCCJJJCCCNNCCCJJJCCCNNN",
+    "SQ-I12": "CCJJJCCCCNNNCCCJJJJCCCNNNNCC",
+    "SQ-13-15-28": "CJJJCCCCNNNCCCCJJJCCCNNNNCCC",
+    "SQ-16-19-35": "CCJJJCCCCNNNCCCCJJJCCCCNNNCCCJJJJCC",
+    "SQ-ALMA": "JJJCCJJCCCNNNCCNNCCC",
+    "SQ-4-3": "JJJJCCC",
   };
   // Référence : l'équipe 2 commence le cycle le lundi 5 octobre 2026; chaque équipe suivante une semaine plus tard
-  const MODELES_SQ = { "SQ-H1": { debut: "2026-10-05", equipeRef: 2, hybride: true } };
+  const H12_SQ = { J: ["07:00", "19:00"], S: ["16:00", "04:00"], N: ["19:00", "07:00"] };
+  const H9_SQ = { J: ["07:00", "16:00"], S: ["15:00", "00:00"], N: ["23:00", "08:00"] };
+  const MODELES_SQ = {
+    "SQ-H1": { debut: "2026-10-05", equipeRef: 2, hybride: true },
+    "SQ-H2": { heures: H12_SQ, gabarit: true }, "SQ-H3-9": { heures: H9_SQ, gabarit: true }, "SQ-H3-12": { heures: H12_SQ, gabarit: true },
+    "SQ-I12": { heures: H12_SQ, gabarit: true }, "SQ-13-15-28": { heures: H12_SQ, gabarit: true }, "SQ-16-19-35": { heures: H12_SQ, gabarit: true },
+    "SQ-ALMA": { heures: H12_SQ, gabarit: true }, "SQ-4-3": { heures: H9_SQ, gabarit: true },
+  };
   document.getElementById("hr-equipe").addEventListener("change", () => {
     const m = document.getElementById("hr-modele").value;
     if (!MODELES_SQ[m]) return;
@@ -3972,7 +3988,7 @@ Format :
     $("#hr-modele").value = c ? (c.modele || "perso") : "4-4J";
     $("#hr-debut").value = hr.brouillon.debut;
     { const og = $("#hr-modele optgroup.seulement-sq"); if (og) { og.hidden = og.disabled = !estSQ(); } }
-    $("#hr-equipe-bloc").hidden = !MODELES_SQ[$("#hr-modele").value];
+    $("#hr-equipe-bloc").hidden = !(MODELES_SQ[$("#hr-modele").value] && MODELES_SQ[$("#hr-modele").value].debut);
     if (c && c.equipe) $("#hr-equipe").value = String(c.equipe);
     $("#hr-form").hidden = false;
     rendreBrouillon();
@@ -4002,10 +4018,11 @@ Format :
       const sq = MODELES_SQ[e.target.value];
       if (sq) {
         hr.brouillon.hybride = !!sq.hybride; if ($("#hr-hybride")) $("#hr-hybride").checked = !!sq.hybride;
-        const deb = debutEquipeSQ(e.target.value, $("#hr-equipe").value);
-        hr.brouillon.debut = deb; $("#hr-debut").value = deb;
+        if (sq.heures) hr.brouillon.heures = { ...sq.heures };
+        if (sq.debut) { const deb = debutEquipeSQ(e.target.value, $("#hr-equipe").value); hr.brouillon.debut = deb; $("#hr-debut").value = deb; }
+        if (sq.gabarit) toast("Gabarit conforme au contrat : ajustez les cases pour qu'elles correspondent à l'horaire affiché à votre poste");
       }
-      $("#hr-equipe-bloc").hidden = !sq;
+      $("#hr-equipe-bloc").hidden = !(sq && sq.debut);
       rendreBrouillon();
     } else $("#hr-equipe-bloc").hidden = true;
     const m = e.target.value.startsWith("m:") && modelesAdmin.find((x) => "m:" + x.id === e.target.value);
@@ -4029,7 +4046,7 @@ Format :
     const cible = cibleEdition();
     const ancien = cible.config;
     cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride,
-      ...(MODELES_SQ[$("#hr-modele").value] ? { equipe: +$("#hr-equipe").value } : {}) };
+      ...(MODELES_SQ[$("#hr-modele").value] && MODELES_SQ[$("#hr-modele").value].debut ? { equipe: +$("#hr-equipe").value } : {}) };
     try {
       await sauverHoraire();
       $("#hr-form").hidden = true;
