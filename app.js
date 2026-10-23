@@ -555,6 +555,11 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-10-23-ia", date: "2026-10-23", titre: "IA Police Management (SQ)", points: [
+      "Posez votre question sur le contrat de travail comme vous la diriez à un collègue (« je me marie, j'ai combien de jours ? », « on m'appelle chez nous pour rentrer »).",
+      "L'IA trouve les passages exacts qui répondent et les cite mot pour mot, avec le numéro de clause et la page du PDF. Elle n'écrit jamais ses propres phrases : rien n'est inventé.",
+      "Questions de suivi : « et pour un décès ? » garde le sujet de la question précédente. « Écouter la réponse » lit les passages à voix haute.",
+    ] },
     { id: "2026-10-23-visite", date: "2026-10-23", titre: "Visite guidée", points: [
       "Une courte visite explique l'app aux nouveaux membres, puis chaque nouvelle section la première fois que vous l'ouvrez.",
       "Revoyez n'importe quelle visite, ou désactivez les explications automatiques, dans Réglages › Visite guidée.",
@@ -683,7 +688,8 @@
     if (cv.lecture === k) return arreterLecture();
     speechSynthesis.cancel();
     const m = cv.fil[k];
-    const u = new SpeechSynthesisUtterance(m.claude ? m.claude.replace(/\*\*/g, "").replace(/^\s*[-•*]\s+/gm, "") : texteALire(m.extraits || []));
+    const ia = m.ia || repondreIA(m.question, m.extraits || [], null);
+    const u = new SpeechSynthesisUtterance(m.claude ? m.claude.replace(/\*\*/g, "").replace(/^\s*[-•*]\s+/gm, "") : ia.ok ? texteReponseIA(ia) : texteALire(m.extraits || []));
     u.lang = "fr-CA";
     const v = voixFrancaise(); if (v) u.voice = v;
     u.rate = 1;
@@ -763,8 +769,162 @@ Question : ${question}
   }
   const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
   const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
+  const ICONE_IA = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" fill="currentColor"/><path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="currentColor"/></svg>`;
   const ICONE_HP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
   const ICONE_STOP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>`;
+
+  /* ---------------- IA Police Management : réponses extraites mot pour mot du contrat ----------------
+     Comprend la question (sujets, synonymes, type de question), découpe les clauses trouvées en phrases et alinéas,
+     et cite les passages qui répondent. Aucune phrase n'est générée : rien ne peut être inventé. */
+  const IA_SYNONYMES = [
+    [/(mari|noce|epous|union civile)/, "mariage union civile"],
+    [/(deces|funerail|enterrement|\bmort|decede)/, "deces funerailles"],
+    [/(blonde|chum|femme|conjoint|epoux|mari\b)/, "conjoint"],
+    [/(pere|mere|parent)\b/, "pere mere"],
+    [/(enfant|fils|fille|bebe)/, "enfant fils fille"],
+    [/(accouch|naissance|bebe|enceinte|grossesse)/, "naissance accouchement maternite paternite"],
+    [/(paternit)/, "paternite naissance enfant"],
+    [/(maternit)/, "maternite grossesse accouchement"],
+    [/(adopt)/, "adoption enfant"],
+    [/\bts\b|temps supp|heures? supp|overtime/, "temps supplementaire"],
+    [/(rappel|appel(le|e)? (a|chez)|rentrer|rappele)/, "rappel revenir travail requis"],
+    [/(banque|compens|en temps)/, "banque temps accumuler"],
+    [/(payer|paye|paie|argent|cash|monnayer)/, "paye taux traitement"],
+    [/(vacance)/, "vacances annuelles"],
+    [/(ferie)/, "conges feries"],
+    [/(fetes|noel|jour de l an)/, "periode fetes"],
+    [/(malad|malade|certificat|billet|medecin)/, "maladie certificat medical absence"],
+    [/(prime)/, "prime"],
+    [/\bnuit/, "nuit prime"], [/\bsoir/, "soir prime"], [/(fin de semaine|weekend|samedi|dimanche)/, "fin semaine samedi dimanche"],
+    [/(salaire|echelle|echelon|augmentation|gagne)/, "traitement echelle salariale"],
+    [/(repas|manger|diner|souper|dejeuner)/, "repas frais"],
+    [/(kilometr|\bkm\b|millage|char|voiture perso)/, "kilometre vehicule personnel"],
+    [/(hotel|coucher|dormir)/, "coucher hebergement"],
+    [/(demenag)/, "demenagement"],
+    [/(disponib|pagette|garde)/, "disponibilite service"],
+    [/(grief|contester|plainte)/, "grief"],
+    [/(suspen|disciplin|reprimande|sanction)/, "discipline mesure suspension"],
+    [/(uniforme|linge|vetement|botte)/, "tenue vestimentaire uniforme"],
+    [/(sans solde|sans traitement|sans paye)/, "sans traitement"],
+    [/(cour|temoign|subpoena)/, "cour temoigner assignation"],
+    [/(horaire|rotation|releve|quart|cycle)/, "releve horaire travail"],
+    [/(remplac|interim|acting)/, "remplacement temporaire"],
+    [/(delai|combien de temps pour|date limite|avant quand)/, "delai jours suivant"],
+    [/(retraite)/, "retraite"],
+    [/(accident|blesse|cnesst|lesion)/, "accident travail lesion"],
+    [/(formation|cours\b)/, "formation"],
+    [/(promotion|grade)/, "promotion"],
+  ];
+  const IA_VIDES = new Set("les des une un le la de du au aux et ou en a à pour par sur dans avec est sont que qui quoi quel quelle quels quelles comment combien quand est-ce ce cet cette ces se sa son ses mon ma mes ton ta tes notre votre vos leur leurs je tu il elle on nous vous ils elles me te lui y si ne pas plus moins tres peu fait faire peut peux doit dois veux avoir etre suis es ai as avez ont droit membre jour jours heure heures ca cela ceci alors donc mais aussi tout tous toute toutes chez quoi oui non bien la-bas".split(" "));
+  const normIA = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[’']/g, " ");
+  function racine(m) {
+    m = m.replace(/(ements|ement|ations|ation|ements|ments|ment|euses|euse|eux|ives|ive|ites|ite|aux|ees|ee|es|er|ez|ent|e|s|x)$/, "");
+    return m.slice(0, 6);
+  }
+  function motsIA(t) { return (normIA(t).match(/[a-z0-9]+/g) || []).filter((m) => (m.length > 2 || /^\d+$/.test(m)) && !IA_VIDES.has(m)).map(racine); }
+  const IA_NOMBRE = /\(\s*\d[\d\s,½]*\)|\b\d+(?:[,.]\d+)?\s*(?:%|\$|h\b|heures?|jours?|semaines?|mois|ans?|minutes?)|\b(?:une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|douze|quinze|vingt|trente)\s+\(?\d*\)?\s*(?:heures?|jours?|semaines?|mois|ans?)/i;
+  // Découpe une clause en passages (phrases et alinéas a), b)…), en gardant la phrase d'introduction des listes
+  function decouperClause(e) {
+    const brut = (e.texte || "").replace(/^\s*\d+\.\d+\s*/, "").replace(/\r/g, "");
+    const lignes = brut.split("\n");
+    let txt = "";
+    for (const l of lignes) {
+      const ls = l.trim();
+      if (!ls) continue;
+      txt += (/^(?:[a-z]|[ivx]+|\d{1,2})\)\s/.test(ls) ? "\n" : txt && !txt.endsWith("\n") ? " " : "") + ls;
+    }
+    const blocs = txt.split("\n");
+    const passages = [];
+    let intro = "";
+    for (const b of blocs) {
+      const m = b.match(/^((?:[a-z]|[ivx]+|\d{1,2})\))\s+(.*)$/);
+      if (m) {
+        // l'alinéa peut se terminer par une phrase qui n'en fait plus partie (ex. « Aux fins du présent article… »)
+        const parts = m[2].split(/(?<=[;.])\s+(?=[A-ZÀ-Ý«])/);
+        passages.push({ marque: m[1], intro, texte: parts[0] });
+        for (const p of parts.slice(1)) passages.push({ marque: m[1], intro: "", texte: p, suite: true });
+        continue;
+      }
+      const phrases = b.split(/(?<=[.;])\s+(?=[A-ZÀ-Ý«])/);
+      for (const p of phrases) {
+        passages.push({ marque: "", intro: "", texte: p });
+        if (/:\s*$/.test(p)) intro = p;
+      }
+    }
+    return passages.filter((p) => p.texte && p.texte.length > 12).map((p) => ({ ...p, clause: e }));
+  }
+  const mots_synonymes = (qn) => IA_SYNONYMES.filter(([re]) => re.test(qn)).map(([, m]) => m).join(" ");
+  function repondreIA(question, extraits, precedente) {
+    const qn = normIA(question);
+    let mq = motsIA(question);
+    // Les mots familiers traduits par un synonyme (« rentrer » → rappel) ne comptent plus dans ce qui doit être trouvé
+    const remplaces = new Set();
+    for (const [re, mots] of IA_SYNONYMES) if (re.test(qn)) {
+      mq = mq.concat(motsIA(mots));
+      for (const w of qn.match(/[a-z0-9]+/g) || []) if (w.length > 2 && re.test(w)) remplaces.add(racine(w));
+    }
+    for (const m of motsIA(mots_synonymes(qn))) remplaces.delete(m);
+    // Question de suivi courte (« et pour un décès ? ») : on garde le contexte de la question précédente, avec moins de poids
+    const suivi = precedente && (motsIA(question).length <= 2 || /^\s*(et|pis|puis|pour)\b/.test(qn));
+    const mqPrec = suivi ? motsIA(precedente) : [];
+    const cles = new Set(mq);
+    if (!cles.size && !mqPrec.length) return { ok: false, citations: [] };
+    const passages = [];
+    extraits.forEach((e, rang) => decouperClause(e).forEach((p) => passages.push({ ...p, rang })));
+    if (!passages.length) return { ok: false, citations: [] };
+    // Poids des mots : rares dans les passages = plus importants
+    const df = new Map();
+    // Le titre de l'article (ex. « Vacances annuelles ») compte aussi pour chacun de ses passages
+    const motsP = passages.map((p) => new Set(motsIA(p.intro + " " + p.texte + " " + (p.clause.titre || "").replace(/^(Article|Annexe)\s+\S+\s+—\s*/, ""))));
+    const nombresQ = (qn.match(/\b\d+\b/g) || []);
+    motsP.forEach((s) => s.forEach((m) => df.set(m, (df.get(m) || 0) + 1)));
+    const idf = (m) => Math.log(1 + passages.length / (1 + (df.get(m) || 0)));
+    const veutNombre = /(combien|nombre|duree|long|taux|montant|pourcentage|maximum|minimum|\bmax\b|\bmin\b)/.test(qn);
+    const veutDelai = /(quand|delai|avant|date|limite|jusqu)/.test(qn);
+    const veutDroit = /(peux|peut|droit|permis|est-ce que|ai-je|oblig|dois)/.test(qn);
+    // Un mot absent de tous les passages compte à moitié : il peut s'agir d'une formulation différente
+    const totalQ = [...cles].filter((m) => !remplaces.has(m)).reduce((s, m) => s + idf(m) * (df.get(m) ? 1 : 0.5), 0) || 1;
+    let meilleur = 0;
+    for (let i = 0; i < passages.length; i++) {
+      const p = passages[i], s = motsP[i];
+      let pts = 0, trouves = [];
+      for (const m of cles) if (s.has(m)) { pts += idf(m); trouves.push(m); }
+      for (const m of mqPrec) if (s.has(m) && !cles.has(m)) pts += idf(m) * 0.35;
+      const couverture = pts / totalQ;
+      let score = couverture;
+      if (veutNombre && IA_NOMBRE.test(p.texte)) score *= 1.35;
+      if (nombresQ.some((n) => new RegExp("\\(" + n + "\\)|\\b" + n + "\\b").test(p.texte))) score *= 1.5; // même nombre que dans la question (ex. 6 ans)
+      if (veutDelai && /(au plus tard|jours? suivant|avant le|dans les|delai|délai)/i.test(p.texte)) score *= 1.3;
+      if (veutDroit && /(a droit|peut |est autoris|doit )/i.test(p.texte)) score *= 1.15;
+      score *= 1 + 0.25 * (1 - p.rang / Math.max(1, extraits.length)); // clauses mieux classées par la recherche
+      score /= Math.pow(Math.max(1, p.texte.length / 260), 0.35); // les passages courts et précis d'abord
+      p.score = score; p.couverture = couverture; p.trouves = trouves;
+      if (score > meilleur) meilleur = score;
+    }
+    const tries = passages.filter((p) => p.score > 0).sort((a, b) => b.score - a.score);
+    const choisis = [];
+    for (const p of tries) {
+      if (choisis.length >= 3 || p.score < meilleur * 0.55) break;
+      if (choisis.some((c) => c.clause === p.clause && c.marque === p.marque && !p.marque === !c.marque && c.texte === p.texte)) continue;
+      choisis.push(p);
+    }
+    const ok = !!choisis.length && choisis[0].couverture >= 0.34;
+    const surligner = new Set(choisis.flatMap((c) => c.trouves));
+    return {
+      ok,
+      citations: (ok ? choisis : []).map((c) => ({
+        article: c.clause.article, page: c.clause.page, marque: c.marque, intro: c.marque && c.intro ? c.intro : "",
+        texte: c.texte, mots: [...surligner],
+      })),
+    };
+  }
+  // Met en évidence les mots de la question dans une citation (le texte est d'abord échappé)
+  function surlignerIA(t, mots) {
+    const set = new Set(mots);
+    return esc(t).replace(/[A-Za-zÀ-ÿ0-9]+/g, (w) => ((w.length > 2 || /^\d+$/.test(w)) && set.has(racine(normIA(w))) ? `<mark>${w}</mark>` : w));
+  }
+  const nomCitation = (c) => (/^Annexe/.test(c.article || "") ? c.article : "clause " + (c.article || "?")) + (c.marque ? " " + c.marque : "") + (c.page ? `, p. ${c.page}` : "");
+  const texteReponseIA = (r) => r.ok ? "Selon le contrat. " + r.citations.map((c) => `${nomCitation(c).replace(/, p\. \d+/, "")} : ${c.intro ? c.intro + " " : ""}${c.texte}`).join(" ") : "";
 
   function rendreConvention() {
     const el = $("#cv-fil");
@@ -772,17 +932,24 @@ Question : ${question}
       if (m.role === "user") return `<div class="bulle moi cv-q"><span class="bulle-txt">${esc(m.question)}</span></div>`;
       if (m.erreur) return `<article class="panneau cv-r cv-erreur"><p>${esc(m.erreur)}</p></article>`;
       const ex = m.extraits || [];
+      const ia = m.ia || (ex.length ? repondreIA(m.question, ex, null) : { ok: false, citations: [] });
+      const blocIA = `<section class="cv-ia${ia.ok ? "" : " cv-ia-vide"}">
+          <p class="cv-ia-tete">${ICONE_IA}<b>IA Police Management</b></p>
+          ${ia.ok ? `<p class="cv-ia-intro">Voici ce que dit le contrat :</p>` + ia.citations.map((c) => `<blockquote class="cv-citation">
+              ${c.intro ? `<p class="cv-cit-intro">${esc(c.intro)}</p>` : ""}<p>${surlignerIA(c.texte, c.mots)}</p>
+              <cite><span class="cv-num">${esc(nomCitation(c))}</span> <a href="${PDF_CONVENTION}#page=${(c.page || 0) + 8}" target="_blank" rel="noopener">PDF ↗</a></cite></blockquote>`).join("")
+            : `<p>Je n'ai pas trouvé de passage du contrat qui répond clairement à cette question. ${ex.length ? "Voici les clauses les plus proches : précisez votre question ou consultez-les ci-dessous." : ""} Je ne réponds jamais au-delà du texte du contrat.</p>`}
+          <p class="aide">Citations exactes du contrat, sans reformulation. Lisez la clause complète pour les exceptions.</p>
+        </section>`;
       return `<article class="panneau cv-r">
-        ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
-          <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
+        ${ex.length ? `${blocIA}<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
+          <a class="btn-secondaire cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Expliquer avec Claude</a>
           <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
-        <p class="aide">Claude s'ouvre avec votre question et les clauses trouvées, avec la consigne de répondre seulement à partir du contrat et de citer chaque clause (votre compte Claude gratuit suffit). « Copier pour Claude » envoie les ${ex.length} clauses au complet : plus précis. Vérifiez toujours la clause citée.</p>
+        <p class="aide">Besoin d'une explication en vos mots ? Claude s'ouvre avec votre question et les clauses, avec la consigne de répondre seulement à partir du contrat (votre compte Claude gratuit suffit).</p>
+        <details class="cv-clauses"><summary>Voir les ${ex.length} clause${ex.length > 1 ? "s" : ""} trouvée${ex.length > 1 ? "s" : ""}</summary>
         ${m.claude ? `<section class="cv-reponse-claude"><p class="cv-claude-tete">${ICONE_CLAUDE}<b>Réponse de Claude</b></p>${mdSimple(m.claude)}<p class="aide">Générée par IA à partir des clauses du contrat : vérifiez toujours la clause citée.</p></section>` : ""}
         ${m.claudeErreur ? `<p class="cv-claude-err">${esc(m.claudeErreur)}${m.claudeLien ? ` <a href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">Ouvrir dans Claude ↗</a>` : ""}</p>` : ""}
-        <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
-        <p class="cv-texte">${esc(ex[0].texte)}</p>
-        <a class="cv-pdf" href="${PDF_CONVENTION}#page=${(ex[0].page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>
-        ${ex.length > 1 ? `<p class="cv-titre-ex"><b>Autres clauses</b></p>` + ex.slice(1, 6).map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : ""}`
+        ${ex.map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("")}</details>`
         : `<p>Aucune clause trouvée avec ces mots. Essayez avec d'autres mots, par exemple « vacances », « temps supplémentaire » ou « prime de nuit ».</p>`}
       </article>`;
     }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
@@ -823,9 +990,13 @@ Question : ${question}
     cv.fil.push({ role: "user", question });
     cv.enCours = true; $("#cv-envoyer").disabled = true;
     rendreConvention();
-    const { data, error } = await sb.rpc("convention_recherche", { p_q: question, p_n: 10 });
+    // Question de suivi courte : la recherche garde le sujet de la question précédente
+    const prec = [...cv.fil].reverse().find((x) => x.role === "resultat" && !x.erreur);
+    const suivi = prec && (motsIA(question).length <= 2 || /^\s*(et|pis|puis|pour)\b/.test(normIA(question)));
+    const { data, error } = await sb.rpc("convention_recherche", { p_q: suivi ? prec.question + " " + question : question, p_n: 10 });
     cv.enCours = false; $("#cv-envoyer").disabled = false;
-    cv.fil.push(error ? { role: "resultat", question, erreur: traduireErreur(error) } : { role: "resultat", question, extraits: data || [] });
+    const extraits = data || [];
+    cv.fil.push(error ? { role: "resultat", question, erreur: traduireErreur(error) } : { role: "resultat", question, extraits, ia: repondreIA(question, extraits, suivi ? prec.question : null) });
     sauverFilCv();
     rendreConvention();
     // Question posée à voix haute : la réponse est lue tout de suite
@@ -6300,7 +6471,7 @@ Format :
       { sel: "#cv-echelle", titre: "Échelle salariale", texte: "Les taux de l'annexe T, avec la colonne d'aujourd'hui en couleur." },
       { sel: "#cv-frais", titre: "Calculateur de frais", texte: "Repas, kilométrage et coucher selon l'annexe K." },
       { sel: "#cv-grief", titre: "Délai de grief", texte: "La date limite pour déposer un grief selon l'article 31." },
-      { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question : l'app trouve les clauses du contrat, puis Claude peut vous l'expliquer en citant seulement le contrat." },
+      { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question comme à un collègue : l'IA Police Management cite mot pour mot les passages du contrat qui répondent." },
     ] },
   };
   const visite = { cle: null, etapes: [], i: 0 };

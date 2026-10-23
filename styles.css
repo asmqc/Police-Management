@@ -2395,3 +2395,17 @@ html.visite-active, html.visite-active body { overflow: hidden; }
 .visite-reglages { display: grid; gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .visite-trou, .visite-bulle { transition: none; } }
 .visite-bulle { background: linear-gradient(var(--surface), var(--surface)), var(--bg); }
+
+/* ---------- IA Police Management (convention) ---------- */
+.cv-ia { border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; background: color-mix(in srgb, var(--ambre-vif) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ambre-vif) 35%, transparent); }
+.cv-ia-vide { background: var(--surface-2); box-shadow: none; }
+.cv-ia-tete { display: flex; align-items: center; gap: 8px; color: var(--ambre); margin-bottom: 6px !important; }
+.cv-ia-tete b { color: var(--fg); }
+.cv-ia-intro { font-weight: 600; }
+.cv-citation { margin: 0 0 10px; padding: 8px 0 8px 12px; border-left: 3px solid var(--ambre-vif); }
+.cv-citation p { margin: 0 0 4px; }
+.cv-cit-intro { font-size: .86rem; color: var(--fg-doux); }
+.cv-citation mark { background: color-mix(in srgb, var(--ambre-vif) 38%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.cv-citation cite { font-style: normal; font-size: .84rem; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.cv-clauses { margin-top: 10px; }
+.cv-clauses > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
