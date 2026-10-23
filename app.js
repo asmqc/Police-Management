@@ -558,6 +558,7 @@
     { id: "2026-10-23-visite", date: "2026-10-23", titre: "Visite guidée", points: [
       "Une courte visite explique l'app aux nouveaux membres, puis chaque nouvelle section la première fois que vous l'ouvrez.",
       "Revoyez n'importe quelle visite, ou désactivez les explications automatiques, dans Réglages › Visite guidée.",
+      "Convention : la recherche comprend mieux les questions de tous les jours (« je me marie », « on m'appelle chez nous », « mon TS en banque »), et Claude reçoit la consigne de répondre seulement à partir du contrat, en citant chaque clause.",
     ] },
     { id: "2026-10-22-c", date: "2026-10-22", titre: "Horaire", points: [
       "Le « + » propose : modifier le quart, planifier le congé des Fêtes ou ajouter un événement.",
@@ -700,13 +701,25 @@
   }
   // Texte envoyé à Claude (le policier utilise son propre compte). « court » : pour le lien claude.ai/new?q= (longueur limitée).
   function promptClaude(question, extraits, court) {
-    const tete = `Je suis policier ou policière à la Sûreté du Québec. Réponds à ma question en te basant sur le Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}\nCite les clauses et les pages. Si les extraits ne suffisent pas, dis-le et indique quoi vérifier. Ce n'est pas un avis juridique.\n\nQuestion : ${question}\n\n`;
+    const tete = `Je suis membre de la Sûreté du Québec. Réponds à ma question UNIQUEMENT à partir des extraits ci-dessous du Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}
+
+Règles strictes :
+1. N'utilise aucune autre source ni connaissance générale. N'invente aucun chiffre, montant, délai, pourcentage ni numéro de clause.
+2. Chaque affirmation cite sa clause entre crochets, par exemple [25.01].
+3. Si les extraits ne permettent pas de répondre (ou sont coupés « … »), écris « Le contrat ne le précise pas dans ces extraits » et indique la clause à vérifier ou de s'adresser à l'APPQ ou à son gestionnaire. Ne devine pas.
+4. Si ma question est ambiguë, pose-moi une seule question de précision avant de répondre.
+5. Format : la réponse directe en une ou deux phrases, puis les détails et conditions, puis « Clauses : » avec la liste.
+6. Termine par : « Ce n'est pas un avis juridique. »
+
+Question : ${question}
+
+`;
     const liste = extraits.length ? `Clauses trouvées : ${extraits.map(nomClause).join(" ; ")}\n\n` : "";
     let corps = "Extraits du contrat :\n";
     for (const e of extraits) {
       const brut = (e.texte || "").replace(/\s+/g, " ").trim();
       const bloc = `\n[${nomClause(e)}] ${court ? brut.slice(0, 600) + (brut.length > 600 ? "…" : "") : brut}\n`;
-      if (court && encodeURIComponent(tete + liste + corps + bloc).length > 3600) break;
+      if (court && encodeURIComponent(tete + liste + corps + bloc).length > 6500) break;
       corps += bloc;
     }
     return tete + liste + (extraits.length ? corps : "");
@@ -763,13 +776,13 @@
         ${ex.length ? `<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
           <a class="btn-principal cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Demander à Claude</a>
           <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
-        <p class="aide">Claude s'ouvre avec votre question et les clauses, et vous répond avec votre compte Claude (le forfait gratuit suffit). Vérifiez toujours la clause citée.</p>
+        <p class="aide">Claude s'ouvre avec votre question et les clauses trouvées, avec la consigne de répondre seulement à partir du contrat et de citer chaque clause (votre compte Claude gratuit suffit). « Copier pour Claude » envoie les ${ex.length} clauses au complet : plus précis. Vérifiez toujours la clause citée.</p>
         ${m.claude ? `<section class="cv-reponse-claude"><p class="cv-claude-tete">${ICONE_CLAUDE}<b>Réponse de Claude</b></p>${mdSimple(m.claude)}<p class="aide">Générée par IA à partir des clauses du contrat : vérifiez toujours la clause citée.</p></section>` : ""}
         ${m.claudeErreur ? `<p class="cv-claude-err">${esc(m.claudeErreur)}${m.claudeLien ? ` <a href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">Ouvrir dans Claude ↗</a>` : ""}</p>` : ""}
         <p class="cv-principale"><span class="cv-num">${esc(nomClause(ex[0]))}</span> <small>${esc(ex[0].titre || "")}</small></p>
         <p class="cv-texte">${esc(ex[0].texte)}</p>
         <a class="cv-pdf" href="${PDF_CONVENTION}#page=${(ex[0].page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>
-        ${ex.length > 1 ? `<p class="cv-titre-ex"><b>Autres clauses</b></p>` + ex.slice(1).map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : ""}`
+        ${ex.length > 1 ? `<p class="cv-titre-ex"><b>Autres clauses</b></p>` + ex.slice(1, 6).map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("") : ""}`
         : `<p>Aucune clause trouvée avec ces mots. Essayez avec d'autres mots, par exemple « vacances », « temps supplémentaire » ou « prime de nuit ».</p>`}
       </article>`;
     }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
@@ -810,7 +823,7 @@
     cv.fil.push({ role: "user", question });
     cv.enCours = true; $("#cv-envoyer").disabled = true;
     rendreConvention();
-    const { data, error } = await sb.rpc("convention_recherche", { p_q: question, p_n: 6 });
+    const { data, error } = await sb.rpc("convention_recherche", { p_q: question, p_n: 10 });
     cv.enCours = false; $("#cv-envoyer").disabled = false;
     cv.fil.push(error ? { role: "resultat", question, erreur: traduireErreur(error) } : { role: "resultat", question, extraits: data || [] });
     sauverFilCv();
@@ -6287,7 +6300,7 @@ Format :
       { sel: "#cv-echelle", titre: "Échelle salariale", texte: "Les taux de l'annexe T, avec la colonne d'aujourd'hui en couleur." },
       { sel: "#cv-frais", titre: "Calculateur de frais", texte: "Repas, kilométrage et coucher selon l'annexe K." },
       { sel: "#cv-grief", titre: "Délai de grief", texte: "La date limite pour déposer un grief selon l'article 31." },
-      { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question : l'app trouve les clauses du contrat." },
+      { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question : l'app trouve les clauses du contrat, puis Claude peut vous l'expliquer en citant seulement le contrat." },
     ] },
   };
   const visite = { cle: null, etapes: [], i: 0 };
