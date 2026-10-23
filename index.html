@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610222201">
+  <link rel="stylesheet" href="styles.css?v=202610230100">
 </head>
 <body>
   <!-- Chargement -->
@@ -1498,8 +1498,19 @@
             <option value="1.5">Temps et demi (1 ½)</option>
             <option value="2">Temps double : rappel en vacances ou férié, fin de semaine d'été (art. 12.02)</option>
           </select>
+          <select id="hr-tsp-pris" aria-label="Payé ou compensé">
+            <option value="paie">Temps payé (sur la paie)</option>
+            <option value="banque">Temps compensé (banque de temps)</option>
+          </select>
           <div class="ts-valeur" id="hr-tsp-montant" aria-live="polite" hidden></div>
         </div>
+      </div>
+      <div class="hr-edition hr-pris" id="hr-jour-pris-bloc" hidden>
+        <label class="ref" for="hr-jour-pris">Temps supplémentaire</label>
+        <select id="hr-jour-pris">
+            <option value="paie">Temps payé (sur la paie)</option>
+            <option value="banque">Temps compensé (banque de temps)</option>
+        </select>
       </div>
       <div class="hr-edition hr-ts-valeur" id="hr-ts-valeur" hidden>
         <label class="ref" for="hr-jour-maj">Taux du temps supplémentaire</label>
@@ -1666,9 +1677,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js?v=202610222201"></script>
+  <script src="config.js?v=202610230100"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610222201"></script>
+  <script src="app.js?v=202610230100"></script>
 </body>
 </html>
