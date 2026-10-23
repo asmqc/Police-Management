@@ -2378,3 +2378,20 @@ html.app-natif .etat-bandeau { top: calc(var(--natif-haut) + 8px); }
 #stats-periode { text-transform: none; }
 #stats-periode::first-letter { text-transform: uppercase; }
 .ag-quart small.tsp-ligne { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* ---------- Visite guidée ---------- */
+.visite { position: fixed; inset: 0; z-index: 9000; }
+.visite-trou { position: fixed; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(4, 8, 16, .72), 0 0 0 3px var(--ambre-vif); transition: all .25s ease; pointer-events: none; }
+.visite-bulle { position: fixed; background: var(--surface); color: var(--fg); border-radius: 18px; padding: 16px 16px 12px; box-shadow: 0 18px 50px rgba(0,0,0,.35); max-width: calc(100vw - 24px); transition: top .25s ease, bottom .25s ease, left .25s ease; }
+.visite-bulle.centre { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(340px, calc(100vw - 32px)); }
+.visite-bulle h3 { margin: 4px 0 6px; font-size: 1.08rem; }
+.visite-bulle p { margin: 0 0 12px; line-height: 1.45; color: var(--fg-doux); }
+.visite-etape { color: var(--ambre); font-weight: 700; font-size: .78rem; letter-spacing: .03em; }
+.visite-actions { display: flex; align-items: center; gap: 8px; }
+.visite-actions > span { flex: 1; }
+.visite-actions .petit { padding: 8px 14px; min-height: 0; }
+.visite-actions .lien { background: none; border: 0; color: var(--fg-doux); font: inherit; padding: 8px 4px; cursor: pointer; }
+html.visite-active, html.visite-active body { overflow: hidden; }
+.visite-reglages { display: grid; gap: 12px; }
+@media (prefers-reduced-motion: reduce) { .visite-trou, .visite-bulle { transition: none; } }
+.visite-bulle { background: linear-gradient(var(--surface), var(--surface)), var(--bg); }

@@ -555,6 +555,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-10-23-visite", date: "2026-10-23", titre: "Visite guidée", points: [
+      "Une courte visite explique l'app aux nouveaux membres, puis chaque nouvelle section la première fois que vous l'ouvrez.",
+      "Revoyez n'importe quelle visite, ou désactivez les explications automatiques, dans Réglages › Visite guidée.",
+    ] },
     { id: "2026-10-22-c", date: "2026-10-22", titre: "Horaire", points: [
       "Le « + » propose : modifier le quart, planifier le congé des Fêtes ou ajouter un événement.",
       "Nouvel onglet Rémunération dans l'horaire (Statistiques pour les autres corps) : paie, banques, heures du mois et de l'année. La fiche d'une journée a deux onglets : Quart et Temps supp.",
@@ -880,7 +884,8 @@
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
-    if (nom === "reglages") { majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
+    visiteDeVue(nom);
+    if (nom === "reglages") { rendreVisitesReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
     if (nom === "forum") initForum();
     if (nom === "idees") initIdees();
@@ -3053,6 +3058,7 @@
   }
   $$("[data-hr-vue]").forEach((b) => b.addEventListener("click", () => {
     hr.onglet = b.dataset.hrVue;
+    if (hr.onglet === "stats") setTimeout(() => visiteAutomatique("remuneration"), 900);
     rendreHoraire();
     if (hr.onglet === "stats") ouvrirOngletStats();
     $("#vue-horaire").scrollTop = 0;
@@ -4150,6 +4156,7 @@ Format :
     $("#hr-fiche-jour").dataset.onglet = "quart"; $$("[data-hr-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrOnglet === "quart")));
     majChampsJour();
     $("#hr-voile").hidden = false;
+    if (!lecture) setTimeout(() => visiteAutomatique("jour"), 700);
   }
   const CHAMPS_TS = [["codeGain", "Code gain"], ["gain", "Gain"], ["activite", "Activité"], ["nature", "Nature"], ["projet", "Projet"], ["psa", "PSA"], ["noDossier", "No dossier / No cours"],
     ["fonctionRemplacee", "Fonction remplacée"], ["uoImpute", "UO imputée"], ["nbreRepas", "Nbre de repas"], ["tempsRepas", "Temps de repas (hh:mm)"], ["demandePar", "Demandé par"], ["remarque", "Remarque"]];
@@ -6228,6 +6235,137 @@ Format :
     rendreEtatService();
     toast(m === "normal" ? "Service revenu à la normale" : m === "annonce" ? "Panne annoncée à tous les membres" : "Panne publiée : les membres n'ont plus accès");
   });
+
+  /* ---------------- Visite guidée : explications pour les nouveaux membres et les nouvelles sections ----------------
+     nouveau: true = montrée aussi aux membres existants (nouvelle fonction); sinon seulement aux nouveaux comptes. */
+  const DEBUT_VISITES = "2026-10-23";
+  const VISITES = {
+    bienvenue: { titre: "Bienvenue dans Police Management", vue: "accueil", etapes: [
+      { titre: "Bienvenue !", texte: "Voici une visite rapide de l'app. Vous pourrez la revoir en tout temps dans Réglages › Visite guidée." },
+      { sel: "#ac-q", titre: "Recherche", texte: "Trouvez un article de loi, une municipalité ou une section de l'app en tapant quelques lettres." },
+      { sel: "#ac-quart", titre: "Votre quart", texte: "Votre quart d'aujourd'hui et de demain, selon votre rotation. Touchez pour ouvrir l'horaire." },
+      { sel: "#ac-echeances", titre: "À ne pas oublier", texte: "Les dates limites du contrat de travail et les congés à planifier avant de les perdre." },
+      { sel: ".ac-511", titre: "Québec 511", texte: "Les entraves et travaux sur le territoire de votre unité, mis à jour automatiquement." },
+      { sel: ".nav [data-vue='csr']", titre: "Lois", texte: "CSR, Code criminel et autres lois, vitesses et amendes, frais et vos articles favoris." },
+      { sel: ".nav [data-vue='carte']", titre: "Carte", texte: "Postes, territoires, bornes kilométriques et « Où suis-je ? »." },
+      { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre rotation, vos congés, votre temps supplémentaire et, pour la SQ, votre paie et vos banques." },
+      { sel: ".nav [data-vue='feuille']", titre: "Feuille de poste", texte: "La feuille de votre poste, partagée seulement entre les membres du même poste." },
+      { sel: ".nav [data-vue='messages']", titre: "Messages", texte: "Écrivez à vos collègues ou à l'administrateur. Ne partagez jamais d'informations opérationnelles." },
+      { sel: "#btn-menu", titre: "Votre compte", texte: "Votre profil, votre rémunération, vos soldes de banques et la déconnexion." },
+      { sel: "#btn-reglages", titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée." },
+    ] },
+    horaire: { titre: "L'horaire", vue: "horaire", nouveau: true, etapes: [
+      { sel: "#hr-onglets-vue", titre: "Calendrier et Rémunération", texte: "Nouveau : votre calendrier d'un côté, et de l'autre votre paie, vos banques et vos heures (Statistiques hors SQ)." },
+      { sel: "#cal-ajout", titre: "Le bouton +", texte: "Modifier le quart d'une journée, planifier le congé des Fêtes ou ajouter un événement personnel." },
+      { sel: "#hr-grille, #cal-zone", titre: "Toucher une journée", texte: "Touchez une journée pour voir son détail, puis « Modifier » pour noter vacances, maladie, temps supplémentaire, etc." },
+      { sel: "#hr-config", titre: "Votre rotation", texte: "Configurez votre rotation une seule fois (H1 hybride et autres modèles). L'app calcule ensuite tous vos quarts." },
+      { sel: "#hr-abo-btn", titre: "Calendrier abonné", texte: "Votre horaire dans le Calendrier de l'iPhone, Google Agenda ou Outlook, mis à jour tout seul." },
+    ] },
+    jour: { titre: "La fiche d'une journée", nouveau: true, etapes: [
+      { sel: "#hr-onglets", titre: "Deux onglets", texte: "Nouveau : l'onglet Quart pour le code de la journée, l'onglet Temps supp. pour le temps supplémentaire avant ou après votre quart." },
+      { sel: "#hr-jour-choix", titre: "Le code de la journée", texte: "J, S, N, vacances, maladie, férié, banque de temps, événement familial… Chaque code suit les règles du contrat." },
+      { sel: "#hr-jour-ok", titre: "Enregistrer", texte: "Enregistre les deux onglets. « Revenir à la rotation » efface les changements de la journée." },
+    ] },
+    remuneration: { titre: "Rémunération (SQ)", nouveau: true, sq: true, etapes: [
+      { sel: ".hr-stats-vue .stats-mode", titre: "Quatre sections", texte: "Paie aux deux semaines (brut et net), Banques (vacances, fériés, TS, congés D), heures du mois et de l'année." },
+      { sel: "#stats-contenu", titre: "Calcul selon le contrat", texte: "Primes, temps supplémentaire, impôts et cotisations 2026. Entrez vos retenues et vos soldes dans Mon compte pour un résultat exact." },
+    ] },
+    csr: { titre: "Les lois", vue: "csr", etapes: [
+      { sel: "#loi-choix", titre: "Choisir la loi", texte: "CSR, Code criminel, cannabis, drogues, véhicules hors route et plus." },
+      { sel: "#csr-q", titre: "Chercher", texte: "Un numéro d'article (ex. 328) ou des mots-clés (ex. cellulaire)." },
+      { sel: "[data-csr-onglet='vitesse']", titre: "Vitesses et frais", texte: "Calculez l'amende, les frais, la contribution et les points d'un excès de vitesse." },
+      { sel: "[data-csr-onglet='favoris']", titre: "Favoris", texte: "Touchez l'étoile d'un article pour le retrouver ici." },
+    ] },
+    carte: { titre: "La carte", vue: "carte", etapes: [
+      { sel: "#adresse-q", titre: "Chercher un lieu", texte: "Une adresse, un lieu ou des coordonnées : l'app indique le corps de police, le poste et la borne la plus proche." },
+      { sel: "#btn-position", titre: "Ma position", texte: "Votre position reste sur votre appareil. Elle n'est jamais transmise." },
+    ] },
+    feuille: { titre: "La feuille de poste", vue: "feuille", etapes: [
+      { titre: "Feuille de poste", texte: "La feuille de votre poste, visible seulement par les membres du même poste. N'y mettez aucun renseignement opérationnel ou personnel." },
+    ] },
+    convention: { titre: "La convention (SQ)", vue: "convention", sq: true, etapes: [
+      { sel: "#cv-echelle", titre: "Échelle salariale", texte: "Les taux de l'annexe T, avec la colonne d'aujourd'hui en couleur." },
+      { sel: "#cv-frais", titre: "Calculateur de frais", texte: "Repas, kilométrage et coucher selon l'annexe K." },
+      { sel: "#cv-grief", titre: "Délai de grief", texte: "La date limite pour déposer un grief selon l'article 31." },
+      { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question : l'app trouve les clauses du contrat." },
+    ] },
+  };
+  const visite = { cle: null, etapes: [], i: 0 };
+  const lireVisites = () => { try { return JSON.parse(localStorage.getItem("pm-visites") || "{}"); } catch { return {}; } };
+  const visitesAuto = () => { try { return localStorage.getItem("pm-visites-auto") !== "0"; } catch { return true; } };
+  function marquerVisite(cle) { const v = lireVisites(); v[cle] = aujourdhuiISO(); try { localStorage.setItem("pm-visites", JSON.stringify(v)); } catch { /* facultatif */ } }
+  function cibleVisible(sel) {
+    if (!sel) return null;
+    for (const el of document.querySelectorAll(sel)) { const r = el.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && !el.closest("[hidden]")) return el; }
+    return null;
+  }
+  function lancerVisite(cle, force) {
+    const v = VISITES[cle];
+    if (!v || (v.sq && !estSQ())) return false;
+    if (v.vue && etat.vue !== v.vue) { afficherVue(v.vue); setTimeout(() => lancerVisite(cle, force), 700); return true; }
+    visite.cle = cle; visite.etapes = v.etapes; visite.i = 0;
+    $("#visite").hidden = false; document.documentElement.classList.add("visite-active");
+    montrerEtape();
+    return true;
+  }
+  function montrerEtape() {
+    const e = visite.etapes[visite.i], el = cibleVisible(e.sel);
+    $("#visite-etape").textContent = `${visite.i + 1} / ${visite.etapes.length}`;
+    $("#visite-titre").textContent = e.titre; $("#visite-texte").textContent = e.texte;
+    $("#visite-prec").hidden = visite.i === 0;
+    $("#visite-suiv").textContent = visite.i === visite.etapes.length - 1 ? "Terminé" : "Suivant";
+    const trou = $("#visite-trou"), bulle = $("#visite-bulle");
+    if (!el) { trou.style.cssText = "left:50%;top:50%;width:0;height:0"; bulle.className = "visite-bulle centre"; bulle.style.cssText = ""; return; }
+    el.scrollIntoView({ block: "center", behavior: "instant" in el ? "instant" : "auto" });
+    setTimeout(() => {
+      const r = el.getBoundingClientRect(), m = 6, W = window.innerWidth, Hh = window.innerHeight;
+      trou.style.cssText = `left:${r.left - m}px;top:${r.top - m}px;width:${r.width + 2 * m}px;height:${r.height + 2 * m}px`;
+      bulle.className = "visite-bulle";
+      const largeur = Math.min(340, W - 24), gauche = Math.max(12, Math.min(W - largeur - 12, r.left + r.width / 2 - largeur / 2));
+      const enBas = r.bottom + 14 + 190 < Hh || r.top < Hh / 2;
+      bulle.style.cssText = `left:${gauche}px;width:${largeur}px;${enBas ? `top:${Math.min(Hh - 200, r.bottom + 14)}px` : `bottom:${Math.max(12, Hh - r.top + 14)}px`}`;
+    }, 260);
+  }
+  function fermerVisite(terminee) {
+    if (visite.cle) marquerVisite(visite.cle);
+    $("#visite").hidden = true; document.documentElement.classList.remove("visite-active");
+    if (terminee && visite.cle === "bienvenue") toast("Bonne utilisation ! Revoyez la visite dans Réglages › Visite guidée.");
+    visite.cle = null;
+  }
+  $("#visite-suiv").addEventListener("click", () => { if (visite.i < visite.etapes.length - 1) { visite.i++; montrerEtape(); } else fermerVisite(true); });
+  $("#visite-prec").addEventListener("click", () => { if (visite.i > 0) { visite.i--; montrerEtape(); } });
+  $("#visite-passer").addEventListener("click", () => fermerVisite(false));
+  document.addEventListener("keydown", (e) => { if ($("#visite").hidden) return; if (e.key === "Escape") fermerVisite(false); else if (e.key === "ArrowRight") $("#visite-suiv").click(); else if (e.key === "ArrowLeft" && visite.i > 0) $("#visite-prec").click(); });
+  window.addEventListener("resize", () => { if (!$("#visite").hidden) montrerEtape(); });
+  // Déclenchement automatique : nouveaux comptes (toutes les visites) ou nouvelles fonctions (visites « nouveau »)
+  function visiteAutomatique(cle) {
+    if (!visitesAuto() || !etat.profil || !$("#visite").hidden) return;
+    if (["#consent-voile", "#avert-voile", "#nouv-voile", "#etat-voile", "#intro"].some((q) => { const x = $(q); return x && !x.hidden; })) return;
+    const v = VISITES[cle];
+    if (!v || lireVisites()[cle] || (v.sq && !estSQ())) return;
+    const nouveauCompte = (etat.profil.cree_le || "") >= DEBUT_VISITES;
+    if (!nouveauCompte && !v.nouveau) return;
+    if (cle !== "bienvenue" && nouveauCompte && !lireVisites().bienvenue) return; // d'abord la visite de bienvenue
+    lancerVisite(cle);
+  }
+  function visiteDeVue(nom) {
+    const cle = nom === "accueil" ? "bienvenue" : nom;
+    setTimeout(() => visiteAutomatique(cle), 1200);
+  }
+  // Réglages › Visite guidée
+  function rendreVisitesReglages() {
+    $("#rg-visites-auto").checked = visitesAuto();
+    const faites = lireVisites();
+    $("#rg-visites-liste").innerHTML = Object.entries(VISITES).filter(([, v]) => !v.sq || estSQ()).map(([k, v]) => `<button type="button" data-revoir="${k}"><span>${esc(v.titre)}</span><small>${faites[k] ? "Vue" : "Pas encore vue"} · ${v.etapes.length} étape${v.etapes.length > 1 ? "s" : ""}</small><i>›</i></button>`).join("");
+    $$("[data-revoir]").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.revoir;
+      if (k === "jour") { afficherVue("horaire"); setTimeout(() => { ouvrirJour(aujourdhuiISO()); setTimeout(() => lancerVisite("jour", true), 500); }, 900); }
+      else if (k === "remuneration") { afficherVue("horaire"); setTimeout(() => { const t = $("[data-hr-vue='stats']"); if (t) t.click(); setTimeout(() => lancerVisite("remuneration", true), 900); }, 900); }
+      else lancerVisite(k, true);
+    }));
+  }
+  $("#rg-visites-auto").addEventListener("change", () => { try { localStorage.setItem("pm-visites-auto", $("#rg-visites-auto").checked ? "1" : "0"); } catch { /* facultatif */ } });
+  $("#rg-visites-tout").addEventListener("click", () => { try { localStorage.removeItem("pm-visites"); localStorage.setItem("pm-visites-auto", "1"); } catch { /* facultatif */ } rendreVisitesReglages(); lancerVisite("bienvenue", true); });
 
   /* ---------------- Administration ---------------- */
   let filtreAdmin = "en_attente";
