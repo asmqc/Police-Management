@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610232238">
+  <link rel="stylesheet" href="styles.css?v=202610240215">
 </head>
 <body>
   <!-- Chargement -->
@@ -616,10 +616,11 @@
       </div>
 
       <div id="csr-constats" class="constats" hidden>
-        <div class="ct-avis">
+        <div class="ct-avis" id="ct-avis">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           <p><b>Sur cet appareil seulement.</b> Jamais envoyé au serveur ni à iCloud, chiffré par l'iPhone et protégé par Face ID. N'inscrivez aucun nom, date de naissance, plaque ni numéro de permis : le numéro de constat suffit pour retrouver le dossier dans BERA.</p>
         </div>
+        <div id="ct-test" class="ct-test" hidden><b>Mode test administrateur.</b> Visible par vous seulement. Le registre est gardé dans ce navigateur, sur cet appareil (rien n'est envoyé au serveur), sans Face ID. Utilisez des données fictives : l'app iPhone et iPad à jour (build 3017) prendra le relais avec le fichier chiffré et Face ID.</div>
         <div id="ct-maj" class="panneau" hidden><p>Le registre des constats demande la dernière version de l'app Police Management. Mettez l'app à jour, puis rouvrez cet onglet.</p></div>
         <div id="ct-verrou" class="panneau ct-verrou" hidden>
           <p><b>Registre verrouillé</b></p>
@@ -1982,9 +1983,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610232238"></script>
+  <script src="config.js?v=202610240215"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610232238"></script>
+  <script src="app.js?v=202610240215"></script>
 </body>
 </html>

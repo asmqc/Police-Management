@@ -480,6 +480,7 @@
     majBarreCompte();
     $("#menu-admin").hidden = p.role !== "admin";
     $("#nav-admin").hidden = p.role !== "admin";
+    majOngletConstats();
     if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
@@ -5015,14 +5016,42 @@ Format :
   /* ---------------- Registre des constats d'infraction (app iPhone et iPad seulement) ----------------
      Stocké par l'app, sur l'appareil seulement (Registre.swift) : fichier chiffré par iOS, exclu des sauvegardes,
      ouvert avec Face ID. Rien n'est envoyé à Supabase. Sur le site web, l'onglet n'apparaît pas. */
-  const pontRegistre = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.registre;
+  const pontNatifRegistre = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.registre;
+  // Mode test (administrateur seulement, sans l'app à jour) : même fonctionnement, mais le registre est gardé
+  // dans le stockage de ce navigateur, sur cet appareil. Rien n'est envoyé au serveur. Pas de Face ID.
+  const registreTest = (() => {
+    let ouvert = false;
+    const cle = (compte) => "pm-constats-test-" + compte;
+    return { postMessage: async (m) => {
+      if (m.action === "etat") return { disponible: true, deverrouille: ouvert };
+      if (m.action === "deverrouiller") { ouvert = true; return true; }
+      if (m.action === "verrouiller") { ouvert = false; return true; }
+      if (!ouvert) throw new Error("verrouille");
+      if (!/^[0-9a-f-]{36}$/.test(m.compte || "")) throw new Error("compte invalide");
+      try {
+        if (m.action === "lire") return localStorage.getItem(cle(m.compte)) || "[]";
+        if (m.action === "ecrire") { localStorage.setItem(cle(m.compte), m.donnees); return true; }
+        if (m.action === "effacer") { localStorage.removeItem(cle(m.compte)); return true; }
+      } catch { throw new Error("Stockage du navigateur indisponible."); }
+      throw new Error("action inconnue");
+    } };
+  })();
+  const estAdminRegistre = () => !!(etat.profil && etat.profil.role === "admin");
+  const modeTestRegistre = () => !pontNatifRegistre && estAdminRegistre();
+  let pontRegistre = pontNatifRegistre;
   const ct = { liste: [], ouvert: false, edition: null, type: "100400", lat: null, lon: null };
-  $("#csr-onglet-constats").hidden = !estAppIOS;
+  function majOngletConstats() {
+    pontRegistre = pontNatifRegistre || (estAdminRegistre() ? registreTest : null);
+    $("#csr-onglet-constats").hidden = !(estAppIOS || estAdminRegistre());
+    $("#ct-test").hidden = !modeTestRegistre();
+    $("#ct-avis").hidden = modeTestRegistre();
+  }
   const compteRegistre = () => (etat.profil && etat.profil.id) || (etat.session && etat.session.user && etat.session.user.id) || "";
   async function appelRegistre(action, extra = {}) {
     return pontRegistre.postMessage({ action, compte: compteRegistre(), ...extra });
   }
   async function initConstats() {
+    majOngletConstats();
     $("#ct-maj").hidden = !!pontRegistre;
     if (!pontRegistre) { $("#ct-verrou").hidden = true; $("#ct-registre").hidden = true; return; }
     try {
