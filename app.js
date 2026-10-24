@@ -5,9 +5,6 @@
   const C = window.PE_CONFIG;
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
-  // Instance affichée dans l'écran de l'interface téléphone (iframe ?tel) : sans barre d'onglets, pilotée par le téléphone
-  const telEmbarque = window.top !== window.self && new URLSearchParams(location.search).has("tel");
-  if (telEmbarque) document.documentElement.classList.add("tel-embarque");
   // Effet de verre allégé sur les appareils modestes (flou moins coûteux)
   try { if ((navigator.deviceMemory && navigator.deviceMemory <= 4) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4 && !/iPhone|iPad|Mac/.test(navigator.userAgent))) document.documentElement.classList.add("verre-leger"); } catch { /* facultatif */ }
   // App iOS « glass » : les barres (haut et onglets) sont natives, le site cache les siennes
@@ -484,7 +481,6 @@
     $("#menu-admin").hidden = p.role !== "admin";
     $("#nav-admin").hidden = p.role !== "admin";
     majOngletConstats();
-    majModeTel();
     if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
@@ -1107,7 +1103,7 @@ Question : ${question}
   // Pont avec l'app iOS : le site informe l'app (onglet, badges, fenêtres ouvertes) et l'app pilote la navigation
   let natifPrevu = false;
   function informerNatif() {
-    if (!pontNatif || natifPrevu || telEmbarque) return;
+    if (!pontNatif || natifPrevu) return;
     natifPrevu = true;
     requestAnimationFrame(() => {
       natifPrevu = false;
@@ -1117,7 +1113,7 @@ Question : ${question}
           vue: etat.vue || "accueil",
           connecte: !$("#ecran-app").hidden,
           modal: !!document.querySelector(".voile:not([hidden]), .avert:not([hidden])"),
-          plein: document.body.classList.contains("carte-plein") || document.body.classList.contains("mode-tel"),
+          plein: document.body.classList.contains("carte-plein"),
           admin: !!(etat.profil && etat.profil.role === "admin"),
           messages: nb("badge-messages"),
           attente: nb("badge-nav-admin"),
@@ -6875,7 +6871,7 @@ Format :
   window.addEventListener("resize", () => { if (!$("#visite").hidden) montrerEtape(); });
   // Déclenchement automatique : nouveaux comptes (toutes les visites) ou nouvelles fonctions (visites « nouveau »)
   function visiteAutomatique(cle) {
-    if (!visitesAuto() || !etat.profil || !$("#visite").hidden || document.body.classList.contains("mode-tel")) return;
+    if (!visitesAuto() || !etat.profil || !$("#visite").hidden) return;
     if (["#consent-voile", "#avert-voile", "#nouv-voile", "#etat-voile", "#intro"].some((q) => { const x = $(q); return x && !x.hidden; })) return;
     const v = VISITES[cle];
     if (!v || lireVisites()[cle] || (v.sq && !estSQ())) return;
@@ -6902,257 +6898,6 @@ Format :
   }
   $("#rg-visites-auto").addEventListener("change", () => { try { localStorage.setItem("pm-visites-auto", $("#rg-visites-auto").checked ? "1" : "0"); } catch { /* facultatif */ } });
   $("#rg-visites-tout").addEventListener("click", () => { try { localStorage.removeItem("pm-visites"); localStorage.setItem("pm-visites-auto", "1"); } catch { /* facultatif */ } rendreVisitesReglages(); lancerVisite("bienvenue", true); });
-
-  /* ---------------- Interface téléphone rétro (« Turn into phone interface », test administrateur) ----------------
-     Écran de verrouillage avec glissière, écran d'icônes avec dock et recherche, bouton d'accueil
-     (une pression : icônes; deux : apps récentes), bouton de veille. Icônes et fond d'écran originaux. */
-  const G = (d) => `<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true">${d}</svg>`;
-  const TEL_ICO = {
-    accueil: G(`<path d="M12 3.5 2.8 11h2.7v9h5v-6h3v6h5v-9h2.7z" fill="#fff"/>`),
-    horaire: G(`<rect x="3.5" y="5" width="17" height="15.5" rx="2" fill="#fff"/><rect x="3.5" y="5" width="17" height="4.5" rx="2" fill="#E5484D"/><text x="12" y="18.3" font-size="8.5" font-weight="700" text-anchor="middle" fill="#222" font-family="Helvetica, Arial">${new Date().getDate()}</text>`),
-    csr: G(`<path d="M5 4h10l4 4v12.5H5z" fill="#fff"/><path d="M8 11h8M8 14h8M8 17h5" stroke="#3B5A8C" stroke-width="1.6"/>`),
-    carte: G(`<path d="M3 6.5 9 4.5l6 2 6-2v13l-6 2-6-2-6 2z" fill="#fff"/><path d="M9 4.5v13M15 6.5v13" stroke="#3E8F4E" stroke-width="1.4"/><circle cx="12.5" cy="10" r="2.2" fill="#E5484D"/>`),
-    messages: G(`<path d="M12 4.5c-5 0-9 3.2-9 7.2 0 2.3 1.3 4.3 3.4 5.6L5.5 21l4-2.4c.8.2 1.6.3 2.5.3 5 0 9-3.2 9-7.2S17 4.5 12 4.5z" fill="#fff"/>`),
-    feuille: G(`<rect x="5" y="4" width="14" height="17" rx="1.5" fill="#fff"/><rect x="9" y="2.5" width="6" height="3.5" rx="1" fill="#8A6A2F"/><path d="M8 10h8M8 13h8M8 16h5" stroke="#8A6A2F" stroke-width="1.5"/>`),
-    forum: G(`<path d="M3 5h12v8H8l-3 3v-3H3z" fill="#fff"/><path d="M17 8h4v8h-2v3l-3-3h-6v-1.5h7z" fill="#fff" opacity=".8"/>`),
-    idees: G(`<path d="M12 3a6 6 0 0 0-3.5 10.9V17h7v-3.1A6 6 0 0 0 12 3z" fill="#fff"/><rect x="9" y="18" width="6" height="2.6" rx="1" fill="#fff"/>`),
-    convention: G(`<path d="M12 3 4 6v5.5c0 4.6 3.3 8 8 9.5 4.7-1.5 8-4.9 8-9.5V6z" fill="#fff"/><path d="M9.5 9.5h5M9.5 12.5h5M9.5 15.5h3" stroke="#7A4BC2" stroke-width="1.5"/>`),
-    constats: G(`<rect x="4.5" y="3.5" width="15" height="17" rx="1.5" fill="#fff"/><path d="M7.5 8h9M7.5 11h9M7.5 14h6" stroke="#B4372F" stroke-width="1.5"/><circle cx="16" cy="17" r="2.6" fill="#B4372F"/>`),
-    paie: G(`<rect x="2.5" y="6.5" width="19" height="11" rx="1.5" fill="#fff"/><circle cx="12" cy="12" r="3" fill="#2F8A4C"/><path d="M5 9.5v5M19 9.5v5" stroke="#2F8A4C" stroke-width="1.4"/>`),
-    vitesse: G(`<path d="M3.5 16a8.5 8.5 0 1 1 17 0z" fill="#fff"/><path d="M12 16 16.5 9.5" stroke="#E5484D" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="1.6" fill="#333"/>`),
-    corps: G(`<circle cx="12" cy="12" r="8.5" fill="#fff"/><path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5M12 3.5C9.5 6 8.5 9 8.5 12s1 6 3.5 8.5" stroke="#2C6E9B" stroke-width="1.3" fill="none"/>`),
-    compte: G(`<circle cx="12" cy="8.5" r="4" fill="#fff"/><path d="M4 20.5c.6-4.2 3.9-6.5 8-6.5s7.4 2.3 8 6.5z" fill="#fff"/>`),
-    reglages: G(`<circle cx="12" cy="12" r="7.2" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="3.2 2.4"/><circle cx="12" cy="12" r="5" fill="#fff"/><circle cx="12" cy="12" r="2" fill="#7D8590"/>`),
-    aide: G(`<circle cx="12" cy="12" r="8.5" fill="#fff"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.6" stroke="#0E7C86" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="12" cy="16.8" r="1.2" fill="#0E7C86"/>`),
-    admin: G(`<path d="M12 3 4.5 6v5.5c0 4.5 3.2 8 7.5 9.5 4.3-1.5 7.5-5 7.5-9.5V6z" fill="#fff"/><path d="m8.8 12 2.2 2.2 4.3-4.4" stroke="#C2410C" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`),
-  };
-  const TEL_APPS = [
-    { id: "accueil", nom: "Aujourd'hui", fond: ["#6AB0F5", "#1C5DB8"] },
-    { id: "feuille", nom: "Feuille", fond: ["#F2C46B", "#B07A1E"] },
-    { id: "forum", nom: "Forum", fond: ["#8FA6C8", "#3F5A86"] },
-    { id: "idees", nom: "Idées", fond: ["#FFD94D", "#E09A00"] },
-    { id: "convention", nom: "Contrat", fond: ["#B48CF0", "#5B2EA6"], si: () => accesConvention() },
-    { id: "paie", nom: "Paie", fond: ["#7ED68E", "#22803F"], si: () => estSQ(), ouvrir: () => { afficherVue("horaire"); setTimeout(() => { const b = $("[data-hr-vue='stats']"); if (b) b.click(); }, 350); } },
-    { id: "vitesse", nom: "Vitesse", fond: ["#FF8A80", "#C62828"], ouvrir: () => { afficherVue("csr"); setTimeout(() => ongletLois("vitesse"), 200); } },
-    { id: "constats", nom: "Constats", fond: ["#F28B82", "#9E2A22"], si: () => estAppIOS || estAdminRegistre(), ouvrir: () => { afficherVue("csr"); setTimeout(() => ongletLois("constats"), 200); } },
-    { id: "corps", nom: "Territoires", fond: ["#6CC3E8", "#1F6E9C"] },
-    { id: "compte", nom: "Mon compte", fond: ["#9AA5B4", "#4A5566"] },
-    { id: "reglages", nom: "Réglages", fond: ["#B8BEC6", "#6B737D"] },
-    { id: "aide", nom: "Aide", fond: ["#5FD0C8", "#0E7C86"] },
-    { id: "admin", nom: "Admin", fond: ["#FFB074", "#C2410C"], si: () => !!(etat.profil && etat.profil.role === "admin"), badge: "badge-nav-admin" },
-  ];
-  const TEL_DOCK = [
-    { id: "horaire", nom: "Horaire", fond: ["#FDFDFD", "#D9DDE3"] },
-    { id: "csr", nom: "Lois", fond: ["#7FA6E0", "#2C4F8C"] },
-    { id: "carte", nom: "Carte", fond: ["#9BE07A", "#3E8F4E"] },
-    { id: "messages", nom: "Messages", fond: ["#8EE07B", "#27A33A"], badge: "badge-messages" },
-  ];
-  const tel = { actif: false, ouverte: null, recentes: [], minuteur: null, dernierToucher: Date.now() };
-  const telPossible = () => !!(etat.profil && etat.profil.role === "admin") && !$("#ecran-app").hidden;
-  const telVoulu = () => { try { return localStorage.getItem("pm-mode-tel") === "1"; } catch { return false; } };
-  const telApp = (id) => TEL_APPS.concat(TEL_DOCK).find((a) => a.id === id);
-  function iconeTel(a, petit) {
-    const b = a.badge && document.getElementById(a.badge);
-    const nb = b && !b.hidden ? (parseInt(b.textContent, 10) || 1) : 0;
-    return `<button type="button" class="tb-app${petit ? " petit" : ""}" data-tel-app="${a.id}">
-      <span class="tb-ico" style="--c1:${a.fond[0]};--c2:${a.fond[1]}">${TEL_ICO[a.id] || ""}${nb ? `<b class="tb-badge">${nb > 99 ? "99+" : nb}</b>` : ""}</span>
-      <span class="tb-nom">${esc(a.nom)}</span></button>`;
-  }
-  function rendreTremplin() {
-    $("#tb-grille").innerHTML = TEL_APPS.filter((a) => !a.si || a.si()).map((a) => iconeTel(a)).join("");
-    $("#tb-dock").innerHTML = TEL_DOCK.map((a) => iconeTel(a)).join("");
-    rendreRechercheTel();
-  }
-  function rendreRechercheTel() {
-    const q = norm($("#tb-q").value.trim());
-    const apps = TEL_APPS.concat(TEL_DOCK).filter((a) => (!a.si || a.si()) && (!q || norm(a.nom).includes(q)));
-    $("#tb-resultats").innerHTML = (q ? `<button type="button" class="tb-res" data-tel-cherche="1"><span class="tb-res-ico">⌕</span><span>Rechercher « ${esc($("#tb-q").value.trim())} » dans Police Management</span></button>` : "")
-      + apps.map((a) => `<button type="button" class="tb-res" data-tel-app="${a.id}"><span class="tb-ico mini" style="--c1:${a.fond[0]};--c2:${a.fond[1]}">${TEL_ICO[a.id] || ""}</span><span>${esc(a.nom)}</span></button>`).join("");
-  }
-  // Disposition : téléphone dessiné au centre (grand écran) ou plein écran avec bouton d'accueil flottant (petit écran)
-  function disposerTel() {
-    const W = 360, H = 540, cote = 22, haut = 96, bas = 112;
-    const grand = innerWidth >= 520 && innerHeight >= 600;
-    const r = document.documentElement.style;
-    document.body.classList.toggle("tel-grand", grand);
-    if (grand) {
-      const FW = W + 2 * cote, FH = H + haut + bas;
-      const k = Math.min(1.15, (innerHeight - 24) / FH, (innerWidth - 24) / FW);
-      const fx = (innerWidth - FW * k) / 2, fy = (innerHeight - FH * k) / 2;
-      r.setProperty("--tel-w", W + "px"); r.setProperty("--tel-h", H + "px"); r.setProperty("--tel-k", k);
-      r.setProperty("--tel-tx", fx + cote * k + "px"); r.setProperty("--tel-ty", fy + haut * k + "px");
-      r.setProperty("--tel-fx", fx + "px"); r.setProperty("--tel-fy", fy + "px");
-      r.setProperty("--tel-fw", FW + "px"); r.setProperty("--tel-fh", FH + "px");
-      r.setProperty("--tel-hx", fx + (FW / 2) * k + "px"); r.setProperty("--tel-hy", fy + (haut + H + bas / 2) * k + "px");
-    } else {
-      // Petit écran : l'écran occupe tout sauf le « menton » noir du bas, où se trouve le bouton d'accueil
-      r.setProperty("--tel-w", innerWidth + "px"); r.setProperty("--tel-h", innerHeight - 84 + "px"); r.setProperty("--tel-k", 1);
-      r.setProperty("--tel-tx", "0px"); r.setProperty("--tel-ty", "0px");
-    }
-  }
-  function heureTel() {
-    const d = new Date();
-    const h = d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" }).replace(" h ", ":");
-    $("#ts-heure").textContent = h; $("#tv-heure").textContent = h;
-    $("#tv-date").textContent = d.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
-  }
-  function majModeTel() {
-    if (telEmbarque) { $("#rg-tel-bloc").hidden = !(etat.profil && etat.profil.role === "admin"); $("#rg-mode-tel").checked = telVoulu(); return; }
-    const actif = telVoulu() && telPossible();
-    $("#rg-tel-bloc").hidden = !(etat.profil && etat.profil.role === "admin");
-    $("#rg-mode-tel").checked = telVoulu();
-    if (actif === tel.actif) { if (actif) rendreTremplin(); return; }
-    tel.actif = actif;
-    document.body.classList.toggle("mode-tel", actif);
-    for (const id of ["#tel-cadre", "#tel-home", "#tel-statut", "#tel-veille", "#tel-app"]) $(id).hidden = !actif;
-    if (actif) {
-      if (!$("#tel-app").getAttribute("src")) $("#tel-app").src = "./?tel=1";
-      disposerTel(); heureTel(); rendreTremplin();
-      clearInterval(tel.minuteur); tel.minuteur = setInterval(() => { heureTel(); if (!$("#tel-tremplin").hidden || tel.ouverte) verrouAuto(); }, 15000);
-      $("#tel-tremplin").hidden = false; tel.ouverte = null; allerPageTel(1, true);
-      montrerVerrouTel();
-    } else {
-      clearInterval(tel.minuteur);
-      for (const id of ["#tel-tremplin", "#tel-verrou", "#tel-noir"]) $(id).hidden = true;
-      $("#tel-app").removeAttribute("src");
-      for (const p of ["--tel-w", "--tel-h", "--tel-k", "--tel-tx", "--tel-ty"]) document.documentElement.style.removeProperty(p);
-    }
-    informerNatif();
-  }
-  function allerPageTel(p, instant) {
-    const pages = $("#tb-pages");
-    pages.scrollTo({ left: p * pages.clientWidth, behavior: instant ? "instant" : "smooth" });
-  }
-  $("#tb-pages").addEventListener("scroll", () => {
-    const p = Math.round($("#tb-pages").scrollLeft / Math.max(1, $("#tb-pages").clientWidth));
-    $$("[data-tb-p]").forEach((i) => i.classList.toggle("actif", +i.dataset.tbP === p));
-  });
-  $$("[data-tb-p]").forEach((i) => i.addEventListener("click", () => allerPageTel(+i.dataset.tbP)));
-  function ouvrirAppTel(id) {
-    const a = telApp(id);
-    if (!a) return;
-    fermerTachesTel();
-    tel.recentes = [id].concat(tel.recentes.filter((x) => x !== id)).slice(0, 6);
-    const tb = $("#tel-tremplin");
-    tb.classList.add("tb-sortie");
-    commandeEcranTel((w) => w.ouvrir(id));
-    setTimeout(() => { tb.hidden = true; tb.classList.remove("tb-sortie"); }, 280);
-    tel.ouverte = id;
-    informerNatif();
-  }
-  // L'app affichée dans l'écran (iframe) : on attend qu'elle soit prête avant de lui parler
-  function commandeEcranTel(f, essais = 50) {
-    const w = $("#tel-app").contentWindow;
-    const api = w && w.pmTel;
-    if (api && api.pret()) { try { f(api); } catch { /* écran rechargé */ } return; }
-    if (essais > 0) setTimeout(() => commandeEcranTel(f, essais - 1), 200);
-  }
-  function retourTremplin() {
-    fermerTachesTel();
-    const tb = $("#tel-tremplin");
-    rendreTremplin();
-    tb.hidden = false; tb.classList.remove("tb-entree"); void tb.offsetWidth; tb.classList.add("tb-entree");
-    // Les fenêtres ouvertes dans l'app se ferment, comme quand on quitte une app
-    commandeEcranTel((w) => w.fermer());
-    tel.ouverte = null;
-    informerNatif();
-  }
-  function ouvrirTachesTel() {
-    const apps = tel.recentes.map(telApp).filter(Boolean).slice(0, 4);
-    $("#tb-taches").innerHTML = apps.length ? apps.map((a) => iconeTel(a, true)).join("") : `<p class="tb-taches-vide">Aucune app récente</p>`;
-    if ($("#tel-tremplin").hidden) { rendreTremplin(); $("#tel-tremplin").hidden = false; }
-    $("#tel-tremplin").classList.add("taches");
-  }
-  function fermerTachesTel() { $("#tel-tremplin").classList.remove("taches"); }
-  // Bouton d'accueil : une pression ou deux
-  let homeMinuteur = null;
-  function pressionHome() {
-    tel.dernierToucher = Date.now();
-    if (!$("#tel-noir").hidden) return montrerVerrouTel();
-    if (!$("#tel-verrou").hidden) { const p = $("#tv-piste"); p.classList.remove("secoue"); void p.offsetWidth; p.classList.add("secoue"); return; }
-    if (homeMinuteur) { clearTimeout(homeMinuteur); homeMinuteur = null; return ouvrirTachesTel(); }
-    homeMinuteur = setTimeout(() => {
-      homeMinuteur = null;
-      const tb = $("#tel-tremplin");
-      if (tb.classList.contains("taches")) return fermerTachesTel();
-      if (tb.hidden) return retourTremplin();
-      const p = Math.round($("#tb-pages").scrollLeft / Math.max(1, $("#tb-pages").clientWidth));
-      allerPageTel(p === 1 ? 0 : 1);
-    }, 300);
-  }
-  $("#tel-home").addEventListener("click", pressionHome);
-  // Bouton de veille : écran noir, puis écran de verrouillage au réveil
-  $("#tel-veille").addEventListener("click", () => {
-    if ($("#tel-noir").hidden) { $("#tel-noir").hidden = false; $("#tel-verrou").hidden = true; }
-    else montrerVerrouTel();
-  });
-  $("#tel-noir").addEventListener("click", montrerVerrouTel);
-  function verrouAuto() { if (Date.now() - tel.dernierToucher > 5 * 60000 && $("#tel-verrou").hidden && $("#tel-noir").hidden) { $("#tel-noir").hidden = false; } }
-  document.addEventListener("pointerdown", () => { tel.dernierToucher = Date.now(); }, true);
-  function montrerVerrouTel() {
-    heureTel();
-    $("#tel-noir").hidden = true;
-    const nbMsg = (() => { const b = $("#badge-messages"); return b && !b.hidden ? parseInt(b.textContent, 10) || 1 : 0; })();
-    const q = phraseProchainQuart();
-    $("#tv-notifs").innerHTML = [
-      nbMsg ? `<div class="tv-notif"><span class="tb-ico mini" style="--c1:#8EE07B;--c2:#27A33A">${TEL_ICO.messages}</span><span><b>Messages</b><br>${nbMsg} nouveau${nbMsg > 1 ? "x" : ""} message${nbMsg > 1 ? "s" : ""}</span></div>` : "",
-      q ? `<div class="tv-notif"><span class="tb-ico mini" style="--c1:#FDFDFD;--c2:#D9DDE3">${TEL_ICO.horaire}</span><span><b>Horaire</b><br>${esc(q)}</span></div>` : "",
-    ].join("");
-    const v = $("#tel-verrou"); v.hidden = false; v.classList.remove("tv-sortie");
-    $("#tv-poignee").style.transform = ""; $(".tv-texte").style.opacity = "";
-  }
-  // Glissière « glisser pour déverrouiller »
-  (() => {
-    const poignee = $("#tv-poignee"), piste = $("#tv-piste");
-    let x0 = null, max = 0;
-    poignee.addEventListener("pointerdown", (e) => { x0 = e.clientX; max = (piste.clientWidth - poignee.offsetWidth - 8) * (Number(getComputedStyle(document.documentElement).getPropertyValue("--tel-k")) || 1); poignee.setPointerCapture(e.pointerId); poignee.classList.add("tire"); });
-    poignee.addEventListener("pointermove", (e) => {
-      if (x0 == null) return;
-      const k = Number(getComputedStyle(document.documentElement).getPropertyValue("--tel-k")) || 1;
-      const d = Math.max(0, Math.min(max, e.clientX - x0));
-      poignee.style.transform = `translateX(${d / k}px)`; $(".tv-texte").style.opacity = String(Math.max(0, 1 - d / (max * 0.6)));
-    });
-    const fin = (e) => {
-      if (x0 == null) return;
-      const d = e.clientX - x0; x0 = null; poignee.classList.remove("tire");
-      if (d >= max * 0.85) { const v = $("#tel-verrou"); v.classList.add("tv-sortie"); setTimeout(() => { v.hidden = true; v.classList.remove("tv-sortie"); }, 320); }
-      else { poignee.style.transform = ""; $(".tv-texte").style.opacity = ""; }
-    };
-    poignee.addEventListener("pointerup", fin); poignee.addEventListener("pointercancel", fin);
-    // Clavier : Entrée ou flèche droite déverrouille
-    poignee.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === "ArrowRight") { e.preventDefault(); $("#tel-verrou").hidden = true; } });
-  })();
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-tel-app]");
-    if (b && tel.actif) { e.preventDefault(); ouvrirAppTel(b.dataset.telApp); return; }
-    if (e.target.closest("[data-tel-cherche]")) {
-      const q = $("#tb-q").value.trim();
-      ouvrirAppTel("accueil");
-      setTimeout(() => { const c = $("#ac-q"); if (c) { c.value = q; c.dispatchEvent(new Event("input")); c.focus(); } }, 350);
-      $("#tb-q").value = ""; rendreRechercheTel();
-    }
-    if (tel.actif && $("#tel-tremplin").classList.contains("taches") && e.target.closest("#tb-contenu")) fermerTachesTel();
-  });
-  $("#tb-q").addEventListener("input", rendreRechercheTel);
-  $("#tb-q").addEventListener("keydown", (e) => { if (e.key === "Enter" && $("#tb-q").value.trim()) { e.preventDefault(); $("[data-tel-cherche]").click(); } });
-  $("#rg-mode-tel").addEventListener("change", (e) => {
-    try { localStorage.setItem("pm-mode-tel", e.target.checked ? "1" : "0"); } catch { /* facultatif */ }
-    majModeTel();
-    if (tel.actif) { $("#tel-verrou").hidden = true; toast("Interface téléphone activée. Le bouton rond ramène aux icônes."); }
-  });
-  window.addEventListener("resize", () => { if (tel.actif) disposerTel(); });
-  // Commandes reçues par l'instance affichée dans l'écran du téléphone
-  window.pmTel = {
-    pret: () => !$("#ecran-app").hidden,
-    ouvrir: (id) => { const a = telApp(id); if (!a) return; fermerMenu(); $$(".voile:not([hidden]):not(.voile-consent)").forEach((v) => (v.hidden = true)); if (a.ouvrir) a.ouvrir(); else afficherVue(id); },
-    fermer: () => { $$(".voile:not([hidden]):not(.voile-consent)").forEach((v) => (v.hidden = true)); },
-  };
-  // Le réglage peut être changé dans l'écran du téléphone : la page principale suit
-  window.addEventListener("storage", (e) => { if (e.key === "pm-mode-tel") majModeTel(); });
-  // L'interface suit l'écran de l'app (connexion, déconnexion)
-  new MutationObserver(() => majModeTel()).observe($("#ecran-app"), { attributes: true, attributeFilter: ["hidden"] });
-  // Pile réelle de l'appareil, si le navigateur la donne
-  if (navigator.getBattery) navigator.getBattery().then((p) => { const maj = () => { const v = Math.round(p.level * 100); $("#ts-pile-txt").textContent = v + " %"; $("#ts-pile").style.width = v + "%"; }; maj(); p.addEventListener("levelchange", maj); }).catch(() => {});
 
   /* ---------------- Administration ---------------- */
   let filtreAdmin = "en_attente";

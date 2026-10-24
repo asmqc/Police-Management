@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610241250">
+  <link rel="stylesheet" href="styles.css?v=202610241251">
 </head>
 <body>
   <!-- Chargement -->
@@ -868,13 +868,6 @@
       </div>
 
       <div class="rg-bloc">
-      <div id="rg-tel-bloc" hidden>
-        <h3 class="intertitre">Interface <span class="ref">test administrateur</span></h3>
-        <div class="panneau">
-          <label class="interrupteur" for="rg-mode-tel"><span class="interrupteur-txt"><b>Turn into phone interface</b><small>Transforme l'app en téléphone rétro : écran de verrouillage, icônes, dock et bouton d'accueil. Une pression sur le bouton : retour aux icônes. Deux pressions : apps récentes.</small></span><input type="checkbox" id="rg-mode-tel" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
-        </div>
-      </div>
-
       <h3 class="intertitre">Visite guidée</h3>
       <div class="panneau visite-reglages">
         <label class="interrupteur" for="rg-visites-auto"><span class="interrupteur-txt"><b>Explications automatiques</b><small>Une courte visite s'affiche la première fois que vous ouvrez une section ou qu'une nouveauté arrive.</small></span><input type="checkbox" id="rg-visites-auto" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
@@ -1964,44 +1957,6 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <!-- Interface téléphone rétro (test administrateur) -->
-  <div id="tel-cadre" class="tel-cadre" hidden aria-hidden="true">
-    <i class="tel-veille-btn"></i><i class="tel-vol tel-vol-1"></i><i class="tel-vol tel-vol-2"></i><i class="tel-sourdine"></i>
-    <div class="tel-facade"><i class="tel-camera"></i><i class="tel-ecouteur"></i></div>
-  </div>
-  <button type="button" id="tel-veille" class="tel-veille" hidden aria-label="Veille / réveil"></button>
-  <button type="button" id="tel-home" class="tel-home" hidden aria-label="Bouton d'accueil : une pression pour les icônes, deux pour les apps récentes"><i></i></button>
-  <div id="tel-statut" class="tel-statut" hidden aria-hidden="true">
-    <span class="ts-gauche"><i class="ts-barres"><b></b><b></b><b></b><b></b><b></b></i> PM&nbsp;3G</span>
-    <span class="ts-heure" id="ts-heure"></span>
-    <span class="ts-droite"><span id="ts-pile-txt">100 %</span><i class="ts-pile"><b id="ts-pile"></b></i></span>
-  </div>
-  <iframe id="tel-app" class="tel-app" title="Police Management" hidden></iframe>
-  <div id="tel-tremplin" class="tel-tremplin" hidden>
-    <div class="tb-fond"></div>
-    <div class="tb-contenu" id="tb-contenu">
-      <div class="tb-pages" id="tb-pages">
-        <section class="tb-page tb-recherche" aria-label="Recherche">
-          <div class="tb-champ"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m15 15 5.5 5.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><input type="search" id="tb-q" placeholder="Rechercher dans Police Management" autocomplete="off" enterkeyhint="search"></div>
-          <div class="tb-resultats" id="tb-resultats"></div>
-        </section>
-        <section class="tb-page" aria-label="Accueil"><div class="tb-grille" id="tb-grille"></div></section>
-      </div>
-      <div class="tb-points" id="tb-points"><i class="loupe" data-tb-p="0"></i><i data-tb-p="1"></i></div>
-      <div class="tb-dock"><div class="tb-etagere"></div><div class="tb-dock-icones" id="tb-dock"></div></div>
-    </div>
-    <div class="tb-taches" id="tb-taches" aria-label="Apps récentes"></div>
-  </div>
-  <div id="tel-verrou" class="tel-verrou" hidden>
-    <div class="tb-fond"></div>
-    <div class="tv-haut"><b id="tv-heure"></b><span id="tv-date"></span></div>
-    <div class="tv-notifs" id="tv-notifs"></div>
-    <div class="tv-bas">
-      <div class="tv-piste" id="tv-piste"><button type="button" class="tv-poignee" id="tv-poignee" aria-label="Glisser pour déverrouiller"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 12h12M12 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="tv-texte">glisser pour déverrouiller</span></div>
-    </div>
-  </div>
-  <div id="tel-noir" class="tel-noir" hidden></div>
-
   <div id="visite" class="visite" hidden>
     <div class="visite-trou" id="visite-trou"></div>
     <div class="visite-bulle" id="visite-bulle" role="dialog" aria-modal="true" aria-labelledby="visite-titre" aria-describedby="visite-texte">
@@ -2033,9 +1988,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610241250"></script>
+  <script src="config.js?v=202610241251"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610241250"></script>
+  <script src="app.js?v=202610241251"></script>
 </body>
 </html>
