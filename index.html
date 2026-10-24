@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610241251">
+  <link rel="stylesheet" href="styles.css?v=202610241317">
 </head>
 <body>
   <!-- Chargement -->
@@ -957,6 +957,8 @@
       <p id="hr-lecture-vide" class="vide" hidden>Ce collègue n'a pas encore configuré sa rotation.</p>
       <div class="segmente hr-onglets-vue" id="hr-onglets-vue" role="tablist" aria-label="Sections de l'horaire" hidden>
         <button type="button" role="tab" data-hr-vue="calendrier" aria-checked="true">Calendrier</button>
+        <button type="button" role="tab" data-hr-vue="poste" aria-checked="false" hidden>Poste</button>
+        <button type="button" role="tab" data-hr-vue="ts" aria-checked="false" hidden>TS<b class="hp-pastille" id="hp-pastille" hidden></b></button>
         <button type="button" role="tab" data-hr-vue="stats" aria-checked="false">Statistiques</button>
       </div>
 
@@ -1018,6 +1020,25 @@
           <p class="aide">Ajoutez votre horaire une seule fois au Calendrier de l'iPhone, à Google Agenda ou à Outlook : il se met à jour tout seul quand votre rotation ou vos journées changent (aux quelques heures, selon l'application). Seuls les quarts et les journées modifiées y paraissent, jamais vos notes, votre temps supplémentaire détaillé ni vos événements personnels.</p>
           <div id="hr-abo-contenu"></div>
           <p class="aide hr-abo-avert"><b>Ce lien est personnel.</b> Toute personne qui l'a peut voir votre horaire de travail. Partagez-le seulement avec vos proches. Si vous croyez qu'il a circulé, créez-en un nouveau : l'ancien cesse de fonctionner.</p>
+        </div>
+      </div>
+
+      <!-- Horaire du poste et temps supplémentaire (membres de la SQ) -->
+      <div id="hr-poste-vue" class="hp" hidden>
+        <div class="hr-mois-tete"><button class="btn-icone" id="hp-prec" aria-label="Semaine précédente">‹</button><h3 id="hp-periode"></h3><button class="btn-icone" id="hp-suiv" aria-label="Semaine suivante">›</button></div>
+        <div id="hp-onglet-poste">
+          <div class="hp-actions"><button type="button" class="btn-principal" id="hp-publier">Publier un horaire de travail</button></div>
+          <p class="aide">L'horaire de votre poste, visible par les membres de votre poste seulement. Les agents sont identifiés par leur matricule.</p>
+          <div id="hp-jours" class="hp-jours"></div>
+          <div id="hp-publications" class="hp-publications"></div>
+        </div>
+        <div id="hp-onglet-ts" hidden>
+          <div class="hp-mercredi" id="hp-mercredi" hidden></div>
+          <h3 class="intertitre">Temps supplémentaire offert</h3>
+          <p class="aide">Inscrivez-vous avec votre matricule. Le mercredi, un membre du poste approuve : les inscrits sont proposés en ordre d'ancienneté (date d'entrée inscrite dans Mon compte). Si vous obtenez le TS, vous êtes avisé et le quart s'ajoute à votre horaire.</p>
+          <div id="hp-ts" class="hp-ts"></div>
+          <h3 class="intertitre">Approbation</h3>
+          <div id="hp-approb" class="hp-ts"></div>
         </div>
       </div>
 
@@ -1803,7 +1824,7 @@
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.23) : elle précise comment sont traités les motifs de congé (mariage, décès, congé parental, accident de travail…), qui peuvent révéler des renseignements familiaux ou de santé, et comment fonctionne l'IA Police Management de la section Convention (sur votre appareil, rien n'est enregistré). Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.24) : elle ajoute l'horaire du poste et le temps supplémentaire offert au poste (membres de la Sûreté du Québec). L'horaire publié est visible par les membres approuvés de votre poste seulement, qui voient les agents par leur matricule, et la photo d'horaire est lue sur l'appareil puis effacée. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
         <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
@@ -1861,6 +1882,40 @@
         <button type="submit" class="btn-principal">Enregistrer sur cet appareil</button>
         <button type="button" class="btn-secondaire rouge" id="ct-supprimer" hidden>Supprimer ce constat</button>
       </form>
+    </section>
+  </div>
+
+  <div id="pub-voile" class="voile" hidden>
+    <section class="fiche-compte pub-fiche" role="dialog" aria-modal="true" aria-labelledby="pub-titre-h">
+      <button class="btn-icone fermer" id="pub-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="pub-titre-h">Publier un horaire de travail</h3>
+      <button type="button" class="btn-principal ct-photo" id="pub-photo">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        Lire l'horaire avec une photo</button>
+      <input type="file" id="pub-photo-fichier" accept="image/*" capture="environment" hidden>
+      <p class="aide" id="pub-photo-etat">La photo est lue sur cet appareil, puis effacée : elle n'est jamais envoyée ni gardée. Vérifiez et corrigez les quarts lus avant de publier.</p>
+      <div class="pub-periode">
+        <label>Du <input type="date" id="pub-debut" required></label>
+        <label>au <input type="date" id="pub-fin" required></label>
+      </div>
+      <label class="ref" for="pub-titre">Titre (facultatif)</label>
+      <input id="pub-titre" maxlength="80" placeholder="Ex. Relève A, semaines 44 et 45">
+      <details class="pub-heures" id="pub-heures">
+        <summary>Heures par code (pour les quarts sans heures)</summary>
+        <div class="pub-heures-grille">
+          <label>J <input type="time" data-ph-deb="J" value="07:00"> – <input type="time" data-ph-fin="J" value="19:00"></label>
+          <label>S <input type="time" data-ph-deb="S" value="15:00"> – <input type="time" data-ph-fin="S" value="23:00"></label>
+          <label>N <input type="time" data-ph-deb="N" value="19:00"> – <input type="time" data-ph-fin="N" value="07:00"></label>
+          <label>X <input type="time" data-ph-deb="X" value=""> – <input type="time" data-ph-fin="X" value=""></label>
+        </div>
+        <button type="button" class="btn-secondaire petit" id="pub-heures-ok">Appliquer aux quarts sans heures</button>
+      </details>
+      <div class="pub-tete"><b id="pub-compte">0 quart</b><button type="button" class="btn-secondaire petit" id="pub-ajouter">+ Ajouter un quart</button></div>
+      <div class="table-defile"><table class="pub-table" id="pub-table">
+        <thead><tr><th>Date</th><th>Début</th><th>Fin</th><th>Code</th><th>Matricule</th><th>TS</th><th>Places</th><th></th></tr></thead>
+        <tbody></tbody></table></div>
+      <p class="aide">Un quart marqué TS est offert aux agents du poste : laissez le matricule vide. Codes : J jour, S soir, N nuit, X temps supplémentaire, ou tout autre code de votre horaire.</p>
+      <button type="button" class="btn-principal" id="pub-ok">Publier au poste</button>
     </section>
   </div>
 
@@ -1988,9 +2043,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610241251"></script>
+  <script src="config.js?v=202610241317"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610241251"></script>
+  <script src="app.js?v=202610241317"></script>
 </body>
 </html>

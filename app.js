@@ -540,7 +540,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.10.23";
+  const VERSION_POLITIQUE = "2026.10.24";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -556,6 +556,12 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-10-24-poste", date: "2026-10-24", titre: "Horaire du poste et temps supplémentaire (SQ)", points: [
+      "Deux nouveaux onglets dans Horaire : Poste et TS. Votre horaire personnel ne change pas.",
+      "Publier un horaire de travail : prenez l'horaire du poste en photo (en liste ou en grille) et l'app le lit sur votre appareil, puis efface la photo. Vérifiez, ajoutez les heures et publiez : les membres de votre poste sont avisés.",
+      "Le TS de l'horaire est offert au poste : inscrivez-vous avec votre matricule. Le mercredi, un membre du poste approuve; les inscrits sont proposés en ordre d'ancienneté.",
+      "Si vous obtenez le TS, vous recevez un avis et le quart s'ajoute à votre horaire, avant ou après votre quart s'il y est collé.",
+    ] },
     { id: "2026-10-23-constats", date: "2026-10-23", titre: "Registre des constats (app iPhone et iPad)", points: [
       "Nouvel onglet Lois › Constats d'infraction : inscrivez le numéro du constat, le type (100400 ou 100391), la date, l'article du CSR, l'emplacement exact (et votre position GPS) et votre narration.",
       "Retrouvez un constat par son numéro, un article ou un lieu, puis copiez votre narration en un toucher.",
@@ -1970,6 +1976,8 @@ Question : ${question}
     rendreHoraire();
     chargerPartages();
     chargerEchanges();
+    integrerTsRetenus();
+    if (estSQ() || estAdmin()) chargerPoste(true).catch(() => {});
   }
 
   /* Partage de l'horaire */
@@ -2066,7 +2074,17 @@ Question : ${question}
     $("#hr-commencer").textContent = conj ? `Configurer la rotation de ${hr.conj.nom}` : "Configurer ma rotation";
     $("#hr-vide").hidden = lecture || !!affichee().config || enConfig;
     const ongletStats = hr.onglet === "stats" && !!src.config && !enConfig;
-    $("#hr-onglets-vue").hidden = !src.config || enConfig;
+    const posteOk = (estSQ() || estAdmin()) && !lecture && !conj;
+    const ongletPoste = posteOk && !enConfig && (hr.onglet === "poste" || hr.onglet === "ts");
+    $$("[data-hr-vue='poste'], [data-hr-vue='ts']").forEach((b) => (b.hidden = !posteOk));
+    $("#hr-onglets-vue").hidden = (!src.config && !posteOk) || enConfig;
+    $("#hr-poste-vue").hidden = !ongletPoste;
+    if (ongletPoste) {
+      $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === hr.onglet)));
+      for (const id of ["#hr-vide", "#hr-principal", "#stats-voile", "#hr-partage", "#hr-echanges", "#hr-lecture-vide"]) $(id).hidden = true;
+      rendrePoste();
+      return;
+    }
     $("[data-hr-vue='stats']").textContent = estSQ() && !lecture && !conj ? "Rémunération" : "Statistiques";
     $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === (ongletStats ? "stats" : "calendrier"))));
     $("#stats-voile").hidden = !ongletStats;
@@ -3252,6 +3270,7 @@ Question : ${question}
     if (hr.onglet === "stats") setTimeout(() => visiteAutomatique("remuneration"), 900);
     rendreHoraire();
     if (hr.onglet === "stats") ouvrirOngletStats();
+    if (hr.onglet === "poste" || hr.onglet === "ts") chargerPoste(true);
     $("#vue-horaire").scrollTop = 0;
   }));
   $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
@@ -5221,8 +5240,8 @@ Format :
     return c;
   }
   // Lecture du texte, sur l'appareil : Vision d'Apple dans l'app, sinon Tesseract dans le navigateur (mode test)
-  async function lireTextePhoto(canvas) {
-    if (pontNatifRegistre) {
+  async function lireTextePhoto(canvas, natifPermis = true) {
+    if (natifPermis && pontNatifRegistre) {
       const b64 = canvas.toDataURL("image/jpeg", 0.88).split(",")[1];
       return await appelRegistre("lireTexte", { image: b64 });
     }
@@ -6898,6 +6917,355 @@ Format :
   }
   $("#rg-visites-auto").addEventListener("change", () => { try { localStorage.setItem("pm-visites-auto", $("#rg-visites-auto").checked ? "1" : "0"); } catch { /* facultatif */ } });
   $("#rg-visites-tout").addEventListener("click", () => { try { localStorage.removeItem("pm-visites"); localStorage.setItem("pm-visites-auto", "1"); } catch { /* facultatif */ } rendreVisitesReglages(); lancerVisite("bienvenue", true); });
+
+  /* ---------------- Horaire du poste et temps supplémentaire (membres de la SQ) ----------------
+     Un membre publie l'horaire du poste (lu d'une photo, sur l'appareil, puis corrigé). Les quarts de TS sont offerts aux
+     membres du poste, qui s'inscrivent avec leur matricule. Un membre approuve (le mercredi) : les retenus sont avisés et
+     le quart s'ajoute à leur horaire personnel. Tout passe par des fonctions du serveur qui vérifient le poste. */
+  const hp = { debut: null, quarts: [], de: null, a: null, chargement: null };
+  const jourLong = (iso) => new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+  const jourCourt = (iso) => new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" });
+  const heuresQ = (q) => q.debut && q.fin ? `${q.debut}–${q.fin}` : "Heures à confirmer";
+  async function chargerPoste(forcer) {
+    if (!hp.debut) hp.debut = aujourdhuiISO();
+    const de = [hp.debut, aujourdhuiISO()].sort()[0], a = [isoPlus(hp.debut, 13), isoPlus(aujourdhuiISO(), 90)].sort()[1];
+    if (!forcer && hp.de && hp.de <= de && hp.a >= a) return rendrePoste();
+    const { data, error } = await sb.rpc("horaire_poste_liste", { p_debut: de, p_fin: a });
+    if (error) { toast(traduireErreur(error)); return; }
+    hp.quarts = data || []; hp.de = de; hp.a = a;
+    rendrePoste();
+  }
+  function majPastilleTs() {
+    const n = hp.quarts.filter((q) => q.est_ts && q.statut === "ouvert" && q.jour >= aujourdhuiISO() && !q.moi_inscrit).length;
+    $("#hp-pastille").hidden = !n; $("#hp-pastille").textContent = n;
+  }
+  function rendrePoste() {
+    if (!hp.debut) hp.debut = aujourdhuiISO();
+    const ts = hr.onglet === "ts";
+    $("#hp-onglet-poste").hidden = ts; $("#hp-onglet-ts").hidden = !ts;
+    $("#hp-prec").parentElement.hidden = ts;
+    majPastilleTs();
+    if (!ts) {
+      const fin = isoPlus(hp.debut, 6);
+      $("#hp-periode").textContent = `${jourCourt(hp.debut)} – ${jourCourt(fin)}`;
+      const jours = Array.from({ length: 7 }, (_, i) => isoPlus(hp.debut, i));
+      const parJour = (iso) => hp.quarts.filter((q) => q.jour === iso);
+      const rien = jours.every((j) => !parJour(j).length);
+      $("#hp-jours").innerHTML = rien ? `<p class="vide">Aucun horaire publié pour cette semaine. Touchez « Publier un horaire de travail » pour ajouter celui du poste.</p>`
+        : jours.map((j) => `<section class="panneau hp-jour${j === aujourdhuiISO() ? " auj" : ""}${parJour(j).length ? "" : " vide"}"><h4>${esc(jourLong(j))}</h4>${parJour(j).length ? `<ul>${parJour(j).map((q) => `
+          <li class="${q.est_ts ? "hp-ts-ligne" : ""}"><span class="hp-h">${esc(heuresQ(q))}</span><b class="code-${esc(q.code)}">${esc(q.code)}</b>
+          <span class="hp-m">${q.est_ts ? (q.statut === "attribue" ? "TS attribué" : `TS offert · ${q.places} place${q.places > 1 ? "s" : ""}`) : esc(q.matricule || "—")}</span></li>`).join("")}</ul>` : `<small>Aucun quart</small>`}</section>`).join("");
+      const pubs = [...new Map(hp.quarts.map((q) => [q.horaire, q])).values()];
+      $("#hp-publications").innerHTML = pubs.length ? `<h3 class="intertitre">Horaires publiés</h3>` + pubs.map((q) => `<div class="hp-pub"><span><b>${esc(q.titre || "Horaire du poste")}</b><small>Publié le ${esc(new Date(q.publie_le).toLocaleDateString("fr-CA", { day: "numeric", month: "long" }))}${q.publie_par_moi ? " · par vous" : ""}</small></span>${q.publie_par_moi || estAdmin() ? `<button type="button" class="lien rouge" data-hp-retirer="${esc(q.horaire)}">Retirer</button>` : ""}</div>`).join("") : "";
+    } else {
+      const auj = aujourdhuiISO();
+      const offerts = hp.quarts.filter((q) => q.est_ts && q.jour >= auj);
+      $("#hp-ts").innerHTML = offerts.length ? offerts.map((q) => {
+        const inscrits = (q.inscrits || []).filter((i) => i.statut !== "retire");
+        const moi = q.moi_inscrit;
+        const etatMoi = moi === "retenu" ? `<span class="hp-etat ok">Vous l'avez obtenu</span>` : moi === "non_retenu" ? `<span class="hp-etat">Non retenu</span>` : moi === "inscrit" ? `<span class="hp-etat inscrit">Inscrit</span>` : "";
+        return `<article class="panneau hp-carte"><div class="hp-carte-tete"><b>${esc(jourLong(q.jour))}</b>${etatMoi}</div>
+          <p>${esc(heuresQ(q))} · ${esc(q.code)} · ${q.places} place${q.places > 1 ? "s" : ""} · ${inscrits.length} inscrit${inscrits.length > 1 ? "s" : ""}</p>
+          ${q.statut === "ouvert" ? (moi === "inscrit" ? `<button type="button" class="btn-secondaire" data-hp-inscrire="${esc(q.id)}" data-v="0">Me désinscrire</button>` : `<button type="button" class="btn-principal" data-hp-inscrire="${esc(q.id)}" data-v="1">M'inscrire${etat.profil && etat.profil.matricule ? ` (matricule ${esc(etat.profil.matricule)})` : ""}</button>`) : `<p class="aide">Attribué.</p>`}
+        </article>`;
+      }).join("") : `<p class="vide">Aucun temps supplémentaire offert pour l'instant.</p>`;
+      const aApprouver = offerts.filter((q) => q.statut === "ouvert" && (q.inscrits || []).some((i) => i.statut === "inscrit"));
+      $("#hp-approb").innerHTML = aApprouver.length ? aApprouver.map((q) => {
+        const ins = q.inscrits.filter((i) => i.statut === "inscrit");
+        return `<article class="panneau hp-carte" data-hp-q="${esc(q.id)}"><div class="hp-carte-tete"><b>${esc(jourLong(q.jour))}</b><span class="hp-etat">${q.places} place${q.places > 1 ? "s" : ""}</span></div>
+          <p>${esc(heuresQ(q))} · ${esc(q.code)}</p>
+          <ol class="hp-inscrits">${ins.map((i, k) => `<li><label><input type="checkbox" data-hp-u="${esc(i.id)}"${k < q.places ? " checked" : ""}> Matricule <b>${esc(i.matricule || "?")}</b>${i.moi ? " (vous)" : ""}${i.anciennete_connue ? "" : ` <small>ancienneté non inscrite</small>`}</label></li>`).join("")}</ol>
+          <p class="aide">Ordre proposé : ancienneté (date d'entrée à la SQ dans Mon compte), puis ordre d'inscription.</p>
+          <button type="button" class="btn-principal" data-hp-approuver="${esc(q.id)}">Approuver et aviser</button></article>`;
+      }).join("") : `<p class="vide">Aucune inscription à approuver.</p>`;
+      const mer = new Date().getDay() === 3;
+      $("#hp-mercredi").hidden = !(mer && aApprouver.length);
+      $("#hp-mercredi").textContent = `C'est mercredi : ${aApprouver.length} quart${aApprouver.length > 1 ? "s" : ""} de TS à approuver.`;
+    }
+  }
+  $("#hp-prec").addEventListener("click", () => { hp.debut = isoPlus(hp.debut, -7); chargerPoste(); });
+  $("#hp-suiv").addEventListener("click", () => { hp.debut = isoPlus(hp.debut, 7); chargerPoste(); });
+  $("#hr-poste-vue").addEventListener("click", async (e) => {
+    const ins = e.target.closest("[data-hp-inscrire]");
+    if (ins) {
+      ins.disabled = true;
+      const { error } = await sb.rpc("ts_inscrire", { p_quart: ins.dataset.hpInscrire, p_inscrire: ins.dataset.v === "1" });
+      if (error) { ins.disabled = false; return toast(traduireErreur(error)); }
+      toast(ins.dataset.v === "1" ? "Inscrit. Vous serez avisé si vous obtenez ce TS." : "Désinscrit.");
+      return chargerPoste(true);
+    }
+    const ap = e.target.closest("[data-hp-approuver]");
+    if (ap) {
+      const carte = ap.closest("[data-hp-q]");
+      const ids = $$("[data-hp-u]:checked", carte).map((c) => c.dataset.hpU);
+      if (!ids.length) return toast("Cochez au moins un agent.");
+      if (!confirm(`Attribuer ce TS à ${ids.length} agent${ids.length > 1 ? "s" : ""} ? ${ids.length > 1 ? "Ils seront avisés" : "L'agent sera avisé"} et le quart s'ajoutera à son horaire.`)) return;
+      ap.disabled = true;
+      const { error } = await sb.rpc("ts_attribuer", { p_quart: ap.dataset.hpApprouver, p_retenus: ids });
+      if (error) { ap.disabled = false; return toast(traduireErreur(error)); }
+      toast("TS attribué. Les agents retenus sont avisés.");
+      return chargerPoste(true).then(integrerTsRetenus);
+    }
+    const ret = e.target.closest("[data-hp-retirer]");
+    if (ret) {
+      if (!confirm("Retirer cet horaire du poste ? Les TS encore ouverts seront annulés.")) return;
+      const { error } = await sb.rpc("horaire_poste_retirer", { p_horaire: ret.dataset.hpRetirer });
+      if (error) return toast(traduireErreur(error));
+      toast("Horaire retiré."); chargerPoste(true);
+    }
+  });
+  // TS obtenus : ajoutés à l'horaire personnel selon la rotation (avant ou après le quart, ou journée de TS)
+  async function integrerTsRetenus() {
+    if (!(estSQ() || estAdmin()) || !hr.chargé) return;
+    const { data, error } = await sb.rpc("mes_ts_retenus");
+    if (error || !data || !data.length) return;
+    let n = 0;
+    for (const t of data) {
+      const iso = t.jour;
+      const ex = { ...(hr.exceptions[iso] || {}) };
+      const q = quartDu(iso, hr);
+      const h = heuresJour(q.code, iso, hr);
+      const bloc = t.debut && t.fin ? { debut: t.debut, fin: t.fin } : null;
+      if (h && bloc && ["J", "S", "N"].includes(q.code)) {
+        // Collé à un quart régulier : TS avant ou après le quart
+        if (bloc.fin <= h[0] && !(ex.tspAvant && ex.tspAvant.debut)) { ex.tspAvant = bloc; if (!hr.exceptions[iso]) ex.type = q.code; }
+        else if (!(ex.tsp && ex.tsp.debut)) { ex.tsp = bloc; if (!hr.exceptions[iso]) ex.type = q.code; }
+        else continue;
+        ex.note = [ex.note, "TS du poste"].filter(Boolean).join(" · ");
+      } else {
+        Object.assign(ex, { type: "X", ...(bloc || {}), note: [ex.note, "TS du poste"].filter(Boolean).join(" · ") });
+      }
+      hr.exceptions[iso] = ex; n++;
+      await sb.rpc("ts_integre", { p_quart: t.quart });
+    }
+    if (n) { await sauverHoraire(); rendreHoraire(); toast(`${n} TS obtenu${n > 1 ? "s" : ""} ajouté${n > 1 ? "s" : ""} à votre horaire.`); }
+  }
+  // Publication : formulaire, lignes modifiables, lecture d'une photo
+  const CODES_PUB = ["J", "S", "N", "X"];
+  function ligneQuartPub(q = {}) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><input type="date" class="pq-jour" value="${esc(q.jour || "")}" required></td>
+      <td><input type="time" class="pq-debut" value="${esc(q.debut || "")}"></td><td><input type="time" class="pq-fin" value="${esc(q.fin || "")}"></td>
+      <td><input class="pq-code" maxlength="3" value="${esc(q.code || (q.ts ? "X" : "J"))}" list="pub-codes" autocapitalize="characters"></td>
+      <td><input class="pq-mat" maxlength="12" inputmode="numeric" value="${esc(q.matricule || "")}" ${q.ts ? "disabled" : ""}></td>
+      <td><input type="checkbox" class="pq-ts" ${q.ts ? "checked" : ""} aria-label="Temps supplémentaire offert"></td>
+      <td><input type="number" class="pq-places" min="1" max="20" value="${q.places || 1}" ${q.ts ? "" : "disabled"}></td>
+      <td><button type="button" class="btn-icone pq-suppr" aria-label="Retirer ce quart">✕</button></td>`;
+    if (q.auto) tr.classList.add("ct-auto-ligne");
+    return tr;
+  }
+  function majComptePub() { const n = $$("#pub-table tbody tr").length; $("#pub-compte").textContent = `${n} quart${n > 1 ? "s" : ""}`; }
+  function ouvrirPublication() {
+    const lun = isoPlus(lundiDe(aujourdhuiISO()), 7);
+    $("#pub-debut").value = lun; $("#pub-fin").value = isoPlus(lun, 13); $("#pub-titre").value = "";
+    $("#pub-table tbody").innerHTML = ""; $("#pub-table tbody").appendChild(ligneQuartPub({ jour: lun })); majComptePub();
+    if (!$("#pub-codes")) { const dl = document.createElement("datalist"); dl.id = "pub-codes"; dl.innerHTML = CODES_PUB.map((c) => `<option value="${c}">`).join(""); document.body.appendChild(dl); }
+    $("#pub-photo-etat").textContent = "La photo est lue sur cet appareil, puis effacée : elle n'est jamais envoyée ni gardée. Vérifiez et corrigez les quarts lus avant de publier.";
+    // Heures par code : celles de ma rotation, si je l'ai configurée
+    const hc = (hr.config && hr.config.heures) || {};
+    for (const c of ["J", "S", "N"]) if (hc[c]) { $(`[data-ph-deb="${c}"]`).value = hc[c][0]; $(`[data-ph-fin="${c}"]`).value = hc[c][1]; }
+    $("#pub-voile").hidden = false;
+  }
+  $("#hp-publier").addEventListener("click", ouvrirPublication);
+  $("#pub-heures-ok").addEventListener("click", () => {
+    let n = 0;
+    for (const tr of $$("#pub-table tbody tr")) {
+      const c = $(".pq-code", tr).value.trim().toUpperCase();
+      const d = $(`[data-ph-deb="${CSS.escape(c)}"]`), f = $(`[data-ph-fin="${CSS.escape(c)}"]`);
+      if (!d || !f || !d.value || !f.value || $(".pq-debut", tr).value || $(".pq-fin", tr).value) continue;
+      $(".pq-debut", tr).value = d.value; $(".pq-fin", tr).value = f.value; n++;
+    }
+    toast(n ? `Heures ajoutées à ${n} quart${n > 1 ? "s" : ""}.` : "Aucun quart sans heures pour ces codes.");
+  });
+  $("#pub-fermer").addEventListener("click", () => ($("#pub-voile").hidden = true));
+  $("#pub-ajouter").addEventListener("click", () => {
+    const rows = $$("#pub-table tbody tr"), der = rows[rows.length - 1];
+    $("#pub-table tbody").appendChild(ligneQuartPub({ jour: der ? $(".pq-jour", der).value : $("#pub-debut").value, debut: der ? $(".pq-debut", der).value : "", fin: der ? $(".pq-fin", der).value : "", code: der ? $(".pq-code", der).value : "J" }));
+    majComptePub();
+  });
+  $("#pub-table").addEventListener("click", (e) => { const b = e.target.closest(".pq-suppr"); if (b) { b.closest("tr").remove(); majComptePub(); } });
+  $("#pub-table").addEventListener("change", (e) => {
+    if (!e.target.classList.contains("pq-ts")) return;
+    const tr = e.target.closest("tr"), ts = e.target.checked;
+    $(".pq-mat", tr).disabled = ts; if (ts) $(".pq-mat", tr).value = "";
+    $(".pq-places", tr).disabled = !ts;
+    if (ts && ["J", "S", "N", ""].includes($(".pq-code", tr).value)) $(".pq-code", tr).value = "X";
+  });
+  $("#pub-ok").addEventListener("click", async () => {
+    const debut = $("#pub-debut").value, fin = $("#pub-fin").value;
+    if (!debut || !fin || fin < debut) return toast("Choisissez la période de l'horaire.");
+    const quarts = [];
+    for (const tr of $$("#pub-table tbody tr")) {
+      const q = { jour: $(".pq-jour", tr).value, debut: $(".pq-debut", tr).value, fin: $(".pq-fin", tr).value, code: $(".pq-code", tr).value.trim().toUpperCase(), matricule: $(".pq-mat", tr).value.trim(), ts: $(".pq-ts", tr).checked, places: +$(".pq-places", tr).value || 1 };
+      if (!q.jour) return toast("Chaque quart doit avoir une date.");
+      if (q.jour < debut || q.jour > fin) return toast(`Le quart du ${q.jour} est hors de la période.`);
+      if (!/^[A-Z]{1,3}$/.test(q.code)) return toast(`Code invalide pour le quart du ${q.jour}.`);
+      if (q.matricule && !/^[A-Za-z0-9-]{1,12}$/.test(q.matricule)) return toast(`Matricule invalide pour le quart du ${q.jour}.`);
+      if (!q.ts && !q.matricule) return toast(`Le quart du ${q.jour} n'a ni matricule ni TS : ajoutez le matricule de l'agent ou cochez TS.`);
+      quarts.push(q);
+    }
+    if (!quarts.length) return toast("Ajoutez au moins un quart.");
+    $("#pub-ok").disabled = true;
+    const { error } = await sb.rpc("horaire_poste_publier", { p_debut: debut, p_fin: fin, p_titre: $("#pub-titre").value, p_quarts: quarts });
+    $("#pub-ok").disabled = false;
+    if (error) return toast(traduireErreur(error));
+    $("#pub-voile").hidden = true;
+    toast("Horaire publié. Les membres du poste sont avisés.");
+    hp.debut = debut; chargerPoste(true);
+  });
+  // Lecture d'une photo d'horaire : dates, heures, codes, matricules et TS, à vérifier avant de publier
+  function analyserHoraire(lignes, debutIso) {
+    const rangees = rangeesTexte(lignes);
+    const deux = (x) => String(x).padStart(2, "0");
+    const dateDe = dateDePeriode(debutIso);
+    const JOURS = { lun: 1, mar: 2, mer: 3, jeu: 4, ven: 5, sam: 6, dim: 0 };
+    const trouverDates = (t) => {
+      const n = normIA(t), res = [];
+      let m;
+      const re1 = /\b(20\d\d)[-/.](\d{1,2})[-/.](\d{1,2})\b/g; while ((m = re1.exec(n))) { const d = dateDe(+m[3], +m[2], +m[1]); if (d) res.push(d); }
+      const re2 = /\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](20\d\d))?\b/g; while ((m = re2.exec(n))) { const d = dateDe(+m[1], +m[2], m[3] ? +m[3] : null); if (d) res.push(d); }
+      const re3 = /\b(\d{1,2})(?:er)?\s+(janv|fevr?|mars|avr|mai|juin|juil|aout|sept?|oct|nov|dec)[a-z]*\b/g; while ((m = re3.exec(n))) { const mo = MOIS_FR[m[2]] || MOIS_FR[m[2].slice(0, 3)]; const d = mo && dateDe(+m[1], mo); if (d) res.push(d); }
+      if (!res.length) { // « lun 27 » : jour de la semaine et quantième, dans la période
+        const re4 = /\b(lun|mar|mer|jeu|ven|sam|dim)[a-z]*\.?\s+(\d{1,2})\b/g;
+        while ((m = re4.exec(n))) { for (let k = 0; k < 62; k++) { const iso = isoPlus(debutIso, k - 7); if (+iso.slice(8) === +m[2] && new Date(iso + "T12:00").getDay() === JOURS[m[1]]) { res.push(iso); break; } } }
+      }
+      return res;
+    };
+    const quarts = [];
+    // Horaire en liste : une ligne par quart (date, heures, code, matricule ou TS)
+    let contexte = null;
+    for (const r of rangees) {
+      const dates = trouverDates(r);
+      const plages = [];
+      const reH = /\b([01]?\d|2[0-3])\s?[:hH]\s?([0-5]\d)?\s?(?:-|–|—|à|a|au)\s?([01]?\d|2[0-3])\s?[:hH]\s?([0-5]\d)?/g;
+      let m; while ((m = reH.exec(r))) plages.push([`${deux(m[1])}:${m[2] || "00"}`, `${deux(m[3])}:${m[4] || "00"}`]);
+      if (dates.length === 1 && !plages.length) { contexte = dates[0]; }
+      const jour = dates[0] || contexte;
+      if (!jour) continue;
+      const sansDates = r.replace(/\b20\d\d[-/.]\d{1,2}[-/.]\d{1,2}\b|\b\d{1,2}[/.-]\d{1,2}(?:[/.-]20\d\d)?\b/g, " ").replace(reH, " ");
+      const code = ((sansDates.match(/\b(JR|NT|[JSNX])\b/) || [])[1] || "").replace("JR", "J").replace("NT", "N");
+      const ts = /\b(t\.?\s?s\.?|temps\s+supp|offert|disponible|à combler|a combler|vacant)\b/i.test(r);
+      const mats = (sansDates.match(/\b\d{4,6}\b/g) || []).filter((x) => !/^20\d\d$/.test(x));
+      if (!plages.length && !code && !ts) continue;
+      const [debut, fin] = plages[0] || ["", ""];
+      if (ts && !mats.length) quarts.push({ jour, debut, fin, code: "X", ts: true, places: Math.max(1, (r.match(/\?/g) || []).length), auto: true });
+      else if (mats.length) mats.forEach((mat) => quarts.push({ jour, debut, fin, code: code || (ts ? "X" : "J"), matricule: mat, ts: false, auto: true }));
+      else if (plages.length || code) quarts.push({ jour, debut, fin, code: code || "J", matricule: "", ts: false, auto: true });
+    }
+    return quarts;
+  }
+  // Date « jj/mm » sans année : l'année la plus proche de la période publiée
+  function dateDePeriode(debutIso) {
+    const an0 = +debutIso.slice(0, 4), mois0 = +debutIso.slice(5, 7), deux = (x) => String(x).padStart(2, "0");
+    return (j, m, a) => { a = a || (m < mois0 - 6 ? an0 + 1 : m > mois0 + 6 ? an0 - 1 : an0); return dateValide(a, m, j) ? `${a}-${deux(m)}-${deux(j)}` : null; };
+  }
+  // Grille : rangée d'en-tête avec les jours (jj/mm ou quantièmes consécutifs) et une rangée par matricule ou par TS
+  function detecterGrille(mots, debutIso) {
+    const dateDe = dateDePeriode(debutIso);
+    const ms = mots.filter((m) => m.t && m.t.trim()).map((m) => ({ ...m, t: m.t.trim(), cx: m.x + m.w / 2, cy: m.y + m.h / 2 }));
+    const rangs = [];
+    for (const m of [...ms].sort((a, b) => a.cy - b.cy)) {
+      const r = rangs.find((x) => Math.abs(x.y - m.cy) < Math.max(6, m.h * 0.6));
+      if (r) r.m.push(m); else rangs.push({ y: m.cy, h: m.h, m: [m] });
+    }
+    rangs.forEach((r) => r.m.sort((a, b) => a.cx - b.cx));
+    let entete = null, colonnes = null;
+    for (const r of rangs) {
+      const dates = r.m.map((m) => { const x = normIA(m.t).match(/^(\d{1,2})[/.-](\d{1,2})$/); return x ? { m, iso: dateDe(+x[1], +x[2]) } : null; }).filter((x) => x && x.iso);
+      if (dates.length >= 4) { entete = r; colonnes = dates.map((d) => ({ x: d.m.cx, iso: d.iso })); break; }
+      const nums = r.m.filter((m) => /^\d{1,2}$/.test(m.t)).map((m) => ({ m, n: +m.t }));
+      let suite = [];
+      for (const x of nums) { if (!suite.length || x.n === suite[suite.length - 1].n + 1 || (x.n === 1 && suite[suite.length - 1].n >= 28)) suite.push(x); else suite = [x]; if (suite.length >= 5) break; }
+      if (suite.length < 5) continue;
+      let iso = null; for (let k = -7; k < 40 && !iso; k++) { const c = isoPlus(debutIso, k); if (+c.slice(8) === suite[0].n) iso = c; }
+      if (!iso) continue;
+      entete = r; colonnes = nums.slice(nums.indexOf(suite[0])).slice(0, 62).map((x, k) => ({ x: x.m.cx, iso: isoPlus(iso, k) }));
+      break;
+    }
+    if (!entete || colonnes.length < 4) return null;
+    const pas = (colonnes[colonnes.length - 1].x - colonnes[0].x) / Math.max(1, colonnes.length - 1);
+    const rangees = [];
+    for (const r of rangs) {
+      if (r.y <= entete.y + entete.h * 0.5) continue;
+      const etiquette = normIA(r.m.filter((m) => m.cx < colonnes[0].x - pas * 0.5).map((m) => m.t).join(" "));
+      const mat = (etiquette.match(/\b(\d{4,6})\b/) || [])[1] || "";
+      const ts = /\b(t\.?\s?s\.?|temps\s+supp|offert|a combler|vacant)\b/.test(etiquette);
+      if (mat || ts) rangees.push({ y: r.y, h: r.h, mat, ts });
+    }
+    if (!rangees.length) return null;
+    const ecarts = rangees.slice(1).map((r, k) => r.y - rangees[k].y).sort((a, b) => a - b);
+    const hauteur = ecarts.length ? ecarts[Math.floor(ecarts.length / 2)] : rangees[0].h * 3;
+    return { colonnes, rangees, pas, hauteur };
+  }
+  let tesseractCharge = null;
+  function chargerTesseract() {
+    if (window.Tesseract) return Promise.resolve();
+    return (tesseractCharge ||= new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; s.onload = ok; s.onerror = () => { tesseractCharge = null; ko(new Error("Le module de lecture n'a pas pu être chargé.")); }; document.head.appendChild(s); }));
+  }
+  // Lecture d'une photo d'horaire, sur l'appareil : grille (case par case) ou liste (ligne par ligne)
+  async function lireHoraire(canvas, debutIso, progres) {
+    await chargerTesseract();
+    let w = null, echec;
+    const erreur = new Promise((_, ko) => { echec = ko; setTimeout(() => ko(new Error("délai dépassé")), 180000); });
+    try {
+      w = await Promise.race([window.Tesseract.createWorker("fra", 1, { errorHandler: (e) => echec(new Error(String((e && e.message) || e))) }), erreur]);
+      await w.setParameters({ tessedit_pageseg_mode: "11" });
+      const a = await Promise.race([w.recognize(canvas), erreur]);
+      const mots = (a.data.words || []).map((m) => ({ t: m.text, x: m.bbox.x0, y: m.bbox.y0, w: m.bbox.x1 - m.bbox.x0, h: m.bbox.y1 - m.bbox.y0 }));
+      const g = detecterGrille(mots, debutIso);
+      if (g) {
+        await w.setParameters({ tessedit_pageseg_mode: "10", tessedit_char_whitelist: "JSNXT0123456789" });
+        const quarts = [], total = g.rangees.length * g.colonnes.length;
+        let k = 0;
+        for (const r of g.rangees) for (const c of g.colonnes) {
+          k++; if (progres && k % 4 === 0) progres(`Lecture des cases : ${k} / ${total}`);
+          const larg = g.pas * 0.5, haut = Math.min(g.hauteur * 0.6, r.h * 2.2);
+          const rect = { left: Math.max(0, Math.round(c.x - larg / 2)), top: Math.max(0, Math.round(r.y - haut / 2)), width: Math.round(larg), height: Math.round(haut) };
+          const { data } = await Promise.race([w.recognize(canvas, { rectangle: rect }), erreur]);
+          const t = (data.text || "").replace(/[^A-Z0-9]/g, "");
+          if (!t) continue;
+          // Rangée de TS : « TS », « X » ou un nombre de places (2 à 9); un trait de bordure lu comme « 1 » ou « T » est ignoré
+          if (r.ts) { if (/^(TS|X|[2-9])$/.test(t)) quarts.push({ jour: c.iso, debut: "", fin: "", code: "X", ts: true, places: /^[2-9]$/.test(t) ? +t : 1, auto: true }); continue; }
+          const code = t === "TS" ? "X" : t.replace(/^JR$/, "J").replace(/^NT$/, "N");
+          if (/^[JSNX]$/.test(code)) quarts.push({ jour: c.iso, debut: "", fin: "", code, matricule: r.mat, ts: false, auto: true });
+        }
+        return { quarts, mode: "grille" };
+      }
+      await w.setParameters({ tessedit_pageseg_mode: "3" });
+      const b = await Promise.race([w.recognize(canvas), erreur]);
+      const lignes = (b.data.lines || []).map((l) => ({ t: l.text, x: l.bbox.x0 / canvas.width, y: l.bbox.y0 / canvas.height, w: (l.bbox.x1 - l.bbox.x0) / canvas.width, h: (l.bbox.y1 - l.bbox.y0) / canvas.height }));
+      return { quarts: analyserHoraire(lignes, debutIso), mode: "liste" };
+    } finally { if (w) w.terminate().catch(() => {}); }
+  }
+  $("#pub-photo").addEventListener("click", () => $("#pub-photo-fichier").click());
+  $("#pub-photo-fichier").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    const etatP = $("#pub-photo-etat"), btn = $("#pub-photo");
+    btn.disabled = true; etatP.textContent = "Lecture de l'horaire… (la première fois, le module de lecture se télécharge : quelques secondes)";
+    let canvas = null, lignes = null;
+    try {
+      canvas = await preparerPhoto(f);
+      const lu = await lireHoraire(canvas, $("#pub-debut").value || aujourdhuiISO(), (t) => (etatP.textContent = t));
+      const qs = lu.quarts;
+      if (!qs.length) { etatP.textContent = "Aucun quart reconnu. Reprenez la photo bien à plat et éclairée, ou entrez les quarts à la main."; return; }
+      const jours = qs.map((q) => q.jour).sort();
+      $("#pub-debut").value = jours[0] < $("#pub-debut").value ? jours[0] : $("#pub-debut").value;
+      if (jours[jours.length - 1] > $("#pub-fin").value) $("#pub-fin").value = jours[jours.length - 1];
+      const tb = $("#pub-table tbody");
+      // La ligne vide de départ est remplacée
+      $$("tr", tb).forEach((tr) => { if (!$(".pq-mat", tr).value && !$(".pq-debut", tr).value && !$(".pq-ts", tr).checked) tr.remove(); });
+      qs.forEach((q) => tb.appendChild(ligneQuartPub(q)));
+      majComptePub();
+      etatP.textContent = `${qs.length} quart${qs.length > 1 ? "s" : ""} lu${qs.length > 1 ? "s" : ""} sur la photo (${lu.mode === "grille" ? "horaire en grille" : "horaire en liste"}, lignes surlignées). Vérifiez chaque ligne avant de publier${lu.mode === "grille" ? " et ajoutez les heures des quarts" : ""}. La photo a été effacée.`;
+    } catch (err) {
+      etatP.textContent = "Lecture impossible : " + String((err && err.message) || err).replace(/^Error:\s*/, "") + ". Entrez les quarts à la main.";
+    } finally {
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+      lignes = null; btn.disabled = false;
+    }
+  });
 
   /* ---------------- Administration ---------------- */
   let filtreAdmin = "en_attente";

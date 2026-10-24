@@ -146,6 +146,13 @@ Deno.serve(async (req) => {
       return Response.json({ envoye: n });
     }
 
+    if (e.type === "avis" && Array.isArray(e.destinataires)) {
+      // Avis préparé par la base de données (horaire du poste publié, TS obtenu, rappel d'approbation du mercredi)
+      const ids = e.destinataires.filter((x: unknown) => typeof x === "string").slice(0, 500);
+      const n = await envoyer(ids, { titre: String(e.titre ?? "Police Management").slice(0, 80), corps: String(e.corps ?? "").slice(0, 200), url: String(e.url ?? "#horaire"), tag: String(e.tag ?? "avis") });
+      return Response.json({ envoye: n });
+    }
+
     return Response.json({ envoye: 0 });
   } catch (err) {
     console.error(err);

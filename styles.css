@@ -2455,3 +2455,57 @@ html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: gray
 .ct-test { padding: 10px 12px; border-radius: 12px; font-size: .86rem; line-height: 1.4; background: color-mix(in srgb, var(--ambre-vif) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ambre-vif) 45%, transparent); }
 .ct-photo { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .ct-form .ct-auto { box-shadow: 0 0 0 2px var(--ambre-vif); background: color-mix(in srgb, var(--ambre-vif) 10%, var(--surface)); }
+
+/* ---------- Horaire du poste et temps supplémentaire ---------- */
+.hr-onglets-vue { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.hr-onglets-vue button[hidden] { display: none; }
+.hp { display: grid; gap: 12px; }
+.hp-actions { display: flex; gap: 8px; }
+.hp-actions > * { flex: 1; }
+.hp-jours { display: grid; gap: 8px; }
+.hp-jour { padding: 10px 12px; }
+.hp-jour.auj { box-shadow: inset 0 0 0 2px var(--ambre-vif); }
+.hp-jour h4 { margin: 0 0 6px; font-size: .95rem; text-transform: capitalize; }
+.hp-jour ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hp-jour li { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: center; font-size: .92rem; padding: 4px 0; border-top: 1px solid var(--ligne); }
+.hp-jour li:first-child { border-top: 0; }
+.hp-h { font-family: var(--f-mono); font-weight: 600; }
+.hp-jour li b { min-width: 26px; text-align: center; border-radius: 6px; padding: 1px 6px; background: var(--surface-2); font-size: .8rem; }
+.hp-m { text-align: right; font-family: var(--f-mono); color: var(--fg-doux); }
+.hp-ts-ligne .hp-m { color: var(--ambre); font-family: inherit; font-weight: 700; }
+.hp-pub { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--ligne); }
+.hp-pub small { display: block; color: var(--fg-doux); }
+.hp-ts { display: grid; gap: 8px; }
+.hp-carte { padding: 12px 14px; display: grid; gap: 6px; }
+.hp-carte p { margin: 0; }
+.hp-carte-tete { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.hp-carte-tete b { text-transform: capitalize; }
+.hp-etat { font-size: .8rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--fg-doux); white-space: nowrap; }
+.hp-etat.ok { background: color-mix(in srgb, var(--vert, #16A34A) 18%, transparent); color: var(--vert, #16A34A); }
+.hp-etat.inscrit { background: color-mix(in srgb, var(--ambre-vif) 22%, transparent); color: var(--ambre); }
+.hp-inscrits { margin: 4px 0; padding-left: 22px; display: grid; gap: 4px; }
+.hp-inscrits label { display: flex; gap: 8px; align-items: center; }
+.hp-inscrits small { color: var(--fg-doux); }
+.hp-mercredi { padding: 10px 12px; border-radius: 12px; font-weight: 700; background: color-mix(in srgb, var(--ambre-vif) 18%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ambre-vif) 50%, transparent); }
+.hp-pastille { margin-left: 6px; display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--rouge); color: #fff; font-size: .7rem; font-weight: 800; vertical-align: 1px; }
+.pub-fiche { max-width: 760px; }
+.pub-periode { display: flex; gap: 10px; flex-wrap: wrap; }
+.pub-periode label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.pub-tete { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.pub-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.pub-table th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--fg-doux); padding: 4px; }
+.pub-table td { padding: 3px; }
+.pub-table input { width: 100%; min-width: 0; padding: 6px; font-size: .88rem; }
+.pub-table .pq-jour { min-width: 132px; } .pub-table :is(.pq-debut, .pq-fin) { min-width: 86px; } .pub-table .pq-code { width: 52px; text-transform: uppercase; } .pub-table .pq-mat { min-width: 80px; } .pub-table .pq-places { width: 56px; }
+.pub-table .pq-ts { width: 20px; height: 20px; }
+.pub-table tr.ct-auto-ligne td { background: color-mix(in srgb, var(--ambre-vif) 10%, transparent); }
+.hp-jour.vide { padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; opacity: .75; }
+.hp-jour.vide h4 { margin: 0; font-weight: 600; }
+.hp-jour.vide small { color: var(--fg-doux); }
+.hp-inscrits input[type="checkbox"] { width: 20px; height: 20px; flex: none; margin: 0; }
+.hp-inscrits label { justify-content: flex-start; flex-wrap: wrap; }
+.pub-heures { border-radius: 12px; background: var(--surface-2); padding: 8px 12px; }
+.pub-heures summary { cursor: pointer; font-weight: 600; }
+.pub-heures-grille { display: grid; gap: 6px; margin: 8px 0; }
+.pub-heures-grille label { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.pub-heures-grille input { width: auto; flex: 1; min-width: 0; padding: 6px; }
