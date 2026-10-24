@@ -2453,3 +2453,5 @@ html.visite-active, html.visite-active body { overflow: hidden; }
 }
 html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }
 .ct-test { padding: 10px 12px; border-radius: 12px; font-size: .86rem; line-height: 1.4; background: color-mix(in srgb, var(--ambre-vif) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ambre-vif) 45%, transparent); }
+.ct-photo { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ct-form .ct-auto { box-shadow: 0 0 0 2px var(--ambre-vif); background: color-mix(in srgb, var(--ambre-vif) 10%, var(--surface)); }

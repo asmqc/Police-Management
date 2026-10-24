@@ -559,6 +559,7 @@
     { id: "2026-10-23-constats", date: "2026-10-23", titre: "Registre des constats (app iPhone et iPad)", points: [
       "Nouvel onglet Lois › Constats d'infraction : inscrivez le numéro du constat, le type (100400 ou 100391), la date, l'article du CSR, l'emplacement exact (et votre position GPS) et votre narration.",
       "Retrouvez un constat par son numéro, un article ou un lieu, puis copiez votre narration en un toucher.",
+      "Prenez le constat en photo : l'app lit le numéro, le type, la date et l'heure, l'article et le lieu, sur l'appareil. La photo n'est pas conservée, et le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.",
       "Tout reste sur votre appareil : fichier chiffré, exclu d'iCloud et protégé par Face ID. Rien n'est envoyé au serveur. Pas offert sur le site web pour l'instant.",
     ] },
     { id: "2026-10-23-ia", date: "2026-10-23", titre: "IA Police Management (SQ)", points: [
@@ -5129,6 +5130,150 @@ Format :
     // Une seule correspondance exacte au numéro : on l'ouvre directement
     if (q && liste.length === 1 && norm(liste[0].numero) === q) { const b = $(`[data-ct-ouvrir="${CSS.escape(liste[0].id)}"]`); if (b && b.nextElementSibling.hidden) b.click(); }
   }
+  /* Lecture d'une photo de constat : on garde seulement le numéro, le type, la date, l'article et le lieu.
+     Tout le reste (nom, adresse, date de naissance, permis, plaque) est ignoré et n'est jamais conservé. */
+  const MOIS_FR = { janvier: 1, janv: 1, fevrier: 2, fevr: 2, fev: 2, mars: 3, avril: 4, avr: 4, mai: 5, juin: 6, juillet: 7, juil: 7, aout: 8, septembre: 9, sept: 9, octobre: 10, oct: 10, novembre: 11, nov: 11, decembre: 12, dec: 12 };
+  const PERSONNEL = /(naissance|\bne\b|\bnee\b|ddn|defendeur|adresse|domicile|permis|plaque|immatricul|telephone|\btel\b|courriel|nom\b|prenom|sexe|taille|yeux|proprietaire|code postal)/;
+  function rangeesTexte(lignes) {
+    // Regroupe les morceaux de texte d'une même rangée (même hauteur sur la photo), de haut en bas
+    const tri = [...lignes].filter((l) => l && l.t && l.t.trim()).sort((a, b) => a.y - b.y || a.x - b.x);
+    const rangees = [];
+    for (const l of tri) {
+      const r = rangees.find((x) => Math.abs(x.y - l.y) < Math.max(0.006, (l.h || 0.01) * 0.5));
+      if (r) r.morceaux.push(l); else rangees.push({ y: l.y, morceaux: [l] });
+    }
+    return rangees.map((r) => r.morceaux.sort((a, b) => a.x - b.x).map((m) => m.t.trim()).join("  "));
+  }
+  function dateValide(a, m, j) { const d = new Date(a, m - 1, j); return a >= 2000 && a <= 2100 && d.getMonth() === m - 1 && d.getDate() === j; }
+  function trouverDate(t) {
+    let m;
+    if ((m = t.match(/\b(20\d\d)[-/.](\d{1,2})[-/.](\d{1,2})\b/)) && dateValide(+m[1], +m[2], +m[3])) return [+m[1], +m[2], +m[3]];
+    if ((m = t.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](20\d\d)\b/)) && dateValide(+m[3], +m[2], +m[1])) return [+m[3], +m[2], +m[1]];
+    if ((m = normIA(t).match(/\b(\d{1,2})(?:er)?\s+([a-z]{3,9})\.?\s+(20\d\d)\b/)) && MOIS_FR[m[2]] && dateValide(+m[3], MOIS_FR[m[2]], +m[1])) return [+m[3], MOIS_FR[m[2]], +m[1]];
+    return null;
+  }
+  function trouverHeure(t) { const m = t.match(/\b([01]?\d|2[0-3])\s?[:hH]\s?([0-5]\d)\b/); return m ? [+m[1], +m[2]] : null; }
+  function analyserConstat(lignes, articlesConnus) {
+    const rangees = rangeesTexte(lignes);
+    const res = {};
+    const n = (t) => normIA(t);
+    const deux = (x) => String(x).padStart(2, "0");
+    // Type : 100400 (national, BIA) ou 100391 (municipal)
+    const tout = n(rangees.join(" \n "));
+    if (/100\s?391|cour municipale|\bmunicipal\b/.test(tout) && !/100\s?400/.test(tout)) res.type = "100391";
+    else if (/100\s?400|\bnational\b|bureau des infractions/.test(tout)) res.type = "100400";
+    // Numéro du constat : d'abord près d'une étiquette, sinon le plus long code chiffré plausible
+    const candidat = (t) => (t.match(/\b[A-Z]{0,3}\s?\d[\d\s-]{5,18}\d\b/g) || []).map((x) => x.replace(/[\s-]/g, "")).filter((x) => x.length >= 7 && x.length <= 16 && !/^100(400|391)$/.test(x) && !/^(20\d\d)(0[1-9]|1[0-2])\d\d$/.test(x));
+    for (let i = 0; i < rangees.length && !res.numero; i++) {
+      const r = n(rangees[i]);
+      if (/(constat|n[o°]\s*d[eu]\s*constat|numero du constat|no\s*constat|constat\s*#)/.test(r) && !PERSONNEL.test(r)) {
+        const apres = rangees[i].replace(/^.*?(constat\s*(#|n[o°]|no\.?|num[ée]ro)?\s*:?)/i, "");
+        const c = candidat(apres).concat(candidat(rangees[i + 1] || ""));
+        if (c.length) res.numero = c[0];
+      }
+    }
+    if (!res.numero) {
+      const tous = rangees.filter((r) => !PERSONNEL.test(n(r))).flatMap(candidat).filter((x) => !/^\d{10}$/.test(x)); // pas un numéro de téléphone
+      tous.sort((a, b) => b.length - a.length);
+      if (tous.length) { res.numero = tous[0]; res.numeroIncertain = true; }
+    }
+    // Date et heure de l'infraction (jamais la date de naissance)
+    for (const r of rangees) {
+      const rn = n(r);
+      if (/naissance|ddn|\bne le\b|\bnee le\b|echeance|expir/.test(rn)) continue;
+      const d = trouverDate(r);
+      if (d && !res.date) { res.date = `${d[0]}-${deux(d[1])}-${deux(d[2])}`; const h = trouverHeure(r.replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]20\d\d\b|\b20\d\d[-/.]\d{1,2}[-/.]\d{1,2}\b/, "")); if (h) res.heure = `${deux(h[0])}:${deux(h[1])}`; }
+      if (!res.heure && /(heure|\bvers\b|\ba\s+\d{1,2}\s?h)/.test(rn)) { const h = trouverHeure(r); if (h) res.heure = `${deux(h[0])}:${deux(h[1])}`; }
+    }
+    // Article : « art. 443.1 », « article 328 », « CSR 396 »; vérifié dans le CSR de l'app quand c'est possible
+    const articles = [];
+    rangees.forEach((r) => {
+      for (const m of r.matchAll(/\b(?:art(?:icle)?s?\.?|a\.|c\.?\s?s\.?\s?r\.?|csr)\s*:?\s*(\d{1,4}(?:\.\d{1,2})?)(?:\s*(?:al(?:inea)?\.?|para(?:graphe)?\.?|par\.)\s*\d{1,2})?/gi)) {
+        const no = m[1];
+        articles.push({ no, connu: !!(articlesConnus && articlesConnus.has(no)), csr: /c\.?\s?s\.?\s?r|securite routiere/i.test(r) });
+      }
+    });
+    articles.sort((a, b) => (b.connu - a.connu) || (b.csr - a.csr));
+    if (articles.length) { res.article = articles[0].no; res.articleIncertain = !articles[0].connu; }
+    // Lieu de l'infraction : rangée étiquetée « lieu », « endroit », « à la hauteur de »… (jamais l'adresse du défendeur)
+    for (let i = 0; i < rangees.length; i++) {
+      const rn = n(rangees[i]);
+      if (PERSONNEL.test(rn)) continue;
+      if (/(lieu|endroit|a la hauteur|intersection|localisation|emplacement)/.test(rn)) {
+        let v = rangees[i].replace(/^.*?(lieu de l['’]infraction|lieu|endroit|localisation|emplacement)\s*:?\s*/i, "").trim();
+        if (v.length < 4 && rangees[i + 1] && !PERSONNEL.test(n(rangees[i + 1]))) v = rangees[i + 1].trim();
+        if (v.length >= 4) { res.lieu = v; break; }
+      }
+    }
+    const muni = rangees.find((r) => /^\s*(municipalite|ville)\b/.test(n(r)) && !PERSONNEL.test(n(r)));
+    if (muni) { const v = muni.replace(/^\s*(municipalit[ée]|ville)\s*:?\s*/i, "").trim(); if (v && (!res.lieu || !n(res.lieu).includes(n(v)))) res.lieu = res.lieu ? `${res.lieu}, ${v}` : v; }
+    return res;
+  }
+
+  // Prépare la photo : bonne orientation, réduite à 2200 px (assez pour lire, plus léger)
+  async function preparerPhoto(fichier) {
+    const bmp = await createImageBitmap(fichier);
+    const k = Math.min(1, 2200 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close && bmp.close();
+    return c;
+  }
+  // Lecture du texte, sur l'appareil : Vision d'Apple dans l'app, sinon Tesseract dans le navigateur (mode test)
+  async function lireTextePhoto(canvas) {
+    if (pontNatifRegistre) {
+      const b64 = canvas.toDataURL("image/jpeg", 0.88).split(",")[1];
+      return await appelRegistre("lireTexte", { image: b64 });
+    }
+    if (!window.Tesseract) {
+      await new Promise((ok, ko) => { const s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"; s.onload = ok; s.onerror = () => ko(new Error("Le module de lecture n'a pas pu être chargé.")); document.head.appendChild(s); });
+    }
+    // Le moteur peut échouer sans rejeter sa promesse (téléchargement bloqué) : délai maximal et gestion d'erreur
+    let w = null, echec;
+    const erreur = new Promise((_, ko) => { echec = ko; setTimeout(() => ko(new Error("délai dépassé")), 90000); });
+    try {
+      w = await Promise.race([window.Tesseract.createWorker("fra", 1, { errorHandler: (e) => echec(new Error(String((e && e.message) || e))) }), erreur]);
+      const { data } = await Promise.race([w.recognize(canvas), erreur]);
+      return (data.lines || []).map((l) => ({ t: l.text, x: l.bbox.x0 / canvas.width, y: l.bbox.y0 / canvas.height, w: (l.bbox.x1 - l.bbox.x0) / canvas.width, h: (l.bbox.y1 - l.bbox.y0) / canvas.height }));
+    } finally { if (w) w.terminate().catch(() => {}); }
+  }
+  function marquerAuto(id, valeur) {
+    const el = $(id);
+    if (!valeur || el.value.trim()) return false;
+    el.value = valeur; el.classList.add("ct-auto");
+    el.addEventListener("input", () => el.classList.remove("ct-auto"), { once: true });
+    return true;
+  }
+  $("#ct-photo").addEventListener("click", () => $("#ct-photo-fichier").click());
+  $("#ct-photo-fichier").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!f) return;
+    const etatP = $("#ct-photo-etat"), btn = $("#ct-photo");
+    btn.disabled = true; etatP.textContent = pontNatifRegistre ? "Lecture de la photo…" : "Lecture de la photo… (la première fois, le module de lecture se télécharge : quelques secondes)";
+    let canvas = null, lignes = null;
+    try {
+      await remplirArticlesCsr();
+      canvas = await preparerPhoto(f);
+      lignes = await lireTextePhoto(canvas);
+      const r = analyserConstat(lignes || [], articlesCsr);
+      const trouves = [];
+      if (marquerAuto("#ct-numero", r.numero)) trouves.push("numéro" + (r.numeroIncertain ? " (à confirmer)" : ""));
+      if (r.type) { choisirTypeConstat(r.type); trouves.push("type"); }
+      if (r.date) { const v = r.date + "T" + (r.heure || "00:00"); $("#ct-date").value = v; $("#ct-date").classList.add("ct-auto"); trouves.push(r.heure ? "date et heure" : "date"); }
+      if (marquerAuto("#ct-article", r.article)) { majArticleConstat(); trouves.push("article" + (r.articleIncertain ? " (à confirmer)" : "")); }
+      if (marquerAuto("#ct-lieu", r.lieu)) trouves.push("lieu");
+      etatP.textContent = trouves.length ? `Lu sur l'appareil : ${trouves.join(", ")}. Vérifiez chaque champ surligné avant d'enregistrer. La photo n'a pas été conservée.` : "Aucune information reconnue. Reprenez la photo bien à plat, avec un bon éclairage, ou remplissez les champs à la main.";
+    } catch (err) {
+      etatP.textContent = "Lecture impossible : " + String((err && err.message) || err).replace(/^Error:\s*/, "") + ". Remplissez les champs à la main.";
+    } finally {
+      // On oublie la photo et le texte lu : seuls les champs du formulaire restent
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+      lignes = null;
+      btn.disabled = false;
+    }
+  });
   let articlesCsr = null;
   async function remplirArticlesCsr() {
     if (articlesCsr) return;
@@ -5159,6 +5304,8 @@ Format :
     ct.lat = c && c.lat != null ? c.lat : null; ct.lon = c && c.lon != null ? c.lon : null;
     majCoordConstat(); majArticleConstat();
     $("#ct-supprimer").hidden = !c;
+    $$("#ct-form .ct-auto").forEach((x) => x.classList.remove("ct-auto"));
+    $("#ct-photo-etat").textContent = "La photo est lue sur cet appareil, puis oubliée : seuls le numéro, le type, la date, l'article et le lieu sont gardés. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.";
     $("#ct-voile").hidden = false;
     if (!c) setTimeout(() => $("#ct-numero").focus(), 50);
   }

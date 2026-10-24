@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610240215">
+  <link rel="stylesheet" href="styles.css?v=202610240220">
 </head>
 <body>
   <!-- Chargement -->
@@ -1833,6 +1833,11 @@
       <button class="btn-icone fermer" id="ct-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="ct-titre">Nouveau constat</h3>
       <form id="ct-form" class="ct-form" autocomplete="off">
+        <button type="button" class="btn-principal ct-photo" id="ct-photo">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          Lire le constat avec une photo</button>
+        <input type="file" id="ct-photo-fichier" accept="image/*" capture="environment" hidden>
+        <p class="aide" id="ct-photo-etat">La photo est lue sur cet appareil, puis oubliée : seuls le numéro, le type, la date, l'article et le lieu sont gardés. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.</p>
         <label for="ct-numero">Numéro du constat</label>
         <input id="ct-numero" required maxlength="40" autocapitalize="characters" spellcheck="false" placeholder="Numéro inscrit au constat">
         <div class="segmente ct-type" role="radiogroup" aria-label="Type de constat">
@@ -1983,9 +1988,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610240215"></script>
+  <script src="config.js?v=202610240220"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610240215"></script>
+  <script src="app.js?v=202610240220"></script>
 </body>
 </html>
