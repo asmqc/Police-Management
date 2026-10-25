@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610251630">
+  <link rel="stylesheet" href="styles.css?v=202610251634">
 </head>
 <body>
   <!-- Chargement -->
@@ -1033,12 +1033,24 @@
           <div id="hp-publications" class="hp-publications"></div>
         </div>
         <div id="hp-onglet-ts" hidden>
+          <div class="segmente hp-ts-vues" role="radiogroup" aria-label="Temps supplémentaire">
+            <button type="button" role="radio" data-hp-tsvue="offert" aria-checked="true">À venir</button>
+            <button type="button" role="radio" data-hp-tsvue="poste" aria-checked="false">TS du poste</button>
+          </div>
+          <div id="hp-ts-poste" hidden>
+            <div class="hr-mois-tete"><button class="btn-icone" id="hph-prec" aria-label="Mois précédent">‹</button><h3 id="hph-mois"></h3><button class="btn-icone" id="hph-suiv" aria-label="Mois suivant">›</button></div>
+            <div id="hph-resume" class="hph-resume"></div>
+            <div id="hph-liste" class="hp-ts"></div>
+            <p class="aide">Tout le temps supplémentaire du poste, passé et à venir. Il reste ici même après la suppression hebdomadaire de l'horaire du poste, le mardi.</p>
+          </div>
+          <div id="hp-ts-offert">
           <div class="hp-mercredi" id="hp-mercredi" hidden></div>
           <h3 class="intertitre">Temps supplémentaire offert</h3>
           <p class="aide">Inscrivez-vous avec votre matricule. Le mercredi, un membre du poste approuve : les inscrits sont proposés en ordre d'ancienneté (date d'entrée inscrite dans Mon compte). Si vous obtenez le TS, vous êtes avisé et le quart s'ajoute à votre horaire.</p>
           <div id="hp-ts" class="hp-ts"></div>
           <h3 class="intertitre">Approbation</h3>
           <div id="hp-approb" class="hp-ts"></div>
+          </div>
         </div>
       </div>
 
@@ -2043,9 +2055,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610251630"></script>
+  <script src="config.js?v=202610251634"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610251630"></script>
+  <script src="app.js?v=202610251634"></script>
 </body>
 </html>
