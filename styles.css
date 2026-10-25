@@ -2509,3 +2509,6 @@ html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: gray
 .pub-heures-grille { display: grid; gap: 6px; margin: 8px 0; }
 .pub-heures-grille label { display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .pub-heures-grille input { width: auto; flex: 1; min-width: 0; padding: 6px; }
+.hp-ts-vues { grid-template-columns: 1fr 1fr; margin-bottom: 4px; }
+.hph-resume { display: flex; flex-wrap: wrap; gap: 8px; }
+.hph-resume span { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: .9rem; }

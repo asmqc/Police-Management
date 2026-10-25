@@ -561,6 +561,7 @@
       "Publier un horaire de travail : prenez l'horaire du poste en photo (en liste ou en grille) et l'app le lit sur votre appareil, puis efface la photo. Vérifiez, ajoutez les heures et publiez : les membres de votre poste sont avisés.",
       "Le TS de l'horaire est offert au poste : inscrivez-vous avec votre matricule. Le mercredi, un membre du poste approuve; les inscrits sont proposés en ordre d'ancienneté.",
       "Si vous obtenez le TS, vous recevez un avis et le quart s'ajoute à votre horaire, avant ou après votre quart s'il y est collé.",
+      "TS du poste : tout le temps supplémentaire du poste, mois par mois, avec les matricules retenus. Il reste même quand l'horaire du poste est supprimé, chaque mardi.",
     ] },
     { id: "2026-10-23-constats", date: "2026-10-23", titre: "Registre des constats (app iPhone et iPad)", points: [
       "Nouvel onglet Lois › Constats d'infraction : inscrivez le numéro du constat, le type (100400 ou 100391), la date, l'article du CSR, l'emplacement exact (et votre position GPS) et votre narration.",
@@ -6922,7 +6923,38 @@ Format :
      Un membre publie l'horaire du poste (lu d'une photo, sur l'appareil, puis corrigé). Les quarts de TS sont offerts aux
      membres du poste, qui s'inscrivent avec leur matricule. Un membre approuve (le mercredi) : les retenus sont avisés et
      le quart s'ajoute à leur horaire personnel. Tout passe par des fonctions du serveur qui vérifient le poste. */
-  const hp = { debut: null, quarts: [], de: null, a: null, chargement: null };
+  const hp = { debut: null, quarts: [], de: null, a: null, chargement: null, tsVue: "offert", hMois: null };
+  // TS du poste : historique par mois (conservé après la suppression hebdomadaire de l'horaire)
+  async function rendreTsPoste() {
+    if (!hp.hMois) hp.hMois = aujourdhuiISO().slice(0, 7) + "-01";
+    const d = new Date(hp.hMois + "T12:00");
+    const fin = isoDe(jourUTC(isoPlus(hp.hMois, 32).slice(0, 7) + "-01") - 1);
+    $("#hph-mois").textContent = d.toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    $("#hph-liste").innerHTML = `<p class="aide">Chargement…</p>`;
+    const { data, error } = await sb.rpc("ts_poste_historique", { p_debut: hp.hMois, p_fin: fin });
+    if (error) { $("#hph-liste").innerHTML = ""; return toast(traduireErreur(error)); }
+    const l = data || [];
+    const heures = (q) => (q.debut && q.fin ? dureeH([q.debut, q.fin]) : 0);
+    const attribues = l.filter((q) => q.statut === "attribue");
+    const hTot = attribues.reduce((s, q) => s + heures(q) * Math.max(1, (q.retenus || []).length), 0);
+    $("#hph-resume").innerHTML = l.length ? `<span><b>${l.length}</b> quart${l.length > 1 ? "s" : ""} de TS</span><span><b>${attribues.length}</b> attribué${attribues.length > 1 ? "s" : ""}</span>${hTot ? `<span><b>${fmtH(hTot)}</b> attribuées</span>` : ""}` : "";
+    const auj = aujourdhuiISO();
+    $("#hph-liste").innerHTML = l.length ? l.map((q) => {
+      const etatTs = q.statut === "attribue" ? `<span class="hp-etat ok">Attribué</span>` : q.jour < auj ? `<span class="hp-etat">Non attribué</span>` : `<span class="hp-etat inscrit">Ouvert</span>`;
+      return `<article class="panneau hp-carte"><div class="hp-carte-tete"><b>${esc(jourLong(q.jour))}</b>${etatTs}</div>
+        <p>${esc(heuresQ(q))} · ${esc(q.code)} · ${q.places} place${q.places > 1 ? "s" : ""} · ${q.inscrits} inscrit${q.inscrits > 1 ? "s" : ""}</p>
+        ${(q.retenus || []).length ? `<p>Matricule${q.retenus.length > 1 ? "s" : ""} retenu${q.retenus.length > 1 ? "s" : ""} : <b>${q.retenus.map(esc).join(", ")}</b></p>` : ""}</article>`;
+    }).join("") : `<p class="vide">Aucun temps supplémentaire ce mois-ci.</p>`;
+  }
+  function choisirTsVue(v) {
+    hp.tsVue = v;
+    $$("[data-hp-tsvue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hpTsvue === v)));
+    $("#hp-ts-poste").hidden = v !== "poste"; $("#hp-ts-offert").hidden = v === "poste";
+    if (v === "poste") rendreTsPoste();
+  }
+  $$("[data-hp-tsvue]").forEach((b) => b.addEventListener("click", () => choisirTsVue(b.dataset.hpTsvue)));
+  $("#hph-prec").addEventListener("click", () => { hp.hMois = isoPlus(hp.hMois, -1).slice(0, 7) + "-01"; rendreTsPoste(); });
+  $("#hph-suiv").addEventListener("click", () => { hp.hMois = isoPlus(hp.hMois, 32).slice(0, 7) + "-01"; rendreTsPoste(); });
   const jourLong = (iso) => new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
   const jourCourt = (iso) => new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" });
   const heuresQ = (q) => q.debut && q.fin ? `${q.debut}–${q.fin}` : "Heures à confirmer";
@@ -6943,6 +6975,7 @@ Format :
     if (!hp.debut) hp.debut = aujourdhuiISO();
     const ts = hr.onglet === "ts";
     $("#hp-onglet-poste").hidden = ts; $("#hp-onglet-ts").hidden = !ts;
+    if (ts && hp.tsVue === "poste") { $("#hp-prec").parentElement.hidden = true; return rendreTsPoste(); }
     $("#hp-prec").parentElement.hidden = ts;
     majPastilleTs();
     if (!ts) {
