@@ -1,0 +1,36 @@
+tuile 44 -80 2012
+tuile 44 -74 8239
+tuile 44 -68 0
+tuile 44 -62 45
+tuile 48 -80 1267
+tuile 48 -74 1389
+tuile 48 -68 640
+tuile 48 -62 47
+tuile 52 -80 275
+tuile 52 -74 12
+tuile 52 -68 74
+tuile 52 -62 0
+tuile 56 -80 0
+tuile 56 -74 0
+tuile 56 -68 0
+tuile 56 -62 0
+tuile 60 -80 0
+tuile 60 -74 0
+tuile 60 -68 0
+tuile 60 -62 0
+repères {'nb': 13763, 'octets': 701730}
+téléchargé postes_mrc 31631835
+téléchargé postes_aux 7346018
+sq_postes {'nb': 105, 'octets': 501532}
+téléchargé districts 9854409
+sq_districts {'nb': 4, 'octets': 63889}
+téléchargé autoroutier 9929613
+sq_autoroutier {'nb': 50, 'octets': 1061220}
+téléchargé bureaux 117273
+sq_bureaux {'nb': 143, 'octets': 70763}
+téléchargé sda 104966431
+municipalités : SDA 1342
+municipalites_hors_sq {'nb': 175, 'octets': 838792}
+municipalités (limites) {'nb': 1292, 'octets': 3366121}
+caméras {'nb': 680, 'octets': 420371}
+Terminé
