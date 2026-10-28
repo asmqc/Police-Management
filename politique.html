@@ -37,7 +37,7 @@
 <header><a href="./"><img src="assets/icone-192.png" alt="">Police <span>Management</span></a></header>
 <main>
   <h1>Politique de confidentialité</h1>
-  <p class="maj">Site web, application web et application iPhone et iPad Police Management — version <b>2026.10.24</b>, en vigueur le 24 octobre 2026.</p>
+  <p class="maj">Site web, application web et application iPhone et iPad Police Management — version <b>2026.10.28</b>, en vigueur le 28 octobre 2026.</p>
 
   <section class="resume">
     <h2>En bref</h2>
@@ -46,7 +46,7 @@
       <li>Nous recueillons seulement ce qui sert à faire fonctionner votre compte : votre identité professionnelle, votre horaire, vos événements et vos messages.</li>
       <li>Vos données sont hébergées au <b>Canada, à Montréal</b>. Aucune publicité, aucun outil de mesure d'audience, aucun profilage, aucune vente de données.</li>
       <li>La messagerie et le forum <b>ne sont pas chiffrés de bout en bout</b> : n'y écrivez jamais d'information opérationnelle, de dossier ni de renseignement sur des civils.</li>
-      <li>Votre position GPS reste sur votre appareil. Elle n'est ni enregistrée ni transmise.</li>
+      <li>Votre position GPS exacte reste sur votre appareil. Seule la météo, si vous la demandez, utilise une zone arrondie à environ 10 km, envoyée à Open-Meteo.</li>
       <li>Vous pouvez consulter, corriger, exporter ou supprimer vos renseignements en tout temps. Pour toute question : <a href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>.</li>
     </ul>
   </section>
@@ -109,6 +109,8 @@
       <tr><td>Rotation, exceptions (vacances, maladie, formation, cour, temps supplémentaire et ses détails : heures, payé ou mis en banque, repas, disponibilité, remplacement), notes, heures</td><td>Afficher votre horaire, calculer vos heures, produire vos rapports</td></tr>
       <tr><td>Motif d'un congé (facultatif) : par exemple événement familial (mariage, décès), congé parental, accident de travail, libération syndicale, congé sans traitement</td><td>Appliquer les règles du contrat de travail à ce congé (durée, effet sur la paie et les banques). Ces motifs peuvent révéler des renseignements familiaux ou de santé : inscrivez seulement le motif, jamais de détails médicaux ni le nom d'une autre personne. Aucun autre membre ne les voit (vos collègues voient seulement votre rotation), et le motif précis n'est jamais inclus dans le calendrier abonné.</td></tr>
       <tr><td>2ᵉ calendrier facultatif (nom ou surnom et horaire d'un conjoint ou d'une conjointe)</td><td>Afficher les deux horaires côte à côte. Obtenez l'accord de cette personne avant d'inscrire son horaire.</td></tr>
+      <tr><td>Mes échéances (facultatif) : nom de l'échéance (ex. requalification au tir), date limite et rappel</td><td>Vous rappeler une date limite personnelle avant qu'elle arrive. Seulement vous les voyez; elles sont enregistrées comme des événements de votre calendrier.</td></tr>
+      <tr><td>Invitation d'un collègue : votre code d'invitation, son nombre d'utilisations et, pour la personne invitée, le membre qui l'a invitée</td><td>Préremplir la demande d'accès de votre collègue avec votre corps de police et votre poste (toute personne qui a votre lien voit seulement ces deux renseignements) et indiquer à l'administrateur qui a invité la personne. L'approbation reste faite par l'administrateur.</td></tr>
       <tr><td>Événements personnels et rappels</td><td>Afficher votre calendrier et vous envoyer les rappels demandés</td></tr>
       <tr><td>Repères personnels sur la carte</td><td>Retrouver vos lieux de travail</td></tr>
       <tr><td>Feuille de poste (photo ou PDF envoyé par un membre, version web créée à partir de la photo, date, nom de la personne qui l'a envoyée)</td><td>Partager l'aide-mémoire du poste (adresses, numéros publics, repères kilométriques, codes de lieux) avec les membres du même poste</td></tr>
@@ -139,6 +141,7 @@
       <li><b>Avis de panne ou de mise à jour :</b> l'app vérifie l'état du service à l'ouverture pour afficher un avis ou bloquer temporairement l'accès pendant une panne. Cette vérification ne transmet aucun renseignement sur vous.</li>
       <li><b>Application iPhone et iPad :</b> elle affiche le site Police Management dans un navigateur intégré, avec des barres de navigation natives. Votre session, vos préférences et la copie de la feuille de votre poste sont gardées dans les données de ce navigateur, dans l'appareil seulement. Pour le raccourci Siri « Prochain quart », l'app garde dans l'appareil une phrase décrivant votre prochain quart. L'app ne recueille aucun autre renseignement.</li>
       <li><b>Localisation :</b> cette fonction est désactivée par défaut. Elle s'active seulement quand vous touchez « Ma position », et l'app vous demande d'abord l'autorisation. La position sert, sur votre appareil seulement, à trouver la borne kilométrique, la municipalité et le poste les plus proches. Elle n'est <b>ni enregistrée ni transmise</b> à Police Management.</li>
+      <li><b>Soleil et météo (accueil) :</b> quand vous touchez « Ma position » dans cette carte, votre position est arrondie à 0,1 degré (une zone d'environ 10 km) avant toute utilisation. Les heures du soleil sont calculées sur votre appareil. Pour la météo, cette zone arrondie est envoyée à Open-Meteo (section 7), avec l'adresse IP de votre appareil. La zone arrondie reste mémorisée sur votre appareil seulement, pour réafficher les heures du soleil.</li>
     </ul>
   </section>
 
@@ -179,6 +182,7 @@
       <tr><td><b>OpenStreetMap</b></td><td>Fond de carte, et recherche d'adresse (Nominatim) quand vous cherchez une adresse sur la carte. Reçoit l'adresse IP, la zone affichée et le texte de l'adresse cherchée.</td><td>Royaume-Uni et Europe</td></tr>
       <tr><td><b>Esri</b></td><td>Imagerie satellite, seulement si vous choisissez le fond « Satellite ». Reçoit l'adresse IP et la zone affichée.</td><td>États-Unis</td></tr>
       <tr><td><b>Québec 511 (MTMD)</b></td><td>Entraves et travaux routiers, relayés par notre serveur : aucun renseignement personnel n'est transmis.</td><td>Québec</td></tr>
+      <tr><td><b>Open-Meteo</b> (OpenMeteo GmbH)</td><td>Seulement si vous touchez « Ma position » dans la carte Soleil et météo : reçoit une zone arrondie à environ 10 km et l'adresse IP de votre appareil, pour fournir la météo. Ne reçoit aucune donnée de compte. Selon ses conditions, ses journaux sont effacés après 90 jours.</td><td>Suisse</td></tr>
       <tr><td><b>Apple</b></td><td>App Store, carte de l'app (Plans), notifications sur les appareils Apple. Ne reçoit aucune donnée de compte de notre part.</td><td>États-Unis</td></tr>
       <tr><td><b>Google, Mozilla, Microsoft</b></td><td>Notifications du navigateur, si vous les activez. Reçoivent seulement le texte de la notification.</td><td>États-Unis</td></tr>
       <tr><td><b>Claude (Anthropic)</b></td><td>Seulement si vous touchez « Expliquer avec Claude » ou « Copier pour Claude » dans « Convention collective », ou « Ouvrir Claude » dans « Feuille de poste » : Claude s'ouvre avec votre question et les extraits publics du contrat de travail (ou, pour la feuille de poste, la consigne), et vous lui joignez vous-même la photo de la feuille. Il répond avec <b>votre propre compte Claude</b>. Police Management ne transmet rien à Anthropic; cet échange est régi par les conditions et la politique de confidentialité de votre compte Claude.</td><td>États-Unis</td></tr>
@@ -276,7 +280,7 @@
   <section id="modifications">
     <h2>14. Modifications</h2>
     <p>Toute modification est publiée sur cette page, avec un nouveau numéro de version. Si elle touche les renseignements recueillis, leurs finalités ou leurs destinataires, l'application vous demande de l'accepter à votre prochaine ouverture.</p>
-    <p>Versions précédentes : 2026.10.23, 2026.10.22, 2026.10.21, 2026.10.20.3, 2026.10.20.2, 2026.10.20, 2026.10.19 (site web), 2026.09.01 (ancienne app iPhone).</p>
+    <p>Versions précédentes : 2026.10.24, 2026.10.23, 2026.10.22, 2026.10.21, 2026.10.20.3, 2026.10.20.2, 2026.10.20, 2026.10.19 (site web), 2026.09.01 (ancienne app iPhone).</p>
   </section>
 
   <a class="retour" href="./">‹ Retour à Police Management</a>

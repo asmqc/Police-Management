@@ -1261,7 +1261,7 @@ html[data-style="epure"] .barre .marque span { color: #E0B47A; }
 }
 body.est-admin .nav-ico { width: 46px; }
 @media (max-width: 420px) { body.est-admin .nav button { font-size: .6rem; } body.est-admin .nav-ico { width: 42px; } }
-.adm-onglets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.adm-onglets { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .adm-onglets button { font-size: .86rem; padding-inline: 2px; }
 .adm-onglets .badge-ligne { display: inline-grid; min-width: 18px; height: 18px; font-size: .66rem; vertical-align: 1px; margin-left: 2px; }
 .adm-panneau { display: grid; gap: 12px; }
@@ -2522,3 +2522,67 @@ html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: gray
 .site-video-jouer[hidden] { display: none; }
 @media (max-width: 860px) { .site-video { grid-template-columns: 1fr; gap: 24px; } }
 html[data-style="nuit"] .site-video-cadre { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }
+
+/* ---------- Bien-être et soutien ---------- */
+.soutien { display: grid; gap: 12px; }
+.soutien-urgence { padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--rouge) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rouge) 40%, transparent); }
+.soutien-urgence a { color: var(--rouge); font-weight: 800; }
+.soutien-carte { display: grid; gap: 10px; padding: 14px; }
+.soutien-carte b { display: block; font-size: 1.02rem; }
+.soutien-carte small { display: block; color: var(--fg-doux); line-height: 1.45; margin-top: 2px; }
+.soutien-dispo { display: inline-block; margin-top: 6px; font-size: .8rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--vert, #16A34A) 15%, transparent); color: var(--vert, #16A34A); }
+.soutien-carte .btn-principal, .soutien-carte .btn-secondaire { text-align: center; text-decoration: none; font-size: 1.05rem; }
+.soutien-carte .lien { justify-self: start; }
+body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
+
+/* ---------- Mes échéances ---------- */
+.mc-ech { display: grid; gap: 10px; }
+.mc-ech-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mc-ech-liste li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.mc-ech-liste li.proche { box-shadow: inset 3px 0 0 #C2410C; }
+.mc-ech-liste li.passee { opacity: .55; }
+.mc-ech-liste li.vide { background: none; color: var(--fg-doux); }
+.mc-ech-liste small { display: block; color: var(--fg-doux); }
+.mc-ech-liste .btn-icone.arme { width: auto; padding: 0 10px; color: var(--rouge); font-weight: 700; font-size: .85rem; }
+.mc-ech-form { display: grid; gap: 8px; }
+.mc-ech-ligne { display: flex; gap: 10px; flex-wrap: wrap; }
+.mc-ech-ligne label { flex: 1 1 150px; display: grid; gap: 4px; font-size: .85rem; font-weight: 600; color: var(--fg-doux); }
+
+/* ---------- Soleil et météo ---------- */
+.ciel-grille { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 4px; }
+.ciel-grille div { padding: 8px 10px; border-radius: 10px; background: var(--surface-2); }
+.ciel-grille small { display: block; color: var(--fg-doux); font-size: .78rem; font-weight: 600; }
+.ciel-grille b { font-family: var(--f-mono); font-size: 1.1rem; }
+.ciel-etat { margin: 8px 0 0; font-size: .92rem; }
+.ciel-meteo { display: flex; gap: 12px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.ciel-meteo b { font-size: 1.6rem; font-family: var(--f-mono); }
+.ciel-meteo span { font-size: .88rem; line-height: 1.4; color: var(--fg-doux); }
+.ciel-actions { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 10px; }
+.ciel-actions small { color: var(--fg-doux); font-size: .78rem; }
+.soutien-urgence, .soutien-urgence * { display: inline; margin: 0; padding: 0; }
+.soutien-urgence { display: block; padding: 12px 14px; }
+.soutien-urgence a { text-decoration: underline; }
+.ciel-meteo b { white-space: nowrap; }
+
+/* ---------- Bilan administrateur ---------- */
+.adm-tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.adm-tuile { padding: 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--ligne); }
+.adm-tuile b { display: block; font-size: 1.7rem; font-family: var(--f-mono); line-height: 1.1; }
+.adm-tuile span { display: block; font-size: .85rem; color: var(--fg-doux); }
+.adm-tuile small { display: inline-block; margin-top: 4px; font-size: .75rem; font-weight: 700; color: var(--ambre); }
+.adm-barres { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.adm-barres li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: .9rem; }
+.adm-barres li small { display: block; color: var(--fg-doux); font-size: .75rem; }
+.adm-barres i { display: block; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--ambre-vif) var(--p), var(--surface-2) var(--p)); }
+.adm-barres b { font-family: var(--f-mono); }
+
+/* ---------- Invitations ---------- */
+.mc-inv { display: grid; gap: 10px; }
+.mc-inv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.mc-inv-actions .btn-principal { flex: 1 1 220px; }
+#mc-inv-etat { word-break: break-all; }
+.dm-invitation { margin: 4px 0; padding: 10px 12px; border-radius: 10px; font-size: .9rem; background: color-mix(in srgb, var(--ambre-vif) 15%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ambre-vif) 45%, transparent); }
+.etiquette-invite { padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--ambre-vif) 20%, transparent); font-weight: 700; }
+.adm-onglets { display: flex; overflow-x: auto; scrollbar-width: none; }
+.adm-onglets::-webkit-scrollbar { display: none; }
+.adm-onglets button { flex: 1 0 auto; padding-inline: 12px; white-space: nowrap; }
