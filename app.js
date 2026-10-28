@@ -7762,9 +7762,29 @@ Format :
   // Clavier ouvert (téléphone) : on cache la barre d'onglets du bas pour qu'elle ne couvre pas la zone d'écriture
   const champTexte = (el) => el && (el.tagName === "TEXTAREA" || el.isContentEditable ||
     (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|reset|range|color|file|date|time|datetime-local|month|week)$/i.test(el.type)));
-  document.addEventListener("focusin", (e) => { if (champTexte(e.target)) document.documentElement.classList.add("clavier"); });
+  // iPhone : le clavier ne réduit pas l'écran de l'app (position fixe). On ajuste l'app à la zone visible
+  // au-dessus du clavier (visualViewport), pour que la zone d'écriture reste toujours visible.
+  const vv = window.visualViewport;
+  const ajusterClavier = () => {
+    const r = document.documentElement;
+    if (!vv || !r.classList.contains("clavier")) { r.style.removeProperty("--vv-h"); r.style.removeProperty("--vv-top"); return; }
+    r.style.setProperty("--vv-h", Math.round(vv.height) + "px");
+    r.style.setProperty("--vv-top", Math.round(vv.offsetTop) + "px");
+    const fil = document.getElementById("chat-fil");
+    if (fil && document.activeElement && document.activeElement.closest && document.activeElement.closest("#vue-messages")) fil.scrollTop = fil.scrollHeight;
+  };
+  if (vv) { vv.addEventListener("resize", ajusterClavier); vv.addEventListener("scroll", ajusterClavier); }
+  document.addEventListener("focusin", (e) => {
+    if (!champTexte(e.target)) return;
+    document.documentElement.classList.add("clavier");
+    ajusterClavier(); setTimeout(ajusterClavier, 300); setTimeout(ajusterClavier, 650);
+  });
   document.addEventListener("focusout", () => {
-    setTimeout(() => { if (!champTexte(document.activeElement)) document.documentElement.classList.remove("clavier"); }, 120);
+    setTimeout(() => {
+      if (champTexte(document.activeElement)) return;
+      document.documentElement.classList.remove("clavier"); ajusterClavier();
+      window.scrollTo(0, 0);
+    }, 120);
   });
 
   demarrer();
