@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610251634">
+  <link rel="stylesheet" href="styles.css?v=202610281938">
 </head>
 <body>
   <!-- Chargement -->
@@ -87,6 +87,22 @@
           <figure class="site-tel site-appareil incline-g"><img src="assets/site/appareil-horaire.webp" width="620" height="1155" alt=""></figure>
           <figure class="site-tel site-appareil avant"><img src="assets/site/appareil-accueil.webp" width="620" height="1155" alt="" fetchpriority="high"></figure>
         </div>
+      </section>
+
+      <section class="site-section site-video" id="site-video">
+        <div class="site-video-txt">
+          <p class="site-sur">En 25 secondes</p>
+          <h2>Voyez Police Management en action</h2>
+          <p>L'accueil, l'horaire et la paie, la carte des postes, le calculateur de vitesse, le contrat de travail et le temps supplémentaire du poste, dans une seule app.</p>
+          <div class="site-cta">
+            <button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès</button>
+            <a class="site-btn site-btn-ligne" href="presentation.html" target="_blank" rel="noopener">La présentation en une page</a>
+          </div>
+        </div>
+        <figure class="site-video-cadre">
+          <video id="site-annonce" src="assets/site/annonce.mp4" poster="assets/site/annonce-affiche.jpg" muted loop playsinline preload="none" width="720" height="1280" aria-label="Vidéo de présentation de Police Management, sans son"></video>
+          <button type="button" class="site-video-jouer" id="site-annonce-jouer" aria-label="Lire la vidéo">▶</button>
+        </figure>
       </section>
 
       <section class="site-section site-essai" id="site-essai">
@@ -288,6 +304,7 @@
             <div class="site-cta">
               <button type="button" class="site-btn site-btn-plein" id="site-partager">Partager le lien</button>
               <a class="site-btn site-btn-ligne" href="affiche.html" target="_blank" rel="noopener">Imprimer l'affiche</a>
+              <a class="site-btn site-btn-ligne" href="presentation.html" target="_blank" rel="noopener">Présentation en une page</a>
             </div>
           </div>
         </div>
@@ -2055,9 +2072,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610251634"></script>
+  <script src="config.js?v=202610281938"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610251634"></script>
+  <script src="app.js?v=202610281938"></script>
 </body>
 </html>

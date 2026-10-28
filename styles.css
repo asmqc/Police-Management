@@ -2512,3 +2512,13 @@ html[data-style="nuit"] :is(.site-appareil, .site-appareil-large) { filter: gray
 .hp-ts-vues { grid-template-columns: 1fr 1fr; margin-bottom: 4px; }
 .hph-resume { display: flex; flex-wrap: wrap; gap: 8px; }
 .hph-resume span { padding: 6px 10px; border-radius: 10px; background: var(--surface-2); font-size: .9rem; }
+
+/* ---------- Vidéo de présentation (site public) ---------- */
+.site-video { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 48px; align-items: center; }
+.site-video-txt p { color: var(--s-doux); font-size: 1.05rem; line-height: 1.6; max-width: 52ch; }
+.site-video-cadre { position: relative; margin: 0; justify-self: center; width: min(100%, 340px); aspect-ratio: 9 / 16; border-radius: 34px; overflow: hidden; background: #06070D; box-shadow: 0 30px 70px rgba(10,20,40,.4), 0 0 0 1px rgba(255,255,255,.12); }
+.site-video-cadre video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.site-video-jouer { position: absolute; inset: 0; margin: auto; width: 76px; height: 76px; border-radius: 50%; border: 0; background: rgba(255,197,61,.95); color: #1A1204; font-size: 30px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.site-video-jouer[hidden] { display: none; }
+@media (max-width: 860px) { .site-video { grid-template-columns: 1fr; gap: 24px; } }
+html[data-style="nuit"] .site-video-cadre { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }

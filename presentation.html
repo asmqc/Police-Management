@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Présentation — Police Management</title>
+  <meta name="description" content="Police Management en une page : ce que l'app fait, pour qui, comment vos données sont protégées et comment obtenir l'accès.">
+  <link rel="icon" href="assets/icone-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: letter portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #2a2f3a; font-family: Overpass, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0B1626; }
+    .barre { display: flex; gap: 10px; justify-content: center; padding: 14px 16px; }
+    .barre button, .barre a { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 10px 18px; background: #FFC53D; color: #1A1204; cursor: pointer; text-decoration: none; }
+    .barre a { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px #fff; }
+    .feuille { width: 8.5in; height: 11in; margin: 0 auto 24px; background: #fff; position: relative; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+    .haut { position: relative; background: radial-gradient(60% 120% at 0% 0%, rgba(224,38,59,.55), transparent 62%), radial-gradient(60% 120% at 100% 0%, rgba(37,99,235,.6), transparent 62%), #06070D; color: #fff; padding: .42in .55in .38in; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .logo { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; }
+    .logo img { width: 44px; height: 44px; }
+    .logo b { color: #FFC53D; }
+    h1 { font-size: 34px; line-height: 1.05; margin: .2in 0 .1in; letter-spacing: -.5px; max-width: 5.2in; }
+    .intro { font-size: 13.5px; line-height: 1.5; color: #C9D3E2; margin: 0; max-width: 5.1in; }
+    .tel { position: absolute; right: .42in; top: .22in; width: 1.75in; filter: drop-shadow(0 12px 22px rgba(0,0,0,.5)); }
+    .bande { height: 6px; background: linear-gradient(90deg, #E0263B 0 50%, #2563EB 50% 100%); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .corps { flex: 1; padding: .26in .55in .12in; display: grid; grid-template-columns: 1fr 1fr; gap: .14in .3in; align-content: start; }
+    .bloc h2 { font-size: 14.5px; margin: 0 0 3px; display: flex; align-items: center; gap: 8px; }
+    .bloc h2 i { width: 10px; height: 10px; border-radius: 3px; background: #FFC53D; flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .bloc h2 small { font-size: 10.5px; font-weight: 700; color: #556479; border: 1px solid #CBD5E1; border-radius: 99px; padding: 1px 7px 0; }
+    .bloc p { margin: 0; font-size: 11.6px; line-height: 1.45; color: #334155; }
+    .securite { margin: .02in .55in 0; padding: .14in .2in; border-radius: 12px; background: #F1F5F9; display: grid; grid-template-columns: repeat(4, 1fr); gap: .14in; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .securite div b { display: block; font-size: 12.5px; }
+    .securite div span { font-size: 10.6px; line-height: 1.35; color: #475569; display: block; }
+    .acces { display: grid; grid-template-columns: 1fr 1.25in; gap: .25in; padding: .18in .55in .14in; align-items: center; }
+    .acces h2 { font-size: 15px; margin: 0 0 6px; }
+    .acces ol { margin: 0; padding-left: 18px; font-size: 11.8px; line-height: 1.5; color: #334155; }
+    .acces ol b { color: #0B1626; }
+    .qr { text-align: center; }
+    .qr img { width: 1.15in; height: 1.15in; }
+    .qr small { display: block; font-size: 10.5px; font-weight: 800; margin-top: 3px; }
+    .pied { padding: .1in .55in .22in; border-top: 1px solid #E2E8F0; font-size: 9.6px; color: #556479; line-height: 1.45; display: flex; justify-content: space-between; gap: 16px; }
+    .pied b { color: #0B1626; }
+    @media print { html, body { background: #fff; } .barre { display: none; } .feuille { margin: 0; box-shadow: none; } }
+    @media screen and (max-width: 860px) { .feuille { zoom: .44; } }
+  </style>
+</head>
+<body>
+  <div class="barre"><button type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button><a href="./">Retour au site</a></div>
+  <main class="feuille">
+    <section class="haut">
+      <div class="logo"><img src="assets/logo.png" alt=""><span>Police <b>Management</b></span></div>
+      <h1>L'outil de poche des policiers du Québec.</h1>
+      <p class="intro">Votre horaire, votre paie, les lois, la carte des postes et votre contrat de travail, dans une seule app, rapide à consulter en service. Gratuite, sans publicité, réservée aux policières et policiers en fonction au Québec, avec un accès vérifié.</p>
+      <img class="tel" src="assets/site/appareil-accueil.webp" alt="L'accueil de Police Management sur un iPhone">
+    </section>
+    <div class="bande"></div>
+    <section class="corps">
+      <div class="bloc"><h2><i></i>Horaire et rotation</h2><p>Votre rotation calculée pour les mois à venir (dont les horaires de la SQ), vacances, maladie, cour, formation et tous les congés du contrat. Échanges de quarts au poste, rappels avant chaque quart et calendrier abonné (iPhone, Google, Outlook).</p></div>
+      <div class="bloc"><h2><i></i>Paie et banques <small>SQ</small></h2><p>Paie aux deux semaines estimée selon le contrat de travail : primes, temps supplémentaire payé ou en banque, impôts et retenues. Banques de vacances, de fériés et de temps en jours et en heures, avec des rappels avant de les perdre.</p></div>
+      <div class="bloc"><h2><i></i>Horaire du poste et TS <small>SQ</small></h2><p>Un membre publie l'horaire du poste à partir d'une photo, lue sur l'appareil puis effacée. Le TS offert est ouvert aux membres du poste par matricule; le TS obtenu s'ajoute à votre horaire, avec un avis.</p></div>
+      <div class="bloc"><h2><i></i>Lois et routière</h2><p>Code de la sécurité routière, Code criminel, cannabis, drogues, véhicules hors route et plus, avec recherche et favoris. Calculateur de vitesse (amende, frais, contribution, points) et tableau des frais.</p></div>
+      <div class="bloc"><h2><i></i>Carte et territoires</h2><p>Postes de la SQ, corps municipaux et autochtones, bornes kilométriques, municipalités, districts judiciaires et entraves Québec 511 de votre secteur. Votre position reste sur votre appareil.</p></div>
+      <div class="bloc"><h2><i></i>Contrat de travail <small>SQ</small></h2><p>Posez votre question en mots de tous les jours : l'IA Police Management cite mot pour mot les clauses qui répondent, avec la page du PDF officiel. Échelle salariale, frais de déplacement et délai de grief.</p></div>
+      <div class="bloc"><h2><i></i>Votre poste, ensemble</h2><p>Feuille de poste partagée entre les membres du même poste, forum de votre corps de police, messagerie et idées pour améliorer l'app.</p></div>
+      <div class="bloc"><h2><i></i>Partout</h2><p>Sur iPhone et iPad, Android et ordinateur, avec le même compte. Mode nuit rouge pour garder la vision nocturne, visite guidée pour les nouveaux membres.</p></div>
+    </section>
+    <section class="securite">
+      <div><b>Hébergé au Canada</b><span>Données à Montréal, chiffrées en transit et au repos.</span></div>
+      <div><b>Accès vérifié</b><span>Chaque demande est examinée avant l'ouverture du compte.</span></div>
+      <div><b>Conçu selon la Loi 25</b><span>Aucune publicité, aucune vente de données, aucun profilage.</span></div>
+      <div><b>À savoir</b><span>Messagerie et forum non chiffrés de bout en bout : aucune information opérationnelle.</span></div>
+    </section>
+    <section class="acces">
+      <div>
+        <h2>Obtenir l'accès en 3 étapes</h2>
+        <ol>
+          <li>Sur <b>policemanagement.ca</b>, touchez <b>Demander l'accès</b> et remplissez votre identité professionnelle.</li>
+          <li>Confirmez votre adresse courriel.</li>
+          <li>Une fois la demande approuvée, connectez-vous. Pour l'installer : dans Safari, Partager › « Sur l'écran d'accueil »; dans Chrome, menu › « Installer l'application ».</li>
+        </ol>
+      </div>
+      <div class="qr"><img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca"><small>policemanagement.ca</small></div>
+    </section>
+    <footer class="pied">
+      <span><b>Outil indépendant</b>, créé par un policier, non affilié à la Sûreté du Québec ni à aucun corps de police. Les textes officiels et les directives de votre organisation prévalent toujours.</span>
+      <span>Questions : <b>police.management@hotmail.com</b></span>
+    </footer>
+  </main>
+</body>
+</html>

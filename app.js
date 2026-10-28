@@ -6644,6 +6644,17 @@ Format :
       out.innerHTML = `<div class="essai-muni"><small>${esc(nom)}${mrc ? " · MRC " + esc(mrc) : ""}</small><b>${esc(qui)}</b></div>`;
     }));
   })();
+  // Vidéo de présentation : joue sans son quand elle est visible (sauf si l'appareil demande moins d'animations)
+  (() => {
+    const v = $("#site-annonce"), b = $("#site-annonce-jouer");
+    if (!v) return;
+    const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const jouer = () => { v.preload = "auto"; v.play().then(() => (b.hidden = true)).catch(() => (b.hidden = false)); };
+    b.addEventListener("click", () => { v.controls = true; jouer(); });
+    v.addEventListener("pause", () => { if (!v.controls) b.hidden = false; });
+    if (reduit || !("IntersectionObserver" in window)) return;
+    new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) jouer(); else v.pause(); }), { threshold: .45 }).observe(v);
+  })();
   $("#site-partager") && $("#site-partager").addEventListener("click", async () => {
     const donnees = { title: "Police Management", text: "L'outil de poche des policiers du Québec : horaire, lois, vitesses, carte et Québec 511. Gratuit.", url: "https://policemanagement.ca" };
     try { if (navigator.share) { await navigator.share(donnees); return; } } catch { return; }
