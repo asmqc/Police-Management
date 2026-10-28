@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
   <title>Accès à l'app — Police Management</title>
   <meta name="description" content="Comment obtenir l'accès à Police Management et installer l'app sur iPhone ou Android, en une page.">
   <link rel="icon" href="assets/icone-192.png">
@@ -44,7 +45,11 @@
     @media print { html, body { background: #fff; } .barre { display: none; } .feuille { margin: 0; box-shadow: none; } }
     @media screen and (max-width: 860px) { .feuille { zoom: .44; } }
   
-    .haut h1 { max-width: 5.4in; }
+    .haut h1 { max-width: 5.4in; margin-top: .12in; }
+    .prive { display: inline-block; margin-top: .16in; padding: 5px 12px 3px; border: 2px solid #E0263B; border-radius: 8px; background: rgba(224,38,59,.18); color: #fff; font-size: 13px; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .prive span { color: #FF8A96; }
+    .filigrane { position: absolute; left: 50%; top: 57%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 92px; font-weight: 900; color: rgba(224,38,59,.06); white-space: nowrap; pointer-events: none; letter-spacing: 6px; }
+    .pied-prive { color: #E0263B !important; font-weight: 800; }
     .tel { width: 1.55in; }
     .etape:first-child p { max-width: 5.3in; }
     .etapes { padding: .34in .55in .14in; display: grid; gap: .24in; }
@@ -70,11 +75,13 @@
   <main class="feuille">
     <section class="haut">
       <div class="logo"><img src="assets/logo.png" alt=""><span>Police <b>Management</b></span></div>
+      <span class="prive">Document privé <span>· Interdit de partager</span></span>
       <h1>Aller sur l'app en 4 étapes.</h1>
       <p class="intro">Police Management s'utilise directement à partir du site et s'installe comme une vraie application, sans magasin d'applications. C'est gratuit et réservé aux policières et policiers en fonction au Québec.</p>
       <img class="tel" src="assets/site/appareil-accueil.webp" alt="L'accueil de Police Management sur un iPhone">
     </section>
     <div class="bande"></div>
+    <div class="filigrane">PRIVÉ</div>
     <section class="etapes">
       <div class="etape"><span class="no">1</span><div>
         <h2>Ouvrez policemanagement.ca</h2>
@@ -113,7 +120,7 @@
       <div class="qr"><img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca"><small>policemanagement.ca</small></div>
     </section>
     <footer class="pied">
-      <span><b>Outil indépendant</b>, créé par un policier, non affilié à la Sûreté du Québec ni à aucun corps de police. N'inscrivez aucune information confidentielle ni aucune donnée sur des citoyens.</span>
+      <span><b class="pied-prive">Document privé, réservé aux testeurs autorisés. Interdit de le partager, de le publier ou de le transférer.</b><br><b>Outil indépendant</b>, créé par un policier, non affilié à la Sûreté du Québec ni à aucun corps de police. N'inscrivez aucune information confidentielle ni aucune donnée sur des citoyens.</span>
       <span>Questions : <b>police.management@hotmail.com</b></span>
     </footer>
   </main>
