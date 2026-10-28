@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Accès à l'app — Police Management</title>
+  <meta name="description" content="Comment obtenir l'accès à Police Management et installer l'app sur iPhone ou Android, en une page.">
+  <link rel="icon" href="assets/icone-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    @page { size: letter portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #2a2f3a; font-family: Overpass, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #0B1626; }
+    .barre { display: flex; gap: 10px; justify-content: center; padding: 14px 16px; }
+    .barre button, .barre a { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 10px 18px; background: #FFC53D; color: #1A1204; cursor: pointer; text-decoration: none; }
+    .barre a { background: transparent; color: #fff; box-shadow: inset 0 0 0 1.5px #fff; }
+    .feuille { width: 8.5in; height: 11in; margin: 0 auto 24px; background: #fff; position: relative; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+    .haut { position: relative; background: radial-gradient(60% 120% at 0% 0%, rgba(224,38,59,.55), transparent 62%), radial-gradient(60% 120% at 100% 0%, rgba(37,99,235,.6), transparent 62%), #06070D; color: #fff; padding: .42in .55in .38in; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .logo { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; }
+    .logo img { width: 44px; height: 44px; }
+    .logo b { color: #FFC53D; }
+    h1 { font-size: 34px; line-height: 1.05; margin: .2in 0 .1in; letter-spacing: -.5px; max-width: 5.2in; }
+    .intro { font-size: 13.5px; line-height: 1.5; color: #C9D3E2; margin: 0; max-width: 5.1in; }
+    .tel { position: absolute; right: .42in; top: .22in; width: 1.75in; filter: drop-shadow(0 12px 22px rgba(0,0,0,.5)); }
+    .bande { height: 6px; background: linear-gradient(90deg, #E0263B 0 50%, #2563EB 50% 100%); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .corps { flex: 1; padding: .26in .55in .12in; display: grid; grid-template-columns: 1fr 1fr; gap: .14in .3in; align-content: start; }
+    .bloc h2 { font-size: 14.5px; margin: 0 0 3px; display: flex; align-items: center; gap: 8px; }
+    .bloc h2 i { width: 10px; height: 10px; border-radius: 3px; background: #FFC53D; flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .bloc h2 small { font-size: 10.5px; font-weight: 700; color: #556479; border: 1px solid #CBD5E1; border-radius: 99px; padding: 1px 7px 0; }
+    .bloc p { margin: 0; font-size: 11.6px; line-height: 1.45; color: #334155; }
+    .securite { margin: .02in .55in 0; padding: .14in .2in; border-radius: 12px; background: #F1F5F9; display: grid; grid-template-columns: repeat(4, 1fr); gap: .14in; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .securite div b { display: block; font-size: 12.5px; }
+    .securite div span { font-size: 10.6px; line-height: 1.35; color: #475569; display: block; }
+    .acces { display: grid; grid-template-columns: 1fr 1.25in; gap: .25in; padding: .18in .55in .14in; align-items: center; }
+    .acces h2 { font-size: 15px; margin: 0 0 6px; }
+    .acces ol { margin: 0; padding-left: 18px; font-size: 11.8px; line-height: 1.5; color: #334155; }
+    .acces ol b { color: #0B1626; }
+    .qr { text-align: center; }
+    .qr img { width: 1.15in; height: 1.15in; }
+    .qr small { display: block; font-size: 10.5px; font-weight: 800; margin-top: 3px; }
+    .pied { padding: .1in .55in .22in; border-top: 1px solid #E2E8F0; font-size: 9.6px; color: #556479; line-height: 1.45; display: flex; justify-content: space-between; gap: 16px; }
+    .pied b { color: #0B1626; }
+    @media print { html, body { background: #fff; } .barre { display: none; } .feuille { margin: 0; box-shadow: none; } }
+    @media screen and (max-width: 860px) { .feuille { zoom: .44; } }
+  
+    .haut h1 { max-width: 5.4in; }
+    .tel { width: 1.55in; }
+    .etape:first-child p { max-width: 5.3in; }
+    .etapes { padding: .34in .55in .14in; display: grid; gap: .24in; }
+    .etape { display: grid; grid-template-columns: .5in 1fr; gap: .16in; align-items: start; }
+    .etape .no { width: .46in; height: .46in; border-radius: 12px; background: #0B1626; color: #FFC53D; font-size: 22px; font-weight: 900; display: grid; place-items: center; padding-top: 3px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .etape h2 { font-size: 17px; margin: 2px 0 3px; }
+    .etape p { margin: 0; font-size: 12.6px; line-height: 1.5; color: #334155; }
+    .etape p b { color: #0B1626; }
+    .plateformes { display: grid; grid-template-columns: 1fr 1fr; gap: .14in; margin-top: 7px; }
+    .plateformes div { border: 1.5px solid #E2E8F0; border-radius: 12px; padding: .1in .14in; }
+    .plateformes h3 { margin: 0 0 4px; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+    .plateformes h3 i { width: 9px; height: 9px; border-radius: 3px; flex: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .plateformes ol { margin: 0; padding-left: 17px; font-size: 12.2px; line-height: 1.5; color: #334155; }
+    .astuces { margin: .1in .55in .2in; padding: .13in .2in; border-radius: 12px; background: #F1F5F9; display: grid; grid-template-columns: 1fr 1fr 1.15in; gap: .1in .25in; align-items: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .astuces h2 { grid-column: 1 / 3; font-size: 13.5px; margin: 0; }
+    .astuces p { margin: 0; font-size: 10.8px; line-height: 1.42; color: #475569; }
+    .astuces p b { color: #0B1626; }
+    .astuces .qr { grid-column: 3; grid-row: 1 / 4; }
+  </style>
+</head>
+<body>
+  <div class="barre"><button type="button" onclick="window.print()">Imprimer ou enregistrer en PDF</button><a href="./">Retour au site</a></div>
+  <main class="feuille">
+    <section class="haut">
+      <div class="logo"><img src="assets/logo.png" alt=""><span>Police <b>Management</b></span></div>
+      <h1>Aller sur l'app en 4 étapes.</h1>
+      <p class="intro">Police Management s'utilise directement à partir du site et s'installe comme une vraie application, sans magasin d'applications. C'est gratuit et réservé aux policières et policiers en fonction au Québec.</p>
+      <img class="tel" src="assets/site/appareil-accueil.webp" alt="L'accueil de Police Management sur un iPhone">
+    </section>
+    <div class="bande"></div>
+    <section class="etapes">
+      <div class="etape"><span class="no">1</span><div>
+        <h2>Ouvrez policemanagement.ca</h2>
+        <p>Sur votre téléphone : <b>Safari</b> sur iPhone, <b>Chrome</b> sur Android. Vous pouvez aussi scanner le code QR au bas de la page.</p>
+      </div></div>
+      <div class="etape"><span class="no">2</span><div>
+        <h2>Touchez « Demander l'accès »</h2>
+        <p>Remplissez votre <b>nom complet</b>, votre <b>grade</b>, votre <b>matricule</b>, votre <b>corps de police</b> et votre poste, votre <b>courriel professionnel</b> et un mot de passe d'au moins 10 caractères. Acceptez la politique de confidentialité, puis touchez <b>Envoyer la demande</b>. Si un collègue vous a envoyé son lien d'invitation, ouvrez-le : votre corps de police et votre poste seront déjà choisis.</p>
+      </div></div>
+      <div class="etape"><span class="no">3</span><div>
+        <h2>Confirmez votre courriel et attendez l'approbation</h2>
+        <p>Ouvrez le lien reçu par courriel (vérifiez aussi les courriels indésirables). L'administrateur vérifie chaque demande. Dès qu'elle est <b>approuvée</b>, connectez-vous avec votre courriel et votre mot de passe. L'approbation confirme aussi votre courriel si le lien n'est pas arrivé.</p>
+      </div></div>
+      <div class="etape"><span class="no">4</span><div>
+        <h2>Installez l'app sur votre écran d'accueil</h2>
+        <div class="plateformes">
+          <div><h3><i style="background:#2563EB"></i>iPhone et iPad</h3><ol>
+            <li>Ouvrez le site dans <b>Safari</b>.</li>
+            <li>Touchez <b>Partager</b> (le carré avec une flèche).</li>
+            <li>Choisissez <b>« Sur l'écran d'accueil »</b>, puis <b>Ajouter</b>.</li>
+          </ol></div>
+          <div><h3><i style="background:#E0263B"></i>Android</h3><ol>
+            <li>Ouvrez le site dans <b>Chrome</b>.</li>
+            <li>Touchez le menu <b>⋮</b> en haut à droite.</li>
+            <li>Choisissez <b>« Installer l'application »</b> (ou « Ajouter à l'écran d'accueil »), puis confirmez.</li>
+          </ol></div>
+        </div>
+      </div></div>
+    </section>
+    <section class="astuces">
+      <h2>Bon à savoir</h2>
+      <p><b>Notifications :</b> ouvrez l'app à partir de son icône, puis activez-les dans Mon compte. Sur iPhone, il faut iOS 16.4 ou plus récent.</p>
+      <p><b>Visite guidée :</b> à la première connexion, ou en tout temps dans Réglages.</p>
+      <p><b>Ordinateur :</b> le même compte fonctionne aussi dans Chrome ou Edge, sur Windows et Mac.</p>
+      <p><b>Mot de passe oublié :</b> touchez « Mot de passe oublié » sur l'écran de connexion.</p>
+      <div class="qr"><img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca"><small>policemanagement.ca</small></div>
+    </section>
+    <footer class="pied">
+      <span><b>Outil indépendant</b>, créé par un policier, non affilié à la Sûreté du Québec ni à aucun corps de police. N'inscrivez aucune information confidentielle ni aucune donnée sur des citoyens.</span>
+      <span>Questions : <b>police.management@hotmail.com</b></span>
+    </footer>
+  </main>
+</body>
+</html>
