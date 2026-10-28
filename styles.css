@@ -2592,4 +2592,6 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
   html.clavier .nav { display: none !important; }
   html.clavier .app { grid-template-rows: var(--barre-h) minmax(0, 1fr) 0 !important; }
   html.clavier .vue, html.clavier #vue-messages { padding-bottom: 8px !important; }
+  html.clavier #chat-vue :is(.chat-notif, .avert-conv) { display: none; }
+  html.clavier .app { top: var(--vv-top, 0px) !important; bottom: auto !important; height: var(--vv-h, 100%) !important; }
 }
