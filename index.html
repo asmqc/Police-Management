@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610281938">
+  <link rel="stylesheet" href="styles.css?v=202610282005">
 </head>
 <body>
   <!-- Chargement -->
@@ -221,7 +221,7 @@
           <li><span>Publicité</span><b>Aucune</b></li>
           <li><span>Outils d'analyse</span><b>Aucun</b></li>
           <li><span>Vente de données</span><b>Jamais</b></li>
-          <li><span>Position GPS transmise</span><b>Jamais</b></li>
+          <li><span>Position GPS exacte transmise</span><b>Jamais</b></li>
         </ul>
       </section>
 
@@ -282,7 +282,7 @@
           <details><summary>Est-ce gratuit ?</summary><p>Oui. Police Management est gratuit, sans publicité et sans abonnement.</p></details>
           <details><summary>Qui peut s'inscrire ?</summary><p>Les policières et policiers en fonction au Québec, de la Sûreté du Québec ou d'un corps municipal ou autochtone. Chaque demande est vérifiée par l'administrateur, et le courriel doit être confirmé.</p></details>
           <details><summary>Est-ce une application officielle de mon employeur ?</summary><p>Non. Police Management est un outil indépendant, créé par un policier, qui n'est affilié ni à la Sûreté du Québec ni à aucun corps de police. Les textes officiels et les directives de votre organisation prévalent toujours.</p></details>
-          <details><summary>Où vont mes données ?</summary><p>Les comptes et les horaires sont hébergés à Montréal, chiffrés en transit et au repos. Aucune donnée n'est vendue, aucun outil d'analyse ni de publicité. Votre position GPS reste sur votre appareil. Tout est détaillé dans la <a href="politique.html">politique de confidentialité</a>, conforme à la Loi 25.</p></details>
+          <details><summary>Où vont mes données ?</summary><p>Les comptes et les horaires sont hébergés à Montréal, chiffrés en transit et au repos. Aucune donnée n'est vendue, aucun outil d'analyse ni de publicité. Votre position GPS exacte reste sur votre appareil (seule la météo, si vous la demandez, utilise une zone arrondie à environ 10 km). Tout est détaillé dans la <a href="politique.html">politique de confidentialité</a>, conforme à la Loi 25.</p></details>
           <details><summary>La messagerie est-elle chiffrée de bout en bout ?</summary><p>Non. Les messages sont chiffrés en transit et au repos, mais pas de bout en bout. N'y mettez jamais de renseignements opérationnels, d'enquête ou personnels sur des citoyens : la messagerie et le forum servent aux échanges courants entre collègues.</p></details>
           <details><summary>Faut-il un iPhone ?</summary><p>Non. Le site s'installe comme une app sur iPhone, Android et ordinateur, directement à partir du navigateur.</p></details>
           <details><summary>Je peux supprimer mon compte ?</summary><p>Oui, en tout temps dans Mon compte. Vos données sont alors effacées.</p></details>
@@ -405,6 +405,7 @@
         <input id="dm-courriel" type="email" autocomplete="email" required>
         <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>
         <input id="dm-mdp" type="password" autocomplete="new-password" minlength="10" required>
+        <p class="dm-invitation" id="dm-invitation" hidden></p>
         <label class="consentement" for="dm-consent"><input type="checkbox" id="dm-consent"> <span>J'ai lu et j'accepte la <a href="politique.html" target="_blank" rel="noopener">politique de confidentialité</a>. Je confirme avoir 18 ans ou plus et je comprends que je ne dois inscrire aucune information confidentielle ni aucune donnée sur des citoyens.</span></label>
         <button type="submit" class="btn-principal">Envoyer la demande</button>
       </form>
@@ -554,6 +555,11 @@
       <section class="panneau ac-echeances" id="ac-echeances" aria-labelledby="ac-echeances-titre" hidden>
         <h3 id="ac-echeances-titre">À ne pas oublier</h3>
         <ul id="ac-echeances-liste"></ul>
+      </section>
+
+      <section class="panneau ac-ciel" id="ac-ciel" aria-labelledby="ac-ciel-titre">
+        <div class="ac-511-tete"><h3 id="ac-ciel-titre">Soleil et météo</h3><button type="button" class="btn-secondaire petit" id="ac-ciel-btn">Ma position</button></div>
+        <div id="ac-ciel-contenu"><p class="aide">Lever et coucher du soleil, crépuscule et météo où vous êtes, pour vos rapports. Touchez « Ma position ».</p></div>
       </section>
 
       <section class="panneau ac-511" aria-labelledby="ac-511-titre">
@@ -895,6 +901,7 @@
       <h3 class="intertitre">Aide et soutien</h3>
       <div class="liste-reglages">
         <button data-action="nouveautes"><span>Nouveautés de l'app</span><small>Ce qui a changé récemment</small><i>›</i></button>
+        <button data-menu="soutien"><span>Bien-être et soutien</span><small>Ressources d'aide confidentielles, en tout temps</small><i>›</i></button>
         <button data-menu="messages"><span>Écrire à l'administrateur</span><small>Question, problème ou suggestion</small><i>›</i></button>
         <a class="rg-lien" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener"><span>Discord de soutien</span><small>Entraide entre membres</small><i>↗</i></a>
         <a class="rg-lien" href="mailto:police.management@hotmail.com"><span>Courriel du soutien</span><small>police.management@hotmail.com</small><i>↗</i></a>
@@ -1187,6 +1194,45 @@
     </section>
 
     <!-- Vue App (installation) -->
+    <!-- Bien-être et soutien : ressources publiques vérifiées, aucun renseignement recueilli -->
+    <section id="vue-soutien" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Bien-être et soutien</h2>
+        <p class="ref">Gratuit, confidentiel, en tout temps</p>
+      </div>
+      <div class="soutien">
+        <div class="panneau soutien-urgence"><b>Danger immédiat ?</b> Composez le <a href="tel:911">911</a>.</div>
+        <p class="aide">Ce qu'on vit en service laisse parfois des traces. Parler tôt, à un pair ou à un professionnel, fait une vraie différence. Police Management ne garde aucune trace des ressources que vous consultez ou appelez.</p>
+        <h3 class="intertitre">Pour les policiers et leur famille</h3>
+        <article class="panneau soutien-carte">
+          <div><b>La Vigile</b><small>Ligne d'écoute et de référence pour les métiers en uniforme, le personnel en fonctions critiques et leur famille. Référence vers des psychologues, travailleurs sociaux et autres professionnels.</small><span class="soutien-dispo">24 h sur 24, 7 jours sur 7</span></div>
+          <a class="btn-principal" href="tel:+18883150007">1 888 315-0007</a>
+          <a class="lien" href="https://www.lavigile.qc.ca/" target="_blank" rel="noopener">lavigile.qc.ca ↗</a>
+        </article>
+        <article class="panneau soutien-carte seulement-sq">
+          <div><b>Programme d'aide aux employés (PAE) de la Sûreté du Québec</b><small>Pour tous les membres et leur famille immédiate.</small><span class="soutien-dispo">24 h sur 24, 7 jours sur 7</span></div>
+          <a class="btn-principal" href="tel:+18009315151">1 800 931-5151</a>
+          <a class="lien" href="https://www.sq.gouv.qc.ca/ca-va/" target="_blank" rel="noopener">Toutes les ressources de la SQ (« Ça va? ») ↗</a>
+        </article>
+        <article class="panneau soutien-carte sauf-sq">
+          <div><b>Programme d'aide aux employés de votre organisation</b><small>Votre employeur offre un PAE confidentiel. Son numéro est sur l'intranet ou auprès des ressources humaines.</small></div>
+        </article>
+        <h3 class="intertitre">Prévention du suicide</h3>
+        <article class="panneau soutien-carte">
+          <div><b>Ligne québécoise de prévention du suicide</b><small>Pour vous, ou si vous êtes inquiet pour un collègue ou un proche. Le 988 vous y dirige aussi.</small><span class="soutien-dispo">24 h sur 24, 7 jours sur 7</span></div>
+          <a class="btn-principal" href="tel:+18662773553">1 866 APPELLE (277-3553)</a>
+          <a class="btn-secondaire" href="sms:535353">Texto : 535353</a>
+          <a class="lien" href="https://suicide.ca/" target="_blank" rel="noopener">Clavardage : suicide.ca ↗</a>
+        </article>
+        <h3 class="intertitre">Au quotidien</h3>
+        <article class="panneau soutien-carte">
+          <div><b>Info-Social 811, option 2</b><small>Consultation téléphonique psychosociale avec un intervenant, pour vous ou un proche.</small><span class="soutien-dispo">24 h sur 24, 7 jours sur 7</span></div>
+          <a class="btn-principal" href="tel:811">811</a>
+        </article>
+        <p class="aide">Ressources vérifiées le 28 octobre 2026 sur les sites de la Sûreté du Québec (sq.gouv.qc.ca/ca-va), de La Vigile et de suicide.ca. Un numéro a changé ? Écrivez à l'administrateur.</p>
+      </div>
+    </section>
+
     <section id="vue-aide" class="vue" hidden>
       <div class="vue-tete">
         <h2>App</h2>
@@ -1211,6 +1257,14 @@
             <li><span class="no">2</span><div><b>Touchez le bouton Partager <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></b><p>En bas de l'écran sur iPhone, en haut à droite sur iPad. Dans Chrome, il est à droite de la barre d'adresse.</p></div></li>
             <li><span class="no">3</span><div><b>Choisissez « Sur l'écran d'accueil » <svg viewBox="0 0 24 24" class="ico" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></b><p>Faites défiler la liste vers le bas si vous ne le voyez pas.</p></div></li>
             <li><span class="no">4</span><div><b>Touchez « Ajouter »</b><p>L'icône Police Management apparaît sur votre écran d'accueil. Ouvrez l'app à partir de cette icône.</p></div></li>
+          </ol>
+          <h3 class="intertitre">Widget sur l'écran d'accueil (app iPhone et iPad)</h3>
+          <p class="aide">Avec l'app Police Management de l'App Store, ouverte au moins une fois depuis votre connexion :</p>
+          <ol class="etapes">
+            <li><span class="no">1</span><div><b>Touchez longuement l'écran d'accueil</b><p>Puis « Modifier » › « Ajouter un widget ».</p></div></li>
+            <li><span class="no">2</span><div><b>Choisissez « Raccourcis »</b><p>Prenez le petit format, puis touchez « Ajouter le widget ».</p></div></li>
+            <li><span class="no">3</span><div><b>Touchez le widget ajouté, puis « Modifier le widget »</b><p>Choisissez le raccourci « Prochain quart » de Police Management (ou « Mon horaire »).</p></div></li>
+            <li><span class="no">4</span><div><b>Touchez le widget pour avoir votre prochain quart</b><p>Vous pouvez aussi le demander à Siri : « Prochain quart dans Police Management ».</p></div></li>
           </ol>
         </div>
 
@@ -1324,6 +1378,32 @@
             <option>Autre</option>
           </select>
           <button type="submit" class="btn-principal">Enregistrer les modifications</button>
+        </form>
+      </div>
+
+      <h3 class="intertitre">Inviter un collègue</h3>
+      <div class="panneau mc-inv">
+        <p class="aide">Envoyez votre lien personnel à un collègue : sa demande d'accès s'ouvre avec votre corps de police et votre poste déjà choisis. L'administrateur vérifie et approuve chaque demande, comme d'habitude.</p>
+        <div class="mc-inv-actions"><button type="button" class="btn-principal" id="mc-inv-partager">Partager mon lien d'invitation</button><button type="button" class="btn-secondaire" id="mc-inv-copier">Copier</button></div>
+        <p class="aide" id="mc-inv-etat"></p>
+      </div>
+
+      <h3 class="intertitre" id="mc-ech-bloc">Mes échéances</h3>
+      <div class="panneau mc-ech">
+        <p class="aide">Requalification au tir, RCR, permis, formations, équipement : l'app vous avertit avant la date limite. Les échéances paraissent aussi dans votre calendrier, et seulement vous les voyez.</p>
+        <ul class="mc-ech-liste" id="mc-ech-liste"></ul>
+        <form class="mc-ech-form" id="mc-ech-form" autocomplete="off">
+          <label class="ref" for="mc-ech-type">Échéance</label>
+          <select id="mc-ech-type">
+            <option>Requalification au tir</option><option>Arme à impulsion électrique</option><option>RCR et premiers soins</option><option>Permis de conduire</option>
+            <option>Formation obligatoire</option><option>Examen médical</option><option>Gilet pare-balles</option><option>Uniforme et équipement</option><option value="">Autre…</option>
+          </select>
+          <input id="mc-ech-titre" maxlength="80" placeholder="Précision (facultatif), ex. Glock, recertification" aria-label="Précision">
+          <div class="mc-ech-ligne">
+            <label>Date <input type="date" id="mc-ech-date" required></label>
+            <label>Me le rappeler <select id="mc-ech-rappel"><option value="86400">2 mois avant</option><option value="43200" selected>1 mois avant</option><option value="20160">2 semaines avant</option><option value="10080">1 semaine avant</option><option value="1440">la veille</option></select></label>
+          </div>
+          <button type="submit" class="btn-principal">Ajouter l'échéance</button>
         </form>
       </div>
 
@@ -1590,6 +1670,11 @@
         <button type="button" role="tab" data-adm-onglet="messagerie" aria-checked="false">Messagerie</button>
         <button type="button" role="tab" data-adm-onglet="communaute" aria-checked="false">Communauté</button>
         <button type="button" role="tab" data-adm-onglet="outils" aria-checked="false">Outils</button>
+        <button type="button" role="tab" data-adm-onglet="stats" aria-checked="false">Bilan</button>
+      </div>
+      <div class="adm-panneau" data-adm-panneau="stats" hidden>
+        <p class="aide">Chiffres d'ensemble, calculés à partir des données déjà présentes (comptes, dernières connexions, fonctions configurées). Aucun suivi de ce que chaque membre consulte.</p>
+        <div id="adm-stats" class="adm-stats"></div>
       </div>
       <div class="adm-panneau" data-adm-panneau="demandes">
       <div class="filtres" role="tablist">
@@ -1853,11 +1938,11 @@
   <div id="consent-voile" class="voile voile-consent" hidden>
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="consent-titre">
       <h3 class="titre-voile" id="consent-titre">Politique de confidentialité</h3>
-      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.24) : elle ajoute l'horaire du poste et le temps supplémentaire offert au poste (membres de la Sûreté du Québec). L'horaire publié est visible par les membres approuvés de votre poste seulement, qui voient les agents par leur matricule, et la photo d'horaire est lue sur l'appareil puis effacée. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
+      <p>Police Management respecte la Loi 25 du Québec et les lois canadiennes sur la vie privée. La politique a été mise à jour (version 2026.10.28) : elle ajoute la météo à votre position (une zone arrondie à environ 10 km envoyée à Open-Meteo, seulement si vous la demandez), vos échéances personnelles et les invitations entre collègues. Avant de continuer, prenez connaissance de ce qui est recueilli, où c'est hébergé et qui peut le voir.</p>
       <ul class="consent-points">
         <li>Vos données de compte sont hébergées au Canada, à Montréal.</li>
         <li>Aucune publicité, aucune mesure d'audience, aucune vente de données.</li>
-        <li>Votre position GPS reste sur votre appareil : elle n'est ni enregistrée ni transmise.</li>
+        <li>Votre position GPS exacte reste sur votre appareil. Seule la météo, si vous la demandez, utilise une zone arrondie à environ 10 km.</li>
         <li>Vos événements, notes, repères et 2ᵉ calendrier restent privés.</li>
         <li><b>Messagerie et forum : pas de chiffrement de bout en bout.</b> L'administrateur de la plateforme y a un accès technique, et un tribunal peut en exiger la communication. Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils.</li>
         <li>Vous pouvez supprimer votre compte et toutes vos données en tout temps.</li>
@@ -2034,6 +2119,7 @@
       <button role="menuitem" data-menu="idees"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Idées</span></button>
       <button role="menuitem" data-menu="corps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Territoires</span></button>
       <button role="menuitem" data-menu="admin" id="menu-admin" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-8 0M4 20c1-3.5 4.3-5 8-5s7 1.5 8 5M18 4l1.5 1.5L22 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Administration</span><b class="badge-ligne" id="badge-attente" hidden></b></button>
+      <button role="menuitem" data-menu="soutien"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10A4.5 4.5 0 0 1 12 7.2 4.5 4.5 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Bien-être et soutien</span></button>
       <button role="menuitem" data-menu="aide"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 11l4 4 4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>App (installer)</span></button>
       <button role="menuitem" class="menu-sortie" data-action="deconnexion"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Se déconnecter</span></button>
     </section>
@@ -2072,9 +2158,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610281938"></script>
+  <script src="config.js?v=202610282005"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610281938"></script>
+  <script src="app.js?v=202610282005"></script>
 </body>
 </html>

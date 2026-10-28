@@ -227,6 +227,34 @@
     messageAuth("Nouveau courriel de confirmation envoyé. Vérifiez aussi vos courriels indésirables. Si vous ne le recevez pas, votre accès s'ouvrira quand même dès que l'administrateur aura approuvé votre demande.", "ok");
   });
 
+  // Lien d'invitation d'un collègue : ?invitation=code (préremplit le corps et le poste de la demande d'accès)
+  {
+    const code = new URLSearchParams(location.search).get("invitation");
+    if (code && /^[a-z0-9]{10}$/i.test(code)) {
+      try { sessionStorage.setItem("pm-invitation", code.toLowerCase()); } catch { /* facultatif */ }
+      history.replaceState(null, "", location.pathname + "#demande");
+    }
+  }
+  const codeInvitation = () => { try { return sessionStorage.getItem("pm-invitation"); } catch { return null; } };
+  async function appliquerInvitation() {
+    const code = codeInvitation();
+    if (!code) return;
+    const { data } = await sb.rpc("invitation_info", { p_code: code });
+    if (!data || !data.corps) { try { sessionStorage.removeItem("pm-invitation"); } catch { /* facultatif */ } return; }
+    const c = $("#dm-corps");
+    for (let i = 0; i < 25 && ![...c.options].some((o) => o.value === data.corps); i++) await new Promise((r) => setTimeout(r, 200)); // liste des corps encore en chargement
+    if ([...c.options].some((o) => o.value === data.corps)) {
+      c.value = data.corps; await majChampPoste("dm");
+      const p = $("#dm-poste");
+      if (data.unite && [...p.options].some((o) => o.value === data.unite)) p.value = data.unite;
+      else if (data.unite) { p.value = AUTRE; majChampAutre("dm"); $("#dm-unite").value = data.unite; }
+    }
+    const t = $("#dm-invitation");
+    t.textContent = `Invitation d'un collègue : ${data.corps}${data.unite ? " · " + data.unite : ""}. Vérifiez votre poste, au besoin.`;
+    t.hidden = false;
+  }
+  setTimeout(() => { if (codeInvitation()) appliquerInvitation().catch(() => {}); }, 400);
+
   // Retour d'un lien expiré (Supabase ajoute #error_code=otp_expired à l'adresse)
   {
     const h = new URLSearchParams((location.hash || "").replace(/^#/, ""));
@@ -274,6 +302,7 @@
           corps_police: champs.corps.value,
           unite: uniteChoisie(),
           consentement_version: VERSION_POLITIQUE,
+          ...(codeInvitation() ? { invitation: codeInvitation() } : {}),
         },
       },
     });
@@ -283,6 +312,8 @@
       return messageAuth("Ce courriel a déjà une demande. Utilisez « Connexion ».", "erreur");
     }
     $("#form-demande").reset();
+    try { sessionStorage.removeItem("pm-invitation"); } catch { /* facultatif */ }
+    $("#dm-invitation").hidden = true;
     majChampPoste();
     ongletAuth("connexion");
     messageAuth(
@@ -488,7 +519,7 @@
     let depart = (location.hash || "").replace("#", "");
     if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
     document.body.classList.toggle("est-sq", accesConvention());
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -540,7 +571,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.10.24";
+  const VERSION_POLITIQUE = "2026.10.28";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -556,6 +587,13 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-10-28-lot", date: "2026-10-28", titre: "Soleil, météo, échéances et plus", points: [
+      "Accueil › Soleil et météo : lever et coucher du soleil, crépuscule civil et météo où vous êtes, avec « Copier pour mon rapport ». Votre position exacte ne quitte pas l'appareil.",
+      "Mon compte › Mes échéances : requalification au tir, RCR, permis, formations… avec un rappel jusqu'à 2 mois avant. Elles paraissent aussi dans « À ne pas oublier ».",
+      "Mon compte › Inviter un collègue : votre lien personnel ouvre sa demande d'accès avec votre corps et votre poste déjà choisis.",
+      "Menu › Bien-être et soutien : La Vigile, le PAE, la ligne de prévention du suicide et Info-Social, en un toucher, en tout temps.",
+      "App iPhone : ajoutez votre prochain quart à l'écran d'accueil avec le widget Raccourcis (voir Menu › App).",
+    ] },
     { id: "2026-10-24-poste", date: "2026-10-24", titre: "Horaire du poste et temps supplémentaire (SQ)", points: [
       "Deux nouveaux onglets dans Horaire : Poste et TS. Votre horaire personnel ne change pas.",
       "Publier un horaire de travail : prenez l'horaire du poste en photo (en liste ou en grille) et l'app le lit sur votre appareil, puis efface la photo. Vérifiez, ajoutez les heures et publiez : les membres de votre poste sont avisés.",
@@ -1909,14 +1947,127 @@ Question : ${question}
       } catch { /* notification indisponible */ }
     }
   }
+  // Mes échéances (requalification, RCR, permis…) : événements « échéance » d'une journée, avec rappel
+  const mesEcheances = () => (cal.evs || []).filter((e) => e.calendrier === "echeance").map((e) => ({ ...e, iso: isoLoc(new Date(e.debut)) })).sort((a, b) => a.iso.localeCompare(b.iso));
+  function rendreMesEcheances() {
+    const auj = aujourdhuiISO();
+    const l = mesEcheances();
+    $("#mc-ech-liste").innerHTML = l.length ? l.map((e) => {
+      const j = jourUTC(e.iso) - jourUTC(auj);
+      const r = RAPPELS.find((x) => x[0] === String(e.rappel_min));
+      return `<li class="${j < 0 ? "passee" : j <= 30 ? "proche" : ""}"><span><b>${esc(e.titre)}</b><small>${esc(dateCourte(e.iso, true))} · ${j < 0 ? "passée" : j === 0 ? "aujourd'hui" : `dans ${j} jour${j > 1 ? "s" : ""}`}${r ? ` · rappel ${esc((r[1] || "").toLowerCase())}` : ""}</small></span><button type="button" class="btn-icone" data-ech-suppr="${esc(e.id)}" aria-label="Retirer ${esc(e.titre)}">✕</button></li>`;
+    }).join("") : `<li class="vide">Aucune échéance pour l'instant.</li>`;
+  }
+  $("#mc-ech-type").addEventListener("change", () => { if (!$("#mc-ech-type").value) $("#mc-ech-titre").focus(); });
+  $("#mc-ech-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const type = $("#mc-ech-type").value, prec = $("#mc-ech-titre").value.trim(), iso = $("#mc-ech-date").value;
+    const titre = [type, prec].filter(Boolean).join(" · ");
+    if (!titre) return toast("Choisissez l'échéance ou écrivez une précision.");
+    if (!iso) return toast("Choisissez la date limite.");
+    const debut = minuit(iso), fin = new Date(debut.getTime() + MS_JOUR);
+    const { data, error } = await sb.from("evenements").insert({ titre: titre.slice(0, 120), journee: true, calendrier: "echeance", repetition: "aucune", debut: debut.toISOString(), fin: fin.toISOString(), rappel_min: Number($("#mc-ech-rappel").value), modifie_le: new Date().toISOString() }).select().single();
+    if (error) return toast(traduireErreur(error));
+    cal.evs.push(data);
+    $("#mc-ech-titre").value = ""; $("#mc-ech-date").value = "";
+    rendreMesEcheances(); rendreEcheances();
+    toast("Échéance ajoutée, avec rappel.");
+    if (!(await verifierAbonnementSilencieux())) setTimeout(() => toast("Activez les notifications dans Réglages pour recevoir le rappel"), 2600);
+  });
+  $("#mc-ech-liste").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-ech-suppr]"); if (!b) return;
+    if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Retirer ?"; b.classList.add("arme"); setTimeout(() => { if (b.isConnected) { delete b.dataset.arme; b.textContent = "✕"; b.classList.remove("arme"); } }, 3000); return; }
+    const { error } = await sb.from("evenements").delete().eq("id", b.dataset.echSuppr);
+    if (error) return toast(traduireErreur(error));
+    cal.evs = cal.evs.filter((x) => x.id !== b.dataset.echSuppr);
+    rendreMesEcheances(); rendreEcheances();
+  });
   function rendreEcheances() {
     const sec = $("#ac-echeances");
-    if (!estSQ()) { sec.hidden = true; return; }
-    const l = echeancesSQ();
+    // Mes échéances des 60 prochains jours, pour tous les membres
+    const auj = aujourdhuiISO();
+    const perso = mesEcheances().map((e) => ({ titre: e.titre, detail: "Mon échéance.", limite: e.iso, j: jourUTC(e.iso) - jourUTC(auj) })).filter((e) => e.j >= 0 && e.j <= 60);
+    const l = (estSQ() ? echeancesSQ() : []).concat(perso).sort((a, b) => a.j - b.j);
     sec.hidden = !l.length;
-    notifierRappelsConges(l.filter((e) => e.cle));
+    if (estSQ()) notifierRappelsConges(l.filter((e) => e.cle));
     $("#ac-echeances-liste").innerHTML = l.map((e) => `<li class="${e.urgent || e.j <= 10 ? "urgent" : ""}"><span class="ech-j"><b>${e.j <= 0 ? "Auj." : e.j}</b>${e.j > 0 ? `<small>jour${e.j > 1 ? "s" : ""}</small>` : ""}</span><span><b>${esc(e.titre)}</b><small>${esc(e.detail)} Date limite : ${esc(dateCourte(e.limite, true))}.</small></span></li>`).join("");
   }
+
+  // Position du soleil : lever, coucher et crépuscule civil, calculés sur l'appareil (formules astronomiques usuelles)
+  function heuresSoleil(date, lat, lon) {
+    const rad = Math.PI / 180, J1970 = 2440588, J2000 = 2451545, J0 = 0.0009, e = rad * 23.4397, jour = 864e5;
+    const midi = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
+    const d = midi.valueOf() / jour - 0.5 + J1970 - J2000;
+    const lw = rad * -lon, phi = rad * lat;
+    const n = Math.round(d - J0 - lw / (2 * Math.PI));
+    const approx = (ht) => J0 + (ht + lw) / (2 * Math.PI) + n;
+    const ds = approx(0);
+    const M = rad * (357.5291 + 0.98560028 * ds);
+    const C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+    const L = M + C + rad * 102.9372 + Math.PI;
+    const dec = Math.asin(Math.sin(e) * Math.sin(L));
+    const transit = (a) => J2000 + a + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+    const Jmidi = transit(ds);
+    const enDate = (j) => new Date((j + 0.5 - J1970) * jour);
+    const paire = (h) => {
+      const c = (Math.sin(h * rad) - Math.sin(phi) * Math.sin(dec)) / (Math.cos(phi) * Math.cos(dec));
+      if (c < -1 || c > 1) return [null, null]; // soleil de minuit ou nuit polaire
+      const Jcouche = transit(approx(Math.acos(c)));
+      return [enDate(Jmidi - (Jcouche - Jmidi)), enDate(Jcouche)];
+    };
+    const [lever, coucher] = paire(-0.833), [aube, crepuscule] = paire(-6);
+    return { lever, coucher, aube, crepuscule, midi: enDate(Jmidi) };
+  }
+
+  // Soleil (calculé ici) et météo (Open-Meteo, position arrondie à environ 10 km, seulement quand on touche « Ma position »)
+  const METEO_CODES = { 0: "Ciel dégagé", 1: "Plutôt dégagé", 2: "Partiellement nuageux", 3: "Couvert", 45: "Brouillard", 48: "Brouillard givrant", 51: "Bruine faible", 53: "Bruine", 55: "Bruine forte", 56: "Bruine verglaçante", 57: "Bruine verglaçante forte", 61: "Pluie faible", 63: "Pluie", 65: "Pluie forte", 66: "Pluie verglaçante", 67: "Pluie verglaçante forte", 71: "Neige faible", 73: "Neige", 75: "Neige forte", 77: "Grains de neige", 80: "Averses faibles", 81: "Averses", 82: "Averses fortes", 85: "Averses de neige", 86: "Averses de neige fortes", 95: "Orage", 96: "Orage et grêle", 99: "Orage et forte grêle" };
+  const ciel = { pos: undefined, meteo: null, quand: null };
+  const hFr = (d) => (d ? d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" }) : "—");
+  function rendreCiel() {
+    if (ciel.pos === undefined) ciel.pos = lireLocal("pm-ciel-pos", null); // dernière position arrondie, gardée sur l'appareil
+    if (!ciel.pos) return;
+    const s = heuresSoleil(new Date(), ciel.pos.lat, ciel.pos.lon);
+    const maintenant = new Date();
+    const jourOk = s.lever && s.coucher;
+    const etatJour = !jourOk ? "" : maintenant < s.aube || maintenant > s.crepuscule ? "Nuit" : maintenant < s.lever || maintenant > s.coucher ? "Crépuscule (lumière civile)" : "Jour";
+    const m = ciel.meteo;
+    $("#ac-ciel-contenu").innerHTML = `
+      <div class="ciel-grille">
+        <div><small>Lever</small><b>${hFr(s.lever)}</b></div><div><small>Coucher</small><b>${hFr(s.coucher)}</b></div>
+        <div><small>Aube civile</small><b>${hFr(s.aube)}</b></div><div><small>Fin du crépuscule</small><b>${hFr(s.crepuscule)}</b></div>
+      </div>
+      ${etatJour ? `<p class="ciel-etat">En ce moment : <b>${etatJour}</b></p>` : ""}
+      ${m ? `<div class="ciel-meteo"><b>${Math.round(m.temperature_2m)} °C</b><span>${esc(METEO_CODES[m.weather_code] || "—")} · ressentie ${Math.round(m.apparent_temperature)} °C<br>Vent ${Math.round(m.wind_speed_10m)} km/h${m.wind_gusts_10m ? `, rafales ${Math.round(m.wind_gusts_10m)}` : ""}${m.visibility != null ? ` · visibilité ${m.visibility >= 10000 ? "10 km et plus" : (m.visibility / 1000).toFixed(1).replace(".", ",") + " km"}` : ""}${m.precipitation ? ` · précipitations ${String(m.precipitation).replace(".", ",")} mm` : ""}</span></div>` : ""}
+      <div class="ciel-actions"><button type="button" class="btn-secondaire petit" id="ac-ciel-copier">Copier pour mon rapport</button>${m ? `<small>Météo : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · position arrondie à environ 10 km</small>` : `<small>Soleil calculé sur l'appareil.</small>`}</div>`;
+    $("#ac-ciel-copier").addEventListener("click", async () => {
+      const d = new Date();
+      const t = `Le ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} à ${hFr(d)} : lever du soleil ${hFr(s.lever)}, coucher ${hFr(s.coucher)}, fin du crépuscule civil ${hFr(s.crepuscule)}${etatJour ? ` (${etatJour.toLowerCase()})` : ""}.`
+        + (m ? ` Météo : ${(METEO_CODES[m.weather_code] || "").toLowerCase()}, ${Math.round(m.temperature_2m)} °C, vent ${Math.round(m.wind_speed_10m)} km/h${m.visibility != null ? `, visibilité ${m.visibility >= 10000 ? "10 km et plus" : (m.visibility / 1000).toFixed(1).replace(".", ",") + " km"}` : ""} (source : Open-Meteo, ${hFr(new Date(ciel.quand))}).` : "");
+      try { await navigator.clipboard.writeText(t); toast("Copié. Collez-le dans votre rapport."); } catch { toast("Copie impossible sur cet appareil."); }
+    });
+  }
+  async function chargerMeteo() {
+    if (!ciel.pos) return;
+    try {
+      const u = `https://api.open-meteo.com/v1/forecast?latitude=${ciel.pos.lat}&longitude=${ciel.pos.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,precipitation,visibility&wind_speed_unit=kmh&timezone=America%2FToronto`;
+      const r = await fetch(u, { cache: "no-store", referrerPolicy: "no-referrer" });
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      ciel.meteo = j.current; ciel.quand = Date.now();
+    } catch { ciel.meteo = null; toast("Météo indisponible pour l'instant. Les heures du soleil restent affichées."); }
+    rendreCiel();
+  }
+  $("#ac-ciel-btn").addEventListener("click", () => {
+    if (!navigator.geolocation) return toast("La localisation n'est pas offerte sur cet appareil.");
+    $("#ac-ciel-btn").disabled = true;
+    navigator.geolocation.getCurrentPosition((p) => {
+      $("#ac-ciel-btn").disabled = false;
+      // Arrondie à 0,1° (environ 10 km) : c'est tout ce qui est gardé sur l'appareil et envoyé pour la météo
+      ciel.pos = { lat: Math.round(p.coords.latitude * 10) / 10, lon: Math.round(p.coords.longitude * 10) / 10 };
+      ecrireLocal("pm-ciel-pos", ciel.pos);
+      rendreCiel(); chargerMeteo();
+    }, () => { $("#ac-ciel-btn").disabled = false; toast("Position refusée ou introuvable."); }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
+  });
 
   async function initAccueil() {
     const p = etat.profil;
@@ -1927,7 +2078,9 @@ Question : ${question}
     $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
     demarrer511();
+    try { rendreCiel(); } catch (e) { console.warn(e); }
     try { rendreEcheances(); } catch (e) { console.warn(e); }
+    chargerEvenements().then(() => { try { rendreEcheances(); } catch (e) { console.warn(e); } }).catch(() => {});
     // Quart du jour
     const carte = $("#ac-quart");
     try {
@@ -2121,10 +2274,12 @@ Question : ${question}
   const CALENDRIERS = {
     perso: { nom: "Personnel", c: "#2F6BFF" }, travail: { nom: "Travail", c: "#E0A21B" }, famille: { nom: "Famille", c: "#1E9E5A" },
     cour: { nom: "Cour", c: "#D93644" }, formation: { nom: "Formation", c: "#7B4FC9" }, autre: { nom: "Autre", c: "#64748B" },
+    echeance: { nom: "Échéance", c: "#C2410C" },
   };
   const REPETITIONS = { aucune: "Jamais", jour: "Chaque jour", semaine: "Chaque semaine", "2semaines": "Toutes les 2 semaines", mois: "Chaque mois", annee: "Chaque année" };
   const RAPPELS = [["", "Aucun", "Aucun"], ["0", "Au moment de l'événement", "Le jour même (9 h)"], ["5", "5 minutes avant"], ["15", "15 minutes avant"], ["30", "30 minutes avant"],
-    ["60", "1 heure avant"], ["120", "2 heures avant"], ["1440", "1 jour avant", "La veille (9 h)"], ["2880", "2 jours avant", "2 jours avant (9 h)"], ["10080", "1 semaine avant", "1 semaine avant (9 h)"]];
+    ["60", "1 heure avant"], ["120", "2 heures avant"], ["1440", "1 jour avant", "La veille (9 h)"], ["2880", "2 jours avant", "2 jours avant (9 h)"], ["10080", "1 semaine avant", "1 semaine avant (9 h)"],
+    ["20160", "2 semaines avant", "2 semaines avant (9 h)"], ["43200", "1 mois avant", "1 mois avant (9 h)"], ["86400", "2 mois avant", "2 mois avant (9 h)"]];
   const lireLocal = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const ecrireLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage indisponible */ } };
   const cal = { vue: lireLocal("pm-cal-vue", "mois"), date: aujourdhuiISO(), sel: aujourdhuiISO(), evs: [], chargé: false, masques: new Set(lireLocal("pm-cal-masques", [])), edition: null };
@@ -4069,7 +4224,28 @@ Format :
     $$("[data-adm-panneau]").forEach((p) => (p.hidden = p.dataset.admPanneau !== ongletAdmin));
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
     if (ongletAdmin === "outils") { initAdminEtat(); chargerEtatService(); }
+    if (ongletAdmin === "stats") rendreBilanAdmin();
   }));
+  // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
+  async function rendreBilanAdmin() {
+    const el = $("#adm-stats");
+    el.innerHTML = `<p class="aide">Chargement…</p>`;
+    const { data: b, error } = await sb.rpc("admin_tableau_bord");
+    if (error) { el.innerHTML = ""; return toast(traduireErreur(error)); }
+    const m = b.membres, a = b.adoption, ap = Math.max(1, m.approuves);
+    const pct = (n) => `${Math.round((100 * n) / ap)} %`;
+    const tuile = (n, l, s) => `<div class="adm-tuile"><b>${n}</b><span>${esc(l)}</span>${s ? `<small>${esc(s)}</small>` : ""}</div>`;
+    const barres = (liste, cle = "nom") => { const max = Math.max(1, ...liste.map((x) => x.n)); return `<ul class="adm-barres">${liste.map((x) => `<li><span>${esc(x[cle])}${x.corps && x.corps !== x[cle] ? `<small>${esc(x.corps)}</small>` : ""}</span><i style="--p:${(100 * x.n) / max}%"></i><b>${x.n}</b></li>`).join("")}</ul>`; };
+    const sem = b.inscriptions || [];
+    el.innerHTML = `
+      <div class="adm-tuiles">${tuile(m.approuves, "membres approuvés")}${tuile(m.attente, "demandes en attente")}${tuile(b.actifs.j7, "actifs 7 jours", pct(b.actifs.j7))}${tuile(b.actifs.j30, "actifs 30 jours", pct(b.actifs.j30))}</div>
+      <h3 class="intertitre">Fonctions utilisées</h3>
+      <div class="adm-tuiles">${tuile(a.rotation, "rotation configurée", pct(a.rotation))}${tuile(a.notifications, "notifications activées", pct(a.notifications))}${tuile(a.paie, "paie SQ remplie")}${tuile(a.calendrier_abonne, "calendrier abonné")}${tuile(a.evenements, "utilisent le calendrier")}${tuile(a.echeances, "ont des échéances")}${tuile(a.horaires_poste, "horaires de poste publiés")}${tuile(a.ts_attribues, "TS attribués")}${tuile(a.messages_30j, "messages (30 jours)")}${tuile(a.forum_30j, "sujets au forum (30 jours)")}${tuile(a.idees, "idées proposées")}</div>
+      <h3 class="intertitre">Membres par corps de police</h3>${barres(b.par_corps)}
+      <h3 class="intertitre">Postes les plus représentés</h3>${barres(b.par_poste)}
+      <h3 class="intertitre">Nouvelles demandes par semaine</h3>${sem.length ? barres(sem.map((x) => ({ nom: "Semaine du " + dateCourte(x.semaine), n: x.n }))) : `<p class="aide">Aucune demande depuis 10 semaines.</p>`}
+      <p class="aide">Mis à jour le ${esc(new Date(b.genere_le).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }))}.</p>`;
+  }
 
   async function rendreMessagerieAdmin() {
     if (!estAdmin()) return;
@@ -4771,9 +4947,25 @@ Format :
     majBarreCompte();
   }
 
+  async function lienInvitation() {
+    const { data, error } = await sb.rpc("mon_invitation");
+    if (error) { toast(traduireErreur(error)); return null; }
+    return `https://policemanagement.ca/?invitation=${data}`;
+  }
+  $("#mc-inv-partager").addEventListener("click", async () => {
+    const url = await lienInvitation(); if (!url) return;
+    const texte = "Je t'invite sur Police Management, l'outil de poche des policiers du Québec (horaire, paie, lois, carte). Ta demande d'accès sera vérifiée par l'administrateur.";
+    if (navigator.share) { try { await navigator.share({ title: "Police Management", text: texte, url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(`${texte} ${url}`); toast("Lien copié. Collez-le dans un message à votre collègue."); } catch { $("#mc-inv-etat").textContent = url; }
+  });
+  $("#mc-inv-copier").addEventListener("click", async () => {
+    const url = await lienInvitation(); if (!url) return;
+    try { await navigator.clipboard.writeText(url); toast("Lien d'invitation copié."); } catch { $("#mc-inv-etat").textContent = url; }
+  });
   async function initCompte() {
     const p = etat.profil;
     initPaieReglages();
+    chargerEvenements().then(rendreMesEcheances).catch(() => {});
     $("#mc-courriel").textContent = p.email;
     $("#mc-nom").value = p.nom_complet || "";
     $("#mc-matricule").value = p.matricule || "";
@@ -6841,7 +7033,7 @@ Format :
     ] },
     carte: { titre: "La carte", vue: "carte", etapes: [
       { sel: "#adresse-q", titre: "Chercher un lieu", texte: "Une adresse, un lieu ou des coordonnées : l'app indique le corps de police, le poste et la borne la plus proche." },
-      { sel: "#btn-position", titre: "Ma position", texte: "Votre position reste sur votre appareil. Elle n'est jamais transmise." },
+      { sel: "#btn-position", titre: "Ma position", texte: "Votre position reste sur votre appareil : la carte ne la transmet jamais." },
     ] },
     feuille: { titre: "La feuille de poste", vue: "feuille", etapes: [
       { titre: "Feuille de poste", texte: "La feuille de votre poste, visible seulement par les membres du même poste. N'y mettez aucun renseignement opérationnel ou personnel." },
@@ -7364,6 +7556,8 @@ Format :
     const liste = vus.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : p.statut === filtreAdmin))
       .sort((x, y) => corpsDe(x).localeCompare(corpsDe(y), "fr") || String(y.cree_le).localeCompare(String(x.cree_le)));
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
+    const { data: invs } = await sb.rpc("admin_invitations");
+    const invitePar = new Map((invs || []).map((x) => [x.id, x.invite_par_nom]));
     el.innerHTML = liste.length ? liste.map((p, i) => `${i === 0 || corpsDe(liste[i - 1]) !== corpsDe(p) ? `<h4 class="groupe-corps"><span>${esc(corpsDe(p))}</span><b>${liste.filter((x) => corpsDe(x) === corpsDe(p)).length}</b></h4>` : ""}
       <div class="demande">
         <div class="personne">
@@ -7376,6 +7570,7 @@ Format :
               <span>Matricule <b>${esc(p.matricule || "—")}</b></span>
               <span>${esc(p.corps_police || "—")}${p.unite ? " · " + esc(p.unite) : ""}</span>
               <span>Demande : ${esc(dateFr(p.cree_le))}</span>
+              ${invitePar.get(p.id) ? `<span class="etiquette-invite">Invité par ${esc(invitePar.get(p.id))}</span>` : ""}
               ${nonConfirme(p) ? '<span class="etiquette-alerte">Courriel non confirmé</span>' : ""}
             </div>
           </div>
