@@ -7759,5 +7759,13 @@ Format :
   }
   $("#lien-edition-corps").href = LIEN_EDITION_CORPS;
 
+  // Clavier ouvert (téléphone) : on cache la barre d'onglets du bas pour qu'elle ne couvre pas la zone d'écriture
+  const champTexte = (el) => el && (el.tagName === "TEXTAREA" || el.isContentEditable ||
+    (el.tagName === "INPUT" && !/^(checkbox|radio|button|submit|reset|range|color|file|date|time|datetime-local|month|week)$/i.test(el.type)));
+  document.addEventListener("focusin", (e) => { if (champTexte(e.target)) document.documentElement.classList.add("clavier"); });
+  document.addEventListener("focusout", () => {
+    setTimeout(() => { if (!champTexte(document.activeElement)) document.documentElement.classList.remove("clavier"); }, 120);
+  });
+
   demarrer();
 })();
