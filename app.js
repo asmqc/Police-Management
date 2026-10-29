@@ -2086,6 +2086,7 @@ Question : ${question}
     try {
       await chargerMonHoraire();
       chargerPaie().then(rendreEcheances).catch(() => {});
+      try { rendreTsAConfirmer(); } catch (e) { console.warn(e); }
       if (!hr.config) {
         carte.innerHTML = `<span class="pastille-q q q-C">?</span><span><small>Mon horaire</small><strong>Configurer ma rotation</strong><em>Votre quart du jour s'affichera ici</em></span>`;
       } else {
@@ -2205,6 +2206,62 @@ Question : ${question}
     chargerPartages();
   });
 
+  /* ---------- Temps supplémentaire à confirmer ----------
+     Un TS inscrit d'avance (date et heure de fin à venir) est marqué « à confirmer ». Une fois l'heure de fin passée,
+     l'app demande s'il a été fait : Fait (on garde), Pas fait (on l'enlève de l'horaire et de la paie), ou Modifier les heures. */
+  const PARTIES_TS = { X: "Journée de temps supplémentaire", tspAvant: "TS avant le quart", tsp: "TS après le quart" };
+  function finTS(iso, debut, fin) {
+    if (!debut || !fin) return new Date(iso + "T23:59");
+    const f = new Date(iso + "T" + fin); if (fin <= debut) f.setDate(f.getDate() + 1); return f;
+  }
+  // Marque les parties de TS encore à venir (appelé à l'enregistrement d'une journée de mon horaire)
+  function marquerTsAVenir(iso, ex) {
+    if (!ex) return;
+    const maintenant = new Date();
+    if (ex.type === "X") { if (finTS(iso, ex.debut, ex.fin) > maintenant) ex.aConfirmer = true; else delete ex.aConfirmer; }
+    else delete ex.aConfirmer;
+    for (const k of ["tsp", "tspAvant"]) if (ex[k] && ex[k].debut) { if (finTS(iso, ex[k].debut, ex[k].fin) > maintenant) ex[k].aConfirmer = true; else delete ex[k].aConfirmer; }
+  }
+  function tsAConfirmer() {
+    const l = [], maintenant = new Date();
+    for (const [iso, ex] of Object.entries(hr.exceptions || {})) {
+      if (!ex) continue;
+      if (ex.type === "X" && ex.aConfirmer && finTS(iso, ex.debut, ex.fin) <= maintenant) l.push({ iso, partie: "X", debut: ex.debut, fin: ex.fin });
+      for (const k of ["tspAvant", "tsp"]) if (ex[k] && ex[k].aConfirmer && finTS(iso, ex[k].debut, ex[k].fin) <= maintenant) l.push({ iso, partie: k, debut: ex[k].debut, fin: ex[k].fin });
+    }
+    return l.sort((a, b) => a.iso.localeCompare(b.iso));
+  }
+  function rendreTsAConfirmer() {
+    const l = hr.config ? tsAConfirmer() : [];
+    const html = l.length ? `<h3>Temps supplémentaire à confirmer <span class="pastille-n">${l.length}</span></h3>
+      <p class="aide">Inscrit d'avance : l'avez-vous fait ? « Pas fait » l'enlève de votre horaire, de vos heures et de votre paie.</p>
+      <ul>${l.map((t) => `<li><div><b>${esc(dateCourte(t.iso, true))}</b><small>${esc(PARTIES_TS[t.partie])}${t.debut ? ` · ${esc(t.debut)} – ${esc(t.fin)}` : ""}</small></div>
+        <div class="tsc-boutons"><button type="button" class="btn-ok petit" data-tsc="fait" data-iso="${t.iso}" data-partie="${t.partie}">Fait</button><button type="button" class="btn-secondaire petit" data-tsc="non" data-iso="${t.iso}" data-partie="${t.partie}">Pas fait</button><button type="button" class="lien" data-tsc="modifier" data-iso="${t.iso}" data-partie="${t.partie}">Modifier les heures</button></div></li>`).join("")}</ul>` : "";
+    for (const id of ["#ac-tsc", "#hr-tsc"]) { const el = $(id); if (!el) continue; el.innerHTML = html; el.hidden = !l.length || (id === "#hr-tsc" && (!!hr.vue || hr.cible === "conjoint" || hr.onglet === "stats" || !$("#hr-form").hidden)); }
+  }
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-tsc]"); if (!b) return;
+    const iso = b.dataset.iso, partie = b.dataset.partie, action = b.dataset.tsc;
+    if (action === "modifier") { afficherVue("horaire"); setTimeout(() => { ouvrirJour(iso); setTimeout(() => ongletJour("ts"), 150); }, 500); return; }
+    const avant = JSON.parse(JSON.stringify(hr.exceptions[iso] || null));
+    const ex = hr.exceptions[iso]; if (!ex) return;
+    if (action === "fait") {
+      if (partie === "X") { delete ex.aConfirmer; ex.confirme = aujourdhuiISO(); } else if (ex[partie]) { delete ex[partie].aConfirmer; ex[partie].confirme = aujourdhuiISO(); }
+    } else {
+      if (partie === "X") {
+        // Journée de TS non faite : retour à la rotation (on garde la note seulement si elle n'est pas « TS du poste »)
+        delete hr.exceptions[iso];
+      } else {
+        delete ex[partie];
+        const reste = Object.keys(ex).filter((k) => !["type", "note"].includes(k));
+        if (!reste.length && ex.type === quartDu(iso, hr).prevu && !(ex.note || "").replace(/ ?·? ?TS du poste/g, "").trim()) delete hr.exceptions[iso];
+      }
+    }
+    b.disabled = true;
+    try { await sauverHoraire(); rendreTsAConfirmer(); if (etat.vue === "horaire") rendreHoraire(); toast(action === "fait" ? "Temps supplémentaire confirmé." : "Temps supplémentaire retiré de votre horaire."); }
+    catch (err) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; b.disabled = false; toast(traduireErreur(err)); }
+  });
+
   async function sauverHoraire() {
     const conjoint = hr.conj ? { nom: hr.conj.nom, config: hr.conj.config || null, exceptions: hr.conj.exceptions || {} } : null;
     const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, conjoint, maj_le: new Date().toISOString() });
@@ -2244,6 +2301,7 @@ Question : ${question}
     $("#stats-voile").hidden = !ongletStats;
     if (ongletStats) setTimeout(() => { try { rendreStats(); } catch (e) { console.warn(e); } }, 0);
     $("#hr-principal").hidden = !src.config || enConfig || ongletStats;
+    try { rendreTsAConfirmer(); } catch (e) { console.warn(e); }
     $("#hr-lecture-vide").hidden = !(lecture && !src.config);
     $("#hr-partage").hidden = lecture || conj || enConfig || ongletStats;
     $$(".hr-mes-actions").forEach((el) => (el.hidden = lecture));
@@ -4730,7 +4788,8 @@ Format :
       }
       nbJours = n + extra;
     }
-    try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast(nbJours > 1 ? `${nbJours - sautes} journées inscrites à l'horaire${sautes ? ` · ${sautes} journée${sautes > 1 ? "s" : ""} déjà modifiée${sautes > 1 ? "s" : ""} laissée${sautes > 1 ? "s" : ""} telle${sautes > 1 ? "s" : ""} quelle${sautes > 1 ? "s" : ""}` : ""}` : "Journée mise à jour"); }
+    if (cible === hr && cible.exceptions[iso]) marquerTsAVenir(iso, cible.exceptions[iso]);
+    try { await sauverHoraire(); fermerJour(); rendreHoraire(); rendreTsAConfirmer(); toast(nbJours > 1 ? `${nbJours - sautes} journées inscrites à l'horaire${sautes ? ` · ${sautes} journée${sautes > 1 ? "s" : ""} déjà modifiée${sautes > 1 ? "s" : ""} laissée${sautes > 1 ? "s" : ""} telle${sautes > 1 ? "s" : ""} quelle${sautes > 1 ? "s" : ""}` : ""}` : "Journée mise à jour"); }
     catch (e) { cible.exceptions = sauvegarde; toast(traduireErreur(e)); }
   });
   $("#hr-jour-retirer").addEventListener("click", async () => {
@@ -7318,6 +7377,7 @@ Format :
       } else {
         Object.assign(ex, { type: "X", ...(bloc || {}), note: [ex.note, "TS du poste"].filter(Boolean).join(" · ") });
       }
+      marquerTsAVenir(iso, ex);
       hr.exceptions[iso] = ex; n++;
       await sb.rpc("ts_integre", { p_quart: t.quart });
     }
