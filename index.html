@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610292233">
+  <link rel="stylesheet" href="styles.css?v=202610292359">
 </head>
 <body>
   <!-- Chargement -->
@@ -597,9 +597,9 @@
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <span class="tuile-txt"><b>Mon horaire</b><small>Quarts et partages</small></span>
           </button>
-          <button class="tuile seulement-sq" data-aller="convention">
+          <button class="tuile seulement-convention" data-aller="convention">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg></span>
-            <span class="tuile-txt"><b>Convention collective <span class="beta">DÉMO</span></b><small>Contrat APPQ · voix et Claude</small></span>
+            <span class="tuile-txt"><b>Convention collective <span class="beta">DÉMO</span></b><small>Votre contrat de travail · IA</small></span>
           </button>
           <button class="tuile" data-aller="feuille">
             <span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3M9 3h6v3H9zM8.5 11h7M8.5 15h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -1554,24 +1554,25 @@
     <section id="vue-convention" class="vue" hidden>
       <div class="vue-tete">
         <h2>Convention collective <span class="beta">DÉMO</span></h2>
-        <p class="ref">Contrat de travail APPQ · 2022-2028 · Sûreté du Québec</p>
+        <p class="ref" id="cv-ref">Contrat de travail APPQ · 2022-2028 · Sûreté du Québec</p>
       </div>
       <div class="panneau cv-avis" id="cv-avis" hidden>
         <b>Avant de commencer</b>
         <ul>
-          <li>Posez votre question au micro ou par écrit : Police Management trouve les clauses du contrat de travail entre le gouvernement du Québec et l'APPQ (version administrative publiée par la Sûreté), puis lit la plus pertinente à voix haute avec la voix française de votre appareil.</li>
+          <li class="cv-autre" hidden>Posez votre question au micro ou par écrit : Police Management trouve les clauses de la convention collective de votre corps de police (visible seulement par les membres de votre corps), puis lit la plus pertinente à voix haute avec la voix française de votre appareil.</li>
+          <li class="cv-sq">Posez votre question au micro ou par écrit : Police Management trouve les clauses du contrat de travail entre le gouvernement du Québec et l'APPQ (version administrative publiée par la Sûreté), puis lit la plus pertinente à voix haute avec la voix française de votre appareil.</li>
           <li>Pour une explication, touchez « Demander à Claude » : Claude s'ouvre (app ou claude.ai) avec votre question et les clauses trouvées, et vous répond avec <b>votre propre compte Claude</b>. Le forfait gratuit de Claude suffit. Police Management n'envoie rien à Claude à votre place.</li>
-          <li>Les réponses de l'IA peuvent contenir des erreurs : vérifiez toujours la clause citée. Ce n'est pas un avis syndical ni juridique : pour un grief ou un cas particulier, communiquez avec l'APPQ.</li>
+          <li>Les réponses de l'IA peuvent contenir des erreurs : vérifiez toujours la clause citée. Ce n'est pas un avis syndical ni juridique : pour un grief ou un cas particulier, communiquez avec votre association syndicale.</li>
           <li>La dictée utilise la reconnaissance vocale de votre appareil ou de votre navigateur (Apple ou Google, selon le cas). Police Management ne conserve ni vos questions ni l'audio.</li>
           <li>N'écrivez aucun renseignement personnel, aucune information confidentielle ni aucune donnée sur des citoyens.</li>
         </ul>
         <button type="button" class="btn-principal" id="cv-avis-ok">J'ai compris</button>
       </div>
-      <details class="panneau cv-echelle" id="cv-echelle">
+      <details class="cv-sq panneau cv-echelle" id="cv-echelle">
         <summary><b>Échelle salariale</b><span>Annexe T · taux annuels des membres policiers</span></summary>
         <div id="cv-echelle-contenu"></div>
       </details>
-      <details class="panneau cv-echelle cv-outil" id="cv-frais">
+      <details class="cv-sq panneau cv-echelle cv-outil" id="cv-frais">
         <summary><b>Calculateur de frais</b><span>Repas, kilométrage, coucher · art. 21 et annexe K</span></summary>
         <div class="cv-outil-corps">
           <div class="paie-champs">
@@ -1595,7 +1596,7 @@
           <p class="aide">Taux de l'annexe K (repas au 1ᵉʳ avril 2024, kilométrage au 1ᵉʳ octobre 2024). Au plus un déjeuner, un dîner et un souper par 24 h en voyage (21.08). Repas d'enfants de moins de 5 ans : moitié prix (21.02 d).</p>
         </div>
       </details>
-      <details class="panneau cv-echelle cv-outil" id="cv-grief">
+      <details class="cv-sq panneau cv-echelle cv-outil" id="cv-grief">
         <summary><b>Délai de grief</b><span>Date limite pour déposer un grief · art. 31</span></summary>
         <div class="cv-outil-corps">
           <label class="ref" for="grief-date">Date où le grief a pris naissance</label>
@@ -1610,7 +1611,7 @@
           <p class="aide">Seul le délai de dépôt est de rigueur : il ne peut être prolongé que par entente écrite entre la Sûreté et l'Association (31.05). En cas de doute, communiquez avec l'APPQ.</p>
         </div>
       </details>
-      <div class="puces cv-suggestions" id="cv-suggestions">
+      <div class="cv-sq puces cv-suggestions" id="cv-suggestions">
         <button type="button" data-cv-q="Combien d'heures de vacances annuelles ai-je selon mes années de service?">Vacances annuelles</button>
         <button type="button" data-cv-q="Comment est payé le temps supplémentaire?">Temps supplémentaire</button>
         <button type="button" data-cv-q="Quelles sont les primes de soir, de nuit et de fin de semaine?">Primes de soir et de nuit</button>
@@ -2127,7 +2128,7 @@
       </div>
       <button role="menuitem" id="menu-nuit" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Mode nuit rouge</span></button>
       <button role="menuitem" data-menu="compte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Mon compte</span></button>
-      <button role="menuitem" class="seulement-sq" data-menu="convention"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg><span>Convention collective <span class="beta">DÉMO</span></span></button>
+      <button role="menuitem" class="seulement-convention" data-menu="convention"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="18.5" cy="17.5" r="3.5" fill="currentColor" stroke="none"/></svg><span>Convention collective <span class="beta">DÉMO</span></span></button>
       <button role="menuitem" data-menu="forum"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Forum</span></button>
       <button role="menuitem" data-menu="idees"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Idées</span></button>
       <button role="menuitem" data-menu="corps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Territoires</span></button>
@@ -2180,9 +2181,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610292233"></script>
+  <script src="config.js?v=202610292359"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610292233"></script>
+  <script src="app.js?v=202610292359"></script>
 </body>
 </html>

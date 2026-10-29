@@ -518,7 +518,9 @@
     chargerAvertissement().finally(afficherAvertissement);
     let depart = (location.hash || "").replace("#", "");
     if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
-    document.body.classList.toggle("est-sq", accesConvention());
+    document.body.classList.toggle("est-sq", estSQ() || p.role === "admin");
+    document.body.classList.toggle("a-convention", accesConvention());
+    chargerMaConvention();
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
@@ -712,7 +714,14 @@
   /* ---------------- Convention collective : question à voix haute, clause lue par la voix de l'appareil (membres de la Sûreté du Québec) ----------------
      Police Management trouve les clauses du contrat de travail APPQ, puis les lit à voix haute (synthèse vocale de l'appareil, comme Siri).
      La dictée utilise la reconnaissance vocale du navigateur quand elle existe, sinon le micro du clavier. */
-  const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || /s[ûu]ret[ée] du qu[ée]bec/i.test(etat.profil.corps_police || ""));
+  // Chaque corps de police voit seulement sa propre convention (vérifié par le serveur); l'administrateur voit celle de la SQ par défaut
+  const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || !!etat.convention);
+  const conventionSQ = () => !etat.convention || !!etat.convention.sq;
+  const lienPdfConvention = (page) => { const c = etat.convention; const url = c ? c.source_url : PDF_CONVENTION; return url ? `${url}#page=${(page || 0) + (c ? c.decalage_page || 0 : 8)}` : ""; };
+  async function chargerMaConvention() {
+    try { const { data } = await sb.rpc("ma_convention"); etat.convention = data || null; } catch { etat.convention = null; }
+    document.body.classList.toggle("a-convention", accesConvention());
+  }
   const PDF_CONVENTION = "https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf";
   const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention3") || "[]"); } catch { return []; } })(), enCours: false, lecture: null, vocal: false };
   const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention3", JSON.stringify(cv.fil.slice(-10))); } catch { /* facultatif */ } };
@@ -759,12 +768,13 @@
   }
   // Texte envoyé à Claude (le policier utilise son propre compte). « court » : pour le lien claude.ai/new?q= (longueur limitée).
   function promptClaude(question, extraits, court) {
-    const tete = `Je suis membre de la Sûreté du Québec. Réponds à ma question UNIQUEMENT à partir des extraits ci-dessous du Contrat de travail entre le gouvernement du Québec et l'APPQ (2022-2028). Texte officiel (PDF) : ${PDF_CONVENTION}
+    const cvi = etat.convention || { corps: "Sûreté du Québec", titre: "Contrat de travail entre le gouvernement du Québec et l'APPQ", periode: "2022-2028", source_url: PDF_CONVENTION };
+    const tete = `Je suis membre de ${cvi.corps}. Réponds à ma question UNIQUEMENT à partir des extraits ci-dessous de ma convention collective (${cvi.titre}${cvi.periode ? ", " + cvi.periode : ""}).${cvi.source_url ? ` Texte officiel (PDF) : ${cvi.source_url}` : ""}
 
 Règles strictes :
 1. N'utilise aucune autre source ni connaissance générale. N'invente aucun chiffre, montant, délai, pourcentage ni numéro de clause.
 2. Chaque affirmation cite sa clause entre crochets, par exemple [25.01].
-3. Si les extraits ne permettent pas de répondre (ou sont coupés « … »), écris « Le contrat ne le précise pas dans ces extraits » et indique la clause à vérifier ou de s'adresser à l'APPQ ou à son gestionnaire. Ne devine pas.
+3. Si les extraits ne permettent pas de répondre (ou sont coupés « … »), écris « Le contrat ne le précise pas dans ces extraits » et indique la clause à vérifier ou de s'adresser à mon association syndicale ou à mon gestionnaire. Ne devine pas.
 4. Si ma question est ambiguë, pose-moi une seule question de précision avant de répondre.
 5. Format : la réponse directe en une ou deux phrases, puis les détails et conditions, puis « Clauses : » avec la liste.
 6. Termine par : « Ce n'est pas un avis juridique. »
@@ -989,7 +999,7 @@ Question : ${question}
           <p class="cv-ia-tete">${ICONE_IA}<b>IA Police Management</b></p>
           ${ia.ok ? `<p class="cv-ia-intro">Voici ce que dit le contrat :</p>` + ia.citations.map((c) => `<blockquote class="cv-citation">
               ${c.intro ? `<p class="cv-cit-intro">${esc(c.intro)}</p>` : ""}<p>${surlignerIA(c.texte, c.mots)}</p>
-              <cite><span class="cv-num">${esc(nomCitation(c))}</span> <a href="${PDF_CONVENTION}#page=${(c.page || 0) + 8}" target="_blank" rel="noopener">PDF ↗</a></cite></blockquote>`).join("")
+              <cite><span class="cv-num">${esc(nomCitation(c))}</span> ${lienPdfConvention(c.page) ? `<a href="${lienPdfConvention(c.page)}" target="_blank" rel="noopener">PDF ↗</a>` : ""}</cite></blockquote>`).join("")
             : `<p>Je n'ai pas trouvé de passage du contrat qui répond clairement à cette question. ${ex.length ? "Voici les clauses les plus proches : précisez votre question ou consultez-les ci-dessous." : ""} Je ne réponds jamais au-delà du texte du contrat.</p>`}
           <p class="aide">Citations exactes du contrat, sans reformulation. Lisez la clause complète pour les exceptions.</p>
         </section>`;
@@ -1001,7 +1011,7 @@ Question : ${question}
         <details class="cv-clauses"><summary>Voir les ${ex.length} clause${ex.length > 1 ? "s" : ""} trouvée${ex.length > 1 ? "s" : ""}</summary>
         ${m.claude ? `<section class="cv-reponse-claude"><p class="cv-claude-tete">${ICONE_CLAUDE}<b>Réponse de Claude</b></p>${mdSimple(m.claude)}<p class="aide">Générée par IA à partir des clauses du contrat : vérifiez toujours la clause citée.</p></section>` : ""}
         ${m.claudeErreur ? `<p class="cv-claude-err">${esc(m.claudeErreur)}${m.claudeLien ? ` <a href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">Ouvrir dans Claude ↗</a>` : ""}</p>` : ""}
-        ${ex.map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p><a href="${PDF_CONVENTION}#page=${(e.page || 0) + 8}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a></details>`).join("")}</details>`
+        ${ex.map((e) => `<details class="cv-ex"><summary><span class="cv-num">${esc(nomClause(e))}</span><small>${esc(e.titre || "")}</small></summary><p>${esc(e.texte)}</p>${lienPdfConvention(e.page) ? `<a href="${lienPdfConvention(e.page)}" target="_blank" rel="noopener">Ouvrir le PDF à cette page ↗</a>` : ""}</details>`).join("")}</details>`
         : `<p>Aucune clause trouvée avec ces mots. Essayez avec d'autres mots, par exemple « vacances », « temps supplémentaire » ou « prime de nuit ».</p>`}
       </article>`;
     }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
@@ -1020,7 +1030,11 @@ Question : ${question}
   }
   function initConvention() {
     if (!accesConvention()) { afficherVue("accueil"); return; }
-    rendreEchelle();
+    const c = etat.convention, sq = conventionSQ();
+    $("#cv-ref").textContent = c ? [c.titre, c.periode, c.corps].filter(Boolean).join(" · ") : "Contrat de travail APPQ · 2022-2028 · Sûreté du Québec";
+    $$(".cv-sq").forEach((el) => (el.hidden = !sq));
+    $$(".cv-autre").forEach((el) => (el.hidden = sq));
+    if (sq) rendreEchelle();
     let accepte = false;
     try { accepte = localStorage.getItem("pm-convention-voix") === "1"; } catch { /* facultatif */ }
     $("#cv-avis").hidden = accepte;
