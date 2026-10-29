@@ -2626,3 +2626,11 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
 .ts-confirmer li small { color: var(--fg-doux); }
 .tsc-boutons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .tsc-boutons .lien { font-size: .85rem; }
+
+/* Fiche de la journée › Temps supp. : une seule question (avant, après, les deux) */
+#hr-tspa-bloc > .hr-tsp-interrupteur, #hr-tsp-bloc > .hr-tsp-interrupteur { display: none; }
+.hr-quand .segmente { display: grid; grid-template-columns: repeat(3, 1fr); }
+.hr-quand .segmente button { white-space: nowrap; font-size: .88rem; }
+.hr-quand .lien { margin-top: 6px; font-size: .85rem; }
+#hr-tspa-champs::before { content: "Avant le quart"; display: block; font-weight: 800; margin-bottom: 6px; }
+#hr-tsp-champs::before { content: "Après le quart"; display: block; font-weight: 800; margin-bottom: 6px; }
