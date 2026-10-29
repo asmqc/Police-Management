@@ -2634,3 +2634,6 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
 .hr-quand .lien { margin-top: 6px; font-size: .85rem; }
 #hr-tspa-champs::before { content: "Avant le quart"; display: block; font-weight: 800; margin-bottom: 6px; }
 #hr-tsp-champs::before { content: "Après le quart"; display: block; font-weight: 800; margin-bottom: 6px; }
+
+/* Convention : visible seulement si le corps de police a la sienne */
+body:not(.a-convention) .seulement-convention { display: none !important; }
