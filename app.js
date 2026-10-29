@@ -4645,6 +4645,12 @@ Format :
       $("#hr-periode-aide").textContent = `Du ${dateCourte(hr.jourChoisi)} au ${dateCourte(fin, true)}, congés hebdomadaires inclus (25.06)${payes < n ? ` · ${payes} jours payés, ${n - payes} sans traitement` : ""}.`;
     }
     $("#hr-tsp-bloc").hidden = $("#hr-tspa-bloc").hidden = !!hr.vue || !t || t === "X";
+    // Une seule question : avant, après ou les deux (les interrupteurs restent la source des données)
+    { const av = $("#hr-tspa-actif").checked, ap = $("#hr-tsp-actif").checked, q = av && ap ? "deux" : av ? "avant" : ap ? "apres" : "";
+      $("#hr-quand-bloc").hidden = $("#hr-tsp-bloc").hidden;
+      $$("[data-quand]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.quand === q)));
+      $("#hr-quand-aucun").hidden = !q;
+      if (!$("#hr-tsp-bloc").hidden) { $("#hr-tspa-bloc").hidden = !av; $("#hr-tsp-bloc").hidden = !ap; } }
     { const hq = heuresJour(t, hr.jourChoisi, cibleEdition());
       $("#hr-tspa-aide").textContent = hq ? `Avant le début de mon quart (${hq[0]}) : arrivé plus tôt ou rappelé` : "Arrivé plus tôt ou rappelé avant le début";
       $("#hr-tsp-aide").textContent = hq ? `Après la fin de mon quart (${hq[1]}) : prolongation ou rappel` : "Prolongation ou rappel après la fin"; }
@@ -4737,6 +4743,13 @@ Format :
     const t = eqTS(d, maj, { rappel: rap, adjacent: !rap }), h = t.h;
     out.innerHTML = `<b>${dollarsTS(t.eq * sal.tauxTS + t.indemnite)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")}${t.repasH ? ` + repas ${fmtH(t.repasH)} (12.08)` : ""} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (12.09)` : ""}${t.indemnite ? ` + ${dollarsTS(t.indemnite)} d'indemnité de repas` : ""}</span>${t.minimum ? `<small class="tsp-ligne">Minimum garanti appliqué : ${RAPPELS_TS[rap].aide}</small>` : ""}<small>${$(`#hr-${p}-pris`).value === "banque" ? `Compensé : ${fmtH(t.eq)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(t.eq)}`} · estimation</small>`;
   }
+  function choisirQuand(q) {
+    const veut = { avant: [true, false], apres: [false, true], deux: [true, true], aucun: [false, false] }[q];
+    [["tspa", veut[0]], ["tsp", veut[1]]].forEach(([p, v]) => { const c = $(`#hr-${p}-actif`); if (c.checked !== v) { c.checked = v; c.dispatchEvent(new Event("change")); } });
+    majChampsJour();
+  }
+  $$("[data-quand]").forEach((b) => b.addEventListener("click", () => choisirQuand(b.dataset.quand)));
+  $("#hr-quand-aucun").addEventListener("click", () => choisirQuand("aucun"));
   function majValeurTsp() { majValeurBlocTS("tsp"); majValeurBlocTS("tspa"); }
   function majValeurDispo() {
     const out = $("#hr-dispo-montant");

@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610292219">
+  <link rel="stylesheet" href="styles.css?v=202610292231">
 </head>
 <body>
   <!-- Chargement -->
@@ -1817,6 +1817,15 @@
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
       </div>
       <p class="aide hr-ts-vide hr-edition" id="hr-ts-vide" data-tab="ts" hidden></p>
+      <div class="hr-edition hr-quand" id="hr-quand-bloc" data-tab="ts" hidden>
+        <p class="ref">Ton temps supplémentaire est…</p>
+        <div class="segmente" role="radiogroup" aria-label="Moment du temps supplémentaire">
+          <button type="button" role="radio" data-quand="avant" aria-checked="false">Avant le quart</button>
+          <button type="button" role="radio" data-quand="apres" aria-checked="false">Après le quart</button>
+          <button type="button" role="radio" data-quand="deux" aria-checked="false">Les deux</button>
+        </div>
+        <button type="button" class="lien" id="hr-quand-aucun" hidden>Pas de temps supplémentaire</button>
+      </div>
       <div class="hr-edition hr-tsp" id="hr-tspa-bloc" data-tab="ts" hidden>
         <label class="hr-tsp-interrupteur"><input type="checkbox" id="hr-tspa-actif"><span><b>Temps supplémentaire avant mon quart</b><small id="hr-tspa-aide">Arrivé plus tôt ou rappelé avant le début</small></span></label>
         <div class="hr-tsp-champs" id="hr-tspa-champs" hidden>
@@ -2170,9 +2179,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610292219"></script>
+  <script src="config.js?v=202610292231"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610292219"></script>
+  <script src="app.js?v=202610292231"></script>
 </body>
 </html>
