@@ -2595,3 +2595,10 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
   html.clavier #chat-vue :is(.chat-notif, .avert-conv) { display: none; }
   html.clavier .app { top: var(--vv-top, 0px) !important; bottom: auto !important; height: var(--vv-h, 100%) !important; }
 }
+
+/* ---------- Vidéo de présentation ---------- */
+.guide-video { position: fixed; inset: 0; z-index: 8500; background: #06070D; display: grid; place-items: center; }
+.guide-video video { width: 100%; height: 100%; object-fit: contain; background: #06070D; }
+.guide-passer { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 14px; border: 1px solid rgba(255,255,255,.3); background: rgba(6,7,13,.6); color: #fff; font: 700 .9rem var(--f-texte); padding: 8px 16px; border-radius: 999px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.guide-fin { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); display: grid; justify-items: center; gap: 12px; padding: 0 24px; }
+.guide-fin .btn-principal { min-width: 220px; }

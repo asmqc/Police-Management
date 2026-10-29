@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610282347">
+  <link rel="stylesheet" href="styles.css?v=202610291712">
 </head>
 <body>
   <!-- Chargement -->
@@ -895,6 +895,7 @@
       <div class="panneau visite-reglages">
         <label class="interrupteur" for="rg-visites-auto"><span class="interrupteur-txt"><b>Explications automatiques</b><small>Une courte visite s'affiche la première fois que vous ouvrez une section ou qu'une nouveauté arrive.</small></span><input type="checkbox" id="rg-visites-auto" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
         <div class="liste-reglages" id="rg-visites-liste"></div>
+        <button type="button" class="btn-secondaire" id="rg-guide-video">Revoir la vidéo de présentation (1 min)</button>
         <button type="button" class="btn-secondaire" id="rg-visites-tout">Tout revoir depuis le début</button>
       </div>
 
@@ -2127,6 +2128,15 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
+  <!-- Vidéo de présentation : montrée une fois à chaque membre, puis dans Réglages › Visite guidée -->
+  <div id="guide-video" class="guide-video" role="dialog" aria-modal="true" aria-label="Vidéo de présentation de Police Management" hidden>
+    <video id="guide-lecteur" playsinline muted preload="none" poster="assets/guide/guide-affiche.jpg"></video>
+    <button type="button" class="guide-passer" id="guide-passer">Passer</button>
+    <div class="guide-fin" id="guide-fin" hidden>
+      <button type="button" class="btn-principal" id="guide-commencer">Commencer</button>
+      <button type="button" class="lien lien-clair" id="guide-revoir">Revoir la vidéo</button>
+    </div>
+  </div>
   <div id="visite" class="visite" hidden>
     <div class="visite-trou" id="visite-trou"></div>
     <div class="visite-bulle" id="visite-bulle" role="dialog" aria-modal="true" aria-labelledby="visite-titre" aria-describedby="visite-texte">
@@ -2158,9 +2168,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610282347"></script>
+  <script src="config.js?v=202610291712"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610282347"></script>
+  <script src="app.js?v=202610291712"></script>
 </body>
 </html>
