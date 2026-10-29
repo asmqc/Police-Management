@@ -7094,7 +7094,8 @@ Format :
   window.addEventListener("resize", () => { if (!$("#visite").hidden) montrerEtape(); });
   // Déclenchement automatique : nouveaux comptes (toutes les visites) ou nouvelles fonctions (visites « nouveau »)
   function visiteAutomatique(cle) {
-    if (!visitesAuto() || !etat.profil || !$("#visite").hidden) return;
+    if (guideAVoir()) { guideVideoAutomatique(); return; } // la vidéo de présentation passe en premier
+    if (!visitesAuto() || !etat.profil || !$("#visite").hidden || !$("#guide-video").hidden) return;
     if (["#consent-voile", "#avert-voile", "#nouv-voile", "#etat-voile", "#intro"].some((q) => { const x = $(q); return x && !x.hidden; })) return;
     const v = VISITES[cle];
     if (!v || lireVisites()[cle] || (v.sq && !estSQ())) return;
@@ -7107,6 +7108,36 @@ Format :
     const cle = nom === "accueil" ? "bienvenue" : nom;
     setTimeout(() => visiteAutomatique(cle), 1200);
   }
+  // Vidéo de présentation : une fois par membre (enregistré sur le compte), avant les visites guidées
+  const guideVuLocal = () => { try { return !!(etat.profil && localStorage.getItem("pm-guide-vu-" + etat.profil.id)); } catch { return false; } };
+  const guideAVoir = () => etat.profil && etat.profil.statut === "approuve" && !etat.profil.guide_video_vu_le && !guideVuLocal();
+  function ouvrirGuideVideo() {
+    const g = $("#guide-video"), v = $("#guide-lecteur");
+    if (!v.src) v.src = "assets/guide/guide.mp4";
+    $("#guide-fin").hidden = true; g.hidden = false; document.documentElement.classList.add("visite-active");
+    try { v.currentTime = 0; } catch { /* pas encore chargée */ }
+    const p = v.play(); if (p && p.catch) p.catch(() => { v.controls = true; });
+  }
+  async function fermerGuideVideo() {
+    const v = $("#guide-lecteur"); v.pause();
+    $("#guide-video").hidden = true; document.documentElement.classList.remove("visite-active");
+    if (etat.profil && !etat.profil.guide_video_vu_le) {
+      try { localStorage.setItem("pm-guide-vu-" + etat.profil.id, "1"); } catch { /* facultatif */ }
+      etat.profil.guide_video_vu_le = new Date().toISOString();
+      sb.rpc("marquer_guide_video").then(() => {}, () => {});
+      visiteDeVue(etat.vue || "accueil"); // ensuite, la visite guidée habituelle s'il y a lieu
+    }
+  }
+  function guideVideoAutomatique() {
+    if (!guideAVoir() || !$("#guide-video").hidden || !$("#visite").hidden) return false;
+    if (["#consent-voile", "#avert-voile", "#nouv-voile", "#etat-voile", "#intro", "#fp-voile"].some((q) => { const x = $(q); return x && !x.hidden; })) return false;
+    ouvrirGuideVideo(); return true;
+  }
+  $("#guide-lecteur").addEventListener("ended", () => { $("#guide-fin").hidden = false; });
+  $("#guide-passer").addEventListener("click", fermerGuideVideo);
+  $("#guide-commencer").addEventListener("click", fermerGuideVideo);
+  $("#guide-revoir").addEventListener("click", () => { $("#guide-fin").hidden = true; const v = $("#guide-lecteur"); v.currentTime = 0; v.play().catch(() => {}); });
+  $("#rg-guide-video").addEventListener("click", ouvrirGuideVideo);
   // Réglages › Visite guidée
   function rendreVisitesReglages() {
     $("#rg-visites-auto").checked = visitesAuto();
