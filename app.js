@@ -4230,14 +4230,30 @@ Format :
   async function rendreBilanAdmin() {
     const el = $("#adm-stats");
     el.innerHTML = `<p class="aide">Chargement…</p>`;
-    const { data: b, error } = await sb.rpc("admin_tableau_bord");
+    const [{ data: b, error }, { data: cap }] = await Promise.all([sb.rpc("admin_tableau_bord"), sb.rpc("admin_capacite")]);
     if (error) { el.innerHTML = ""; return toast(traduireErreur(error)); }
     const m = b.membres, a = b.adoption, ap = Math.max(1, m.approuves);
     const pct = (n) => `${Math.round((100 * n) / ap)} %`;
     const tuile = (n, l, s) => `<div class="adm-tuile"><b>${n}</b><span>${esc(l)}</span>${s ? `<small>${esc(s)}</small>` : ""}</div>`;
     const barres = (liste, cle = "nom") => { const max = Math.max(1, ...liste.map((x) => x.n)); return `<ul class="adm-barres">${liste.map((x) => `<li><span>${esc(x[cle])}${x.corps && x.corps !== x[cle] ? `<small>${esc(x.corps)}</small>` : ""}</span><i style="--p:${(100 * x.n) / max}%"></i><b>${x.n}</b></li>`).join("")}</ul>`; };
     const sem = b.inscriptions || [];
-    el.innerHTML = `
+    // Capacité du serveur (forfait gratuit de Supabase) : ce que la base peut mesurer elle-même
+    const taille = (o) => o >= 1e9 ? `${(o / 1e9).toFixed(2).replace(".", ",")} Go` : o >= 1e6 ? `${(o / 1e6).toFixed(1).replace(".", ",")} Mo` : `${Math.round(o / 1e3)} ko`;
+    const jauge = (nom, val, max, txt, note) => {
+      const p = Math.min(100, (100 * val) / max), niveau = p >= 90 ? "rouge" : p >= 70 ? "orange" : "vert";
+      return `<div class="adm-jauge ${niveau}"><div class="adm-jauge-tete"><b>${esc(nom)}</b><span>${esc(txt)}</span></div><i style="--p:${Math.max(p, 1.5)}%"></i><small>${p < 1 ? "moins de 1" : Math.round(p)} % utilisé${note ? " · " + esc(note) : ""}</small></div>`;
+    };
+    const capHtml = cap ? `
+      <h3 class="intertitre">Capacité du serveur <small class="adm-forfait">Supabase · forfait gratuit</small></h3>
+      <div class="adm-jauges">
+        ${jauge("Base de données", cap.base_octets, 500e6, `${taille(cap.base_octets)} sur 500 Mo`)}
+        ${jauge("Fichiers (photos, feuilles)", cap.stockage_octets, 1e9, `${taille(cap.stockage_octets)} sur 1 Go`, `${cap.fichiers} fichier${cap.fichiers > 1 ? "s" : ""}`)}
+        ${jauge("Utilisateurs actifs ce mois-ci", cap.actifs_30j, 50000, `${cap.actifs_30j.toLocaleString("fr-CA")} sur 50 000`, `${cap.comptes} comptes au total`)}
+        ${jauge("Connexions à la base en ce moment", cap.connexions, cap.connexions_max, `${cap.connexions} sur ${cap.connexions_max}`, "la plupart sont des services internes de Supabase")}
+      </div>
+      <p class="aide">Non mesurables d'ici : la <b>bande passante</b> (5 Go par mois) et les <b>appels de fonctions</b> (500 000 par mois). Consultez-les dans <a href="https://supabase.com/dashboard/org/lkfsaapbrnipntaalrau/usage" target="_blank" rel="noopener">Supabase › Usage</a>. Au forfait gratuit, un projet sans aucune activité pendant 7 jours est mis en pause et il n'y a pas de sauvegarde automatique téléchargeable.</p>` : "";
+    el.innerHTML = capHtml + `
+      <h3 class="intertitre">Membres</h3>
       <div class="adm-tuiles">${tuile(m.approuves, "membres approuvés")}${tuile(m.attente, "demandes en attente")}${tuile(b.actifs.j7, "actifs 7 jours", pct(b.actifs.j7))}${tuile(b.actifs.j30, "actifs 30 jours", pct(b.actifs.j30))}</div>
       <h3 class="intertitre">Fonctions utilisées</h3>
       <div class="adm-tuiles">${tuile(a.rotation, "rotation configurée", pct(a.rotation))}${tuile(a.notifications, "notifications activées", pct(a.notifications))}${tuile(a.paie, "paie SQ remplie")}${tuile(a.calendrier_abonne, "calendrier abonné")}${tuile(a.evenements, "utilisent le calendrier")}${tuile(a.echeances, "ont des échéances")}${tuile(a.horaires_poste, "horaires de poste publiés")}${tuile(a.ts_attribues, "TS attribués")}${tuile(a.messages_30j, "messages (30 jours)")}${tuile(a.forum_30j, "sujets au forum (30 jours)")}${tuile(a.idees, "idées proposées")}</div>
