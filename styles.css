@@ -2602,3 +2602,16 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
 .guide-passer { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 14px); right: 14px; border: 1px solid rgba(255,255,255,.3); background: rgba(6,7,13,.6); color: #fff; font: 700 .9rem var(--f-texte); padding: 8px 16px; border-radius: 999px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 .guide-fin { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 40px); display: grid; justify-items: center; gap: 12px; padding: 0 24px; }
 .guide-fin .btn-principal { min-width: 220px; }
+
+/* Admin › Bilan : jauges de capacité du serveur */
+.adm-forfait { font-family: var(--f-texte); font-size: .72rem; font-weight: 700; color: var(--fg-doux); margin-left: 6px; letter-spacing: 0; text-transform: none; }
+.adm-jauges { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.adm-jauge { background: var(--surface); border: 1px solid var(--bord-carte, var(--ligne)); border-radius: 14px; padding: 12px 14px; box-shadow: var(--ombre-carte, none); }
+.adm-jauge-tete { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.adm-jauge-tete b { font-size: .92rem; }
+.adm-jauge-tete span { font-size: .85rem; color: var(--fg-doux); font-variant-numeric: tabular-nums; }
+.adm-jauge i { display: block; height: 10px; margin: 9px 0 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; position: relative; }
+.adm-jauge i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: 6px; background: #1F9D55; }
+.adm-jauge.orange i::after { background: #E08A00; }
+.adm-jauge.rouge i::after { background: #D92D20; }
+.adm-jauge small { font-size: .78rem; color: var(--fg-doux); }
