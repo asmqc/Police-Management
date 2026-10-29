@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202610292231">
+  <link rel="stylesheet" href="styles.css?v=202610292233">
 </head>
 <body>
   <!-- Chargement -->
@@ -1015,7 +1015,7 @@
             <button type="button" role="menuitem" data-plus="fetes" class="seulement-sq"><b>Planifier mon congé des Fêtes</b><small>Noël ou Jour de l'An, 7 jours regroupés (art. 24)</small></button>
             <button type="button" role="menuitem" data-plus="evenement"><b>Nouvel événement</b><small>Rendez-vous, rappel, événement personnel</small></button>
           </div>
-          <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Ajouter" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
+          <button class="btn-icone cal-outil cal-plus" id="cal-ajout" aria-label="Ajouter à mon horaire (quart, temps supp., vacances…)"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button>
         </div>
         <div id="cal-zone" class="cal-zone">
           <div id="cal-mois">
@@ -1910,6 +1910,7 @@
         <button class="btn-secondaire" id="hr-jour-retirer">Revenir à la rotation</button>
       </div>
       <button type="button" class="lien hr-edition" id="hr-jour-offrir" hidden>Offrir ce quart à mon poste</button>
+      <button type="button" class="lien seulement-sq hr-edition" id="hr-jour-fetes">Planifier mon congé des Fêtes</button>
     </section>
   </div>
 
@@ -2179,9 +2180,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202610292231"></script>
+  <script src="config.js?v=202610292233"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202610292231"></script>
+  <script src="app.js?v=202610292233"></script>
 </body>
 </html>

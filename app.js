@@ -2649,9 +2649,8 @@ Question : ${question}
     e.stopPropagation();
     const iso = cal.vue === "liste" ? aujourdhuiISO() : cal.sel;
     const titre = new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
-    $("[data-plus='quart'] b", menuPlus).textContent = `Modifier le quart du ${titre}`;
-    menuPlus.hidden = !menuPlus.hidden;
-    $("#cal-ajout").setAttribute("aria-expanded", String(!menuPlus.hidden));
+    // « + » ouvre directement la journée (quart, temps supp., vacances…), sans menu
+    fermerMenuPlus(); ouvrirJour(iso); void titre;
   });
   $$("[data-plus]", menuPlus).forEach((b) => b.addEventListener("click", (e) => {
     e.stopPropagation(); fermerMenuPlus();
@@ -4764,6 +4763,7 @@ Format :
   $("#hr-jour-rappel").addEventListener("input", () => { if ($("#hr-jour-rappel").value === "vacances") $("#hr-jour-maj").value = "2"; majValeurJour(); });
   $("#hr-jour-pris").addEventListener("input", () => majValeurJour());
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
+  $("#hr-jour-fetes").addEventListener("click", () => { fermerJour(); ouvrirFetes(); });
   const fermerJour = () => ($("#hr-voile").hidden = true);
   $("#hr-jour-fermer").addEventListener("click", fermerJour);
   $("#hr-voile").addEventListener("click", (e) => { if (e.target.id === "hr-voile") fermerJour(); });
