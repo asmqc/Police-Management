@@ -2615,3 +2615,14 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
 .adm-jauge.orange i::after { background: #E08A00; }
 .adm-jauge.rouge i::after { background: #D92D20; }
 .adm-jauge small { font-size: .78rem; color: var(--fg-doux); }
+
+/* Temps supplémentaire à confirmer (accueil et horaire) */
+.ts-confirmer { border-left: 4px solid #E08A00; }
+.ts-confirmer h3 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 4px; }
+.ts-confirmer .pastille-n { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 2px 6px 0; border-radius: 11px; background: #E08A00; color: #fff; font: 800 .78rem var(--f-texte); }
+.ts-confirmer ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.ts-confirmer li { display: grid; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.ts-confirmer li > div:first-child { display: flex; flex-direction: column; }
+.ts-confirmer li small { color: var(--fg-doux); }
+.tsc-boutons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tsc-boutons .lien { font-size: .85rem; }
