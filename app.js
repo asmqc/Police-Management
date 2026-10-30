@@ -520,7 +520,7 @@
     if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
     document.body.classList.toggle("est-sq", estSQ() || p.role === "admin");
     document.body.classList.toggle("a-convention", accesConvention());
-    chargerMaConvention();
+    if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
