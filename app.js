@@ -521,6 +521,7 @@
     document.body.classList.toggle("est-sq", estSQ() || p.role === "admin");
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
+    signalerActivite();
     afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
@@ -718,6 +719,14 @@
   const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || !!etat.convention);
   const conventionSQ = () => !etat.convention || !!etat.convention.sq;
   const lienPdfConvention = (page) => { const c = etat.convention; const url = c ? c.source_url : PDF_CONVENTION; return url ? `${url}#page=${(page || 0) + (c ? c.decalage_page || 0 : 8)}` : ""; };
+  // Dernière activité (pour « Dernière connexion » dans l'administration) : à l'ouverture et au retour dans l'app
+  let derniereActivite = 0;
+  function signalerActivite() {
+    if (!etat.profil || Date.now() - derniereActivite < 10 * 60e3) return;
+    derniereActivite = Date.now();
+    sb.rpc("signaler_activite").then(() => {}, () => {});
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") signalerActivite(); });
   async function chargerMaConvention() {
     try { const { data } = await sb.rpc("ma_convention"); etat.convention = data || null; } catch { etat.convention = null; }
     document.body.classList.toggle("a-convention", accesConvention());
