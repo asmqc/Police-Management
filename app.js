@@ -4324,14 +4324,14 @@ Format :
       return `<div class="adm-jauge ${niveau}"><div class="adm-jauge-tete"><b>${esc(nom)}</b><span>${esc(txt)}</span></div><i style="--p:${Math.max(p, 1.5)}%"></i><small>${p < 1 ? "moins de 1" : Math.round(p)} % utilisé${note ? " · " + esc(note) : ""}</small></div>`;
     };
     const capHtml = cap ? `
-      <h3 class="intertitre">Capacité du serveur <small class="adm-forfait">Supabase · forfait gratuit</small></h3>
+      <h3 class="intertitre">Capacité du serveur <small class="adm-forfait">Supabase · forfait Pro</small></h3>
       <div class="adm-jauges">
-        ${jauge("Base de données", cap.base_octets, 500e6, `${taille(cap.base_octets)} sur 500 Mo`)}
-        ${jauge("Fichiers (photos, feuilles)", cap.stockage_octets, 1e9, `${taille(cap.stockage_octets)} sur 1 Go`, `${cap.fichiers} fichier${cap.fichiers > 1 ? "s" : ""}`)}
-        ${jauge("Utilisateurs actifs ce mois-ci", cap.actifs_30j, 50000, `${cap.actifs_30j.toLocaleString("fr-CA")} sur 50 000`, `${cap.comptes} comptes au total`)}
+        ${jauge("Base de données", cap.base_octets, 8e9, `${taille(cap.base_octets)} sur 8 Go`)}
+        ${jauge("Fichiers (photos, feuilles)", cap.stockage_octets, 100e9, `${taille(cap.stockage_octets)} sur 100 Go`, `${cap.fichiers} fichier${cap.fichiers > 1 ? "s" : ""}`)}
+        ${jauge("Utilisateurs actifs ce mois-ci", cap.actifs_30j, 100000, `${cap.actifs_30j.toLocaleString("fr-CA")} sur 100 000`, `${cap.comptes} comptes au total`)}
         ${jauge("Connexions à la base en ce moment", cap.connexions, cap.connexions_max, `${cap.connexions} sur ${cap.connexions_max}`, "la plupart sont des services internes de Supabase")}
       </div>
-      <p class="aide">Non mesurables d'ici : la <b>bande passante</b> (5 Go par mois) et les <b>appels de fonctions</b> (500 000 par mois). Consultez-les dans <a href="https://supabase.com/dashboard/org/lkfsaapbrnipntaalrau/usage" target="_blank" rel="noopener">Supabase › Usage</a>. Au forfait gratuit, un projet sans aucune activité pendant 7 jours est mis en pause et il n'y a pas de sauvegarde automatique téléchargeable.</p>` : "";
+      <p class="aide">Quantités incluses dans le forfait Pro. Non mesurables d'ici : la <b>bande passante</b> (250 Go par mois) et les <b>appels de fonctions</b> (2 millions par mois). Consultez-les dans <a href="https://supabase.com/dashboard/org/lkfsaapbrnipntaalrau/usage" target="_blank" rel="noopener">Supabase › Usage</a>. Le projet n'est plus mis en pause et la base est sauvegardée chaque jour par Supabase.</p>` : "";
     el.innerHTML = capHtml + `
       <h3 class="intertitre">Membres</h3>
       <div class="adm-tuiles">${tuile(m.approuves, "membres approuvés")}${tuile(m.attente, "demandes en attente")}${tuile(b.actifs.j7, "actifs 7 jours", pct(b.actifs.j7))}${tuile(b.actifs.j30, "actifs 30 jours", pct(b.actifs.j30))}</div>
