@@ -2637,3 +2637,9 @@ body:not(.est-sq) .seulement-sq, body.est-sq .sauf-sq { display: none; }
 
 /* Convention : visible seulement si le corps de police a la sienne */
 body:not(.a-convention) .seulement-convention { display: none !important; }
+
+/* Annonce avec image : bannière pleine largeur */
+.annonce.avec-image { grid-template-columns: 1fr; padding: 0; gap: 0; overflow: hidden; border-left-width: 1px; }
+.annonce.avec-image img { width: 100%; height: auto; max-height: 420px; object-fit: contain; border-radius: 0; display: block; background: #05060C; }
+.annonce.avec-image div { padding: 10px 14px 12px; }
+.annonce.avec-image .annonce-fermer { top: 8px; right: 8px; background: rgba(6, 7, 13, .6); color: #fff; border-radius: 50%; }

@@ -4192,8 +4192,9 @@ Format :
     el.hidden = !liste.length;
     if (!liste.length) return;
     const urls = await urlsAnnonces(liste.map((a) => a.image_path));
-    el.innerHTML = liste.map((a) => `<article class="annonce">
-      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="" loading="lazy">` : ""}
+    // Annonce avec image : l'image s'affiche en bannière, sur toute la largeur
+    el.innerHTML = liste.map((a) => `<article class="annonce${a.image_path && urls[a.image_path] ? " avec-image" : ""}">
+      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" loading="lazy">` : ""}
       <div><small>Annonce · ${esc(quand(a.cree_le))}</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div>
       <button class="btn-icone annonce-fermer" data-masquer-annonce="${a.id}" aria-label="Masquer cette annonce">✕</button></article>`).join("");
     $$("[data-masquer-annonce]", el).forEach((b) => b.addEventListener("click", () => {
