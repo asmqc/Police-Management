@@ -1413,7 +1413,9 @@ Question : ${question}
     }
     const mo = e && e.motif && MOTIFS[e.type] ? MOTIFS[e.type].find(([k]) => k === e.motif) : null;
     const tsps = e ? [e.tspAvant && e.tspAvant.debut ? { ...e.tspAvant, moment: "avant" } : null, e.tsp && e.tsp.debut ? { ...e.tsp, moment: "apres" } : null].filter(Boolean) : [];
-    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e, tsp: tsps[0] || null, tsps, motif: mo ? mo[1] : "", motifCle: e && e.motif || "" };
+    const plus = e && Array.isArray(e.plus) ? e.plus.filter((k) => QUARTS[k]) : [];
+    const seulementPlus = !!e && e.type === prevu && Object.keys(e).every((k) => ["type", "plus", "note"].includes(k)) && !e.note;
+    return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e && !seulementPlus, tsp: tsps[0] || null, tsps, motif: mo ? mo[1] : "", motifCle: e && e.motif || "", plus };
   }
   // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
   function heuresJour(code, iso, src = affichee()) {
@@ -2509,7 +2511,7 @@ Question : ${question}
       const evs = parJour[iso] || [];
       html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${iso === cal.sel ? "choisi" : ""} ${qq.exception && rotationVisible() ? "exc" : ""}" aria-label="${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun quart")}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}">
         <span class="num">${Number(iso.slice(8))}</span>${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}${qq.tsp ? `<sup class="tsp-plus">+X</sup>` : ""}</span>` : ""}
-        <span class="points">${evs.slice(0, 3).map((o) => `<i style="background:${couleurEv(o.ev)}"></i>`).join("")}</span></button>`;
+        <span class="points">${(rotationVisible() ? qq.plus : []).map((k) => `<i class="q q-${esc(k)}" title="${esc(QUARTS[k].nom)}"></i>`).join("")}${evs.slice(0, Math.max(0, 3 - (rotationVisible() ? qq.plus.length : 0))).map((o) => `<i style="background:${couleurEv(o.ev)}"></i>`).join("")}</span></button>`;
     }
     $("#hr-grille").innerHTML = html;
     $$("#hr-grille button").forEach((b) => b.addEventListener("click", () => { cal.sel = b.dataset.jour; rendreMois(); }));
@@ -2589,7 +2591,7 @@ Question : ${question}
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${(qq.plus || []).map((k) => `<small class="ag-plus"><i class="q q-${esc(k)}"></i>En plus : ${esc(QUARTS[k].nom)}</small>`).join("")}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
       ${(() => { try { const al = estSQ() ? alertesRepos(iso) : []; return al.map((a) => `<p class="ag-alerte">${esc(a)}</p>`).join(""); } catch { return ""; } })()}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
@@ -4667,6 +4669,7 @@ Format :
   function ouvrirJour(iso) {
     hr.jourChoisi = iso;
     hr.ajoutRapide = false;
+    { const d = $("#hr-rapide"); if (d) d.hidden = true; }
     try { rendreEnPlus(iso); } catch (e) { console.warn(e); }
     const q = quartDu(iso);
     const lecture = !!hr.vue;
@@ -4774,9 +4777,45 @@ Format :
     const b = e.target.closest("[data-q]");
     setTimeout(() => {
       if (b && b.dataset.q === "X") ongletJour("ts"); else majChampsJour();
-      if (b && hr.ajoutRapide && b.dataset.q !== "X" && !MOTIFS[b.dataset.q]) { hr.ajoutRapide = false; $("#hr-jour-ok").click(); }
+      if (b && hr.ajoutRapide) demanderRapide(b.dataset.q);
     }, 0);
   });
+  // Ajout rapide (bouton +) : remplacer le code de la journée, ou l'ajouter « en plus » (point de couleur dans la case)
+  function demanderRapide(code) {
+    const iso = hr.jourChoisi, actuel = quartDu(iso, hr), nom = QUARTS[code].nom;
+    const choisir = (c) => $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.q === c)));
+    if (code === actuel.code) { toast(`Cette journée est déjà : ${nom}`); return; }
+    const d = $("#hr-rapide");
+    $("#hr-rapide-txt").innerHTML = `Le ${esc(dateCourte(iso))} est déjà : <b>${esc(actuel.code && QUARTS[actuel.code] ? QUARTS[actuel.code].nom : "aucun quart")}</b>. Que voulez-vous faire avec <b>${esc(nom)}</b> ?`;
+    $("#hr-rapide-remplacer").textContent = `Remplacer par ${nom}`;
+    $("#hr-rapide-plus").textContent = `Ajouter ${nom} en plus`;
+    d.hidden = false; d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    $("#hr-rapide-remplacer").onclick = () => {
+      d.hidden = true;
+      if (code === "X" || MOTIFS[code]) { hr.ajoutRapide = false; choisir(code); if (code === "X") ongletJour("ts"); else majChampsJour(); return; } // détails à préciser
+      hr.ajoutRapide = false; choisir(code); $("#hr-jour-ok").click();
+    };
+    $("#hr-rapide-plus").onclick = async () => {
+      d.hidden = true; hr.ajoutRapide = false; choisir(actuel.code);
+      const avant = hr.exceptions[iso] ? JSON.parse(JSON.stringify(hr.exceptions[iso])) : null;
+      const ex = hr.exceptions[iso] || { type: actuel.prevu, note: "" };
+      ex.plus = [...new Set([...(ex.plus || []), code])];
+      hr.exceptions[iso] = ex;
+      try { await sauverHoraire(); fermerJour(); rendreHoraire(); toast(`${nom} ajouté en plus le ${dateCourte(iso)}`); }
+      catch (e) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; toast(traduireErreur(e)); }
+    };
+  }
+  $("#hr-rapide-annuler").addEventListener("click", () => { $("#hr-rapide").hidden = true; const q = quartDu(hr.jourChoisi, hr); $$("#hr-jour-choix button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.q === q.code))); });
+  // Retirer un élément « en plus »
+  async function retirerPlus(iso, code) {
+    const ex = hr.exceptions[iso]; if (!ex || !ex.plus) return;
+    const avant = JSON.parse(JSON.stringify(ex));
+    ex.plus = ex.plus.filter((k) => k !== code);
+    if (!ex.plus.length) delete ex.plus;
+    if (Object.keys(ex).every((k) => ["type", "note"].includes(k)) && !ex.note && ex.type === quartDu(iso, hr).prevu) delete hr.exceptions[iso];
+    try { await sauverHoraire(); rendreHoraire(); rendreEnPlus(iso); toast(`${QUARTS[code].nom} retiré`); }
+    catch (e) { hr.exceptions[iso] = avant; toast(traduireErreur(e)); }
+  }
   $("#hr-jour-motif").addEventListener("change", () => { hr.motifInitial = $("#hr-jour-motif").value; majChampsJour(); });
   $("#hr-periode").addEventListener("change", () => ($("#hr-periode-extra").disabled = !$("#hr-periode").checked));
   // Valeur estimée d'une journée de temps supplémentaire (membres SQ dont la rémunération est configurée)
@@ -4857,9 +4896,10 @@ Format :
     const bloc = $("#hr-enplus"); if (!bloc) return;
     bloc.hidden = !avecEvenements();
     if (bloc.hidden) return;
-    const occs = occDuJour(iso);
-    $("#hr-enplus-liste").innerHTML = occs.map((o, i) => `<li><button type="button" data-enplus-ev="${i}"><i style="background:${esc(couleurEv(o.ev))}"></i><span><b>${esc(o.ev.titre)}</b><small>${o.ev.journee ? "Toute la journée" : `${esc(hhmm(o.debut))} – ${esc(hhmm(o.fin))}`}${o.ev.lieu ? " · " + esc(o.ev.lieu) : ""}</small></span><em>Modifier</em></button></li>`).join("");
+    const occs = occDuJour(iso), plus = quartDu(iso, hr).plus;
+    $("#hr-enplus-liste").innerHTML = plus.map((k) => `<li><button type="button" data-plus-retirer="${esc(k)}"><i class="q q-${esc(k)}"></i><span><b>${esc(QUARTS[k].nom)}</b><small>Ajouté en plus de la journée</small></span><em>Retirer</em></button></li>`).join("") + occs.map((o, i) => `<li><button type="button" data-enplus-ev="${i}"><i style="background:${esc(couleurEv(o.ev))}"></i><span><b>${esc(o.ev.titre)}</b><small>${o.ev.journee ? "Toute la journée" : `${esc(hhmm(o.debut))} – ${esc(hhmm(o.fin))}`}${o.ev.lieu ? " · " + esc(o.ev.lieu) : ""}</small></span><em>Modifier</em></button></li>`).join("");
     $$("[data-enplus-ev]").forEach((b) => b.addEventListener("click", () => { const o = occs[+b.dataset.enplusEv]; fermerJour(); editerEvenement(o.ev); }));
+    $$("[data-plus-retirer]").forEach((b) => b.addEventListener("click", () => retirerPlus(iso, b.dataset.plusRetirer)));
   }
   $$("[data-enplus]").forEach((b) => b.addEventListener("click", () => {
     const iso = hr.jourChoisi, titre = b.dataset.enplus;
@@ -4885,8 +4925,9 @@ Format :
     if (tsp === false || tspAvant === false) return toast("Indiquez le début et la fin du temps supplémentaire");
     const avant = cible.exceptions[iso], sauvegarde = { ...cible.exceptions };
     const options = (!$("#hr-options-quart").hidden && ($("#hr-repasnp").checked || $("#hr-remplace").value)) || (!$("#hr-dispo-champs").hidden && +$("#hr-dispo-h").value > 0);
-    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !tspAvant && !options) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
+    const plusAvant = avant && Array.isArray(avant.plus) && avant.plus.length ? avant.plus.filter((k) => k !== type) : null; // les éléments « en plus » restent
+    if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !tspAvant && !options && !(plusAvant && plusAvant.length)) delete cible.exceptions[iso];
+    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
       ...(type === "X" && $("#hr-jour-rappel").value ? { rappel: $("#hr-jour-rappel").value } : {}),
       ...(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked ? { repasNP: true } : {}),
       ...(!$("#hr-options-quart").hidden && !$("#hr-gaind-bloc").hidden && $("#hr-gaind").checked ? { gainD: true } : {}),
