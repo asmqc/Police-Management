@@ -2663,3 +2663,15 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .replie .ac-511-tete .btn-secondaire { display: none; }
 .replie { padding-block: 10px; }
 #vue-horaire.mode-poste :is(#hr-qui-bloc, #hr-cible, #hr-tsc) { display: none !important; }
+
+/* Fiche de la journée › « En plus ce jour-là » */
+.hr-enplus { display: grid; gap: 8px; margin-top: 4px; }
+.hr-enplus-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hr-enplus-liste:empty { display: none; }
+.hr-enplus-liste button { width: 100%; display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border: 1px solid var(--ligne); border-radius: 12px; background: var(--surface); color: var(--fg); }
+.hr-enplus-liste i { width: 10px; height: 10px; border-radius: 3px; }
+.hr-enplus-liste span { display: grid; min-width: 0; }
+.hr-enplus-liste small { color: var(--fg-doux); }
+.hr-enplus-liste em { font-style: normal; font-size: .85rem; color: var(--accent, #1F5FD6); font-weight: 700; }
+.hr-enplus-choix button { font-weight: 700; }
+.hr-enplus-choix { flex-wrap: wrap; overflow: visible; }
