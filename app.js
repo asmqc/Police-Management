@@ -590,6 +590,13 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-02-nav", date: "2026-11-02", titre: "Une app mieux rangée", points: [
+      "Nouvel onglet « Poste » en bas : la feuille de poste, l'horaire du poste et le TS (SQ) et le forum, au même endroit.",
+      "Messages : maintenant en haut de l'écran, avec le nombre de messages non lus.",
+      "Horaire › Paie et banques, et une tuile « Ma paie » à l'accueil (SQ). Le contrat de travail est aussi accessible depuis Lois.",
+      "Noms plus clairs : Frais judiciaires (Lois) et Frais de déplacement (contrat). Nouvelle tuile Bien-être et soutien.",
+      "Accueil : touchez la flèche pour réduire Soleil et météo ou Circulation 511.",
+    ] },
     { id: "2026-10-28-lot", date: "2026-10-28", titre: "Soleil, météo, échéances et plus", points: [
       "Accueil › Soleil et météo : lever et coucher du soleil, crépuscule civil et météo où vous êtes, avec « Copier pour mon rapport ». Votre position exacte ne quitte pas l'appareil.",
       "Mon compte › Mes échéances : requalification au tir, RCR, permis, formations… avec un rappel jusqu'à 2 mois avant. Elles paraissent aussi dans « À ne pas oublier ».",
@@ -719,6 +726,17 @@
   const accesConvention = () => !!etat.profil && (etat.profil.role === "admin" || !!etat.convention);
   const conventionSQ = () => !etat.convention || !!etat.convention.sq;
   const lienPdfConvention = (page) => { const c = etat.convention; const url = c ? c.source_url : PDF_CONVENTION; return url ? `${url}#page=${(page || 0) + (c ? c.decalage_page || 0 : 8)}` : ""; };
+  // Accueil : cartes Soleil et météo et Circulation 511 repliables (choix gardé sur l'appareil)
+  {
+    const replies = () => { try { return JSON.parse(localStorage.getItem("pm-replie") || "[]"); } catch { return []; } };
+    const appliquer = () => { const r = replies(); $$("[data-replier]").forEach((b) => { const sec = $("#ac-" + b.dataset.replier); const ferme = r.includes(b.dataset.replier); if (sec) sec.classList.toggle("replie", ferme); b.setAttribute("aria-expanded", String(!ferme)); }); };
+    $$("[data-replier]").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.replier, r = replies(), n = r.includes(k) ? r.filter((x) => x !== k) : [...r, k];
+      try { localStorage.setItem("pm-replie", JSON.stringify(n)); } catch { /* facultatif */ }
+      appliquer();
+    }));
+    appliquer();
+  }
   // Dernière activité (pour « Dernière connexion » dans l'administration) : à l'ouverture et au retour dans l'app
   let derniereActivite = 0;
   function signalerActivite() {
@@ -1127,7 +1145,7 @@ Question : ${question}
     etat.vue = nom;
     document.body.dataset.vue = nom;
     if (nom !== "carte") document.body.classList.remove("carte-plein");
-    $$(".nav button").forEach((b) => (b.dataset.vue === nom ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+    majOngletCourant();
     const verrou = VUES_VERROU.includes(nom) && !courrielVerifie();
     $$(".vue").forEach((v) => (v.hidden = v.id !== (verrou ? "vue-verrou" : "vue-" + nom)));
     history.replaceState(null, "", "#" + nom);
@@ -1179,6 +1197,8 @@ Question : ${question}
       try {
         pontNatif.postMessage({
           vue: etat.vue || "accueil",
+          onglet: (() => { try { return ongletCourant(); } catch { return etat.vue || "accueil"; } })(),
+          titre: etat.vue === "feuille" || etat.vue === "forum" || (etat.vue === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) ? "Mon poste" : null,
           connecte: !$("#ecran-app").hidden,
           modal: !!document.querySelector(".voile:not([hidden]), .avert:not([hidden])"),
           plein: document.body.classList.contains("carte-plein"),
@@ -1240,7 +1260,36 @@ Question : ${question}
   });
   majBoutonNuit();
   { const v = (document.querySelector('script[src^="app.js"]') || {}).src || ""; const m = v.match(/v=(\d{8})(\d{4})/); if (m) $("#rg-version").textContent = `Version du ${m[1].slice(6, 8)}/${m[1].slice(4, 6)}/${m[1].slice(0, 4)}`; }
-  $$(".nav button").forEach((b) => b.addEventListener("click", () => afficherVue(b.dataset.vue)));
+  $$(".nav button").forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.vue === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) hr.onglet = "calendrier"; // l'onglet Horaire ramène toujours au calendrier
+    afficherVue(b.dataset.vue);
+    if (b.dataset.vue === "horaire") rendreHoraire();
+  }));
+  $("#btn-messages-haut").addEventListener("click", () => afficherVue("messages"));
+  // Onglet de la barre du bas correspondant à la section affichée
+  function ongletCourant() {
+    const v = etat.vue;
+    if (v === "forum" || v === "feuille" || (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts"))) return "feuille";
+    if (v === "convention") return "csr";
+    return v;
+  }
+  function majOngletCourant() {
+    const o = ongletCourant();
+    $$(".nav button").forEach((b) => (b.dataset.vue === o ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+    $("#btn-messages-haut").classList.toggle("actif", etat.vue === "messages");
+    const sous = etat.vue === "forum" ? "forum" : etat.vue === "feuille" ? "feuille" : etat.vue === "horaire" ? hr.onglet : "";
+    $$("[data-poste]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.poste === sous)));
+    informerNatif();
+  }
+  // Mon poste : feuille de poste, horaire du poste, TS du poste et forum
+  $$("[data-poste]").forEach((b) => b.addEventListener("click", () => {
+    const p = b.dataset.poste;
+    if (p === "feuille" || p === "forum") { afficherVue(p); return; }
+    hr.onglet = p;
+    afficherVue("horaire");
+    rendreHoraire(); chargerPoste(true);
+    $("#vue-horaire").scrollTop = 0;
+  }));
 
   /* ---------------- Horaire rotatif ---------------- */
   const QUARTS = {
@@ -1413,7 +1462,7 @@ Question : ${question}
     const b = $("#badge-messages");
     b.textContent = count > 99 ? "99+" : count || "";
     b.hidden = !count;
-    $("#beta-nav").hidden = !!count;
+    const bn = $("#beta-nav"); if (bn) bn.hidden = !!count;
     compteurs.messages = count || 0;
     majPastille();
     const carte = $("#ac-msg");
@@ -2138,6 +2187,7 @@ Question : ${question}
   function allerA(cible) {
     if (cible === "vitesse") { afficherVue("csr"); $("[data-csr-onglet='vitesse']").click(); return; }
     if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
+    if (cible === "paie") { hr.onglet = "stats"; afficherVue("horaire"); setTimeout(() => { const t = $("[data-hr-vue='stats']"); if (t && !t.hidden) t.click(); }, 700); return; }
     afficherVue(cible);
     const champ = { csr: "#csr-q", carte: "#adresse-q", corps: "#corps-q" }[cible];
     if (champ) setTimeout(() => $(champ).focus(), 150);
@@ -2310,16 +2360,22 @@ Question : ${question}
     const ongletStats = hr.onglet === "stats" && !!src.config && !enConfig;
     const posteOk = (estSQ() || estAdmin()) && !lecture && !conj;
     const ongletPoste = posteOk && !enConfig && (hr.onglet === "poste" || hr.onglet === "ts");
-    $$("[data-hr-vue='poste'], [data-hr-vue='ts']").forEach((b) => (b.hidden = !posteOk));
-    $("#hr-onglets-vue").hidden = (!src.config && !posteOk) || enConfig;
+    $$("[data-hr-vue='poste'], [data-hr-vue='ts']").forEach((b) => (b.hidden = true)); // dans « Mon poste » maintenant
+    $("#hr-onglets-vue").hidden = !src.config || enConfig || ongletPoste;
+    $("#hr-poste-nav").hidden = !ongletPoste;
+    $("#vue-horaire").classList.toggle("mode-poste", ongletPoste);
     $("#hr-poste-vue").hidden = !ongletPoste;
+    if (!lecture && !conj) $("#hr-titre").textContent = ongletPoste ? "Mon poste" : "Mon horaire";
+    if (etat.vue === "horaire") majOngletCourant();
     if (ongletPoste) {
+      $("#hr-resume").textContent = etat.profil.unite || "";
+      $("#hr-qui-bloc").hidden = true;
       $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === hr.onglet)));
       for (const id of ["#hr-vide", "#hr-principal", "#stats-voile", "#hr-partage", "#hr-echanges", "#hr-lecture-vide"]) $(id).hidden = true;
       rendrePoste();
       return;
     }
-    $("[data-hr-vue='stats']").textContent = estSQ() && !lecture && !conj ? "Rémunération" : "Statistiques";
+    $("[data-hr-vue='stats']").textContent = estSQ() && !lecture && !conj ? "Paie et banques" : "Statistiques";
     $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === (ongletStats ? "stats" : "calendrier"))));
     $("#stats-voile").hidden = !ongletStats;
     if (ongletStats) setTimeout(() => { try { rendreStats(); } catch (e) { console.warn(e); } }, 0);
@@ -7116,13 +7172,13 @@ Format :
       { sel: ".nav [data-vue='csr']", titre: "Lois", texte: "CSR, Code criminel et autres lois, vitesses et amendes, frais et vos articles favoris." },
       { sel: ".nav [data-vue='carte']", titre: "Carte", texte: "Postes, territoires, bornes kilométriques et « Où suis-je ? »." },
       { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre rotation, vos congés, votre temps supplémentaire et, pour la SQ, votre paie et vos banques." },
-      { sel: ".nav [data-vue='feuille']", titre: "Feuille de poste", texte: "La feuille de votre poste, partagée seulement entre les membres du même poste." },
-      { sel: ".nav [data-vue='messages']", titre: "Messages", texte: "Écrivez à vos collègues ou à l'administrateur. Ne partagez jamais d'informations opérationnelles." },
+      { sel: ".nav [data-vue='feuille']", titre: "Mon poste", texte: "Tout ce qui concerne votre poste : la feuille de poste, l'horaire du poste et le TS (SQ), et le forum de votre corps de police." },
+      { sel: "#btn-messages-haut", titre: "Messages", texte: "Écrivez à vos collègues ou à l'administrateur. Ne partagez jamais d'informations opérationnelles." },
       { sel: "#btn-menu", titre: "Votre compte", texte: "Votre profil, votre rémunération, vos soldes de banques et la déconnexion." },
       { sel: "#btn-reglages", titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée." },
     ] },
     horaire: { titre: "L'horaire", vue: "horaire", nouveau: true, etapes: [
-      { sel: "#hr-onglets-vue", titre: "Calendrier et Rémunération", texte: "Nouveau : votre calendrier d'un côté, et de l'autre votre paie, vos banques et vos heures (Statistiques hors SQ)." },
+      { sel: "#hr-onglets-vue", titre: "Calendrier et Paie", texte: "Votre calendrier d'un côté, et de l'autre votre paie, vos banques et vos heures (Statistiques hors SQ). L'horaire et le TS du poste sont dans l'onglet Poste." },
       { sel: "#cal-ajout", titre: "Le bouton +", texte: "Modifier le quart d'une journée, planifier le congé des Fêtes ou ajouter un événement personnel." },
       { sel: "#hr-grille, #cal-zone", titre: "Toucher une journée", texte: "Touchez une journée pour voir son détail, puis « Modifier » pour noter vacances, maladie, temps supplémentaire, etc." },
       { sel: "#hr-config", titre: "Votre rotation", texte: "Configurez votre rotation une seule fois (H1 hybride et autres modèles). L'app calcule ensuite tous vos quarts." },
@@ -7152,7 +7208,7 @@ Format :
     ] },
     convention: { titre: "La convention (SQ)", vue: "convention", sq: true, etapes: [
       { sel: "#cv-echelle", titre: "Échelle salariale", texte: "Les taux de l'annexe T, avec la colonne d'aujourd'hui en couleur." },
-      { sel: "#cv-frais", titre: "Calculateur de frais", texte: "Repas, kilométrage et coucher selon l'annexe K." },
+      { sel: "#cv-frais", titre: "Frais de déplacement", texte: "Repas, kilométrage et coucher selon l'annexe K." },
       { sel: "#cv-grief", titre: "Délai de grief", texte: "La date limite pour déposer un grief selon l'article 31." },
       { sel: "#cv-texte", titre: "Poser une question", texte: "Écrivez ou dictez votre question comme à un collègue : l'IA Police Management cite mot pour mot les passages du contrat qui répondent." },
     ] },

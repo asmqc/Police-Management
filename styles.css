@@ -2647,3 +2647,19 @@ body:not(.a-convention) .seulement-convention { display: none !important; }
 /* Messages : la liste des conversations ne rétrécit plus (elle était coupée); c'est le panneau qui défile */
 .conv-panneau > * { flex-shrink: 0; }
 .conv-panneau { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+
+/* ---------- Navigation 2026.11 : Mon poste, Messages en haut, cartes repliables ---------- */
+.btn-messages-haut { position: relative; }
+.btn-messages-haut .badge { position: absolute; top: 2px; right: 0; min-width: 18px; height: 18px; font-size: .68rem; }
+.btn-messages-haut.actif { color: var(--marque, #6A3FE0); background: color-mix(in srgb, var(--marque, #6A3FE0) 14%, transparent); }
+.poste-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); margin: 0 0 14px; }
+.poste-nav button { white-space: nowrap; font-weight: 700; padding: 9px 6px; }
+body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
+.onglets-csr .onglet-lien { grid-column: 1 / -1; font-weight: 700; color: var(--accent, #1F5FD6); }
+.onglets-csr button { line-height: 1.15; }
+.ac-511-tete .ac-replier { width: 34px; height: 34px; margin-left: 2px; flex: none; transition: transform .2s ease; }
+.replie .ac-replier { transform: rotate(-90deg); }
+.replie > :not(.ac-511-tete) { display: none !important; }
+.replie .ac-511-tete .btn-secondaire { display: none; }
+.replie { padding-block: 10px; }
+#vue-horaire.mode-poste :is(#hr-qui-bloc, #hr-cible, #hr-tsc) { display: none !important; }
