@@ -4663,6 +4663,7 @@ Format :
   // Exceptions sur une journée
   function ouvrirJour(iso) {
     hr.jourChoisi = iso;
+    try { rendreEnPlus(iso); } catch (e) { console.warn(e); }
     const q = quartDu(iso);
     const lecture = !!hr.vue;
     $$(".hr-edition").forEach((el) => (el.hidden = lecture));
@@ -4844,6 +4845,22 @@ Format :
   $("#hr-jour-pris").addEventListener("input", () => majValeurJour());
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   $("#hr-jour-fetes").addEventListener("click", () => { fermerJour(); ouvrirFetes(); });
+  // « En plus ce jour-là » : un élément ajouté à la journée (cour, formation, rendez-vous…) sans remplacer le quart ou le congé
+  function rendreEnPlus(iso) {
+    const bloc = $("#hr-enplus"); if (!bloc) return;
+    bloc.hidden = !avecEvenements();
+    if (bloc.hidden) return;
+    const occs = occDuJour(iso);
+    $("#hr-enplus-liste").innerHTML = occs.map((o, i) => `<li><button type="button" data-enplus-ev="${i}"><i style="background:${esc(couleurEv(o.ev))}"></i><span><b>${esc(o.ev.titre)}</b><small>${o.ev.journee ? "Toute la journée" : `${esc(hhmm(o.debut))} – ${esc(hhmm(o.fin))}`}${o.ev.lieu ? " · " + esc(o.ev.lieu) : ""}</small></span><em>Modifier</em></button></li>`).join("");
+    $$("[data-enplus-ev]").forEach((b) => b.addEventListener("click", () => { const o = occs[+b.dataset.enplusEv]; fermerJour(); editerEvenement(o.ev); }));
+  }
+  $$("[data-enplus]").forEach((b) => b.addEventListener("click", () => {
+    const iso = hr.jourChoisi, titre = b.dataset.enplus;
+    fermerJour();
+    editerEvenement(null, { iso, heure: titre === "Cour" ? "09:00" : titre === "Formation" ? "08:00" : undefined });
+    if (titre) $("#ev-titre").value = titre;
+    setTimeout(() => { const t = $("#ev-titre"); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }, 150);
+  }));
   const fermerJour = () => ($("#hr-voile").hidden = true);
   $("#hr-jour-fermer").addEventListener("click", fermerJour);
   $("#hr-voile").addEventListener("click", (e) => { if (e.target.id === "hr-voile") fermerJour(); });
