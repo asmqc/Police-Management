@@ -2730,6 +2730,9 @@ Question : ${question}
     const titre = new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
     // « + » ouvre directement la journée (quart, temps supp., vacances…), sans menu
     fermerMenuPlus(); ouvrirJour(iso); void titre;
+    // Ajout rapide : toucher un choix l'ajoute tout de suite (sauf s'il demande des détails : motif ou temps supp.)
+    hr.ajoutRapide = true;
+    $("#hr-jour-prevu").textContent += " · Touchez un choix pour l'ajouter.";
   });
   $$("[data-plus]", menuPlus).forEach((b) => b.addEventListener("click", (e) => {
     e.stopPropagation(); fermerMenuPlus();
@@ -4663,6 +4666,7 @@ Format :
   // Exceptions sur une journée
   function ouvrirJour(iso) {
     hr.jourChoisi = iso;
+    hr.ajoutRapide = false;
     try { rendreEnPlus(iso); } catch (e) { console.warn(e); }
     const q = quartDu(iso);
     const lecture = !!hr.vue;
@@ -4768,7 +4772,10 @@ Format :
   $$("[data-hr-onglet]").forEach((b) => b.addEventListener("click", () => ongletJour(b.dataset.hrOnglet)));
   $("#hr-jour-choix").addEventListener("click", (e) => {
     const b = e.target.closest("[data-q]");
-    setTimeout(() => { if (b && b.dataset.q === "X") ongletJour("ts"); else majChampsJour(); }, 0);
+    setTimeout(() => {
+      if (b && b.dataset.q === "X") ongletJour("ts"); else majChampsJour();
+      if (b && hr.ajoutRapide && b.dataset.q !== "X" && !MOTIFS[b.dataset.q]) { hr.ajoutRapide = false; $("#hr-jour-ok").click(); }
+    }, 0);
   });
   $("#hr-jour-motif").addEventListener("change", () => { hr.motifInitial = $("#hr-jour-motif").value; majChampsJour(); });
   $("#hr-periode").addEventListener("change", () => ($("#hr-periode-extra").disabled = !$("#hr-periode").checked));
@@ -4899,7 +4906,7 @@ Format :
       nbJours = n + extra;
     }
     if (cible === hr && cible.exceptions[iso]) marquerTsAVenir(iso, cible.exceptions[iso]);
-    try { await sauverHoraire(); fermerJour(); rendreHoraire(); rendreTsAConfirmer(); toast(nbJours > 1 ? `${nbJours - sautes} journées inscrites à l'horaire${sautes ? ` · ${sautes} journée${sautes > 1 ? "s" : ""} déjà modifiée${sautes > 1 ? "s" : ""} laissée${sautes > 1 ? "s" : ""} telle${sautes > 1 ? "s" : ""} quelle${sautes > 1 ? "s" : ""}` : ""}` : "Journée mise à jour"); }
+    try { await sauverHoraire(); fermerJour(); rendreHoraire(); rendreTsAConfirmer(); toast(nbJours > 1 ? `${nbJours - sautes} journées inscrites à l'horaire${sautes ? ` · ${sautes} journée${sautes > 1 ? "s" : ""} déjà modifiée${sautes > 1 ? "s" : ""} laissée${sautes > 1 ? "s" : ""} telle${sautes > 1 ? "s" : ""} quelle${sautes > 1 ? "s" : ""}` : ""}` : `${QUARTS[type] ? QUARTS[type].nom : "Journée"} ajouté au ${dateCourte(iso)}`); }
     catch (e) { cible.exceptions = sauvegarde; toast(traduireErreur(e)); }
   });
   $("#hr-jour-retirer").addEventListener("click", async () => {
