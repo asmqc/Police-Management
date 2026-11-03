@@ -4253,10 +4253,18 @@ Format :
     const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(10);
     const el = $("#ac-annonces");
     let vues = []; try { vues = JSON.parse(localStorage.getItem("pm-annonces-masquees") || "[]"); } catch { /* facultatif */ }
-    const liste = (data || []).filter((a) => !vues.includes(a.id) && (!a.corps || corpsVisible(a.corps)));
+    const visibles = (data || []).filter((a) => !a.corps || corpsVisible(a.corps));
+    const fixes = visibles.filter((a) => a.epinglee);
+    const liste = visibles.filter((a) => !a.epinglee && !vues.includes(a.id));
+    const urls = await urlsAnnonces([...fixes, ...liste].map((a) => a.image_path));
+    // Bannières fixes : tout en haut, sans bouton pour les masquer (seul l'administrateur les retire)
+    const zf = $("#ac-fixes");
+    zf.hidden = !fixes.length;
+    zf.innerHTML = fixes.map((a) => `<article class="annonce annonce-fixe${a.image_path && urls[a.image_path] ? " avec-image" : ""}">
+      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" loading="lazy">` : ""}
+      <div><small>Annonce</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div></article>`).join("");
     el.hidden = !liste.length;
     if (!liste.length) return;
-    const urls = await urlsAnnonces(liste.map((a) => a.image_path));
     // Annonce avec image : l'image s'affiche en bannière, sur toute la largeur
     el.innerHTML = liste.map((a) => `<article class="annonce${a.image_path && urls[a.image_path] ? " avec-image" : ""}">
       ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" loading="lazy">` : ""}
@@ -4281,18 +4289,23 @@ Format :
       const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     }
-    const { error } = await sb.from("annonces").insert({ titre, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null });
+    const { error } = await sb.from("annonces").insert({ titre, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null, epinglee: $("#adm-annonce-fixe").checked });
     btn.disabled = false;
     if (error) return toast(traduireErreur(error));
-    $("#adm-annonce-titre").value = ""; $("#adm-annonce-texte").value = ""; $("#adm-annonce-image").value = ""; $("#adm-annonce-fichier").textContent = "";
+    $("#adm-annonce-titre").value = ""; $("#adm-annonce-texte").value = ""; $("#adm-annonce-fixe").checked = false; $("#adm-annonce-image").value = ""; $("#adm-annonce-fichier").textContent = "";
     toast("Annonce publiée : les membres sont avisés"); rendreAnnoncesAdmin();
   });
   async function rendreAnnoncesAdmin() {
     const { data: brut } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(60);
     const data = (brut || []).filter((a) => !a.corps || corpsVisible(a.corps));
-    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · ${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}</small></span>
-      <span class="fc-ligne"><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
+    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · ${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}${a.epinglee ? " · bannière fixe" : ""}</small></span>
+      <span class="fc-ligne"><button class="btn-secondaire petit" data-epingler-annonce="${a.id}" data-fixe="${a.epinglee}">${a.epinglee ? "Retirer de la bannière" : "Mettre en bannière fixe"}</button><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
       <button class="btn-danger petit" data-suppr-annonce="${a.id}" data-image="${esc(a.image_path || "")}">Supprimer</button></span></li>`).join("") : `<li class="vide-petit">Aucune annonce publiée.</li>`;
+    $$("[data-epingler-annonce]").forEach((b) => b.addEventListener("click", async () => {
+      const { error } = await sb.from("annonces").update({ epinglee: b.dataset.fixe !== "true" }).eq("id", b.dataset.epinglerAnnonce);
+      if (error) return toast(traduireErreur(error));
+      toast(b.dataset.fixe !== "true" ? "Annonce en bannière fixe pour tous" : "Bannière retirée"); rendreAnnoncesAdmin(); afficherAnnonces();
+    }));
     $$("[data-basculer-annonce]").forEach((b) => b.addEventListener("click", async () => {
       const { error } = await sb.from("annonces").update({ actif: b.dataset.actif !== "true" }).eq("id", b.dataset.basculerAnnonce);
       if (error) return toast(traduireErreur(error));

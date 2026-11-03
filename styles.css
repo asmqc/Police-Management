@@ -2689,3 +2689,15 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .ag-plus-ligne { cursor: default; margin-top: 8px; }
 .ag-plus-ligne .lien { margin-left: auto; font-weight: 700; }
 .ag-plus-ligne small { display: block; color: var(--fg-doux); }
+
+/* Bannière fixe (annonce épinglée par l'administrateur) */
+.ac-fixes { display: grid; gap: 10px; }
+.annonce-fixe { border-left: 4px solid #E0263B; padding-right: 16px; }
+.annonce-fixe.avec-image { border-left-width: 1px; border-top: 4px solid #E0263B; }
+@media (min-width: 900px) {
+  #vue-accueil > .ac-fixes { grid-column: 1 / -1; grid-row: 1; }
+  #vue-accueil:has(> .ac-fixes:not([hidden])) > .accueil-tete { grid-row: 2; }
+  #vue-accueil:has(> .ac-fixes:not([hidden])) > .ac-quart, #vue-accueil:has(> .ac-fixes:not([hidden])) > .ac-annonces { grid-row: 3; }
+  #vue-accueil:has(> .ac-fixes:not([hidden])) > .ac-msg, #vue-accueil:has(> .ac-fixes:not([hidden])) > #ac-admin { grid-row: 4; }
+}
+.ac-fixes .annonce-fixe:not(.avec-image) { border-left: 4px solid #E0263B !important; }
