@@ -1915,6 +1915,8 @@ Question : ${question}
       return pt[0] >= bb[0] && pt[0] <= bb[2] && pt[1] >= bb[1] && pt[1] <= bb[3] && dansGeometrie(pt[0], pt[1], t.geometry);
     }));
   }
+  // Texte du 511 : les balises (ex. <br/>) deviennent des séparateurs lisibles
+  const texte511 = (t) => String(t).replace(/<br\s*\/?>/gi, " · ").replace(/<[^>]+>/g, "").replace(/(\s*·\s*)+/g, " · ").replace(/^\s*·\s*|\s*·\s*$/g, "").trim();
   function rendre511() {
     const liste = $("#ac-511-liste"), max = 2;
     const vus = t511.tout ? t511.liste : t511.liste.slice(0, max);
@@ -1922,7 +1924,7 @@ Question : ${question}
     liste.innerHTML = vus.map((x, i) => `<li><button type="button" data-511="${i}">
         <span class="genre-511 ${esc(x.p.genre || "")}">${x.p.genre === "chantier" ? "Travaux" : "Avertissement"}${x.p.route ? " · route " + esc(x.p.route) : ""}</span>
         <b>${esc(x.p.titre || x.p.travaux || "Entrave")}</b>
-        <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).join(" · "))}</small></button></li>`).join("")
+        <small>${esc([x.p.lieu, x.p.municipalite, x.p.direction].filter(Boolean).map(texte511).join(" · "))}</small></button></li>`).join("")
       + (t511.liste.length > max ? `<li class="ac-511-plus"><button type="button" id="ac-511-plus">${t511.tout ? "Voir moins" : `Voir plus (${t511.liste.length - max} autre${t511.liste.length - max > 1 ? "s" : ""})`}</button></li>` : "");
     $$("[data-511]", liste).forEach((btn) => btn.addEventListener("click", () => {
       const x = t511.liste[+btn.dataset["511"]];
@@ -2131,17 +2133,34 @@ Question : ${question}
     } catch { ciel.meteo = null; toast("Météo indisponible pour l'instant. Les heures du soleil restent affichées."); }
     rendreCiel();
   }
-  $("#ac-ciel-btn").addEventListener("click", () => {
-    if (!navigator.geolocation) return toast("La localisation n'est pas offerte sur cet appareil.");
+  // Position : au toucher de « Ma position », puis automatiquement à chaque ouverture de l'accueil (au plus aux 10 minutes)
+  let cielDerniere = 0;
+  function localiserCiel(auto = false) {
+    if (!navigator.geolocation) { if (!auto) toast("La localisation n'est pas offerte sur cet appareil."); return; }
+    if (auto && Date.now() - cielDerniere < 10 * 60e3) return;
+    cielDerniere = Date.now();
     $("#ac-ciel-btn").disabled = true;
     navigator.geolocation.getCurrentPosition((p) => {
       $("#ac-ciel-btn").disabled = false;
       // Arrondie à 0,1° (environ 10 km) : c'est tout ce qui est gardé sur l'appareil et envoyé pour la météo
       ciel.pos = { lat: Math.round(p.coords.latitude * 10) / 10, lon: Math.round(p.coords.longitude * 10) / 10 };
       ecrireLocal("pm-ciel-pos", ciel.pos);
+      ecrireLocal("pm-ciel-auto", true);
       rendreCiel(); chargerMeteo();
-    }, () => { $("#ac-ciel-btn").disabled = false; toast("Position refusée ou introuvable."); }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
-  });
+    }, (err) => {
+      $("#ac-ciel-btn").disabled = false;
+      if (err && err.code === 1) ecrireLocal("pm-ciel-auto", false); // refusée : on ne redemande plus automatiquement
+      if (!auto) toast("Position refusée ou introuvable.");
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
+  }
+  $("#ac-ciel-btn").addEventListener("click", () => localiserCiel(false));
+  async function cielAutomatique() {
+    let permis = lireLocal("pm-ciel-auto", null);
+    try { if (navigator.permissions) { const st = await navigator.permissions.query({ name: "geolocation" }); if (st.state === "granted") permis = true; else if (st.state === "denied") permis = false; else if (permis === null) permis = true; } } catch { /* API absente */ }
+    if (permis === null) permis = true; // première fois : on demande la position une seule fois
+    if (permis) localiserCiel(true);
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.vue === "accueil" && lireLocal("pm-ciel-auto", false)) localiserCiel(true); });
 
   async function initAccueil() {
     const p = etat.profil;
@@ -2153,6 +2172,7 @@ Question : ${question}
     remplirAvatar($("#ac-avatar"), p);
     demarrer511();
     try { rendreCiel(); } catch (e) { console.warn(e); }
+    if (!document.querySelector("#ac-ciel.replie")) cielAutomatique();
     try { rendreEcheances(); } catch (e) { console.warn(e); }
     chargerEvenements().then(() => { try { rendreEcheances(); } catch (e) { console.warn(e); } }).catch(() => {});
     // Quart du jour
