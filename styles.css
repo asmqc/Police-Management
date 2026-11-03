@@ -2721,3 +2721,12 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 @media (min-width: 900px) {
   #vue-accueil > .ac-annonces { grid-auto-flow: row; overflow: visible; scroll-snap-type: none; }
 }
+
+/* Annonces cliquables, sans bouton pour les masquer */
+[data-annonce] { cursor: pointer; transition: transform .15s ease; }
+[data-annonce]:active { transform: scale(.99); }
+.annonce-lien { margin-top: 4px; font-weight: 800; color: var(--accent, #1F5FD6); font-size: .9rem; }
+.annonce-detail img { width: 100%; height: auto; border-radius: 14px; margin: 6px 0 12px; display: block; }
+.annonce-detail p { white-space: pre-line; }
+.annonce-detail .btn-principal { display: block; text-align: center; text-decoration: none; }
+.adm-lien { display: flex; gap: 6px; margin-top: 6px; } .adm-lien input { flex: 1; min-width: 0; }
