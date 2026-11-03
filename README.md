@@ -5,132 +5,120 @@
 <h1 align="center">Police Management</h1>
 
 <p align="center">
-  Outil de référence réservé aux policiers du Québec.<br>
-  Code de la sécurité routière, bornes kilométriques, territoires des corps de police et horaire rotatif, dans une seule app.
+  L'outil de poche des policières et policiers du Québec.<br>
+  Horaire et paie, lois et amendes, carte et territoires, poste et TS, contrat de travail, dans une seule app.
 </p>
 
 <p align="center">
-  <b><a href="https://asmqc.github.io/Police-Management/">asmqc.github.io/Police-Management</a></b>
+  <b><a href="https://policemanagement.ca">policemanagement.ca</a></b> · Site web, app web (iPhone, Android, ordinateur) et app iPhone et iPad
 </p>
 
 ---
 
-## Site officiel
+## En bref
 
-Les visiteurs non connectés voient le **site officiel** de Police Management (présentation, fonctionnalités, sécurité, corps de police, installation, contact), avec **Se connecter** et **Demander l'accès** en haut. La connexion ouvre l'app à la même adresse; une app installée sur l'écran d'accueil s'ouvre directement sur la connexion. La politique de l'app iPhone est publiée à [`confidentialite.html`](confidentialite.html), celle du site à [`politique.html`](politique.html).
+- **Accès vérifié** : chaque demande est approuvée par l'administrateur avant l'ouverture du compte.
+- **Hébergé au Canada** (Supabase, Montréal, forfait Pro avec sauvegarde quotidienne).
+- **Loi 25** : politique de confidentialité, consentement explicite, aucune publicité, aucune vente de données.
+- **Outil indépendant**, non affilié à la Sûreté du Québec ni à aucun corps de police. Les textes officiels et les directives de l'organisation prévalent toujours.
+
+Les visiteurs non connectés voient le **site** (présentation, vidéo, appareils, sécurité, installation, contact). La connexion ouvre l'app à la même adresse.
+
+---
+
+## Navigation
+
+| Barre du bas | Contenu |
+|---|---|
+| **Accueil** | Quart du jour, annonces, messages, TS à confirmer, échéances, soleil et météo, Québec 511, tuiles |
+| **Lois** | Articles, vitesses, frais judiciaires, favoris, registre des constats (app iPhone), lien vers le contrat de travail |
+| **Carte** | Bornes kilométriques, postes et territoires, « Où suis-je ? », couches |
+| **Horaire** | Calendrier, ajouts rapides, Paie et banques (SQ) |
+| **Poste** | Feuille de poste, horaire du poste et TS (SQ), forum |
+| **Admin** | Administrateur seulement |
+
+**Messages** est en haut de l'écran, avec le nombre de messages non lus.
+
+---
 
 ## Fonctionnalités
 
 ### Accueil
-- Salutation avec la photo de profil, le corps de police et l'unité.
-- Quart du jour et du lendemain, tirés de l'horaire rotatif.
-- Raccourcis vers chaque outil : article du CSR, table des vitesses, borne kilométrique, « Où suis-je ? », territoires, horaire, compte, app (installation).
-- Pour l'administrateur : nombre de demandes d'accès en attente.
+- Salutation, quart du jour et du lendemain, annonces de l'administrateur (image en bannière).
+- **Temps supplémentaire à confirmer** : un TS inscrit d'avance est présenté une fois passé : Fait, Pas fait (retiré de l'horaire et de la paie) ou Modifier les heures.
+- **À ne pas oublier** : dates limites du contrat SQ et échéances personnelles (requalification, RCR, permis…).
+- **Soleil et météo** : lever, coucher et crépuscule civil calculés sur l'appareil, météo Open-Meteo (position arrondie à 10 km), « Copier pour mon rapport ».
+- **Circulation Québec 511** du territoire de l'unité.
+- Cartes météo et 511 repliables; tuiles : article, vitesses, borne, « Où suis-je ? », territoires, horaire, Ma paie (SQ), Bien-être et soutien, contrat, feuille de poste, forum, idées, compte, installer l'app.
 
-### Lois (CSR et autres lois)
-- **Québec** : Code de la sécurité routière (1 225 articles, RLRQ, c. C-24.2), Loi sur les véhicules hors route, Loi concernant le transport rémunéré de personnes par automobile, Loi sur l'assurance automobile.
-- **Fédéral, sécurité nautique** : Règlement sur les petits bâtiments, compétence des conducteurs d'embarcations de plaisance, restrictions visant l'utilisation des bâtiments, Loi de 2001 sur la marine marchande du Canada.
-- **Table des vitesses** : calculateur (amende, frais, contribution, réclamation totale, points d'inaptitude, grand excès, zones de travaux et scolaires) et table complète par tranche de 5 km/h.
-- Recherche par numéro (ex. `443.1`) ou par mots-clés (ex. `cellulaire`), avec raccourcis pour les recherches fréquentes.
-- Lien direct vers le texte officiel de chaque article sur LégisQuébec.
+### Lois
+- **Québec** : Code de la sécurité routière (1 225 articles), véhicules hors route, transport rémunéré de personnes, assurance automobile. **Fédéral** : sécurité nautique.
+- Recherche par numéro ou par mots-clés, favoris synchronisés, lien vers LégisQuébec.
+- **Vitesses** : amende, frais, contribution, total réclamé, points, grand excès, zones de travaux et scolaires; table complète.
+- **Frais judiciaires**.
+- **Registre des constats** (app iPhone et iPad seulement) : sur l'appareil seulement, fichier chiffré par iOS, Face ID, exclu des sauvegardes; lecture d'une photo de constat avec Vision, sans conserver la photo ni les renseignements personnels.
 
-### Carte et bornes kilométriques
-- **Route + km** : « 20 » et « 150 » affichent la borne, le corps de police responsable, le poste et la patrouille autoroutière.
-- **Ma position** : la même information, à partir du GPS du téléphone.
-- **Code municipal** : le code géographique de la municipalité (ex. 58227), prêt à copier.
-- **Menu des postes et corps de police** : adresse, centre de services, région, district et liste des municipalités desservies avec leurs codes. Le territoire est surligné sur la carte.
-- **Couches** : postes SQ, corps municipaux, patrouille autoroutière, bornes km, sorties d'autoroute, bureaux SQ, limites et codes municipaux, caméras de circulation (Québec 511), autres postes de police (SPVM, GRC, régies, Nunavik… — OpenStreetMap).
-- **District judiciaire** dans la fiche de chaque lieu.
-- **Mes repères** : repères personnels privés (bouton « Repère »), avec itinéraire et suppression.
-- **Carte personnalisée selon le corps de police** : couches utiles en premier et activées par défaut (SQ : postes, patrouille autoroutière, bureaux; municipal ou autochtone : limites et codes municipaux, caméras, autres postes), autres couches regroupées, territoire du policier surligné en violet et carte centrée dessus, choix des couches mémorisés. L'administrateur voit la carte du corps choisi en haut.
+### Carte et territoires
+- Borne kilométrique (route + km), « Ma position », code géographique municipal.
+- Postes SQ, corps municipaux et autochtones, patrouille autoroutière, bureaux, limites municipales, sorties, caméras 511, autres postes (OpenStreetMap), district judiciaire.
+- Repères personnels privés; carte personnalisée selon le corps de police.
+- « Qui couvre ce territoire ? » : recherche par municipalité.
 
-### Territoires
-- Recherche d'une municipalité pour savoir qui la couvre : Sûreté du Québec (et quel poste), corps municipal ou corps autochtone.
-- Liste des 105 postes de la SQ par région, et des corps municipaux et autochtones.
+### Horaire
+- Vues Jour, Semaine, Mois et Liste; rotation intégrée (modèles prêts, SQ, hybride autoroutier, personnalisée).
+- **Bouton +** : toucher un code l'ajoute tout de suite. Si la journée a déjà un code, l'app demande **Remplacer** ou **Ajouter en plus** (point de couleur dans la case, sans effet sur la paie).
+- **Fiche de la journée** : codes du contrat (vacances, maladie, cour, formation, férié, banque, événements familiaux avec motif…), heures, note, **En plus ce jour-là** (cour, formation, rendez-vous, rappel).
+- **Temps supplémentaire** : une question (avant le quart, après le quart, les deux), taux, payé ou en banque, rappel, détails de la feuille de TS, valeur estimée selon l'art. 12 (SQ).
+- **Paie et banques (SQ)** : paie estimée aux deux semaines (primes, TS, impôts, retenues), banques de vacances, fériés et temps.
+- Congé des Fêtes, alertes de repos, échanges de quarts au poste, 2ᵉ calendrier (conjoint·e), partage avec un collègue.
+- Événements privés et rappels, rappel avant chaque quart, export `.ics` et **calendrier abonné** (iPhone, Google, Outlook).
+- Rapport de temps supplémentaire et statistiques d'heures.
 
-### Horaire et calendrier (façon Calendrier d'Apple)
-- **Vues Jour, Semaine, Mois et Liste**, bouton « Aujourd'hui », glissement du doigt pour changer de période, ligne rouge de l'heure actuelle.
-- **Rotation intégrée** : le quart de chaque journée (chiffres en couleur, bandes horaires dans les vues Jour et Semaine, y compris la fin d'un quart de nuit).
-- **Événements personnels** : titre, lieu, toute la journée, début et fin, répétition (chaque jour, semaine, 2 semaines, mois, année, avec date de fin), notes.
-- **Calendriers** en couleur (Personnel, Travail, Famille, Cour, Formation, Autre), affichés ou masqués, comme la rotation.
-- **Rappels** en notification (à l'heure, 5 min à 1 semaine avant ; la veille à 9 h pour une journée entière), envoyés chaque minute par une tâche planifiée Supabase (`pg_cron`).
-- **Recherche** dans les événements (titre, lieu, notes), vue Liste des 4 prochains mois.
-- Modèles de rotation prêts (4-4, 4-4 jour/nuit, 2-2-3, 7-7, 3-3, 5-2, jour-soir-nuit) ou personnalisés ; exceptions (vacances, maladie, formation, cour, temps supplémentaire, échanges) avec notes.
-- Export vers le calendrier du téléphone ou d'Outlook (fichier `.ics`, quarts et événements des 6 prochains mois).
-- **Échanges de quarts** : offrir un quart des 14 prochains jours à son poste; la première prise gagne, les deux horaires se mettent à jour et les deux policiers sont avisés.
-- **Deuxième calendrier (conjoint·e)** : rotation et exceptions du conjoint, privées (Réglages › Horaire).
-- **Temps supplémentaire** : heures et détails de la feuille de TS (code gain, activité, nature, projet, PSA, no de dossier, UO imputée, repas…).
-- **Statistiques d'heures** (mois et année) et **rapport de temps supplémentaire** à imprimer ou enregistrer en PDF.
-- **Rappel avant mes quarts** (15 min à 2 h), envoyé par une tâche planifiée Supabase.
-- **Modèles d'horaire** publiés par l'administrateur, **horaire hybride autoroutier** (9 h en semaine, 12 h la fin de semaine), catégories Obligation familiale, Férié et Maladie longue durée.
-- **Mon poste** : les rotations sont partagées automatiquement entre les membres d'un même poste (même corps de police et même unité). Activé par défaut ; chaque policier peut le désactiver dans **Réglages › Confidentialité**.
-- **Partage** avec un collègue d'un autre poste, retirable en tout temps.
-- Les collègues voient seulement la rotation : les événements, vacances, maladies, cours, formations et notes restent privés (vérifié par la base de données).
+### Mon poste
+- **Feuille de poste** : photo ou PDF partagé entre les membres du même poste, avec version web; règles strictes (aucun code, fréquence ni renseignement personnel).
+- **Horaire du poste (SQ)** : publié à partir d'une photo lue sur l'appareil puis effacée; agents identifiés par matricule; supprimé chaque mardi une fois terminé.
+- **TS du poste (SQ)** : inscription par matricule, approbation par un membre du poste le mercredi en ordre d'ancienneté, avis aux retenus, TS ajouté à l'horaire personnel; historique mensuel conservé.
+- **Forum** du corps de police.
 
-### Communauté
-- **Forum** réservé à chaque corps de police : sujets, réponses (avis à l'auteur), suppression de ses publications, signalement à l'administrateur.
-- **Idées** : propositions de nouveautés avec votes et statut (Proposée, Planifiée, Réalisée, Non retenue).
-- **Sondages** créés par l'administrateur (2 à 6 options, résultats en pourcentage).
-- **Annonces** de l'administrateur en haut de l'accueil, avec image facultative et notification à tous.
+### Contrat de travail et IA Police Management
+- **Une convention par corps de police**, visible seulement par les membres approuvés de ce corps (vérifié par le serveur).
+- SQ : contrat APPQ 2022-2028, échelle salariale, frais de déplacement, délai de grief.
+- Questions en mots de tous les jours, au micro ou par écrit : l'IA **cite mot pour mot** les clauses avec la page, sans générer de texte; lecture à voix haute; « Expliquer avec Claude » avec le compte Claude de l'utilisateur. Aucune question n'est enregistrée.
 
-### Messages (BÊTA)
-- Conversations style texto entre l'administrateur et chaque policier, avec bulles, date, heure et indicateur « Lu ».
-- Messages en direct (Supabase Realtime) et badge des messages non lus.
-- L'administrateur peut écrire à n'importe quel policier approuvé ; un policier peut seulement écrire à l'administrateur.
+### Communauté et messages
+- Messages (bêta) entre membres et avec l'administrateur, en direct, avec notifications.
+- Forum par corps, idées avec votes, sondages, annonces avec image.
+- **Inviter un collègue** : lien personnel qui préremplit le corps et le poste.
 
-### Notifications
-- Alerte sur le téléphone ou l'ordinateur à chaque nouveau message, même app fermée (Web Push).
-- L'administrateur est aussi averti de chaque nouvelle demande d'accès.
-- iPhone et iPad : iOS 16.4 ou plus récent, app ajoutée à l'écran d'accueil. Android, Windows et Mac : Chrome, Edge, Firefox ou Safari.
-- Activation par chaque utilisateur dans Mon compte ou Messages. Envoi par la fonction Supabase `notifier`, déclenchée par la base de données ; la clé privée est gardée dans Supabase Vault.
-
-### Mon compte
-- Photo de profil, nom, matricule, corps de police et unité.
-- Changement de mot de passe.
-- Suppression définitive de son propre compte.
+### Mon compte et réglages
+- Profil et photo, mot de passe, échéances, invitation, suppression du compte.
+- Thème clair, sombre ou automatique, styles d'interface, mode nuit rouge, notifications.
+- **Vidéo de présentation** (montrée une fois, puis dans Réglages), **visite guidée**, nouveautés, **Bien-être et soutien** (La Vigile, PAE, prévention du suicide, 811, 911).
 
 ### Administration
-- **Onglet Admin** dans la barre du bas (visible par l'administrateur seulement), en quatre sections : Demandes, Messagerie, Communauté, Outils.
-- **Sélecteur de corps de police** dans l'en-tête : l'administrateur se promène entre les corps (ou « Tous les corps ») ; demandes, messagerie, forum, idées, sondages, annonces et modèles suivent ce choix.
-- **Demandes d'accès classées par corps de police**, avec le nombre par corps.
-- **Messagerie de tous les corps sur une même page**, regroupée par corps, avec les messages non lus.
-- Chaque corps de police est séparé (forum, idées, sondages, annonces et modèles ciblés) ; le partage d'horaire volontaire reste possible entre corps. L'horaire hybride (12 h la fin de semaine) est réservé à la Sûreté du Québec.
-- Approbation ou refus des demandes d'accès.
-- Fiche complète de chaque compte : photo, coordonnées, dernière connexion.
-- Mot de passe temporaire (changement obligatoire à la connexion suivante).
-- Blocage et déblocage d'un compte.
-- Suppression définitive d'un compte (données et photo effacées de Supabase).
-
-### Design
-- Interface moderne façon application : surfaces douces, champs remplis, contrôles en pastilles, en-tête et barre d'onglets en verre dépoli.
-- Carte « quart du jour » avec barre gyrophare rouge et bleue.
-- Transitions entre les pages, fenêtres qui glissent depuis le bas, retour tactile sur chaque bouton (désactivés si « Réduire les animations » est activé sur l'appareil).
-- Thème clair, sombre ou automatique (Réglages).
-
-### Styles d'interface
-Moderne (clair, sombre ou automatique), Terminal MDT, Terminal officiel, Marine, Épuré clair et Poste de police (Réglages › Apparence).
-
-### Confidentialité (Loi 25)
-- [Politique de confidentialité](politique.html) du site web; consentement explicite à l'inscription, avec date et version conservées, et nouvelle acceptation si la politique change.
-- Données hébergées au Canada (Supabase, région Montréal), protégées par la sécurité au niveau des lignes de la base de données.
-- Réglages › Aide et soutien : nouveautés de l'app, message à l'administrateur, Discord, courriel du soutien.
-
-### Installation comme une application
-La tuile **App** de l'accueil explique comment installer Police Management sur iPhone, Android, Windows et Mac. L'app s'ouvre ensuite en plein écran à partir de son icône, sans passer par un magasin d'applications.
+- Demandes d'accès par corps, approbation, comptes (dernière utilisation, mot de passe temporaire, blocage, suppression).
+- Messagerie de tous les corps, communauté (annonces, sondages, signalements), outils (avertissement, état du service, modèles).
+- **Bilan** : membres, activité 7 et 30 jours, fonctions utilisées, et **capacité du serveur** (base, fichiers, utilisateurs actifs, connexions).
 
 ---
 
-## Avertissement
+## App iPhone et iPad
 
-À chaque ouverture de l'app et à chaque retour dans l'app (après plus de 15 secondes ailleurs), un écran **Avertissement** rappelle que l'application est indépendante, que le propriétaire n'est pas responsable des informations confidentielles qui pourraient y être partagées, qu'aucune photo du CRPQ ni donnée sur des civils n'est tolérée et que les montants doivent être vérifiés. « J'accepte » ou « Je refuse » (déconnexion). L'administrateur modifie le texte dans Admin › Outils.
+Le dépôt privé `Police.Management.APP` (branche `Apple`) contient l'app native (Swift Playgrounds) qui affiche le site avec des barres natives en verre, et ajoute :
+- le registre des constats sur l'appareil (Face ID, Vision);
+- les raccourcis Siri (« Prochain quart ») et le widget par Raccourcis;
+- l'onglet Poste et Messages dans la barre du haut (build 3018).
 
-## Accès
+---
 
-La connexion est obligatoire. Chaque nouvelle personne remplit une demande d'accès (nom, matricule, corps de police, unité) et reste **en attente** jusqu'à l'approbation de l'administrateur (anthony.smith@surete.qc.ca).
+## Sécurité et confidentialité
 
-**Confirmation du courriel.** Un policier approuvé peut entrer dans l'app même si son courriel n'est pas confirmé, mais la **carte**, le **CSR** et les **territoires** restent verrouillés jusqu'à la confirmation. L'écran verrouillé permet de recevoir un nouveau lien en tout temps : un lien expiré ne bloque donc jamais personne. La confirmation est vérifiée par la base de données (méthode de connexion inscrite par Supabase dans le jeton de session). L'onglet **Courriel non confirmé** de l'administration liste les retardataires et permet de leur renvoyer le lien.
-
-Les gabarits des courriels (aux couleurs de Police Management) sont dans [`supabase/courriels/`](supabase/courriels/) : à coller dans Supabase › Authentication › Emails (« Confirm signup » et « Magic Link »).
+- Règles d'accès sur chaque table (RLS), fonctions serveur qui vérifient l'appelant (admin, même poste, même corps), aucune lecture directe des tables sensibles.
+- Politique de sécurité du contenu (CSP) : le navigateur ne charge du code et n'envoie des données qu'aux sources prévues.
+- Mots de passe chiffrés de façon irréversible, refus des mots de passe divulgués, confirmation du courriel.
+- Photos d'horaire et de constat lues sur l'appareil, jamais transmises ni conservées.
+- [Politique de confidentialité](politique.html) (version 2026.11.01), nouveau consentement à chaque changement important. Politique de l'app iPhone : [`confidentialite.html`](confidentialite.html).
+- Avertissement à chaque ouverture : aucune information opérationnelle, aucune donnée sur des citoyens, aucune photo du CRPQ.
 
 ---
 
@@ -138,12 +126,13 @@ Les gabarits des courriels (aux couleurs de Police Management) sont dans [`supab
 
 | Élément | Où |
 |---|---|
-| Site | GitHub Pages (branche `main`, dossier racine) |
-| Contenu public : CSR, carte, postes SQ, corps de police, caméras | Dossier `data/` de ce dépôt |
-| Comptes, demandes d'accès, photos de profil, horaires, événements, partages et messages | Supabase (projet de l'app, région Canada) |
-| Actions sensibles (mot de passe temporaire, blocage, suppression) | Fonction sécurisée Supabase `admin-comptes` (code dans `supabase/functions/`) |
-
-Les règles d'accès de la base (RLS) protègent les renseignements personnels : chaque policier ne voit que son propre compte et son propre horaire, sauf les horaires qu'un collègue a choisi de lui partager. Seul l'administrateur voit la liste des comptes.
+| Site et app web | GitHub Pages (branche `main`), domaine `policemanagement.ca` |
+| Données publiques (CSR, carte, postes, corps de police) | Dossier `data/` |
+| Comptes, horaires, poste, messages, conventions | Supabase (Canada) |
+| Fonctions serveur | `supabase/functions/` : `notifier` (notifications), `calendrier` (calendrier abonné), `admin-comptes`, `feuilles-poste` |
+| Tâches planifiées (`pg_cron`) | Rappels, rappel d'approbation du TS (mercredi), suppression de l'horaire du poste terminé (mardi) |
+| Gabarits des courriels | `supabase/courriels/` (sujets dans `SUJETS.txt`), à coller dans Supabase › Authentication › Emails |
+| Version | `outils/version.sh` met à jour les numéros de version avant chaque publication |
 
 ### Contenu du dossier `data/`
 
@@ -155,23 +144,17 @@ Les règles d'accès de la base (RLS) protègent les renseignements personnels :
 | `corps_police.json` | Corps de police municipaux et autochtones, et municipalités desservies |
 | `municipalites.geojson`, `municipalites.json`, `municipalites_hors_sq.geojson` | Limites et codes géographiques des municipalités |
 | `cameras.geojson` | Caméras de circulation du MTMD |
-| `lois/*.json` | Autres lois et règlements (VHR, transport rémunéré, assurance automobile, sécurité nautique) |
-| `postes_autres.geojson` | Autres postes de police au Québec (OpenStreetMap, ODbL) |
+| `lois/*.json` | Autres lois et règlements |
+| `postes_autres.geojson` | Autres postes de police (OpenStreetMap, ODbL) |
 | `districts_judiciaires.json` | District judiciaire de chaque municipalité |
 
-Les trois derniers proviennent de l'app iOS (`outils/importer_ios.py`).
-
-### Mise à jour automatique
-
-L'action GitHub **« Mettre à jour les données (carte et CSR) »** roule **chaque lundi**. Elle télécharge les données officielles les plus récentes et met à jour le dossier `data/`. On peut aussi la lancer à la main dans l'onglet *Actions*.
+L'action GitHub **« Mettre à jour les données (carte et CSR) »** roule chaque lundi et met à jour `data/`.
 
 ### Modifier la liste des corps de police
 
-1. Ouvrir [`data/corps_police.json`](data/corps_police.json) et cliquer sur le crayon (modifier).
-2. Écrire le nom officiel de chaque municipalité, tel qu'il apparaît dans le Répertoire des municipalités du Québec.
-3. Cliquer sur *Commit changes*. L'app suit environ une minute plus tard.
-
-Le bouton **« Modifier la liste sur GitHub »** de l'onglet Admin ouvre directement ce fichier.
+1. Ouvrir [`data/corps_police.json`](data/corps_police.json) et cliquer sur le crayon.
+2. Écrire le nom officiel de chaque municipalité, comme dans le Répertoire des municipalités du Québec.
+3. *Commit changes*. L'app suit environ une minute plus tard.
 
 ---
 
@@ -179,14 +162,19 @@ Le bouton **« Modifier la liste sur GitHub »** de l'onglet Admin ouvre directe
 
 | Données | Source | Licence |
 |---|---|---|
-| Code de la sécurité routière | LégisQuébec, Éditeur officiel du Québec | Texte de loi public |
-| Repères kilométriques, caméras de circulation | Ministère des Transports et de la Mobilité durable | CC-BY 4.0 (Données Québec) |
+| Code de la sécurité routière et lois | LégisQuébec, Justice Canada | Textes de loi publics |
+| Repères kilométriques, caméras, Québec 511 | Ministère des Transports et de la Mobilité durable | CC-BY 4.0 (Données Québec) |
 | Desserte de la Sûreté du Québec | Sûreté du Québec | CC-BY 4.0 (Données Québec) |
-| Découpages administratifs (municipalités) | Ministère des Ressources naturelles et des Forêts | CC-BY 4.0 (Données Québec) |
+| Découpages administratifs | Ministère des Ressources naturelles et des Forêts | CC-BY 4.0 (Données Québec) |
+| Météo | Open-Meteo | CC-BY 4.0 |
 | Fond de carte | © les contributeurs d'OpenStreetMap | ODbL |
 
 ---
 
+## Contact
+
+Questions et soutien : **police.management@hotmail.com**
+
 ## Avis
 
-Police Management est un outil indépendant de référence. Il n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. En cas de doute, le texte officiel de LégisQuébec fait foi.
+Police Management est un outil indépendant de référence, créé par un policier. Il n'est pas un produit officiel de la Sûreté du Québec ni d'un autre corps de police. Les montants (paie, temps supplémentaire, amendes) sont des estimations : le talon de paie, les textes officiels et les directives de l'organisation font foi.
