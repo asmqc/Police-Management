@@ -2589,7 +2589,7 @@ Question : ${question}
     const peutOffrir = !lecture && hr.cible !== "conjoint" && ["J", "S", "N", "X"].includes(qq.code) && iso >= aujourdhuiISO();
     $("#cal-agenda").innerHTML = `
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
-      ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
+      ${rotationVisible() && qq.code && !(qq.code === "C" && !qq.note && !qq.tsps.length) ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
         <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
