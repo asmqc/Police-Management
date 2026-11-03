@@ -2684,3 +2684,8 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .hr-grille .points i.q { background: var(--q); }
 .ag-plus { display: inline-flex; align-items: center; gap: 6px; }
 .ag-plus i, .hr-enplus-liste i.q { width: 10px; height: 10px; border-radius: 50%; background: var(--q); display: inline-block; }
+
+/* Agenda du jour : un élément ajouté en plus = une 2e ligne */
+.ag-plus-ligne { cursor: default; margin-top: 8px; }
+.ag-plus-ligne .lien { margin-left: auto; font-weight: 700; }
+.ag-plus-ligne small { display: block; color: var(--fg-doux); }

@@ -2591,14 +2591,18 @@ Question : ${question}
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${(qq.plus || []).map((k) => `<small class="ag-plus"><i class="q q-${esc(k)}"></i>En plus : ${esc(QUARTS[k].nom)}</small>`).join("")}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
+      ${rotationVisible() ? (qq.plus || []).map((k) => `<div class="ag-quart ag-plus-ligne">
+        <span class="chip-grand q q-${esc(k)}">${esc(k)}</span>
+        <span><b>${esc(QUARTS[k].nom)}</b><small>Ajouté en plus</small></span>
+        ${lecture ? "" : `<button type="button" class="lien" data-ag-retirer="${esc(k)}" data-iso="${iso}">Retirer</button>`}</div>`).join("") : ""}
       ${(() => { try { const al = estSQ() ? alertesRepos(iso) : []; return al.map((a) => `<p class="ag-alerte">${esc(a)}</p>`).join(""); } catch { return ""; } })()}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
         <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
-      ${!occs.length && avecEvenements() ? `<p class="aide">Aucun événement.</p>` : ""}
-      ${lecture ? "" : `<button type="button" class="btn-secondaire petit ag-ajout" data-ajout="${iso}">+ Ajouter un événement</button>`}`;
+`;
     brancherCal($("#cal-agenda"));
+    $$("[data-ag-retirer]", $("#cal-agenda")).forEach((b) => b.addEventListener("click", () => retirerPlus(b.dataset.iso, b.dataset.agRetirer)));
   }
 
   // Vues Jour et Semaine : grille horaire avec les quarts en bandes et les événements positionnés
