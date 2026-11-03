@@ -2730,3 +2730,14 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .annonce-detail p { white-space: pre-line; }
 .annonce-detail .btn-principal { display: block; text-align: center; text-decoration: none; }
 .adm-lien { display: flex; gap: 6px; margin-top: 6px; } .adm-lien input { flex: 1; min-width: 0; }
+
+/* Admin › Communauté et Outils : deux colonnes qui suivent l'ordre des sections (les titres ne se superposent plus) */
+@media (min-width: 900px) {
+  .adm-panneau[data-adm-panneau="communaute"]:not([hidden]), .adm-panneau[data-adm-panneau="outils"]:not([hidden]) { display: block !important; column-count: 2; column-gap: 24px; }
+  .adm-panneau[data-adm-panneau="communaute"] > *, .adm-panneau[data-adm-panneau="outils"] > * { grid-row: auto !important; grid-column: auto !important; break-inside: avoid; }
+  .adm-panneau[data-adm-panneau="communaute"] > .intertitre, .adm-panneau[data-adm-panneau="outils"] > .intertitre { break-after: avoid; margin-top: 0; padding-top: 14px; }
+  .adm-panneau[data-adm-panneau="communaute"] > :not(.intertitre), .adm-panneau[data-adm-panneau="outils"] > :not(.intertitre) { margin-bottom: 16px; }
+}
+@media (min-width: 900px) {
+  .adm-panneau[data-adm-panneau="outils"]:not([hidden]) { column-count: 1; max-width: none; margin: 0; }
+}
