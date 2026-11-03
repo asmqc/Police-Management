@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202611031710">
+  <link rel="stylesheet" href="styles.css?v=202611031733">
 </head>
 <body>
   <!-- Chargement -->
@@ -537,6 +537,7 @@
         </div>
       </div>
 
+      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
       <div class="ac-recherche" role="search">
         <label for="ac-q" class="visuellement-cache">Rechercher dans Police Management</label>
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
@@ -544,7 +545,6 @@
       </div>
       <div class="ac-resultats" id="ac-resultats" hidden></div>
 
-      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
 
       <button class="ac-quart" id="ac-quart" data-aller="horaire"></button>
 
@@ -2221,9 +2221,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611031710"></script>
+  <script src="config.js?v=202611031733"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202611031710"></script>
+  <script src="app.js?v=202611031733"></script>
 </body>
 </html>
