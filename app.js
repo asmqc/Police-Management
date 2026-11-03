@@ -4900,6 +4900,7 @@ Format :
     $("#hr-enplus-liste").innerHTML = plus.map((k) => `<li><button type="button" data-plus-retirer="${esc(k)}"><i class="q q-${esc(k)}"></i><span><b>${esc(QUARTS[k].nom)}</b><small>Ajouté en plus de la journée</small></span><em>Retirer</em></button></li>`).join("") + occs.map((o, i) => `<li><button type="button" data-enplus-ev="${i}"><i style="background:${esc(couleurEv(o.ev))}"></i><span><b>${esc(o.ev.titre)}</b><small>${o.ev.journee ? "Toute la journée" : `${esc(hhmm(o.debut))} – ${esc(hhmm(o.fin))}`}${o.ev.lieu ? " · " + esc(o.ev.lieu) : ""}</small></span><em>Modifier</em></button></li>`).join("");
     $$("[data-enplus-ev]").forEach((b) => b.addEventListener("click", () => { const o = occs[+b.dataset.enplusEv]; fermerJour(); editerEvenement(o.ev); }));
     $$("[data-plus-retirer]").forEach((b) => b.addEventListener("click", () => retirerPlus(iso, b.dataset.plusRetirer)));
+    bloc.hidden = !plus.length && !occs.length; // la section paraît seulement s'il y a quelque chose ce jour-là
   }
   $$("[data-enplus]").forEach((b) => b.addEventListener("click", () => {
     const iso = hr.jourChoisi, titre = b.dataset.enplus;
