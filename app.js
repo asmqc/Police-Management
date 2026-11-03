@@ -4261,13 +4261,13 @@ Format :
     const zf = $("#ac-fixes");
     zf.hidden = !fixes.length;
     zf.innerHTML = fixes.map((a) => `<article class="annonce annonce-fixe${a.image_path && urls[a.image_path] ? " avec-image" : ""}">
-      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" loading="lazy">` : ""}
+      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" decoding="async">` : ""}
       <div><small>Annonce</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div></article>`).join("");
     el.hidden = !liste.length;
     if (!liste.length) return;
     // Annonce avec image : l'image s'affiche en bannière, sur toute la largeur
     el.innerHTML = liste.map((a) => `<article class="annonce${a.image_path && urls[a.image_path] ? " avec-image" : ""}">
-      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" loading="lazy">` : ""}
+      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" decoding="async">` : ""}
       <div><small>Annonce · ${esc(quand(a.cree_le))}</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div>
       <button class="btn-icone annonce-fermer" data-masquer-annonce="${a.id}" aria-label="Masquer cette annonce">✕</button></article>`).join("");
     $$("[data-masquer-annonce]", el).forEach((b) => b.addEventListener("click", () => {
@@ -7249,7 +7249,6 @@ Format :
     bienvenue: { titre: "Bienvenue dans Police Management", vue: "accueil", etapes: [
       { titre: "Bienvenue !", texte: "Voici une visite rapide de l'app. Vous pourrez la revoir en tout temps dans Réglages › Visite guidée." },
       { sel: "#ac-q", titre: "Recherche", texte: "Trouvez un article de loi, une municipalité ou une section de l'app en tapant quelques lettres." },
-      { sel: "#ac-quart", titre: "Votre quart", texte: "Votre quart d'aujourd'hui et de demain, selon votre rotation. Touchez pour ouvrir l'horaire." },
       { sel: "#ac-echeances", titre: "À ne pas oublier", texte: "Les dates limites du contrat de travail et les congés à planifier avant de les perdre." },
       { sel: ".ac-511", titre: "Québec 511", texte: "Les entraves et travaux sur le territoire de votre unité, mis à jour automatiquement." },
       { sel: ".nav [data-vue='csr']", titre: "Lois", texte: "CSR, Code criminel et autres lois, vitesses et amendes, frais et vos articles favoris." },
