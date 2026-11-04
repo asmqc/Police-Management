@@ -182,6 +182,7 @@
     if (/already registered|already been registered/i.test(m)) return "Ce courriel a déjà une demande. Utilisez « Connexion » ou « Mot de passe oublié ».";
     if (/Password should be at least/i.test(m)) return "Le mot de passe doit contenir au moins 10 caractères.";
     if (/rate limit|too many/i.test(m)) return "Trop de tentatives. Attendez quelques minutes, puis réessayez.";
+    if (/sending .*email|confirmation email|recovery email/i.test(m)) return "Le courriel n'a pas pu être envoyé pour le moment. Réessayez plus tard ou écrivez à police.management@hotmail.com.";
     if (/Failed to fetch|NetworkError/i.test(m)) return "Pas de connexion Internet. Vérifiez le réseau, puis réessayez.";
     return m;
   }
