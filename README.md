@@ -53,7 +53,8 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 
 ### Lois
 - **Québec** : Code de la sécurité routière (1 225 articles), véhicules hors route, transport rémunéré de personnes, assurance automobile. **Fédéral** : sécurité nautique.
-- Recherche par numéro ou par mots-clés, favoris synchronisés, lien vers LégisQuébec.
+- Recherche par numéro ou par mots-clés (avec synonymes du terrain), favoris synchronisés, articles consultés récemment, renvois entre articles cliquables, lien vers LégisQuébec.
+- **Amendes du CSR** : l'amende prévue est repérée automatiquement dans les dispositions pénales et affichée sous chaque article, avec un lien vers l'article de sanction.
 - **Vitesses** : amende, frais, contribution, total réclamé, points, grand excès, zones de travaux et scolaires; table complète.
 - **Frais judiciaires**.
 - **Registre des constats** (app iPhone et iPad seulement) : sur l'appareil seulement, fichier chiffré par iOS, Face ID, exclu des sauvegardes; lecture d'une photo de constat avec Vision, sans conserver la photo ni les renseignements personnels.
