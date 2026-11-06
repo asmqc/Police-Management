@@ -596,6 +596,7 @@
       "CSR : l'amende prévue s'affiche sous chaque article et dans la fiche, avec un lien vers l'article de sanction (cycliste, conducteur, occupant…).",
       "Les renvois « l'article 397 » sont maintenant des liens : touchez pour ouvrir l'article.",
       "Recherche plus intelligente : « cellulaire », « alcool », « vélo », « trottinette » trouvent aussi les mots du texte de loi.",
+      "Points d'inaptitude : le nombre de points s'affiche pour chaque infraction du CSR qui en comporte, avec la description officielle (raccourci « Points d'inaptitude »).",
       "Vos derniers articles consultés reviennent en raccourci, et les onglets tiennent sur une seule ligne.",
     ] },
     { id: "2026-11-06-apple-ia", date: "2026-11-06", titre: "Apple Intelligence dans le contrat de travail", points: [
@@ -6277,7 +6278,7 @@ Format :
     ["Cellulaire", "443.1"], ["Vitesse", "vitesse excède"], ["Ceinture", "ceinture de sécurité"], ["Alcool", "alcool"],
     ["Feu rouge", "feu rouge"], ["Arrêt obligatoire", "panneau arrêt"], ["Pneus d'hiver", "pneus conçus spécifiquement pour la conduite hivernale"],
     ["Corridor de sécurité", "véhicule d'urgence immobilisé"], ["Permis", "permis de conduire"], ["Immatriculation", "immatriculation"],
-    ["Délit de fuite", "accident"], ["Grand excès", "grand excès de vitesse"],
+    ["Délit de fuite", "accident"], ["Grand excès", "grand excès de vitesse"], ["Points d’inaptitude", "points"],
   ];
 
   const RACCOURCIS_LOI = {
@@ -6432,6 +6433,10 @@ Format :
     for (const [c, l] of map) for (const x of l) { const v = inverse.get(x.art) || new Set(); v.add(c); inverse.set(x.art, v); }
     return { map, inverse };
   }
+  // Points d'inaptitude : annexe du Règlement sur les points d'inaptitude (C-24.2, r. 37), mise à jour chaque lundi
+  let pointsCsr = null;
+  const pointsDe = (no) => (pointsCsr && pointsCsr.get(no)) || [];
+  const resumePoints = (l) => { const fixes = l.filter((e) => e.points); if (fixes.length) return Math.max(...fixes.map((e) => e.points)) + " pts"; return l.some((e) => e.paliers) ? "points selon l'excès" : ""; };
   const fmtAmende = (x) => `${x.min.toLocaleString("fr-CA")} $ à ${x.max.toLocaleString("fr-CA")} $`;
   const ARTICLES_VITESSE = new Set(["299", "327", "328", "329", "330", "516", "516.1", "516.2"]);
 
@@ -6466,6 +6471,14 @@ Format :
       if (!Array.isArray(brut) && brut.maj) $("#loi-ref").textContent = `${loi.ref} · texte du ${new Date(brut.maj + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}`;
       etat.csr = tous.map((a) => ({ ...a, _n: norm(a.numero + " " + (a.section || "") + " " + a.texte) }));
       sanctions = etat.loi === "csr" ? indexerSanctions(etat.csr) : null;
+      pointsCsr = null;
+      if (etat.loi === "csr") {
+        try {
+          const pts = await charger("points_inaptitude.json"), m = new Map();
+          for (const e of pts.entrees || []) for (const n of e.articles) { const l = m.get(n) || []; l.push(e); m.set(n, l); }
+          pointsCsr = m;
+        } catch { pointsCsr = null; }
+      }
     } catch (e) {
       $("#csr-etat").textContent = traduireErreur(e);
       return;
@@ -6506,6 +6519,8 @@ Format :
     let termes = [];
     if (!q) {
       res = etat.csr;
+    } else if (q === ":points" || q === "points") {
+      res = pointsCsr ? etat.csr.filter((a) => pointsCsr.has(a.numero)) : [];
     } else if (/^\d+(\.\d+)*$/.test(q)) {
       const exact = etat.csr.filter((a) => a.numero === q);
       const prefixe = etat.csr.filter((a) => a.numero !== q && a.numero.startsWith(q + "."));
@@ -6528,7 +6543,7 @@ Format :
     $("#csr-liste").innerHTML = res.slice(0, max).map((a) => `
       <li><button data-no="${esc(a.numero)}">
         <span class="no-art">${esc(a.numero)}${estFavori(etat.loi, a.numero) ? `<i class="etoile" aria-label="Favori">★</i>` : ""}</span>
-        <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span>${sanctions && sanctions.map.has(a.numero) ? `<span class="art-amende">Amende ${esc(fmtAmende(sanctions.map.get(a.numero).slice().sort((x, y) => y.max - x.max)[0]))}${sanctions.map.get(a.numero).length > 1 ? " (selon le cas)" : ""}</span>` : ""}</span>
+        <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span>${sanctions && sanctions.map.has(a.numero) ? `<span class="art-amende">Amende ${esc(fmtAmende(sanctions.map.get(a.numero).slice().sort((x, y) => y.max - x.max)[0]))}${sanctions.map.get(a.numero).length > 1 ? " (selon le cas)" : ""}</span>` : ""}${pointsDe(a.numero).length ? `<span class="art-points">${esc(resumePoints(pointsDe(a.numero)))}</span>` : ""}</span>
       </button></li>`).join("");
     $$("#csr-liste button").forEach((b) => b.addEventListener("click", () => ouvrirArticle(etat.csr.find((a) => a.numero === b.dataset.no), termes)));
     rendreRecents();
@@ -6553,13 +6568,15 @@ Format :
     if (!sanctions) return "";
     const ordreArt = (n) => { const x = etat.csr.find((y) => y.numero === n); return x ? (x.ordre ?? 0) : 1e9; };
     const l = sanctions.map.get(no) || [], visees = [...(sanctions.inverse.get(no) || [])].sort((x, y) => ordreArt(x) - ordreArt(y));
-    const vit = ARTICLES_VITESSE.has(no);
-    if (!l.length && !visees.length && !vit) return "";
+    const vit = ARTICLES_VITESSE.has(no), pts = pointsDe(no);
+    if (!l.length && !visees.length && !vit && !pts.length) return "";
+    const blocPoints = pts.length ? `<h4>Points d'inaptitude</h4><ul class="art-pts">${pts.map((e) => `<li>${e.points ? `<b>${e.points} point${e.points > 1 ? "s" : ""}</b> · ` : ""}${esc(e.description)} <small>(annexe, n° ${esc(e.no)}${e.imputabilite ? ` · sanction : art. ${esc(e.imputabilite)}` : ""})</small>${e.paliers ? `<table class="art-paliers"><tbody>${e.paliers.map((x) => `<tr><td>${esc(x.exces)}</td><td><b>${x.points}</b>${x.plus ? ` <small>${esc(x.plus)}</small>` : ""}</td></tr>`).join("")}</tbody></table>` : ""}</li>`).join("")}</ul>` : "";
     return `<section class="art-sanctions">
+      ${blocPoints}
       ${l.length ? `<h4>Amende prévue</h4><ul>${l.map((x) => `<li><b>${esc(fmtAmende(x))}</b>${x.qui ? ` <small>${esc(x.qui)}</small>` : ""} · <button type="button" class="renvoi" data-renvoi="${esc(x.art)}">art. ${esc(x.art)}</button></li>`).join("")}</ul>` : ""}
       ${visees.length ? `<h4>Cet article fixe l'amende pour</h4><p class="art-visees">${visees.slice(0, 60).map((n) => `<button type="button" class="renvoi" data-renvoi="${esc(n)}">${esc(n)}</button>`).join(" ")}${visees.length > 60 ? " …" : ""}</p>` : ""}
       ${vit ? `<p><button type="button" class="btn-secondaire" data-aller-vitesse>Calculer l'amende et les points d'un excès de vitesse ›</button></p>` : ""}
-      <p class="aide">Repéré automatiquement dans le texte du CSR. Lisez l'article de sanction pour les précisions (récidive, catégorie de véhicule). Les frais et la contribution s'ajoutent : voir l'onglet Frais judiciaires.</p>
+      <p class="aide">${l.length ? "Amendes repérées automatiquement dans le texte du CSR : lisez l'article de sanction pour les précisions (récidive, catégorie de véhicule). Les frais et la contribution s'ajoutent (onglet Frais judiciaires). " : ""}${pts.length ? "Points : table de l'annexe du Règlement sur les points d'inaptitude (C-24.2, r. 37). " : ""}Les textes officiels et la SAAQ font foi.</p>
     </section>`;
   }
   function ouvrirArticle(a, termes = []) {
@@ -6586,7 +6603,7 @@ Format :
     $$("[data-renvoi]", el).forEach((r) => r.addEventListener("click", () => ouvrirArticle(etat.csr.find((x) => x.numero === r.dataset.renvoi))));
     const bv = $("[data-aller-vitesse]", el); if (bv) bv.addEventListener("click", () => { ongletLois("vitesse"); $("#vue-csr").scrollIntoView({ block: "start" }); });
     const sanc = sanctions && sanctions.map.get(a.numero);
-    $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}${sanc ? "\n\nAmende : " + sanc.map((x) => `${fmtAmende(x)} (art. ${x.art})`).join("; ") : ""}`));
+    $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}${sanc ? "\n\nAmende : " + sanc.map((x) => `${fmtAmende(x)} (art. ${x.art})`).join("; ") : ""}${pointsDe(a.numero).some((e) => e.points) ? "\nPoints d'inaptitude : " + pointsDe(a.numero).filter((e) => e.points).map((e) => e.points).join(" ou ") : ""}`));
     const loiArt = etat.loi;
     $("[data-favori]", el).addEventListener("click", async (ev) => {
       const b = ev.currentTarget; b.disabled = true;

@@ -54,7 +54,7 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 ### Lois
 - **Québec** : Code de la sécurité routière (1 225 articles), véhicules hors route, transport rémunéré de personnes, assurance automobile. **Fédéral** : sécurité nautique.
 - Recherche par numéro ou par mots-clés (avec synonymes du terrain), favoris synchronisés, articles consultés récemment, renvois entre articles cliquables, lien vers LégisQuébec.
-- **Amendes du CSR** : l'amende prévue est repérée automatiquement dans les dispositions pénales et affichée sous chaque article, avec un lien vers l'article de sanction.
+- **Amendes et points du CSR** : l'amende prévue est repérée automatiquement dans les dispositions pénales, et les points d'inaptitude viennent de l'annexe du Règlement sur les points d'inaptitude (C-24.2, r. 37). Les deux s'affichent sous chaque article, avec un lien vers l'article de sanction.
 - **Vitesses** : amende, frais, contribution, total réclamé, points, grand excès, zones de travaux et scolaires; table complète.
 - **Frais judiciaires**.
 - **Registre des constats** (app iPhone et iPad seulement) : sur l'appareil seulement, fichier chiffré par iOS, Face ID, exclu des sauvegardes; lecture d'une photo de constat avec Vision, sans conserver la photo ni les renseignements personnels.
@@ -142,6 +142,7 @@ Le dépôt privé `Police.Management.APP` (branche `Apple`) contient l'app nativ
 | Fichier | Contenu |
 |---|---|
 | `csr.json` | Code de la sécurité routière |
+| `points_inaptitude.json` | Table des points d'inaptitude (annexe du C-24.2, r. 37) |
 | `reperes.json` | Bornes kilométriques |
 | `sq_postes.geojson`, `sq_bureaux.geojson`, `sq_autoroutier.geojson`, `sq_districts.geojson` | Postes, bureaux et territoires de la SQ |
 | `corps_police.json` | Corps de police municipaux et autochtones, et municipalités desservies |

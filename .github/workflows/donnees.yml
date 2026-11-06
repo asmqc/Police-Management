@@ -36,12 +36,28 @@ jobs:
             && python3 -c "import json; json.dump(json.load(open('tmp_csr.json')), open('data/csr.json','w'), ensure_ascii=False, separators=(',',':'))" \
             || echo "Extraction incomplète : on garde la version actuelle du CSR"
           rm -f exploration/csr_complet.html tmp_csr.json
+      - name: Points d'inaptitude (C-24.2, r. 37)
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p exploration
+          for essai in 1 2 3; do
+            code=$(curl -sSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" \
+              -H "Accept-Language: fr-CA,fr" -o exploration/points.html \
+              "https://www.legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037%20" -w "%{http_code}" || echo 000)
+            echo "points $essai $code"; [ "$code" = "200" ] && break; sleep 10
+          done
+          python outils/extraire_points.py exploration/points.html tmp_points.json \
+            && python3 -c "import json,sys; d=json.load(open('tmp_points.json')); sys.exit(0 if len(d['entrees']) >= 30 else 1)" \
+            && mv tmp_points.json data/points_inaptitude.json \
+            || echo "Extraction incomplète : on garde la version actuelle des points"
+          rm -f exploration/points.html tmp_points.json
       - name: Enregistrer
         if: always()
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
-          git add data/csr.json
+          git add data/csr.json data/points_inaptitude.json
           if [ "${{ steps.construire.outcome }}" = "success" ]; then
             git add data/
           fi

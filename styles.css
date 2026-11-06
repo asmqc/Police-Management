@@ -2797,3 +2797,7 @@ button.renvoi { font: inherit; font-weight: 700; color: var(--accent, #0A4FB8); 
 .csr-recents { align-items: center; margin-top: 6px; }
 .csr-recents .ref { font-size: .78rem; margin-right: 2px; }
 .csr-recents button { font-family: var(--f-mono, monospace); }
+.art-points { display: inline-block; margin: 4px 0 0 6px; font-size: .78rem; font-weight: 700; color: #7A4B00; background: rgba(242, 179, 61, .2); border-radius: 999px; padding: 2px 9px; }
+.art-pts { list-style: none; padding: 0 !important; }
+.art-paliers { margin: 6px 0 4px; border-collapse: collapse; font-size: .85rem; }
+.art-paliers td { padding: 2px 12px 2px 0; vertical-align: top; }
