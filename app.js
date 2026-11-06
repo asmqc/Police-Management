@@ -6545,7 +6545,8 @@ Format :
   function lierRenvois(html, courant) {
     if (!etat.csr || !etat.csr.length) return html;
     const existe = new Set(etat.csr.map((x) => x.numero));
-    return html.replace(/(articles?\s+)((?:\d+(?:\.\d+)*(?:\s*(?:,|à|ou|et)\s*(?=\d))?)+)(?![\d°])/g, (tout, mot, liste) =>
+    // Pas de lien quand le renvoi vise une autre loi (« l'article 254 du Code criminel », « de la Loi sur… »)
+    return html.replace(/(articles?\s+)((?:\d+(?:\.\d+)*(?:\s*(?:,|à|ou|et)\s*(?=\d))?)+)(?![\d°])(?!\s*(?:de la|du(?! présent)|de l[’']|des)\s)/g, (tout, mot, liste) =>
       mot + liste.replace(/\d+(?:\.\d+)*/g, (n) => (existe.has(n) && n !== courant ? `<button type="button" class="renvoi" data-renvoi="${n}">${n}</button>` : n)));
   }
   function blocSanctions(no) {
