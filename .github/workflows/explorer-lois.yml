@@ -12,9 +12,20 @@ jobs:
       - name: Règlement sur les points d'inaptitude (C-24.2, r. 37)
         run: |
           mkdir -p exploration-lois
-          curl -sSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" \
-            -H "Accept-Language: fr-CA,fr" --retry 3 -o exploration-lois/points.html \
-            "https://www.legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037" -w "%{http_code} %{size_download}\n"
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36"
+          i=0
+          for u in "https://www.legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037%20" \
+                   "https://www.legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037" \
+                   "https://legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037%20" \
+                   "https://www.legisquebec.gouv.qc.ca/fr/pdf/rc/C-24.2,%20R.%2037.pdf"; do
+            i=$((i+1))
+            for essai in 1 2 3; do
+              code=$(curl -sSL -A "$UA" -H "Accept-Language: fr-CA,fr" -o exploration-lois/points-$i.bin "$u" -w "%{http_code}" || echo 000)
+              echo "$i $essai $code $(stat -c %s exploration-lois/points-$i.bin 2>/dev/null) $u"
+              [ "$code" = "200" ] && break
+              sleep 8
+            done
+          done
       - name: Publier dans la branche exploration-lois
         run: |
           git config user.name "github-actions"
