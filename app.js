@@ -36,6 +36,35 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[’'`\-–—]/g, " ").replace(/\s+/g, " ").trim();
   const LEGIS = "https://www.legisquebec.gouv.qc.ca/fr/document/lc/C-24.2";
+  // Statistiques anonymes : une section compte au plus une fois par jour et par appareil (aucun identifiant envoyé)
+  function compterSection(section) {
+    try {
+      if (!etat.profil || etat.profil.statut !== "approuve" || !sb) return;
+      const jour = new Date().toISOString().slice(0, 10), cle = "pm-compte-" + jour;
+      const vus = JSON.parse(localStorage.getItem(cle) || "[]");
+      if (vus.includes(section)) return;
+      vus.push(section); localStorage.setItem(cle, JSON.stringify(vus));
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith("pm-compte-") && k !== cle) localStorage.removeItem(k); }
+      sb.rpc("compter_section", { p_section: section }).then(() => {}, () => {});
+    } catch { /* facultatif */ }
+  }
+  // Bibliothèque de carte (Leaflet) : chargée à la première ouverture de la carte, ou en arrière-plan quand l'app est au repos
+  let promesseLeaflet = null;
+  function chargerLeaflet() {
+    if (window.L && window.L.map) return Promise.resolve();
+    if (promesseLeaflet) return promesseLeaflet;
+    promesseLeaflet = new Promise((ok, echec) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; css.crossOrigin = "";
+      document.head.appendChild(css);
+      const sc = document.createElement("script");
+      sc.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; sc.crossOrigin = ""; sc.async = true;
+      sc.onload = () => ok(); sc.onerror = () => { promesseLeaflet = null; echec(new Error("leaflet")); };
+      document.head.appendChild(sc);
+    });
+    return promesseLeaflet;
+  }
+  setTimeout(() => { const f = () => chargerLeaflet().catch(() => {}); if (window.requestIdleCallback) requestIdleCallback(f, { timeout: 4000 }); else f(); }, 4000);
 
   const etat = { session: null, profil: null, vue: "csr", csr: null, corps: [], donnees: {}, carte: null };
 
@@ -576,7 +605,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.11.05.2";
+  const VERSION_POLITIQUE = "2026.11.06";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -592,6 +621,12 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-06-site", date: "2026-11-06", titre: "Signaler un problème, English, et un site plus rapide", points: [
+      "Réglages › Signaler un problème : décrivez ce qui ne marche pas, l'administrateur le reçoit avec la section et le type d'appareil.",
+      "English (beta) : le site public, la connexion, la demande d'accès, la navigation et le menu sont offerts en anglais (Réglages › Langue).",
+      "Ouverture plus rapide : la carte et les images se chargent seulement quand elles servent.",
+      "Nouvelle page « À propos », et un bel aperçu quand vous partagez le lien policemanagement.ca.",
+    ] },
     { id: "2026-11-06-lois", date: "2026-11-06", titre: "Onglet Lois amélioré", points: [
       "CSR : l'amende prévue s'affiche sous chaque article et dans la fiche, avec un lien vers l'article de sanction (cycliste, conducteur, occupant…).",
       "Les renvois « l'article 397 » sont maintenant des liens : touchez pour ouvrir l'article.",
@@ -1197,6 +1232,7 @@ Question : ${question}
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
+    if (nom !== "compte" && nom !== etat.vue) etat.vueAvant = nom;
     etat.vue = nom;
     document.body.dataset.vue = nom;
     if (nom !== "carte") document.body.classList.remove("carte-plein");
@@ -1205,11 +1241,17 @@ Question : ${question}
     $$(".vue").forEach((v) => (v.hidden = v.id !== (verrou ? "vue-verrou" : "vue-" + nom)));
     history.replaceState(null, "", "#" + nom);
     if (verrou) { afficherVerrou(nom); return; }
+    if (nom !== "admin") compterSection(nom);
     if (nom === "csr") initCsr();
     if (nom === "carte") {
-      initCarte(); personnaliserCarte();
-      const pt = pointPartageEnAttente();
-      if (pt) { try { sessionStorage.removeItem("pm-point"); } catch { /* facultatif */ } setTimeout(() => etat.placer(pt[0], pt[1], "Point partagé", 16), 300); }
+      // Leaflet est chargé seulement quand la carte sert (premier affichage plus rapide)
+      if (!etat.carte && !etat.placer) etat.placer = (...args) => { etat.placerAttente = args; };
+      chargerLeaflet().then(() => {
+        initCarte(); personnaliserCarte();
+        if (etat.placerAttente) { const a = etat.placerAttente; etat.placerAttente = null; setTimeout(() => etat.placer(...a), 150); }
+        const pt = pointPartageEnAttente();
+        if (pt) { try { sessionStorage.removeItem("pm-point"); } catch { /* facultatif */ } setTimeout(() => etat.placer(pt[0], pt[1], "Point partagé", 16), 300); }
+      }).catch(() => toast("La carte n'a pas pu se charger. Vérifiez votre connexion, puis réessayez."));
     }
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
@@ -1342,6 +1384,7 @@ Question : ${question}
     if (p === "feuille" || p === "forum") { afficherVue(p); return; }
     hr.onglet = p;
     afficherVue("horaire");
+    compterSection(p === "ts" ? "ts-poste" : "horaire-poste");
     rendreHoraire(); chargerPoste(true);
     $("#vue-horaire").scrollTop = 0;
   }));
@@ -3604,6 +3647,7 @@ Question : ${question}
     const src = affichee();
     $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
     $("#stats-rapport").hidden = stats.mode !== "mois";
+    compterSection("stats-" + stats.mode);
     const sqMoi = estSQ() && affichee() === hr;
     $$("[data-stats='paie'], [data-stats='banques'], [data-stats='depenses'], [data-stats='retraite']").forEach((b) => (b.hidden = !sqMoi));
     if (!sqMoi && ["paie", "banques", "depenses", "retraite"].includes(stats.mode)) { stats.mode = "ts"; rendreStats(); return; }
@@ -4777,6 +4821,50 @@ Format :
       toast("Annonce supprimée"); rendreAnnoncesAdmin();
     }));
   }
+  /* ---------------- Signaler un problème : description + contexte technique minimal, lu par l'administrateur ---------------- */
+  const versionSite = () => { const sc = document.querySelector('script[src*="app.js"]'); const m = sc && sc.getAttribute("src").match(/v=(\d+)/); return m ? m[1] : ""; };
+  const appareilCourt = () => {
+    const ua = navigator.userAgent;
+    const os = /iPhone|iPad|iPod/.test(ua) ? "iOS " + ((ua.match(/OS (\d+)[._](\d+)/) || []).slice(1, 3).join(".") || "") : /Android/.test(ua) ? "Android " + ((ua.match(/Android ([\d.]+)/) || [])[1] || "") : /Mac OS X/.test(ua) ? "macOS" : /Windows/.test(ua) ? "Windows" : /CrOS/.test(ua) ? "ChromeOS" : /Linux/.test(ua) ? "Linux" : "Autre";
+    const nav = /PoliceManagementAndroid/.test(ua) ? "app Android" : /PoliceManagement/.test(ua) && !/Safari\//.test(ua) ? "app iPhone/iPad" : /CriOS|Chrome\//.test(ua) && !/Edg\//.test(ua) ? "Chrome" : /Edg\//.test(ua) ? "Edge" : /Firefox|FxiOS/.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "navigateur";
+    const installe = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches ? ", installée" : "";
+    return `${os.trim()} · ${nav}${installe}`.slice(0, 200);
+  };
+  function ouvrirProbleme() {
+    const vue = etat.vueAvant || "accueil";
+    $("#pb-infos").textContent = `Envoyé avec : section « ${vue} », version ${versionSite() || "?"}, ${appareilCourt()}, écran ${screen.width}×${screen.height}. Rien d'autre.`;
+    $("#pb-texte").value = "";
+    $("#pb-voile").hidden = false;
+    setTimeout(() => $("#pb-texte").focus(), 100);
+  }
+  $("#pb-fermer").addEventListener("click", () => ($("#pb-voile").hidden = true));
+  $("#pb-voile").addEventListener("click", (e) => { if (e.target.id === "pb-voile") $("#pb-voile").hidden = true; });
+  $("#pb-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const texte = $("#pb-texte").value.trim();
+    if (texte.length < 5) return toast("Décrivez le problème en quelques mots");
+    const btn = $("#pb-form button[type=submit]"); btn.disabled = true;
+    const { error } = await sb.from("problemes_app").insert({ description: texte.slice(0, 1500), vue: (etat.vueAvant || "accueil").slice(0, 40), version: versionSite().slice(0, 40), appareil: appareilCourt(), ecran: `${screen.width}x${screen.height}` });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    $("#pb-voile").hidden = true;
+    toast("Merci ! L'administrateur a reçu votre signalement.");
+  });
+  $$('[data-action="probleme"]').forEach((b) => b.addEventListener("click", ouvrirProbleme));
+  async function rendreProblemes() {
+    const { data } = await sb.from("problemes_app").select("id, description, vue, version, appareil, ecran, cree_le, user_id").eq("traite", false).order("cree_le", { ascending: false }).limit(50);
+    const n = (data || []).length;
+    $("#adm-pb-nb").textContent = n || ""; $("#adm-pb-nb").hidden = !n;
+    const nom = (id) => { const c = (comptesAdmin || []).find((x) => x.id === id); return c ? [c.grade, c.nom_complet].filter(Boolean).join(" ") : "Membre"; };
+    $("#adm-problemes").innerHTML = n ? data.map((x) => `<li><span><b>${esc(x.description)}</b><small>${esc(nom(x.user_id))} · ${esc(x.vue || "?")} · ${esc(x.appareil || "")} · écran ${esc(x.ecran || "?")} · version ${esc(x.version || "?")} · ${esc(dateFr(x.cree_le))}</small></span>
+      <span class="fc-ligne"><button class="btn-secondaire petit" data-pb-regle="${x.id}">Réglé</button></span></li>`).join("") : `<li class="vide-petit">Aucun problème signalé.</li>`;
+    $$("[data-pb-regle]").forEach((b) => b.addEventListener("click", async () => {
+      const { error } = await sb.from("problemes_app").update({ traite: true }).eq("id", b.dataset.pbRegle);
+      if (error) return toast(traduireErreur(error));
+      rendreProblemes();
+    }));
+  }
+
   async function rendreSignalements() {
     const { data } = await sb.from("signalements").select("*").eq("traite", false).order("cree_le", { ascending: false });
     const n = (data || []).length;
@@ -4844,10 +4932,13 @@ Format :
     if (ongletAdmin === "stats") rendreBilanAdmin();
   }));
   // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
+  const NOMS_SECTIONS = { accueil: "Accueil", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · constats",
+    carte: "Carte", horaire: "Horaire", "stats-paie": "Paie", "stats-banques": "Banques", "stats-ts": "Temps supplémentaire", "stats-depenses": "Dépenses", "stats-retraite": "Retraite", "stats-mois": "Heures du mois", "stats-annee": "Année",
+    feuille: "Feuille de poste", "horaire-poste": "Horaire du poste", "ts-poste": "TS du poste", forum: "Forum", messages: "Messages", convention: "Contrat de travail", compte: "Réglages", idees: "Idées", corps: "Corps de police" };
   async function rendreBilanAdmin() {
     const el = $("#adm-stats");
     el.innerHTML = `<p class="aide">Chargement…</p>`;
-    const [{ data: b, error }, { data: cap }] = await Promise.all([sb.rpc("admin_tableau_bord"), sb.rpc("admin_capacite")]);
+    const [{ data: b, error }, { data: cap }, { data: usage }] = await Promise.all([sb.rpc("admin_tableau_bord"), sb.rpc("admin_capacite"), sb.rpc("admin_utilisation", { p_jours: 30 })]);
     if (error) { el.innerHTML = ""; return toast(traduireErreur(error)); }
     const m = b.membres, a = b.adoption, ap = Math.max(1, m.approuves);
     const pct = (n) => `${Math.round((100 * n) / ap)} %`;
@@ -4874,6 +4965,9 @@ Format :
       <div class="adm-tuiles">${tuile(m.approuves, "membres approuvés")}${tuile(m.attente, "demandes en attente")}${tuile(b.actifs.j7, "actifs 7 jours", pct(b.actifs.j7))}${tuile(b.actifs.j30, "actifs 30 jours", pct(b.actifs.j30))}</div>
       <h3 class="intertitre">Fonctions utilisées</h3>
       <div class="adm-tuiles">${tuile(a.rotation, "rotation configurée", pct(a.rotation))}${tuile(a.notifications, "notifications activées", pct(a.notifications))}${tuile(a.paie, "paie SQ remplie")}${tuile(a.calendrier_abonne, "calendrier abonné")}${tuile(a.evenements, "utilisent le calendrier")}${tuile(a.echeances, "ont des échéances")}${tuile(a.horaires_poste, "horaires de poste publiés")}${tuile(a.ts_attribues, "TS attribués")}${tuile(a.messages_30j, "messages (30 jours)")}${tuile(a.forum_30j, "sujets au forum (30 jours)")}${tuile(a.idees, "idées proposées")}</div>
+      <h3 class="intertitre">Sections les plus ouvertes <small class="adm-forfait">30 derniers jours · anonyme</small></h3>
+      ${usage && usage.length ? barres(usage.map((x) => ({ nom: `${NOMS_SECTIONS[x.section] || x.section}${x.j7 ? ` · ${x.j7} cette semaine` : ""}`, n: x.n }))) : `<p class="aide">Pas encore de données : les compteurs commencent aujourd'hui.</p>`}
+      <p class="aide">Une section compte au plus une fois par jour et par appareil. Aucun nom ni identifiant n'est enregistré : seulement le total par jour.</p>
       <h3 class="intertitre">Membres par corps de police</h3>${barres(b.par_corps)}
       <h3 class="intertitre">Postes les plus représentés</h3>${barres(b.par_poste)}
       <h3 class="intertitre">Nouvelles demandes par semaine</h3>${sem.length ? barres(sem.map((x) => ({ nom: "Semaine du " + dateCourte(x.semaine), n: x.n }))) : `<p class="aide">Aucune demande depuis 10 semaines.</p>`}
@@ -5922,6 +6016,7 @@ Format :
     $$("#fr-table-total tbody tr").forEach((tr) => tr.classList.toggle("choisie", +tr.dataset.fr === a));
   }
   function ongletLois(nom) {
+    if (nom !== "articles") compterSection("lois-" + nom);
     $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.csrOnglet === nom)));
     $("#csr-constats").hidden = nom !== "constats";
     if (nom === "constats") initConstats();
@@ -8479,6 +8574,7 @@ Format :
     rendreAvertAdmin();
     rendreAnnoncesAdmin();
     rendreSignalements();
+    rendreProblemes();
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
   }
 

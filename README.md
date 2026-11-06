@@ -98,10 +98,14 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 - Thème clair, sombre ou automatique, styles d'interface, mode nuit rouge, notifications.
 - **Vidéo de présentation** (montrée une fois, puis dans Réglages), **visite guidée**, nouveautés, **Bien-être et soutien** (La Vigile, PAE, prévention du suicide, 811, 911).
 
+### Langue
+- **English (beta)** : site public, connexion, demande d'accès, navigation et menu (`i18n.js`). Les lois et le contrat de travail restent en français.
+
 ### Administration
 - Demandes d'accès par corps, approbation, comptes (dernière utilisation, mot de passe temporaire, blocage, suppression).
 - Messagerie de tous les corps, communauté (annonces, sondages, signalements), outils (avertissement, état du service, modèles).
-- **Bilan** : membres, activité 7 et 30 jours, fonctions utilisées, et **capacité du serveur** (base, fichiers, utilisateurs actifs, connexions).
+- **Bilan** : membres, activité 7 et 30 jours, fonctions utilisées, **sections les plus ouvertes** (compteur anonyme par jour, sans identifiant) et **capacité du serveur**.
+- **Problèmes signalés** par les membres (Réglages › Signaler un problème), avec la section, la version et le type d'appareil.
 
 ---
 
@@ -118,9 +122,10 @@ Le dépôt privé `Police.Management.APP` (branche `Apple`) contient l'app nativ
 
 - Règles d'accès sur chaque table (RLS), fonctions serveur qui vérifient l'appelant (admin, même poste, même corps), aucune lecture directe des tables sensibles.
 - Politique de sécurité du contenu (CSP) : le navigateur ne charge du code et n'envoie des données qu'aux sources prévues.
+- Page [À propos](a-propos.html) et aperçu de partage (Open Graph) pour Facebook et Messenger.
 - Mots de passe chiffrés de façon irréversible, refus des mots de passe divulgués, confirmation du courriel.
 - Photos d'horaire et de constat lues sur l'appareil, jamais transmises ni conservées.
-- [Politique de confidentialité](politique.html) (version 2026.11.05.2), nouveau consentement à chaque changement important. Politique de l'app iPhone : [`confidentialite.html`](confidentialite.html).
+- [Politique de confidentialité](politique.html) (version 2026.11.06), nouveau consentement à chaque changement important. Politique de l'app iPhone : [`confidentialite.html`](confidentialite.html).
 - Avertissement à chaque ouverture : aucune information opérationnelle, aucune donnée sur des citoyens, aucune photo du CRPQ.
 
 ---

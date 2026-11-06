@@ -13,9 +13,21 @@
   <title>Police Management</title>
   <meta name="description" content="Police Management : l'horaire, la route et les lois réunis pour les policiers du Québec. Rotation et échanges de quarts, carte des postes et bornes kilométriques, CSR et calculateur de vitesse. Accès vérifié, données hébergées au Canada.">
   <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Police Management">
-  <meta property="og:description" content="L'horaire, la route et les lois, réunis pour les policiers du Québec.">
-  <meta property="og:image" content="https://policemanagement.ca/assets/icone-512.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Police Management">
+  <meta property="og:locale" content="fr_CA">
+  <meta property="og:title" content="Police Management — l'outil de poche des policiers du Québec">
+  <meta property="og:description" content="Horaire et paie, lois et amendes, carte des territoires et contrat de travail, réunis dans une seule app. Accès vérifié, hébergé au Canada.">
+  <meta property="og:url" content="https://policemanagement.ca/">
+  <meta property="og:image" content="https://policemanagement.ca/assets/partage.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Police Management : l'outil de poche des policiers du Québec, sur iPhone et Android">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Police Management — l'outil de poche des policiers du Québec">
+  <meta name="twitter:description" content="Horaire et paie, lois et amendes, carte des territoires et contrat de travail, réunis dans une seule app. Accès vérifié, hébergé au Canada.">
+  <meta name="twitter:image" content="https://policemanagement.ca/assets/partage.jpg">
+  <link rel="canonical" href="https://policemanagement.ca/">
   <meta name="theme-color" content="#0E1B2C">
   <meta name="apple-mobile-web-app-title" content="Police Management">
   <link rel="icon" href="assets/favicon.png" type="image/png">
@@ -23,9 +35,10 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202611061931">
+  <link rel="stylesheet" href="styles.css?v=202611061953">
 </head>
 <body>
   <!-- Chargement -->
@@ -64,6 +77,8 @@
         <a href="#site-contact" data-site-lien>Contact</a>
       </nav>
       <div class="site-actions">
+        <button type="button" class="site-btn site-btn-ligne site-langue" data-langue="en" lang="en" aria-pressed="false">English</button>
+        <button type="button" class="site-btn site-btn-ligne site-langue" data-langue="fr" lang="fr" aria-pressed="true">Français</button>
         <button type="button" class="site-btn site-btn-ligne" data-site-auth="connexion">Se connecter</button>
         <button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès</button>
       </div>
@@ -87,8 +102,8 @@
           </ul>
         </div>
         <div class="site-hero-visuel" aria-hidden="true">
-          <figure class="site-tel site-appareil incline-g"><img src="assets/site/appareil-horaire.webp" width="620" height="1155" alt=""></figure>
-          <figure class="site-tel site-appareil avant"><img src="assets/site/appareil-accueil.webp" width="620" height="1155" alt="" fetchpriority="high"></figure>
+          <figure class="site-tel site-appareil incline-g"><img src="assets/site/appareil-horaire.webp" width="620" height="1155" alt="" loading="lazy" decoding="async"></figure>
+          <figure class="site-tel site-appareil avant"><img src="assets/site/appareil-accueil.webp" width="620" height="1155" alt="" fetchpriority="high" loading="lazy" decoding="async"></figure>
         </div>
       </section>
 
@@ -300,7 +315,7 @@
           <a class="site-btn site-btn-ligne" href="mailto:police.management@hotmail.com">police.management@hotmail.com</a>
         </div>
         <div class="site-partage">
-          <img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca" width="120" height="120">
+          <img src="assets/site/qr.svg" alt="Code QR vers policemanagement.ca" width="120" height="120" loading="lazy" decoding="async">
           <div>
             <b>Faites connaître l'app à votre poste</b>
             <p>Partagez le lien à un collègue ou imprimez l'affiche avec code QR pour le babillard.</p>
@@ -318,6 +333,7 @@
       <div><img src="assets/logo.png" alt="" width="28" height="28"><span>Police <b>Management</b></span></div>
       <nav aria-label="Liens utiles">
         <a href="politique.html">Politique de confidentialité</a>
+        <a href="a-propos.html">À propos</a>
         <a href="gouvernance.html">Gouvernance des renseignements personnels</a>
         <button type="button" class="lien" data-site-auth="connexion">Se connecter</button>
       </nav>
@@ -327,6 +343,7 @@
 
   <main id="ecran-auth" class="auth" hidden>
     <button type="button" class="auth-retour web-seulement" id="auth-retour">‹ Retour au site</button>
+    <div class="auth-langue"><button type="button" class="lien" data-langue="en" lang="en" aria-pressed="false">English</button><button type="button" class="lien" data-langue="fr" lang="fr" aria-pressed="true">Français</button></div>
     <section class="auth-carte">
       <header class="auth-entete">
         <img src="assets/logo.png" alt="Logo Police Management" class="logo" width="64" height="64">
@@ -903,6 +920,13 @@
       </div>
 
       <div class="rg-bloc">
+      <h3 class="intertitre">Langue · Language</h3>
+      <div class="panneau" id="rg-langue-bloc">
+        <label class="ref" for="rg-langue">Langue de l'interface</label>
+        <select id="rg-langue"><option value="fr">Français</option><option value="en">English (beta)</option></select>
+        <p class="aide">English covers the public site, sign-in, sign-up, navigation and menu for now. Laws and the collective agreement stay in French, the official language of these texts.</p>
+      </div>
+
       <h3 class="intertitre">Visite guidée</h3>
       <div class="panneau visite-reglages">
         <label class="interrupteur" for="rg-visites-auto"><span class="interrupteur-txt"><b>Explications automatiques</b><small>Une courte visite s'affiche la première fois que vous ouvrez une section ou qu'une nouveauté arrive.</small></span><input type="checkbox" id="rg-visites-auto" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
@@ -915,10 +939,12 @@
       <div class="liste-reglages">
         <button data-action="nouveautes"><span>Nouveautés de l'app</span><small>Ce qui a changé récemment</small><i>›</i></button>
         <button data-menu="soutien"><span>Bien-être et soutien</span><small>Ressources d'aide confidentielles, en tout temps</small><i>›</i></button>
+        <button type="button" data-action="probleme"><span>Signaler un problème</span><small>Un bogue, un écran qui ne marche pas : l'administrateur le reçoit</small><i>›</i></button>
         <button data-menu="messages"><span>Écrire à l'administrateur</span><small>Question, problème ou suggestion</small><i>›</i></button>
         <a class="rg-lien" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener"><span>Discord de soutien</span><small>Entraide entre membres</small><i>↗</i></a>
         <a class="rg-lien" href="mailto:police.management@hotmail.com"><span>Courriel du soutien</span><small>police.management@hotmail.com</small><i>↗</i></a>
         <a class="rg-lien" href="politique.html" target="_blank" rel="noopener"><span>Politique de confidentialité</span><small>Loi 25 · vos droits · <span id="rg-consentement"></span></small><i>↗</i></a>
+        <a class="rg-lien" href="a-propos.html" target="_blank" rel="noopener"><span>À propos de Police Management</span><small>Pourquoi l'app existe · qui peut s'inscrire</small><i>↗</i></a>
         <a class="rg-lien" href="gouvernance.html" target="_blank" rel="noopener"><span>Gouvernance des renseignements personnels</span><small>Conservation · plaintes · incidents</small><i>↗</i></a>
       </div>
       </div>
@@ -1741,6 +1767,9 @@
       </form>
       <ul class="liste-partages" id="adm-annonces"></ul>
 
+      <h3 class="intertitre">Problèmes signalés <span class="badge-ligne" id="adm-pb-nb" hidden></span></h3>
+      <ul class="liste-partages" id="adm-problemes"></ul>
+
       <h3 class="intertitre">Signalements <span class="badge-ligne" id="adm-sig-nb" hidden></span></h3>
       <ul class="liste-partages" id="adm-signalements"></ul>
 
@@ -1806,11 +1835,25 @@
   <div id="annonce-voile" class="voile" hidden>
     <section class="fiche-compte annonce-detail" role="dialog" aria-modal="true" aria-labelledby="annonce-d-titre">
       <button class="btn-icone fermer" id="annonce-d-fermer" aria-label="Fermer">✕</button>
-      <img id="annonce-d-img" alt="" hidden>
+      <img id="annonce-d-img" alt="" hidden loading="lazy" decoding="async">
       <small class="ref" id="annonce-d-date"></small>
       <h3 class="titre-voile" id="annonce-d-titre"></h3>
       <p id="annonce-d-texte"></p>
       <a class="btn-principal" id="annonce-d-lien" target="_blank" rel="noopener noreferrer" hidden>Ouvrir le lien</a>
+    </section>
+  </div>
+
+  <div id="pb-voile" class="voile" hidden>
+    <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="pb-titre">
+      <button class="btn-icone fermer" id="pb-fermer" aria-label="Fermer">✕</button>
+      <h3 class="titre-voile" id="pb-titre">Signaler un problème</h3>
+      <form id="pb-form" novalidate>
+        <label class="ref" for="pb-texte">Que s'est-il passé ? Qu'est-ce que vous faisiez ?</label>
+        <textarea id="pb-texte" rows="5" maxlength="1500" required placeholder="Ex. : dans Horaire, quand je touche + sur un samedi, rien ne se passe."></textarea>
+        <p class="aide" id="pb-infos"></p>
+        <p class="aide">N'inscrivez aucun renseignement sur un citoyen, aucun dossier ni aucune donnée policière.</p>
+        <button type="submit" class="btn-principal" style="margin:0">Envoyer</button>
+      </form>
     </section>
   </div>
 
@@ -2235,9 +2278,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611061931"></script>
+  <script src="config.js?v=202611061953"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202611061931"></script>
+  <script src="i18n.js?v=202611061953"></script>
+  <script src="app.js?v=202611061953"></script>
 </body>
 </html>
