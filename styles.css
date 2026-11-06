@@ -2774,3 +2774,9 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .paie-champs .rc-repas input, .rc-form .hr-tsp-interrupteur input { width: auto; flex: 0 0 auto; }
 .rc-form label.hr-tsp-interrupteur { display: flex; gap: 10px; align-items: flex-start; }
 .rc-form label.hr-tsp-interrupteur span { display: grid; gap: 2px; }
+
+/* Apple Intelligence (app iPhone et iPad compatibles) */
+.cv-btn-apple { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(120deg, #FF9F0A, #FF375F 35%, #BF5AF2 70%, #0A84FF); color: #fff; border: 0; }
+.cv-btn-apple .ic-apple-ia path, .cv-btn-apple .ic-apple-ia circle { fill: #fff; }
+.cv-btn-apple[disabled] { opacity: .75; }
+.cv-apple { border-left: 3px solid #BF5AF2; }
