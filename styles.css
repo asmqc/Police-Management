@@ -2801,3 +2801,10 @@ button.renvoi { font: inherit; font-weight: 700; color: var(--accent, #0A4FB8); 
 .art-pts { list-style: none; padding: 0 !important; }
 .art-paliers { margin: 6px 0 4px; border-collapse: collapse; font-size: .85rem; }
 .art-paliers td { padding: 2px 12px 2px 0; vertical-align: top; }
+/* Codification des articles : al., par., s.-par. */
+.texte-code .u { display: flex; gap: 10px; align-items: baseline; margin: 0 0 8px; }
+.texte-code .u-par { padding-left: 12px; }
+.texte-code .u-spar { padding-left: 34px; }
+.code-ref { flex: 0 0 auto; min-width: 44px; font: 700 .78rem/1.2 var(--f-mono, ui-monospace, monospace); color: var(--accent, #0A4FB8); background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 4px 7px; cursor: pointer; }
+.code-ref:active { transform: scale(.96); }
+.code-aide { margin-top: 4px; }
