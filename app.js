@@ -592,6 +592,12 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-06-lois", date: "2026-11-06", titre: "Onglet Lois amélioré", points: [
+      "CSR : l'amende prévue s'affiche sous chaque article et dans la fiche, avec un lien vers l'article de sanction (cycliste, conducteur, occupant…).",
+      "Les renvois « l'article 397 » sont maintenant des liens : touchez pour ouvrir l'article.",
+      "Recherche plus intelligente : « cellulaire », « alcool », « vélo », « trottinette » trouvent aussi les mots du texte de loi.",
+      "Vos derniers articles consultés reviennent en raccourci, et les onglets tiennent sur une seule ligne.",
+    ] },
     { id: "2026-11-06-apple-ia", date: "2026-11-06", titre: "Apple Intelligence dans le contrat de travail", points: [
       "App iPhone et iPad, sur un appareil compatible (iOS 26) : le bouton « Expliquer avec Apple Intelligence » explique les clauses trouvées en mots simples.",
       "Tout se fait sur votre appareil : la question n'est envoyée à aucun serveur.",
@@ -6371,6 +6377,76 @@ Format :
     ouvrirArticle(etat.csr.find((a) => a.numero === no));
   }
 
+  // Synonymes de recherche : le texte de loi n'emploie pas toujours les mots du terrain
+  const SYNONYMES = {
+    cellulaire: ["cellulaire", "telephon", "appareil portatif"], cell: ["cellulaire", "telephon", "appareil portatif"], texto: ["telephon", "appareil portatif", "ecran"],
+    telephone: ["telephon", "cellulaire"], alcool: ["alcool", "alcoolemie"], alcootest: ["alcool", "echantillon d haleine"], ivresse: ["alcool", "capacite de conduite"],
+    drogue: ["drogue", "capacite de conduite", "substance"], vitesse: ["vitesse"], ceinture: ["ceinture"], siege: ["siege", "ensemble de retenue"],
+    plaque: ["plaque"], immat: ["immatricul"], permis: ["permis"], assurance: ["assurance", "attestation"], pneus: ["pneu"], hiver: ["hivernal", "hiver"],
+    pieton: ["pieton"], velo: ["bicyclette", "cycliste", "velo"], cycliste: ["cycliste", "bicyclette"], trottinette: ["trottinette", "aide a la mobilite motorisee"],
+    autobus: ["autobus"], scolaire: ["scolaire", "ecolier"], camion: ["vehicule lourd", "camion"], remorque: ["remorque"], stationnement: ["stationn", "immobilis"],
+    fuite: ["accident", "lieux"], accident: ["accident"], urgence: ["urgence"], gyrophare: ["feux rouges", "clignotant", "urgence"], phares: ["phare", "feux"],
+    agent: ["agent de la paix"], saisie: ["saisi", "fourriere"], fourriere: ["fourriere"], suspension: ["suspension", "suspendu", "sanction"], points: ["points d inaptitude"],
+  };
+  const groupesRecherche = (termes) => termes.map((t) => SYNONYMES[t] || (t.length > 5 && SYNONYMES[t.replace(/s$/, "")]) || [t]);
+
+  // Amendes : repérées dans le texte même du CSR (« Quiconque contrevient à l'article X … amende de A $ à B $ »)
+  let sanctions = null;
+  function indexerSanctions(arts) {
+    const nums = arts.map((a) => a.numero), pos = new Map(nums.map((n, i) => [n, i]));
+    const reAmende = /amende\s+(?:minimale\s+)?de\s+([\d\s  ]+)\s*\$\s+à\s+([\d\s  ]+)\s*\$/g;
+    const reRefs = /articles?\s+((?:\d+(?:\.\d+)*(?!\s*°)(?:\s*(?:,|à|ou|et)\s*(?=\d))?)+)/g;
+    const reQui = /(Quiconque|(?:Le|La|L[’']|Toute?|Tout)\s?[^.;]{0,90}?)\s+(?:qui\s+)?(?:contrevient|contrevenant|ne respecte)/g;
+    const map = new Map();
+    for (const a of arts) {
+      for (const al of a.texte.split("\n")) {
+        let debut = 0, m;
+        reAmende.lastIndex = 0;
+        while ((m = reAmende.exec(al))) {
+          const pre = al.slice(debut, m.index); debut = m.index + m[0].length;
+          if (!/contrevient|contrevenant|ne respecte pas/.test(pre)) continue;
+          const min = +m[1].replace(/\D/g, ""), max = +m[2].replace(/\D/g, "");
+          let qui = ""; let q; reQui.lastIndex = 0; while ((q = reQui.exec(pre))) qui = q[1];
+          qui = /^Quiconque$/i.test(qui) ? "" : qui.replace(/\s+/g, " ").trim().slice(0, 80);
+          const cibles = [];
+          let r; reRefs.lastIndex = 0;
+          while ((r = reRefs.exec(pre))) {
+            const t = r[1].match(/\d+(?:\.\d+)*|à/g) || [];
+            for (let i = 0; i < t.length; i++) {
+              if (t[i] === "à") continue;
+              if (t[i + 1] === "à" && pos.has(t[i]) && pos.has(t[i + 2])) { cibles.push(...nums.slice(pos.get(t[i]), pos.get(t[i + 2]) + 1)); i += 2; }
+              else cibles.push(t[i]);
+            }
+          }
+          for (const c of new Set(cibles)) {
+            if (!pos.has(c) || c === a.numero) continue;
+            const l = map.get(c) || [];
+            if (!l.some((x) => x.min === min && x.max === max && x.art === a.numero && x.qui === qui)) l.push({ min, max, art: a.numero, qui });
+            map.set(c, l);
+          }
+        }
+      }
+    }
+    // Articles qui prévoient une amende → articles visés
+    const inverse = new Map();
+    for (const [c, l] of map) for (const x of l) { const v = inverse.get(x.art) || new Set(); v.add(c); inverse.set(x.art, v); }
+    return { map, inverse };
+  }
+  const fmtAmende = (x) => `${x.min.toLocaleString("fr-CA")} $ à ${x.max.toLocaleString("fr-CA")} $`;
+  const ARTICLES_VITESSE = new Set(["299", "327", "328", "329", "330", "516", "516.1", "516.2"]);
+
+  // Articles consultés récemment (sur l'appareil, par loi)
+  const cleRecents = () => "pm-lois-recents-" + etat.loi;
+  const lireRecents = () => { try { return JSON.parse(localStorage.getItem(cleRecents()) || "[]"); } catch { return []; } };
+  function noterRecent(no) { try { localStorage.setItem(cleRecents(), JSON.stringify([no, ...lireRecents().filter((x) => x !== no)].slice(0, 8))); } catch { /* facultatif */ } }
+  function rendreRecents() {
+    const el = $("#csr-recents"); if (!el) return;
+    const l = lireRecents().filter((n) => etat.csr && etat.csr.some((a) => a.numero === n));
+    el.hidden = !l.length || !!$("#csr-q").value.trim();
+    el.innerHTML = l.length ? `<span class="ref">Consultés récemment</span>` + l.map((n) => `<button type="button" data-recent="${esc(n)}">${esc(n)}</button>`).join("") : "";
+    $$("[data-recent]", el).forEach((b) => b.addEventListener("click", () => { $("#csr-q").value = b.dataset.recent; chercherCsr(); }));
+  }
+
   async function initCsr() {
     chargerFavoris().then(() => { if (etat.csr && etat.csr.length && $("#csr-q")) marquerEtoiles(); });
     if (etat.csr) return;
@@ -6389,6 +6465,7 @@ Format :
       const tous = Array.isArray(brut) ? brut : brut.articles;
       if (!Array.isArray(brut) && brut.maj) $("#loi-ref").textContent = `${loi.ref} · texte du ${new Date(brut.maj + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}`;
       etat.csr = tous.map((a) => ({ ...a, _n: norm(a.numero + " " + (a.section || "") + " " + a.texte) }));
+      sanctions = etat.loi === "csr" ? indexerSanctions(etat.csr) : null;
     } catch (e) {
       $("#csr-etat").textContent = traduireErreur(e);
       return;
@@ -6435,10 +6512,12 @@ Format :
       res = exact.concat(prefixe);
       if (exact.length === 1 && !prefixe.length) ouvrirArticle(exact[0]);
     } else {
-      termes = q.split(" ").filter((t) => t.length > 1);
+      const mots = q.split(" ").filter((t) => t.length > 1);
+      const groupes = groupesRecherche(mots);
+      termes = [...new Set(groupes.flat())];
       res = etat.csr
-        .filter((a) => termes.every((t) => a._n.includes(t)))
-        .map((a) => ({ a, s: termes.reduce((s, t) => s + a._n.split(t).length - 1, 0) + (a._n.includes(q) ? 20 : 0) }))
+        .filter((a) => groupes.every((g) => g.some((t) => a._n.includes(t))))
+        .map((a) => ({ a, s: groupes.reduce((s, g) => s + g.reduce((x, t) => x + a._n.split(t).length - 1, 0), 0) + (a._n.includes(q) ? 20 : 0) + (sanctions && sanctions.map.has(a.numero) ? 3 : 0) }))
         .sort((x, y) => y.s - x.s || x.a.ordre - y.a.ordre)
         .map((x) => x.a);
     }
@@ -6449,9 +6528,10 @@ Format :
     $("#csr-liste").innerHTML = res.slice(0, max).map((a) => `
       <li><button data-no="${esc(a.numero)}">
         <span class="no-art">${esc(a.numero)}${estFavori(etat.loi, a.numero) ? `<i class="etoile" aria-label="Favori">★</i>` : ""}</span>
-        <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span></span>
+        <span class="extrait-bloc"><small>${esc(a.section || a.chapitre || a.titre || "")}</small><span class="extrait">${surligner(extrait(a, termes), termes)}</span>${sanctions && sanctions.map.has(a.numero) ? `<span class="art-amende">Amende ${esc(fmtAmende(sanctions.map.get(a.numero).slice().sort((x, y) => y.max - x.max)[0]))}${sanctions.map.get(a.numero).length > 1 ? " (selon le cas)" : ""}</span>` : ""}</span>
       </button></li>`).join("");
     $$("#csr-liste button").forEach((b) => b.addEventListener("click", () => ouvrirArticle(etat.csr.find((a) => a.numero === b.dataset.no), termes)));
+    rendreRecents();
   }
 
   function marquerEtoiles() {
@@ -6461,6 +6541,26 @@ Format :
       if (!oui && e) e.remove();
     });
   }
+  // Renvois « l'article 397 » : touchez pour ouvrir l'article dans la même loi
+  function lierRenvois(html, courant) {
+    if (!etat.csr || !etat.csr.length) return html;
+    const existe = new Set(etat.csr.map((x) => x.numero));
+    return html.replace(/(articles?\s+)((?:\d+(?:\.\d+)*(?:\s*(?:,|à|ou|et)\s*(?=\d))?)+)(?![\d°])/g, (tout, mot, liste) =>
+      mot + liste.replace(/\d+(?:\.\d+)*/g, (n) => (existe.has(n) && n !== courant ? `<button type="button" class="renvoi" data-renvoi="${n}">${n}</button>` : n)));
+  }
+  function blocSanctions(no) {
+    if (!sanctions) return "";
+    const ordreArt = (n) => { const x = etat.csr.find((y) => y.numero === n); return x ? (x.ordre ?? 0) : 1e9; };
+    const l = sanctions.map.get(no) || [], visees = [...(sanctions.inverse.get(no) || [])].sort((x, y) => ordreArt(x) - ordreArt(y));
+    const vit = ARTICLES_VITESSE.has(no);
+    if (!l.length && !visees.length && !vit) return "";
+    return `<section class="art-sanctions">
+      ${l.length ? `<h4>Amende prévue</h4><ul>${l.map((x) => `<li><b>${esc(fmtAmende(x))}</b>${x.qui ? ` <small>${esc(x.qui)}</small>` : ""} · <button type="button" class="renvoi" data-renvoi="${esc(x.art)}">art. ${esc(x.art)}</button></li>`).join("")}</ul>` : ""}
+      ${visees.length ? `<h4>Cet article fixe l'amende pour</h4><p class="art-visees">${visees.slice(0, 60).map((n) => `<button type="button" class="renvoi" data-renvoi="${esc(n)}">${esc(n)}</button>`).join(" ")}${visees.length > 60 ? " …" : ""}</p>` : ""}
+      ${vit ? `<p><button type="button" class="btn-secondaire" data-aller-vitesse>Calculer l'amende et les points d'un excès de vitesse ›</button></p>` : ""}
+      <p class="aide">Repéré automatiquement dans le texte du CSR. Lisez l'article de sanction pour les précisions (récidive, catégorie de véhicule). Les frais et la contribution s'ajoutent : voir l'onglet Frais judiciaires.</p>
+    </section>`;
+  }
   function ouvrirArticle(a, termes = []) {
     if (!a) return;
     const el = $("#csr-article");
@@ -6468,7 +6568,8 @@ Format :
     el.innerHTML = `
       <p class="fil">${esc([a.titre, a.chapitre, a.section].filter(Boolean).join(" › "))}</p>
       <h3>${esc(a.numero)}</h3>
-      <div class="texte">${surligner(a.texte, termes)}</div>
+      <div class="texte">${lierRenvois(surligner(a.texte, termes), a.numero)}</div>
+      ${blocSanctions(a.numero)}
       <div class="outils-art">
         <button class="btn-secondaire btn-favori" data-favori aria-pressed="${estFavori(etat.loi, a.numero)}">${ETOILE}<span>${estFavori(etat.loi, a.numero) ? "Dans mes favoris" : "Ajouter aux favoris"}</span></button>
         <button class="btn-secondaire" data-copier>Copier le texte</button>
@@ -6480,7 +6581,11 @@ Format :
     $(".csr-corps").classList.add("avec-article");
     $$("#csr-liste button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.no === a.numero)));
     const i = etat.csr.indexOf(a);
-    $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}`));
+    noterRecent(a.numero);
+    $$("[data-renvoi]", el).forEach((r) => r.addEventListener("click", () => ouvrirArticle(etat.csr.find((x) => x.numero === r.dataset.renvoi))));
+    const bv = $("[data-aller-vitesse]", el); if (bv) bv.addEventListener("click", () => { ongletLois("vitesse"); $("#vue-csr").scrollIntoView({ block: "start" }); });
+    const sanc = sanctions && sanctions.map.get(a.numero);
+    $("[data-copier]", el).addEventListener("click", () => copier(`${loi.court}, art. ${a.numero}\n${a.texte}${sanc ? "\n\nAmende : " + sanc.map((x) => `${fmtAmende(x)} (art. ${x.art})`).join("; ") : ""}`));
     const loiArt = etat.loi;
     $("[data-favori]", el).addEventListener("click", async (ev) => {
       const b = ev.currentTarget; b.disabled = true;

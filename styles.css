@@ -2780,3 +2780,20 @@ body:not(.est-sq) .poste-nav .seulement-sq { display: none !important; }
 .cv-btn-apple .ic-apple-ia path, .cv-btn-apple .ic-apple-ia circle { fill: #fff; }
 .cv-btn-apple[disabled] { opacity: .75; }
 .cv-apple { border-left: 3px solid #BF5AF2; }
+
+/* Lois : onglets sur une seule ligne qui défile, amendes, renvois cliquables, récents */
+.onglets-csr { display: flex !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.onglets-csr::-webkit-scrollbar { display: none; }
+.onglets-csr > button { flex: 0 0 auto; white-space: nowrap; padding: 10px 14px; }
+.onglets-csr .onglet-lien { margin-left: auto; }
+.art-amende { display: inline-block; margin-top: 4px; font-size: .78rem; font-weight: 700; color: #B42318; background: rgba(180, 35, 24, .08); border-radius: 999px; padding: 2px 9px; }
+.art-sanctions { margin: 16px 0 6px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border-left: 3px solid #B42318; }
+.art-sanctions h4 { margin: 0 0 6px; font-size: .9rem; }
+.art-sanctions ul { margin: 0 0 8px; padding-left: 18px; display: grid; gap: 4px; }
+.art-sanctions small { color: var(--fg-doux); }
+.art-visees { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+button.renvoi { font: inherit; font-weight: 700; color: var(--accent, #0A4FB8); background: none; border: 0; padding: 0; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.art-visees button.renvoi { text-decoration: none; background: var(--surface); border: 1px solid var(--ligne); border-radius: 999px; padding: 2px 9px; font-size: .8rem; }
+.csr-recents { align-items: center; margin-top: 6px; }
+.csr-recents .ref { font-size: .78rem; margin-right: 2px; }
+.csr-recents button { font-family: var(--f-mono, monospace); }
