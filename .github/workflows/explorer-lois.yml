@@ -1,0 +1,26 @@
+name: Télécharger un texte de LégisQuébec (diagnostic)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  explorer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Règlement sur les points d'inaptitude (C-24.2, r. 37)
+        run: |
+          mkdir -p exploration-lois
+          curl -sSL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" \
+            -H "Accept-Language: fr-CA,fr" --retry 3 -o exploration-lois/points.html \
+            "https://www.legisquebec.gouv.qc.ca/fr/document/rc/C-24.2,%20r.%2037" -w "%{http_code} %{size_download}\n"
+      - name: Publier dans la branche exploration-lois
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan exploration-lois
+          git rm -rfq --cached .
+          git add -f exploration-lois/
+          git commit -qm "Diagnostic LégisQuébec"
+          git push -f origin exploration-lois
