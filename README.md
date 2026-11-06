@@ -99,7 +99,7 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 - **Vidéo de présentation** (montrée une fois, puis dans Réglages), **visite guidée**, nouveautés, **Bien-être et soutien** (La Vigile, PAE, prévention du suicide, 811, 911).
 
 ### Langue
-- **English (beta)** : site public, connexion, demande d'accès, navigation et menu (`i18n.js`). Les lois et le contrat de travail restent en français.
+- **English (beta)** (`i18n.js`) : site public, connexion, demande d'accès, navigation, menu, accueil, horaire, paie, banques, réclamations, retraite, réglages et Bien-être; dates en anglais. Les lois, le contrat de travail et les annonces restent en français. Les choix enregistrés (grade, corps) restent en français.
 
 ### Administration
 - Demandes d'accès par corps, approbation, comptes (dernière utilisation, mot de passe temporaire, blocage, suppression).

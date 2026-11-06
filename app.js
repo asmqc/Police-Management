@@ -621,6 +621,11 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
+      "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
+      "En anglais, les dates s'affichent aussi en anglais (November, Monday…).",
+      "Les lois, le contrat de travail et les annonces restent en français.",
+    ] },
     { id: "2026-11-06-site", date: "2026-11-06", titre: "Signaler un problème, English, et un site plus rapide", points: [
       "Réglages › Signaler un problème : décrivez ce qui ne marche pas, l'administrateur le reçoit avec la section et le type d'appareil.",
       "English (beta) : le site public, la connexion, la demande d'accès, la navigation et le menu sont offerts en anglais (Réglages › Langue).",
