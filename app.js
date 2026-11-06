@@ -303,6 +303,7 @@
           corps_police: champs.corps.value,
           unite: uniteChoisie(),
           consentement_version: VERSION_POLITIQUE,
+          partage_poste: $("#dm-partage").checked,
           ...(codeInvitation() ? { invitation: codeInvitation() } : {}),
         },
       },
@@ -575,7 +576,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.11.03";
+  const VERSION_POLITIQUE = "2026.11.05";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -1674,8 +1675,8 @@ Question : ${question}
     setTimeout(() => ouvrirConversation(id, true), 50);
   }
 
-  /* ---------------- Réglage : partage de la rotation avec le poste (activé par défaut) ---------------- */
-  const partageActif = () => !etat.profil || etat.profil.partage_poste !== false;
+  /* ---------------- Réglage : partage de la rotation avec le poste (désactivé par défaut, Loi 25 art. 9.1) ---------------- */
+  const partageActif = () => !!etat.profil && etat.profil.partage_poste === true;
   function majReglagePartage() {
     const actif = partageActif();
     $("#rg-partage-poste").checked = actif;
