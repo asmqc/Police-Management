@@ -2808,3 +2808,8 @@ button.renvoi { font: inherit; font-weight: 700; color: var(--accent, #0A4FB8); 
 .code-ref { flex: 0 0 auto; min-width: 44px; font: 700 .78rem/1.2 var(--f-mono, ui-monospace, monospace); color: var(--accent, #0A4FB8); background: var(--surface-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 4px 7px; cursor: pointer; }
 .code-ref:active { transform: scale(.96); }
 .code-aide { margin-top: 4px; }
+/* Langue : on montre seulement le bouton de l'autre langue */
+[data-langue][aria-pressed="true"] { display: none !important; }
+.auth-langue { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; z-index: 2; }
+.auth-langue .lien { font-weight: 700; }
+@media (max-width: 760px) { .site-actions .site-langue { padding-inline: 10px; } }
