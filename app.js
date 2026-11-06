@@ -576,7 +576,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.11.05";
+  const VERSION_POLITIQUE = "2026.11.05.2";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -592,6 +592,13 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-05-recla", date: "2026-11-05", titre: "Réclamations et retraite", points: [
+      "Horaire › Paie et banques : nouvelles sections Temps supp., Dépenses et Retraite (glissez pour les voir).",
+      "Temps supp. : chaque période calculée selon l'article 12 (arrondi, majoration, repas, rappel), avec la réclamation du mois en PDF.",
+      "Dépenses : inscrivez repas, km, coucher et déboursés au jour le jour. Les taux de l'annexe K sont appliqués et le compte de dépenses du mois sort en PDF.",
+      "Retraite (SQ) : date de retraite sans réduction et rente estimée selon les règles du RRMSQ. Votre date de naissance reste sur votre appareil.",
+      "Touchez un article (12.09, 21.10…) pour lire la clause du contrat de travail.",
+    ] },
     { id: "2026-11-02-nav", date: "2026-11-02", titre: "Une app mieux rangée", points: [
       "Nouvel onglet « Poste » en bas : la feuille de poste, l'horaire du poste et le TS (SQ) et le forum, au même endroit.",
       "Messages : maintenant en haut de l'écran, avec le nombre de messages non lus.",
@@ -2940,12 +2947,12 @@ Question : ${question}
       if (q.code !== "X") for (const t of q.tsps) {
         const d = dureeH([t.debut, t.fin]), maj = +t.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
         const pris = t.pris === "banque" ? "banque" : "paie";
-        r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris });
+        r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: t.rappel, adjacent: !t.rappel } });
         compter(pris, d, maj, iso, { rappel: t.rappel, adjacent: !t.rappel });
       }
       if (["J", "S", "N"].includes(q.code) && ((src.exceptions || {})[iso] || {}).repasNP) {
         const hrp = paie ? heuresRepasNonPris() : 1;
-        r.ts += hrp; r.lignesTS.push({ iso, h: null, d: hrp, note: "Repas ou repos non pris (12.06)", ts: {}, maj: 1.5, pris: "paie" });
+        r.ts += hrp; r.lignesTS.push({ iso, h: null, d: hrp, note: "Repas ou repos non pris (12.06)", ts: {}, maj: 1.5, pris: "paie", repasNP: true, o: {} });
         compter("paie", hrp, 1.5, iso, {});
       }
       if (!["J", "S", "N", "X"].includes(q.code)) continue;
@@ -2954,7 +2961,7 @@ Question : ${question}
       if (q.code === "X") {
         const ex = (src.exceptions || {})[iso] || {}, maj = +ex.maj || 1.5;
         const pris = ex.pris === "banque" ? "banque" : "paie";
-        r.ts += d; r.lignesTS.push({ iso, h, d, note: [pris === "banque" ? "Compensé en banque" : "Payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris });
+        r.ts += d; r.lignesTS.push({ iso, h, d, note: [pris === "banque" ? "Compensé en banque" : "Payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: ex.rappel } });
         compter(pris, d, maj, iso, { rappel: ex.rappel });
       }
     }
@@ -3551,12 +3558,17 @@ Question : ${question}
     const src = affichee();
     $$("[data-stats]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.stats === stats.mode)));
     $("#stats-rapport").hidden = stats.mode !== "mois";
-    $("[data-stats='paie']").hidden = $("[data-stats='banques']").hidden = !(estSQ() && affichee() === hr);
-    $(".stats-mode").classList.toggle("quatre", !$("[data-stats='paie']").hidden);
-    $(".hr-mois-tete", $("#stats-voile")).classList.toggle("sans-fleches", stats.mode === "banques");
+    const sqMoi = estSQ() && affichee() === hr;
+    $$("[data-stats='paie'], [data-stats='banques'], [data-stats='depenses'], [data-stats='retraite']").forEach((b) => (b.hidden = !sqMoi));
+    if (!sqMoi && ["paie", "banques", "depenses", "retraite"].includes(stats.mode)) { stats.mode = "ts"; rendreStats(); return; }
+    $(".hr-mois-tete", $("#stats-voile")).classList.toggle("sans-fleches", stats.mode === "banques" || stats.mode === "retraite");
+    const actif = $(`[data-stats='${stats.mode}']`); if (actif && actif.scrollIntoView) actif.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (stats.mode === "retraite") { rendreRetraiteStats(); return; }
+    if (stats.mode === "depenses") { rendreDepensesStats(); return; }
     if (!src.config) { $("#stats-contenu").innerHTML = `<p class="vide">Configurez d'abord la rotation.</p>`; return; }
     if (stats.mode === "paie") { rendrePaieStats(); return; }
     if (stats.mode === "banques") { rendreBanquesStats(); return; }
+    if (stats.mode === "ts") { rendreTSStats(); return; }
     if (stats.mode === "mois") {
       $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
       const r = calculerMois(stats.a, stats.m, src);
@@ -3599,26 +3611,377 @@ Question : ${question}
   $$("[data-stats]").forEach((b) => b.addEventListener("click", () => { stats.mode = b.dataset.stats; rendreStats(); }));
   $("#stats-prec").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie--; rendreStats(); return; } if (stats.mode === "annee") stats.a--; else if (stats.m === 0) { stats.m = 11; stats.a--; } else stats.m--; rendreStats(); });
   $("#stats-suiv").addEventListener("click", () => { if (stats.mode === "paie") { stats.paie++; rendreStats(); return; } if (stats.mode === "annee") stats.a++; else if (stats.m === 11) { stats.m = 0; stats.a++; } else stats.m++; rendreStats(); });
-  $("#stats-rapport").addEventListener("click", () => {
-    const src = affichee(), r = calculerMois(stats.a, stats.m, src), p = etat.profil;
-    const mois = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
-    const det = (ts) => CHAMPS_TS.filter(([k]) => ts[k]).map(([k, l]) => `<b>${esc(l)} :</b> ${esc(ts[k])}`).join("<br>");
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Temps supplémentaire — ${esc(mois)}</title>
-      <style>body{font:13px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#111;margin:28px}h1{font-size:20px;margin:0 0 4px}p{margin:0 0 14px;color:#444}
-      table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee}tfoot td{font-weight:700}
-      .imprimer{margin:16px 0;padding:10px 16px;font-weight:700;border:0;border-radius:8px;background:#F2B33D;cursor:pointer}@media print{.imprimer{display:none}body{margin:12mm}}</style></head><body>
-      <h1>Rapport de temps supplémentaire — ${esc(mois)}</h1>
-      <p>${esc([p.grade, p.nom_complet].filter(Boolean).join(" "))}${p.matricule ? " · Matricule " + esc(p.matricule) : ""}${p.unite ? " · " + esc(p.unite) : ""}${p.corps_police ? " · " + esc(p.corps_police) : ""}</p>
-      <button class="imprimer" onclick="print()">Imprimer ou enregistrer en PDF</button>
-      ${r.lignesTS.length ? `<table><thead><tr><th>Date</th><th>Type</th><th>Heures</th><th>Durée</th><th>Détails</th><th>Note</th></tr></thead><tbody>
-      ${r.lignesTS.map((l) => `<tr><td>${esc(new Date(l.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</td><td>${l.formation ? "Formation" : "Temps supp."}</td><td>${l.h ? esc(l.h[0] + " – " + l.h[1]) : "—"}</td><td>${l.d ? fmtH(l.d) : "—"}</td><td>${det(l.ts) || "—"}</td><td>${esc(l.note || "")}</td></tr>`).join("")}
-      </tbody><tfoot><tr><td colspan="3">Total du temps supplémentaire</td><td>${fmtH(r.ts)}</td><td colspan="2"></td></tr></tfoot></table>` : "<p>Aucun temps supplémentaire ce mois-ci.</p>"}
-      <p style="margin-top:18px;font-size:11px">Généré par Police Management le ${esc(new Date().toLocaleString("fr-CA"))}. Document de travail : la feuille officielle de votre organisation prévaut.</p></body></html>`;
+  /* ---------------- Réclamations : temps supplémentaire (art. 12) et compte de dépenses (art. 21, annexe K) ---------------- */
+  // Ouvre le contrat de travail sur une question précise (lien entre les réclamations et les clauses)
+  function ouvrirClause(question) {
+    if (!accesConvention()) return toast("Le contrat de travail n'est offert qu'aux membres dont la convention est dans l'app.");
+    $("#stats-voile").hidden = true;
+    afficherVue("convention");
+    setTimeout(() => {
+      if ($("#cv-form").hidden) { toast("Lisez l'avis, touchez « J'ai compris », puis revenez."); return; }
+      reveillerVoix(); poserQuestionConvention(question);
+    }, 200);
+  }
+  const boutonsClauses = (liste) => `<div class="puces rc-clauses">${liste.map(([art, q]) => `<button type="button" data-clause="${esc(q)}">${esc(art)}</button>`).join("")}</div>`;
+  function brancherClauses(el) { $$("[data-clause]", el).forEach((b) => b.addEventListener("click", () => ouvrirClause(b.dataset.clause))); }
+  const CLAUSES_TS = [
+    ["12.01 Taux horaire", "12.01 taux du temps supplémentaire traitement divisé par 2000"],
+    ["12.02 Temps et demi, temps double", "12.02 temps et demi temps double temps supplémentaire"],
+    ["12.03 Rappel minimum", "12.03 rappel au travail minimum de trois heures"],
+    ["12.06 Repas non pris", "12.06 repas ou période de repos non pris"],
+    ["12.08 Repas et indemnité", "12.08 heure de repas indemnité temps supplémentaire"],
+    ["12.09 Arrondi", "12.09 fraction d'heure temps supplémentaire quinze minutes"],
+    ["12.10 Banque de temps", "12.10 temps supplémentaire compensé en temps banque"],
+    ["20.03 Paiement en 45 jours", "20.03 temps supplémentaire payé dans les quarante-cinq jours suivant la réclamation"],
+  ];
+  const CLAUSES_DEP = [
+    ["21.01 Déboursés et pièces", "21.01 remboursement des déboursés pièces justificatives"],
+    ["21.02 Taux de repas", "21.02 frais de repas taux annexe K majorés parallèle"],
+    ["21.03 Coucher et heures de repas", "21.03 coucher en voyage heures normales de repas"],
+    ["21.06 Repas hors territoire", "21.06 remboursement des repas extérieur du territoire du poste 130 kilomètres"],
+    ["21.07 Repas de nuit", "21.07 repas de nuit relève entre 19 h et 1 h"],
+    ["21.10 Kilométrage", "21.10 véhicule personnel kilomètre frais de péage"],
+    ["21.11 Buanderie", "21.11 frais de buanderie et de nettoyage plus de trois jours"],
+    ["21.12 Appels", "21.12 indemnité appels téléphoniques deux couchers consécutifs"],
+  ];
+
+  // Lignes de TS du mois avec la valeur selon l'art. 12 (SQ seulement)
+  function lignesTSValorisees(a, m) {
+    const src = affichee(), r = calculerMois(a, m, src), paie = paieActive() ? etat.paie : null;
+    const lignes = r.lignesTS.filter((l) => !l.formation).map((l) => {
+      const e = eqTS(l.d, l.maj || 1.5, l.o || {});
+      const sal = paie ? salaireSQ(paie, l.iso) : null;
+      const arts = ["12.09"];
+      if ((l.maj || 1.5) >= 2) arts.push("12.02");
+      if (e.repasH) arts.push("12.08");
+      if (e.minimum) arts.push(l.o && l.o.rappel === "hebdo12" ? "ann. I 2.1" : "12.03");
+      if (l.repasNP) arts.push("12.06");
+      if (l.pris === "banque") arts.push("12.10");
+      return { ...l, e, valeur: sal ? e.eq * sal.tauxTS : null, arts };
+    });
+    const tot = lignes.reduce((t, l) => {
+      t.h += l.d; t.eq += l.e.eq; t.ind += l.e.indemnite;
+      if (l.pris === "banque") t.banque += l.e.eq; else if (l.valeur !== null) t.paye += l.valeur;
+      return t;
+    }, { h: 0, eq: 0, paye: 0, banque: 0, ind: 0 });
+    return { r, lignes, tot, sq: !!paie };
+  }
+  function rendreTSStats() {
+    const el = $("#stats-contenu");
+    $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const { lignes, tot, sq } = lignesTSValorisees(stats.a, stats.m);
+    const x = (n) => String(n).replace(".", ",");
+    el.innerHTML = `
+      <div class="stats-totaux">
+        <div class="ts"><small>Temps supplémentaire</small><b>${fmtH(tot.h)}</b><span>${lignes.length} période${lignes.length > 1 ? "s" : ""}</span></div>
+        <div><small>${sq ? "Montant brut à réclamer" : "Équivalent majoré"}</small><b>${sq ? dollarsTS(tot.paye) : fmtH(tot.eq)}</b><span>${sq && tot.banque ? fmtH(tot.banque) + " en banque" : sq ? "Payé" : "Heures × majoration"}</span></div>
+      </div>
+      ${lignes.length ? `<ul class="rc-liste">${lignes.map((l) => `<li>
+        <div class="rc-l1"><b>${esc(dateCourte(l.iso, "jour"))}</b><span>${l.h ? esc(l.h[0] + " – " + l.h[1]) : esc(fmtH(l.d))}</span><b class="rc-mnt">${l.valeur !== null && l.pris !== "banque" ? dollarsTS(l.valeur) : l.pris === "banque" ? fmtH(l.e.eq) + " banque" : fmtH(l.e.eq)}</b></div>
+        <small>${esc(fmtH(l.d))} réelles → ${esc(fmtH(l.e.h))} arrondies × ${x(l.maj || 1.5)}${l.e.repasH ? ` + ${x(l.e.repasH)} h de repas` : ""}${l.e.minimum ? ` · minimum de rappel appliqué` : ""} = <b>${esc(fmtH(l.e.eq))}</b>${l.e.indemnite ? ` · indemnité ${dollarsTS(l.e.indemnite)}` : ""}</small>
+        <small class="rc-note">${esc(l.note || "")}</small>
+        <span class="rc-arts">${l.arts.map((a) => `<i>${esc(a)}</i>`).join("")}</span>
+      </li>`).join("")}</ul>`
+      : `<p class="vide">Aucun temps supplémentaire ce mois-ci. Ajoutez-le dans le calendrier : touchez la journée › Temps supp.</p>`}
+      ${sq && tot.ind ? `<p class="aide">Indemnités de repas (12.08) : ${dollarsTS(tot.ind)}, à réclamer avec le temps supplémentaire.</p>` : ""}
+      ${lignes.length ? `<button type="button" class="btn-principal rc-pdf" id="rc-ts-pdf">Réclamation de temps supplémentaire (PDF)</button>` : ""}
+      <h4 class="rc-titre">Ce que dit le contrat de travail</h4>
+      ${estSQ() ? boutonsClauses(CLAUSES_TS) : ""}
+      <p class="aide">${sq ? "Calcul selon l'art. 12 du contrat APPQ 2022-2028 : heures arrondies (12.09), majoration (12.02), heure de repas (12.08) et minimums de rappel (12.03). La Sûreté paie dans les 45 jours suivant la réclamation (20.03). " : ""}Estimation : la feuille officielle de votre organisation et votre talon de paie font foi. Touchez un article pour lire la clause.</p>`;
+    brancherClauses(el);
+    const b = $("#rc-ts-pdf"); if (b) b.addEventListener("click", rapportTS);
+  }
+  function ouvrirDocument(html, nomFichier) {
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     const w = window.open(url, "_blank");
-    if (!w) { const a = document.createElement("a"); a.href = url; a.download = `temps-supplementaire-${stats.a}-${String(stats.m + 1).padStart(2, "0")}.html`; document.body.appendChild(a); a.click(); a.remove(); }
+    if (!w) { const a = document.createElement("a"); a.href = url; a.download = nomFichier; document.body.appendChild(a); a.click(); a.remove(); }
     setTimeout(() => URL.revokeObjectURL(url), 60000);
-  });
+  }
+  const STYLE_DOC = `body{font:13px/1.45 system-ui,Segoe UI,Roboto,Arial,sans-serif;color:#111;margin:28px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:22px 0 6px}p{margin:0 0 12px;color:#444}
+      table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:6px 8px;text-align:left;vertical-align:top}th{background:#eee}td.n,th.n{text-align:right;white-space:nowrap}tfoot td{font-weight:700}
+      .imprimer{margin:16px 0;padding:10px 16px;font-weight:700;border:0;border-radius:8px;background:#F2B33D;cursor:pointer}.pied{margin-top:18px;font-size:11px}@media print{.imprimer{display:none}body{margin:12mm}}`;
+  const enteteDoc = () => { const p = etat.profil; return `<p>${esc([p.grade, p.nom_complet].filter(Boolean).join(" "))}${p.matricule ? " · Matricule " + esc(p.matricule) : ""}${p.unite ? " · " + esc(p.unite) : ""}${p.corps_police ? " · " + esc(p.corps_police) : ""}</p>`; };
+  function rapportTS() {
+    const { r, lignes, tot, sq } = lignesTSValorisees(stats.a, stats.m);
+    const mois = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const det = (ts) => CHAMPS_TS.filter(([k]) => ts[k]).map(([k, l]) => `<b>${esc(l)} :</b> ${esc(ts[k])}`).join("<br>");
+    const x = (n) => String(n).replace(".", ",");
+    const formations = r.lignesTS.filter((l) => l.formation);
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Temps supplémentaire — ${esc(mois)}</title><style>${STYLE_DOC}</style></head><body>
+      <h1>Réclamation de temps supplémentaire — ${esc(mois)}</h1>
+      ${enteteDoc()}
+      <button class="imprimer" onclick="print()">Imprimer ou enregistrer en PDF</button>
+      ${lignes.length ? `<table><thead><tr><th>Date</th><th>Heures</th><th class="n">Durée</th><th class="n">Arrondie (12.09)</th><th class="n">Taux</th><th class="n">Équivalent</th><th>Pris en</th>${sq ? `<th class="n">Valeur</th>` : ""}<th>Articles</th><th>Détails</th></tr></thead><tbody>
+      ${lignes.map((l) => `<tr><td>${esc(new Date(l.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</td><td>${l.h ? esc(l.h[0] + " – " + l.h[1]) : "—"}</td><td class="n">${fmtH(l.d)}</td><td class="n">${fmtH(l.e.h)}</td><td class="n">× ${x(l.maj || 1.5)}</td><td class="n">${fmtH(l.e.eq)}${l.e.repasH ? `<br><small>dont ${x(l.e.repasH)} h repas (12.08)</small>` : ""}${l.e.minimum ? `<br><small>minimum de rappel</small>` : ""}</td><td>${l.pris === "banque" ? "Banque" : "Paie"}</td>${sq ? `<td class="n">${dollarsTS(l.valeur || 0)}</td>` : ""}<td>${esc(l.arts.join(", "))}</td><td>${det(l.ts) || ""}${l.note ? `${det(l.ts) ? "<br>" : ""}${esc(l.note)}` : ""}</td></tr>`).join("")}
+      </tbody><tfoot><tr><td colspan="2">Total</td><td class="n">${fmtH(tot.h)}</td><td></td><td></td><td class="n">${fmtH(tot.eq)}</td><td>${tot.banque ? fmtH(tot.banque) + " en banque" : ""}</td>${sq ? `<td class="n">${dollarsTS(tot.paye)}</td>` : ""}<td colspan="2">${tot.ind ? `Indemnités de repas (12.08) : ${dollarsTS(tot.ind)}` : ""}</td></tr></tfoot></table>` : "<p>Aucun temps supplémentaire ce mois-ci.</p>"}
+      ${formations.length ? `<h2>Formations avec détails</h2><table><thead><tr><th>Date</th><th>Heures</th><th>Détails</th></tr></thead><tbody>${formations.map((l) => `<tr><td>${esc(new Date(l.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</td><td>${l.h ? esc(l.h[0] + " – " + l.h[1]) : "—"}</td><td>${det(l.ts) || esc(l.note || "")}</td></tr>`).join("")}</tbody></table>` : ""}
+      ${estSQ() ? `<p class="pied">Calcul selon l'article 12 du contrat de travail APPQ 2022-2028 : taux horaire = traitement ÷ 2 000 (12.01), majoration (12.02), rappel minimum (12.03), repas non pris (12.06), heure de repas et indemnité (12.08), arrondi (12.09), compensation en banque (12.10). Paiement dans les 45 jours suivant la réclamation (20.03).</p>` : ""}
+      <p class="pied">Généré par Police Management le ${esc(new Date().toLocaleString("fr-CA"))}. Document de travail : la feuille officielle de votre organisation et votre talon de paie prévalent.</p></body></html>`;
+    ouvrirDocument(html, `temps-supplementaire-${stats.a}-${String(stats.m + 1).padStart(2, "0")}.html`);
+  }
+  $("#stats-rapport").addEventListener("click", rapportTS);
+
+  // Annexe K (taux en vigueur : repas au 1er avril 2024, kilométrage au 1er octobre 2024)
+  const ANNEXE_K = { dej: 14.7, din: 20.2, soup: 30.5, nuit: 30.5, km1: 0.62, km2: 0.545, seuilKm: 8000, kmExtra: 0.155, coucher: 7.75, horsHotel: 22.25, appels: 2.45 };
+  const dep = { items: [], charge: false, edition: null };
+  async function chargerDepenses(forcer) {
+    if (dep.charge && dep.pour === etat.profil.id && !forcer) return;
+    dep.pour = etat.profil.id; dep.edition = null;
+    const { data, error } = await sb.from("depenses_sq").select("items").eq("user_id", etat.profil.id).maybeSingle();
+    if (error) throw error;
+    dep.items = (data && Array.isArray(data.items)) ? data.items : [];
+    dep.charge = true;
+  }
+  async function sauverDepenses() {
+    const { error } = await sb.from("depenses_sq").upsert({ user_id: etat.profil.id, items: dep.items, maj_le: new Date().toISOString() });
+    if (error) throw error;
+  }
+  const cleKm = (an) => `pm-dep-km-${etat.profil ? etat.profil.id : ""}-${an}`;
+  const kmDebutAnnee = (an) => { try { return Math.max(0, +localStorage.getItem(cleKm(an)) || 0); } catch { return 0; } };
+  // Calcule chaque dépense : kilométrage selon le cumul de l'année (seuil de 8 000 km), appels si 2 couchers consécutifs (21.12)
+  function calculerDepenses() {
+    const tri = [...dep.items].sort((x, y) => x.iso.localeCompare(y.iso) || String(x.id).localeCompare(String(y.id)));
+    const cumul = {}, couchers = new Set(tri.filter((d) => d.coucher).map((d) => d.iso));
+    const voisin = (iso, n) => { const d = new Date(iso + "T12:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+    const res = {};
+    for (const d of tri) {
+      const an = d.iso.slice(0, 4);
+      if (cumul[an] === undefined) cumul[an] = kmDebutAnnee(an);
+      const maj = 1 + (+d.zone || 0) / 100;
+      const repas = ((d.dej ? ANNEXE_K.dej : 0) + (d.din ? ANNEXE_K.din : 0) + (d.soup ? ANNEXE_K.soup : 0) + (d.nuit ? ANNEXE_K.nuit : 0)) * maj;
+      const km = Math.max(0, +d.km || 0), k1 = Math.max(0, Math.min(km, ANNEXE_K.seuilKm - cumul[an])), k2 = km - k1;
+      cumul[an] += km;
+      const kilometrage = k1 * ANNEXE_K.km1 + k2 * ANNEXE_K.km2 + Math.max(0, +d.kmExtra || 0) * ANNEXE_K.kmExtra;
+      const peage = Math.max(0, +d.peage || 0);
+      const appels = d.coucher && (couchers.has(voisin(d.iso, -1)) || couchers.has(voisin(d.iso, 1)));
+      const coucher = d.coucher ? ANNEXE_K.coucher + (d.horsHotel ? ANNEXE_K.horsHotel : 0) + (appels ? ANNEXE_K.appels : 0) : 0;
+      const autres = Math.max(0, +d.autre || 0) + Math.max(0, +d.buanderie || 0);
+      res[d.id] = { repas, kilometrage, k1, k2, peage, coucher, appels, autres, total: repas + kilometrage + peage + coucher + autres };
+    }
+    return res;
+  }
+  async function rendreDepensesStats() {
+    const el = $("#stats-contenu");
+    $("#stats-periode").textContent = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    if (!dep.charge || dep.pour !== etat.profil.id) {
+      el.innerHTML = `<p class="vide">Chargement…</p>`;
+      try { await chargerDepenses(); } catch (e) { el.innerHTML = `<p class="vide">${esc(traduireErreur(e))}</p>`; return; }
+      if (stats.mode !== "depenses") return;
+    }
+    const pref = `${stats.a}-${String(stats.m + 1).padStart(2, "0")}`;
+    const calc = calculerDepenses();
+    const mois = dep.items.filter((d) => d.iso.startsWith(pref)).sort((x, y) => x.iso.localeCompare(y.iso));
+    const total = mois.reduce((t, d) => t + (calc[d.id] ? calc[d.id].total : 0), 0);
+    const kmMois = mois.reduce((t, d) => t + (+d.km || 0), 0);
+    const ed = dep.edition ? dep.items.find((d) => d.id === dep.edition) : null;
+    const v = (k, def = "") => (ed && ed[k] !== undefined && ed[k] !== null ? ed[k] : def);
+    const coche = (k) => (ed && ed[k] ? "checked" : "");
+    el.innerHTML = `
+      <div class="stats-totaux">
+        <div class="ts"><small>Total à réclamer</small><b>${dollarsTS(total)}</b><span>${mois.length} journée${mois.length > 1 ? "s" : ""}</span></div>
+        <div><small>Kilométrage</small><b>${Math.round(kmMois)} km</b><span>véhicule personnel</span></div>
+      </div>
+      ${mois.length ? `<ul class="rc-liste">${mois.map((d) => { const c = calc[d.id]; return `<li>
+        <div class="rc-l1"><b>${esc(dateCourte(d.iso, "jour"))}</b><span>${esc(d.motif || "")}</span><b class="rc-mnt">${dollarsTS(c.total)}</b></div>
+        <small>${[c.repas ? `Repas ${dollarsTS(c.repas)}` : "", d.km || d.kmExtra ? `${Math.round(+d.km || 0)} km ${dollarsTS(c.kilometrage)}` : "", c.peage ? `Péages ${dollarsTS(c.peage)}` : "", c.coucher ? `Coucher ${dollarsTS(c.coucher)}${c.appels ? " (appels inclus)" : ""}` : "", c.autres ? `Déboursés ${dollarsTS(c.autres)}` : ""].filter(Boolean).join(" · ")}</small>
+        <span class="rc-actions"><button type="button" class="lien" data-dep-modifier="${esc(d.id)}">Modifier</button><button type="button" class="lien danger" data-dep-retirer="${esc(d.id)}">Retirer</button></span>
+      </li>`; }).join("")}</ul>` : `<p class="vide">Aucune dépense ce mois-ci.</p>`}
+      ${mois.length ? `<button type="button" class="btn-principal rc-pdf" id="rc-dep-pdf">Compte de dépenses (PDF)</button>` : ""}
+      <details class="panneau rc-form" id="dep-form-bloc" ${ed ? "open" : ""}>
+        <summary><b>${ed ? "Modifier la dépense" : "+ Ajouter une dépense"}</b></summary>
+        <form id="dep-form" class="paie-champs" autocomplete="off" novalidate>
+          <label><span>Date</span><input type="date" name="iso" required value="${esc(v("iso", pref + "-" + String(Math.min(new Date().getDate(), 28)).padStart(2, "0")))}"></label>
+          <label class="large"><span>Motif (ex. formation à Nicolet, cour à Québec)</span><input name="motif" maxlength="80" value="${esc(v("motif"))}" placeholder="Sans numéro de dossier ni nom"></label>
+          <fieldset class="large rc-repas"><legend>Repas (annexe K)</legend>
+            <label><input type="checkbox" name="dej" ${coche("dej")}> Déjeuner 14,70 $</label>
+            <label><input type="checkbox" name="din" ${coche("din")}> Dîner 20,20 $</label>
+            <label><input type="checkbox" name="soup" ${coche("soup")}> Souper 30,50 $</label>
+            <label><input type="checkbox" name="nuit" ${coche("nuit")}> Repas de nuit 30,50 $ (21.07)</label>
+          </fieldset>
+          <label class="large"><span>Lieu des repas (21.02 b)</span><select name="zone">
+            <option value="0">Au sud du 49ᵉ parallèle</option>
+            <option value="30" ${String(v("zone")) === "30" ? "selected" : ""}>Entre le 49ᵉ et le 50ᵉ parallèle (+30 %)</option>
+            <option value="50" ${String(v("zone")) === "50" ? "selected" : ""}>Au nord du 50ᵉ, sauf Baie-Comeau, Port-Cartier, Sept-Îles (+50 %)</option>
+          </select></label>
+          <label><span>Km, véhicule personnel (21.10)</span><input type="number" inputmode="decimal" min="0" name="km" value="${esc(v("km", ""))}"></label>
+          <label><span>Km en forêt, gravier ou remorque</span><input type="number" inputmode="decimal" min="0" name="kmExtra" value="${esc(v("kmExtra", ""))}"></label>
+          <label><span>Péages ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" name="peage" value="${esc(v("peage", ""))}"></label>
+          <label class="large hr-tsp-interrupteur"><input type="checkbox" name="coucher" ${coche("coucher")}><span><b>Coucher à l'extérieur (21.03)</b><small>Allocation de 7,75 $; appels de 2,45 $ ajoutés si 2 couchers consécutifs (21.12)</small></span></label>
+          <label class="large hr-tsp-interrupteur"><input type="checkbox" name="horsHotel" ${coche("horsHotel")}><span><b>Logé ailleurs qu'à l'hôtel</b><small>22,25 $ de plus (21.05)</small></span></label>
+          <label><span>Autres déboursés avec pièces ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" name="autre" value="${esc(v("autre", ""))}" placeholder="Hôtel, stationnement…"></label>
+          <label><span>Buanderie, plus de 3 jours ($)</span><input type="number" inputmode="decimal" min="0" step="0.01" name="buanderie" value="${esc(v("buanderie", ""))}"></label>
+          <label class="large"><span>Description des déboursés</span><input name="autreDesc" maxlength="120" value="${esc(v("autreDesc"))}" placeholder="ex. Hôtel 2 nuits, stationnement"></label>
+          <div class="large fc-ligne"><button type="submit" class="btn-principal" style="margin:0">${ed ? "Enregistrer" : "Ajouter"}</button>${ed ? `<button type="button" class="lien" id="dep-annuler">Annuler</button>` : ""}</div>
+        </form>
+      </details>
+      <details class="panneau rc-form"><summary><b>Kilométrage de l'année</b><small> seuil de 8 000 km</small></summary>
+        <p class="aide">Les 8 000 premiers km de l'année sont remboursés à 0,62 $, les suivants à 0,545 $ (annexe K). L'app additionne les km inscrits ici. Si vous avez fait des km avant d'utiliser l'app, inscrivez-les (gardé sur cet appareil).</p>
+        <label class="ref" for="dep-km-debut">Km déjà parcourus en ${stats.a} avant l'app</label>
+        <input id="dep-km-debut" type="number" inputmode="decimal" min="0" value="${kmDebutAnnee(String(stats.a)) || ""}">
+      </details>
+      <h4 class="rc-titre">Ce que dit le contrat de travail</h4>
+      ${boutonsClauses(CLAUSES_DEP)}
+      <p class="aide">Taux de l'annexe K du contrat APPQ 2022-2028. Au plus un déjeuner, un dîner et un souper par 24 h en voyage (21.08). Les déboursés, péages et frais de buanderie demandent des pièces justificatives (21.01, 21.10, 21.11). Visible par vous seulement. N'inscrivez aucun numéro de dossier ni renseignement sur une personne.</p>`;
+    brancherClauses(el);
+    const pdf = $("#rc-dep-pdf"); if (pdf) pdf.addEventListener("click", () => rapportDepenses(mois, calc));
+    $("#dep-km-debut").addEventListener("change", (e) => { try { localStorage.setItem(cleKm(stats.a), String(Math.max(0, +e.target.value || 0))); } catch { /* facultatif */ } rendreDepensesStats(); });
+    const annuler = $("#dep-annuler"); if (annuler) annuler.addEventListener("click", () => { dep.edition = null; rendreDepensesStats(); });
+    $$("[data-dep-modifier]", el).forEach((b) => b.addEventListener("click", () => { dep.edition = b.dataset.depModifier; rendreDepensesStats(); setTimeout(() => $("#dep-form-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 50); }));
+    $$("[data-dep-retirer]", el).forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const avant = dep.items;
+      dep.items = dep.items.filter((d) => d.id !== b.dataset.depRetirer);
+      try { await sauverDepenses(); toast("Dépense retirée"); } catch (e) { dep.items = avant; toast(traduireErreur(e)); }
+      rendreDepensesStats();
+    }));
+    $("#dep-form").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const f = ev.target, n = (k) => { const x = parseFloat(String(f[k].value).replace(",", ".")); return x > 0 ? Math.round(x * 100) / 100 : 0; };
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(f.iso.value)) return toast("Choisissez la date");
+      const item = { id: ed ? ed.id : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())), iso: f.iso.value, motif: f.motif.value.trim().slice(0, 80),
+        dej: f.dej.checked, din: f.din.checked, soup: f.soup.checked, nuit: f.nuit.checked, zone: +f.zone.value || 0,
+        km: n("km"), kmExtra: n("kmExtra"), peage: n("peage"), coucher: f.coucher.checked, horsHotel: f.horsHotel.checked && f.coucher.checked,
+        autre: n("autre"), buanderie: n("buanderie"), autreDesc: f.autreDesc.value.trim().slice(0, 120) };
+      const vide = !item.dej && !item.din && !item.soup && !item.nuit && !item.km && !item.kmExtra && !item.peage && !item.coucher && !item.autre && !item.buanderie;
+      if (vide) return toast("Inscrivez au moins un repas, des km, un coucher ou un déboursé");
+      if (dep.items.length >= 1500 && !ed) return toast("Limite atteinte : retirez d'anciennes dépenses");
+      const avant = dep.items;
+      dep.items = ed ? dep.items.map((d) => (d.id === ed.id ? item : d)) : [...dep.items, item];
+      try { await sauverDepenses(); toast(ed ? "Dépense modifiée" : "Dépense ajoutée"); dep.edition = null; }
+      catch (e) { dep.items = avant; return toast(traduireErreur(e)); }
+      const [ya, mo] = item.iso.split("-").map(Number); stats.a = ya; stats.m = mo - 1;
+      rendreDepensesStats();
+    });
+  }
+  function rapportDepenses(mois, calc) {
+    const nomMois = new Date(stats.a, stats.m, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
+    const t = { repas: 0, kilometrage: 0, peage: 0, coucher: 0, autres: 0, total: 0, km: 0 };
+    for (const d of mois) { const c = calc[d.id]; for (const k of ["repas", "kilometrage", "peage", "coucher", "autres", "total"]) t[k] += c[k]; t.km += +d.km || 0; }
+    const repasTxt = (d) => [d.dej && "Déj.", d.din && "Dîn.", d.soup && "Soup.", d.nuit && "Nuit"].filter(Boolean).join(", ") + (+d.zone ? ` (+${d.zone} %)` : "");
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Compte de dépenses — ${esc(nomMois)}</title><style>${STYLE_DOC}</style></head><body>
+      <h1>Compte de dépenses — ${esc(nomMois)}</h1>
+      ${enteteDoc()}
+      <button class="imprimer" onclick="print()">Imprimer ou enregistrer en PDF</button>
+      <table><thead><tr><th>Date</th><th>Motif</th><th>Repas</th><th class="n">Repas $</th><th class="n">Km</th><th class="n">Kilométrage $</th><th class="n">Péages</th><th class="n">Coucher</th><th>Déboursés</th><th class="n">Total</th></tr></thead><tbody>
+      ${mois.map((d) => { const c = calc[d.id]; return `<tr><td>${esc(new Date(d.iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short", day: "numeric", month: "short" }))}</td><td>${esc(d.motif || "")}</td><td>${esc(repasTxt(d))}</td><td class="n">${c.repas ? dollarsTS(c.repas) : ""}</td><td class="n">${d.km ? Math.round(d.km) : ""}${d.kmExtra ? `<br><small>+${Math.round(d.kmExtra)} gravier</small>` : ""}</td><td class="n">${c.kilometrage ? dollarsTS(c.kilometrage) : ""}</td><td class="n">${c.peage ? dollarsTS(c.peage) : ""}</td><td class="n">${c.coucher ? dollarsTS(c.coucher) : ""}${d.horsHotel ? "<br><small>hors hôtel</small>" : ""}${c.appels ? "<br><small>appels 21.12</small>" : ""}</td><td>${c.autres ? dollarsTS(c.autres) : ""}${d.autreDesc ? `<br><small>${esc(d.autreDesc)}</small>` : ""}${d.buanderie ? `<br><small>dont buanderie ${dollarsTS(+d.buanderie)}</small>` : ""}</td><td class="n">${dollarsTS(c.total)}</td></tr>`; }).join("")}
+      </tbody><tfoot><tr><td colspan="3">Total</td><td class="n">${dollarsTS(t.repas)}</td><td class="n">${Math.round(t.km)}</td><td class="n">${dollarsTS(t.kilometrage)}</td><td class="n">${dollarsTS(t.peage)}</td><td class="n">${dollarsTS(t.coucher)}</td><td>${dollarsTS(t.autres)}</td><td class="n">${dollarsTS(t.total)}</td></tr></tfoot></table>
+      <p class="pied">Taux de l'annexe K du contrat de travail APPQ 2022-2028 (repas au 1er avril 2024, kilométrage au 1er octobre 2024) : déjeuner 14,70 $, dîner 20,20 $, souper et repas de nuit 30,50 $, majorés de 30 % ou 50 % selon le parallèle (21.02 b); 0,62 $/km jusqu'à 8 000 km par année, puis 0,545 $/km, plus 0,155 $/km en forêt, sur gravier ou avec remorque (21.10); coucher 7,75 $ (21.03), 22,25 $ de plus hors hôtel (21.05), appels 2,45 $ par coucher pour 2 couchers consécutifs (21.12). Pièces justificatives à joindre pour les déboursés, les péages et la buanderie (21.01, 21.10, 21.11). Au plus un déjeuner, un dîner et un souper par 24 h en voyage (21.08).</p>
+      <p class="pied">Généré par Police Management le ${esc(new Date().toLocaleString("fr-CA"))}. Document de travail : le formulaire officiel de votre organisation et son approbation prévalent.</p></body></html>`;
+    ouvrirDocument(html, `compte-depenses-${stats.a}-${String(stats.m + 1).padStart(2, "0")}.html`);
+  }
+
+  /* ---------------- Retraite : estimation selon le RRMSQ (Retraite Québec, 2026) ---------------- */
+  // Rente de base : 2,3 % × salaire moyen × service avant 1992, plus 2 % × salaire moyen limité × service après 1991 (max. 38 ans).
+  // Rente temporaire : 0,3 % × salaire limité × service après 1991, jusqu'à 65 ans. Sans réduction : 25 ans de service, facteur 75 ou 60 ans.
+  // Avec réduction : 20 ans de service; 0,5 %/mois (service avant 1992), 0,25 %/mois (1992-2017), 5 %/an (après 2017).
+  const RRMSQ = { maxService: 38, salaireMax2026: 196611, cotisation2026: 11.5, source: "https://www.retraitequebec.gouv.qc.ca/fr/publications/regimes-retraite-secteur-public/rrmsq" };
+  // Réglages de retraite : sur l'appareil seulement, par membre
+  let ret = {};
+  const cleRet = () => "pm-retraite-" + (etat.profil ? etat.profil.id : "");
+  const lireRet = () => { try { ret = JSON.parse(localStorage.getItem(cleRet()) || "{}") || {}; } catch { ret = {}; } };
+  const sauverRet = () => { try { localStorage.setItem(cleRet(), JSON.stringify(ret)); } catch { /* facultatif */ } };
+  const ajoutMois = (iso, n) => { const [y, m, d] = iso.split("-").map(Number); const t = new Date(Date.UTC(y, m - 1 + n, 1)); const fin = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate(); return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, "0")}-${String(Math.min(d, fin)).padStart(2, "0")}`; };
+  const ansEntre = (a, b) => Math.max(0, moisEntre(a, b) / 12);
+  function estimerRetraite(entree, naiss, salaire, ajust, depart) {
+    const service = (iso) => Math.max(0, ansEntre(entree, iso) + ajust);
+    const age = (iso) => ansEntre(naiss, iso);
+    const a65 = ajoutMois(naiss, 65 * 12);
+    // Pas d'un mois, aligné sur le jour d'entrée (les années de service se comptent à partir de ce jour)
+    const auj = aujourdhuiISO(), jourE = entree.slice(8, 10);
+    let debut = auj > entree ? `${auj.slice(0, 7)}-${jourE}` : entree;
+    if (debut.slice(8, 10) !== jourE || debut < auj) debut = ajoutMois(debut.slice(0, 8) + "01", debut < auj ? 1 : 0).slice(0, 8) + jourE;
+    let sansRed = null, avecRed = null;
+    for (let iso = debut; iso <= a65; iso = ajoutMois(iso, 1)) {
+      const s = service(iso), g = age(iso);
+      if (!avecRed && s >= 20) avecRed = iso;
+      if (s >= 25 || g + s >= 75 || g >= 60) { sansRed = iso; break; }
+    }
+    if (!sansRed) sansRed = a65;
+    const D = depart || sansRed;
+    // Service par période (l'ajustement est ajouté à la période la plus récente)
+    const seg = (de, a) => (a <= de ? 0 : ansEntre(de, a));
+    const borne = (x) => (x < entree ? entree : x > D ? D : x);
+    let s91 = seg(borne(entree), borne("1992-01-01")), s17 = seg(borne("1992-01-01"), borne("2018-01-01")), s18 = Math.max(0, seg(borne("2018-01-01"), D) + ajust);
+    let exces = s91 + s17 + s18 - RRMSQ.maxService;
+    for (const k of ["s18", "s17", "s91"]) { if (exces <= 0) break; const v = k === "s18" ? s18 : k === "s17" ? s17 : s91; const r = Math.min(v, exces); if (k === "s18") s18 -= r; else if (k === "s17") s17 -= r; else s91 -= r; exces -= r; }
+    const lim = Math.min(salaire, RRMSQ.salaireMax2026);
+    const p91 = 0.023 * salaire * s91, p17 = 0.02 * lim * s17, p18 = 0.02 * lim * s18;
+    const t17 = 0.003 * lim * s17, t18 = 0.003 * lim * s18;
+    const moisTot = D < sansRed ? Math.max(0, moisEntre(D, sansRed)) : 0;
+    const admissible = D >= sansRed || service(D) >= 20;
+    const f = (taux) => Math.max(0, 1 - (taux / 100) * moisTot);
+    const base = p91 * f(0.5) + p17 * f(0.25) + p18 * f(5 / 12);
+    const temporaire = D < a65 ? t17 * f(0.25) + t18 * f(5 / 12) : 0;
+    const reductionPct = moisTot && (p91 + p17 + p18) ? (1 - base / (p91 + p17 + p18)) * 100 : 0;
+    return { sansRed, avecRed, a65, D, service: service(D), age: age(D), base, temporaire, reductionPct, moisTot, admissible, plafonne: salaire > RRMSQ.salaireMax2026, serviceRetenu: s91 + s17 + s18 };
+  }
+  function rendreRetraiteStats() {
+    const el = $("#stats-contenu");
+    $("#stats-periode").textContent = "Ma retraite";
+    lireRet();
+    const paie = etat.paie;
+    if (!paie || !paie.date_entree) {
+      el.innerHTML = `<div class="paie-vide"><p>Pour estimer votre retraite, indiquez d'abord votre date d'entrée dans <b>Mon compte › Paie et banques</b>.</p><button type="button" class="btn-principal" id="ret-aller">Configurer</button></div>`;
+      $("#ret-aller").addEventListener("click", () => { $("#stats-voile").hidden = true; afficherVue("compte"); setTimeout(() => $("#rg-paie-bloc").scrollIntoView({ behavior: "smooth", block: "start" }), 250); });
+      return;
+    }
+    const sal = salaireSQ(paie);
+    const salaire = +ret.salaire || (sal ? sal.annuel : 0);
+    const naiss = ret.naissance || "";
+    const ajust = +ret.ajust || 0;
+    let resultat = `<p class="vide">Inscrivez votre date de naissance pour voir votre estimation.</p>`;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(naiss) && salaire > 0) {
+      const r = estimerRetraite(paie.date_entree, naiss, salaire, ajust, ret.depart && /^\d{4}-\d{2}-\d{2}$/.test(ret.depart) ? ret.depart : null);
+      const choisi = !!ret.depart;
+      const ans = (x) => `${String(Math.floor(x))} ans${Math.round((x % 1) * 12) ? " " + Math.round((x % 1) * 12) + " mois" : ""}`;
+      resultat = `
+        <div class="stats-totaux">
+          <div class="ts"><small>Retraite sans réduction</small><b>${esc(dateCourte(r.sansRed, true))}</b><span>à ${esc(ans(ansEntre(naiss, r.sansRed)))}</span></div>
+          <div><small>Plus tôt, avec réduction</small><b>${r.avecRed && r.avecRed < r.sansRed ? esc(dateCourte(r.avecRed, true)) : "—"}</b><span>${r.avecRed && r.avecRed < r.sansRed ? "dès 20 ans de service" : "non applicable"}</span></div>
+        </div>
+        <div class="stats-ts-calc">
+          <h4>Rente estimée ${choisi ? `si je pars le ${esc(dateCourte(r.D, true))}` : "à la date sans réduction"} <small>en dollars d'aujourd'hui</small></h4>
+          ${!r.admissible ? `<p class="aide"><b>Pas de rente immédiate à cette date :</b> il faut au moins 20 ans de service pour une retraite anticipée. La rente serait différée.</p>` : `
+          <dl class="vt-detail ts-resultat">
+            <dt>Service reconnu</dt><dd>${esc(ans(r.serviceRetenu))}${r.service > RRMSQ.maxService ? " (max. 38)" : ""}</dd>
+            <dt>Âge au départ</dt><dd>${esc(ans(r.age))}</dd>
+            ${r.moisTot ? `<dt>Réduction (${r.moisTot} mois avant la date sans réduction)</dt><dd>− ${r.reductionPct.toFixed(1).replace(".", ",")} %</dd>` : ""}
+            <dt>Rente de base</dt><dd>${dollarsTS(r.base)} / an</dd>
+            ${r.temporaire ? `<dt>Rente temporaire jusqu'à 65 ans</dt><dd>${dollarsTS(r.temporaire)} / an</dd>` : ""}
+            <dt class="total">Total avant 65 ans</dt><dd class="total">${dollarsTS(r.base + r.temporaire)} / an</dd>
+            <dt>Soit environ par mois</dt><dd>${dollarsTS((r.base + r.temporaire) / 12)}</dd>
+          </dl>
+          <p class="aide">À 65 ans, la rente temporaire cesse et la rente est réduite par la coordination avec le Régime de rentes du Québec, que vous recevez alors. Votre relevé de Retraite Québec donne ce calcul.</p>`}
+        </div>`;
+    }
+    el.innerHTML = `
+      <div class="panneau ret-champs">
+        <div class="paie-champs">
+          <label><span>Date de naissance</span><input type="date" id="ret-naiss" value="${esc(naiss)}" max="${aujourdhuiISO()}"></label>
+          <label><span>Date d'entrée (Mon compte)</span><input type="date" value="${esc(paie.date_entree)}" disabled></label>
+          <label><span>Salaire moyen des 3 meilleures années ($)</span><input type="number" inputmode="numeric" min="20000" max="400000" id="ret-salaire" value="${Math.round(salaire) || ""}"></label>
+          <label><span>Service ajouté ou retiré (années)</span><input type="number" inputmode="decimal" step="0.5" min="-20" max="20" id="ret-ajust" value="${ajust || ""}" placeholder="Rachat, absences…"></label>
+          <label class="large"><span>Date de départ souhaitée (facultatif)</span><input type="date" id="ret-depart" value="${esc(ret.depart || "")}"></label>
+        </div>
+        <p class="aide">Votre date de naissance et ces réglages restent sur cet appareil seulement. Le salaire est prérempli avec votre salaire actuel${sal && !ret.salaire ? ` (${dollarsTS(sal.annuel)})` : ""} : remplacez-le par la moyenne de vos 3 meilleures années si vous la connaissez.</p>
+      </div>
+      ${resultat}
+      <details class="panneau rc-form"><summary><b>Comment c'est calculé</b></summary>
+        <ul class="aide ret-regles">
+          <li><b>Sans réduction</b> dès 25 ans de service, au facteur 75 (âge + service) ou à 60 ans. Retraite obligatoire à 65 ans.</li>
+          <li><b>Avec réduction</b> dès 20 ans de service : 5 % par année d'avance pour le service après 2017, 3 % par année (0,25 %/mois) pour 1992 à 2017, 6 % par année pour le service avant 1992. La réduction est permanente.</li>
+          <li><b>Rente de base</b> : 2 % du salaire moyen des 3 meilleures années × années de service après 1991 (2,3 % sur les 4 meilleures années pour le service avant 1992), maximum 38 ans. Salaire admissible plafonné à ${dollarsTS(RRMSQ.salaireMax2026)} en 2026.</li>
+          <li><b>Rente temporaire</b> : 0,3 % du salaire moyen × service après 1991, versée jusqu'à 65 ans.</li>
+          <li><b>Cotisation</b> : ${String(RRMSQ.cotisation2026).replace(".", ",")} % du salaire en 2026, réduite après 30 ans de service, et plus aucune après 38 ans.</li>
+        </ul>
+        <p class="aide">Source : <a href="${RRMSQ.source}" target="_blank" rel="noopener">Retraite Québec, Le RRMSQ</a> (consulté en novembre 2026). L'estimation ne tient pas compte de l'indexation, des rachats et absences non inscrits, ni de la coordination avec le RRQ. <b>Seule Retraite Québec peut vous donner un calcul officiel</b> : consultez votre relevé de participation ou Mon dossier.</p>
+      </details>`;
+    const sauverEt = (k, val) => { ret[k] = val; sauverRet(); rendreRetraiteStats(); };
+    $("#ret-naiss").addEventListener("change", (e) => sauverEt("naissance", e.target.value));
+    $("#ret-salaire").addEventListener("change", (e) => sauverEt("salaire", Math.max(0, +e.target.value || 0) || null));
+    $("#ret-ajust").addEventListener("change", (e) => sauverEt("ajust", Math.max(-20, Math.min(20, +String(e.target.value).replace(",", ".") || 0))));
+    $("#ret-depart").addEventListener("change", (e) => sauverEt("depart", e.target.value || null));
+  }
 
   /* ---------------- Échanges de quarts au poste ---------------- */
   let echanges = [];
@@ -7321,7 +7684,7 @@ Format :
       { sel: "#hr-jour-ok", titre: "Enregistrer", texte: "Enregistre les deux onglets. « Revenir à la rotation » efface les changements de la journée." },
     ] },
     remuneration: { titre: "Rémunération (SQ)", nouveau: true, sq: true, etapes: [
-      { sel: ".hr-stats-vue .stats-mode", titre: "Quatre sections", texte: "Paie aux deux semaines (brut et net), Banques (vacances, fériés, TS, congés D), heures du mois et de l'année." },
+      { sel: ".hr-stats-vue .stats-mode", titre: "Paie, réclamations et retraite", texte: "Paie aux deux semaines, banques, réclamation de temps supplémentaire, compte de dépenses, retraite, heures du mois et de l'année. Glissez pour voir toutes les sections." },
       { sel: "#stats-contenu", titre: "Calcul selon le contrat", texte: "Primes, temps supplémentaire, impôts et cotisations 2026. Entrez vos retenues et vos soldes dans Mon compte pour un résultat exact." },
     ] },
     csr: { titre: "Les lois", vue: "csr", etapes: [
