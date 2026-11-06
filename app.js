@@ -592,6 +592,11 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-06-apple-ia", date: "2026-11-06", titre: "Apple Intelligence dans le contrat de travail", points: [
+      "App iPhone et iPad, sur un appareil compatible (iOS 26) : le bouton « Expliquer avec Apple Intelligence » explique les clauses trouvées en mots simples.",
+      "Tout se fait sur votre appareil : la question n'est envoyée à aucun serveur.",
+      "Sur les autres appareils, rien ne change : citations exactes, lecture à voix haute et Claude.",
+    ] },
     { id: "2026-11-05-recla", date: "2026-11-05", titre: "Réclamations et retraite", points: [
       "Horaire › Paie et banques : nouvelles sections Temps supp., Dépenses et Retraite (glissez pour les voir).",
       "Temps supp. : chaque période calculée selon l'article 12 (arrondi, majoration, repas, rappel), avec la réclamation du mois en PDF.",
@@ -761,6 +766,33 @@
   const PDF_CONVENTION = "https://www.sq.gouv.qc.ca/wp-content/uploads/2026/02/2025-01-23-contrat-travail-sq.pdf";
   const cv = { fil: (() => { try { return JSON.parse(sessionStorage.getItem("pm-convention3") || "[]"); } catch { return []; } })(), enCours: false, lecture: null, vocal: false };
   const sauverFilCv = () => { try { sessionStorage.setItem("pm-convention3", JSON.stringify(cv.fil.slice(-10))); } catch { /* facultatif */ } };
+  // Apple Intelligence (app iPhone et iPad, iOS 26, appareil compatible) : explication sur l'appareil, rien n'est envoyé à un serveur
+  const pontIA = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.ia;
+  cv.appleIA = null; // null = pas encore vérifié, false = non offert, true = offert
+  async function verifierAppleIA() {
+    if (!pontIA) { cv.appleIA = false; return; }
+    try { const r = await pontIA.postMessage({ action: "etat" }); cv.appleIA = !!(r && r.disponible); }
+    catch { cv.appleIA = false; }
+    rendreConvention();
+  }
+  async function expliquerAppleIA(k) {
+    const m = cv.fil[k];
+    if (!m || m.appleEnCours || !pontIA) return;
+    const ia = m.ia || repondreIA(m.question, m.extraits || [], null);
+    // Clauses complètes, en commençant par celles que l'IA Police Management a citées
+    const citees = new Set(ia.ok ? ia.citations.map((c) => c.article) : []);
+    const ordre = [...(m.extraits || [])].sort((x, y) => (citees.has(y.article) ? 1 : 0) - (citees.has(x.article) ? 1 : 0));
+    const clauses = ordre.slice(0, 3).map((e) => ({ num: nomClause(e).replace(/, p\. \d+/, "").slice(0, 60), texte: String(e.texte).slice(0, 1500) }));
+    m.appleEnCours = true; m.appleErreur = null; rendreConvention();
+    try {
+      const r = await pontIA.postMessage({ action: "expliquer", question: m.question.slice(0, 500), clauses });
+      m.apple = String(r || "").trim() || null;
+      if (!m.apple) m.appleErreur = "Apple Intelligence n'a pas donné de réponse. Réessayez ou utilisez Claude.";
+    } catch (e) {
+      m.appleErreur = String(e && e.message || e || "").includes("indisponible") ? "Apple Intelligence n'est pas disponible en ce moment sur cet appareil (vérifiez qu'il est activé dans Réglages › Apple Intelligence et Siri)." : "Apple Intelligence n'a pas pu répondre à cette question. Essayez de la reformuler ou utilisez Claude.";
+    }
+    m.appleEnCours = false; sauverFilCv(); rendreConvention();
+  }
   const nomClause = (e) => (/^Annexe/.test(e.article || "") ? e.article : "clause " + (e.article || "?")) + (e.page ? `, p. ${e.page}` : "");
   const voixPossible = () => "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
   const Reconnaissance = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -786,7 +818,8 @@
     speechSynthesis.cancel();
     const m = cv.fil[k];
     const ia = m.ia || repondreIA(m.question, m.extraits || [], null);
-    const u = new SpeechSynthesisUtterance(m.claude ? m.claude.replace(/\*\*/g, "").replace(/^\s*[-•*]\s+/gm, "") : ia.ok ? texteReponseIA(ia) : texteALire(m.extraits || []));
+    const parle = m.apple || m.claude;
+    const u = new SpeechSynthesisUtterance(parle ? parle.replace(/\*\*/g, "").replace(/^\s*[-•*]\s+/gm, "") : ia.ok ? texteReponseIA(ia) : texteALire(m.extraits || []));
     u.lang = "fr-CA";
     const v = voixFrancaise(); if (v) u.voice = v;
     u.rate = 1;
@@ -866,6 +899,7 @@ Question : ${question}
     if (m.claude && cv.vocalClaude) lire(k);
   }
   const lienClaude = (texte) => "https://claude.ai/new?q=" + encodeURIComponent(texte);
+  const ICONE_APPLE_IA = '<svg class="ic-apple-ia" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><defs><linearGradient id="gAppleIA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9F0A"/><stop offset=".35" stop-color="#FF375F"/><stop offset=".7" stop-color="#BF5AF2"/><stop offset="1" stop-color="#0A84FF"/></linearGradient></defs><path fill="url(#gAppleIA)" d="M12 2c.6 4.6 2.9 7.2 8 8-5.1.8-7.4 3.4-8 8-.6-4.6-2.9-7.2-8-8 5.1-.8 7.4-3.4 8-8z"/><circle cx="19" cy="4.5" r="1.6" fill="url(#gAppleIA)"/></svg>';
   const ICONE_CLAUDE = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 2.5l1.6 6.1 5.6-2.9-3.9 4.9 6.2 1.4-6.2 1.4 3.9 4.9-5.6-2.9L12 21.5l-1.6-6.1-5.6 2.9 3.9-4.9L2.5 12l6.2-1.4L4.8 5.7l5.6 2.9z" fill="currentColor"/></svg>`;
   const ICONE_IA = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" fill="currentColor"/><path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="currentColor"/></svg>`;
   const ICONE_HP = `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
@@ -1040,7 +1074,9 @@ Question : ${question}
           <p class="aide">Citations exactes du contrat, sans reformulation. Lisez la clause complète pour les exceptions.</p>
         </section>`;
       return `<article class="panneau cv-r">
-        ${ex.length ? `${blocIA}<div class="cv-claude"><button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
+        ${ex.length ? `${blocIA}${m.apple ? `<section class="cv-reponse-claude cv-apple"><p class="cv-claude-tete">${ICONE_APPLE_IA}<b>Explication d'Apple Intelligence</b></p>${mdSimple(m.apple)}<p class="aide">Générée sur votre appareil à partir des clauses citées ci-dessus, sans rien envoyer à un serveur. L'IA peut se tromper : la clause citée fait foi.</p></section>` : ""}
+          ${m.appleErreur ? `<p class="cv-claude-err">${esc(m.appleErreur)}</p>` : ""}
+          <div class="cv-claude">${cv.appleIA && !m.apple ? `<button type="button" class="btn-principal cv-btn-apple" data-cv-apple="${k}" ${m.appleEnCours ? "disabled" : ""}>${ICONE_APPLE_IA}${m.appleEnCours ? "Apple Intelligence réfléchit…" : "Expliquer avec Apple Intelligence"}</button>` : ""}<button type="button" class="btn-principal cv-btn-voix" data-cv-lire="${k}"></button>
           <a class="btn-secondaire cv-btn-claude" href="${esc(lienClaude(promptClaude(m.question, ex, true)))}" target="_blank" rel="noopener">${ICONE_CLAUDE}Expliquer avec Claude</a>
           <button type="button" class="btn-secondaire" data-cv-copier="${k}">Copier pour Claude</button></div>
         <p class="aide">Besoin d'une explication en vos mots ? Claude s'ouvre avec votre question et les clauses, avec la consigne de répondre seulement à partir du contrat (votre compte Claude gratuit suffit).</p>
@@ -1053,6 +1089,8 @@ Question : ${question}
     }).join("") + (cv.enCours ? `<article class="panneau cv-r cv-attente"><span class="cv-points"><i></i><i></i><i></i></span> Recherche dans le contrat…</article>` : "");
     $("#cv-suggestions").hidden = cv.fil.length > 0 || !$("#cv-avis").hidden;
     $("#cv-effacer").hidden = !cv.fil.length;
+    $$("[data-cv-apple]", el).forEach((b) => b.addEventListener("click", () => expliquerAppleIA(Number(b.dataset.cvApple))));
+    if (cv.appleIA === null) { cv.appleIA = false; verifierAppleIA(); }
     $$("[data-cv-lire]", el).forEach((b) => b.addEventListener("click", () => lire(Number(b.dataset.cvLire))));
     $$("[data-cv-copier]", el).forEach((b) => b.addEventListener("click", async () => {
       const m = cv.fil[Number(b.dataset.cvCopier)];
