@@ -70,6 +70,8 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 - **Fiche de la journée** : codes du contrat (vacances, maladie, cour, formation, férié, banque, événements familiaux avec motif…), heures, note, **En plus ce jour-là** (cour, formation, rendez-vous, rappel).
 - **Temps supplémentaire** : une question (avant le quart, après le quart, les deux), taux, payé ou en banque, rappel, détails de la feuille de TS, valeur estimée selon l'art. 12 (SQ).
 - **Paie et banques (SQ)** : paie estimée aux deux semaines (primes, TS, impôts, retenues), banques de vacances, fériés et temps.
+- **Réclamations** : temps supplémentaire du mois calculé selon l'art. 12 (arrondi, majoration, repas, rappel) et **compte de dépenses** au jour le jour selon l'art. 21 et l'annexe K (SQ), chacun avec son PDF et des liens vers les clauses du contrat.
+- **Retraite (SQ)** : date de retraite sans réduction et rente estimée selon les règles du RRMSQ (Retraite Québec); date de naissance gardée sur l'appareil seulement.
 - Congé des Fêtes, alertes de repos, échanges de quarts au poste, 2ᵉ calendrier (conjoint·e), partage avec un collègue.
 - Événements privés et rappels, rappel avant chaque quart, export `.ics` et **calendrier abonné** (iPhone, Google, Outlook).
 - Rapport de temps supplémentaire et statistiques d'heures.
@@ -117,7 +119,7 @@ Le dépôt privé `Police.Management.APP` (branche `Apple`) contient l'app nativ
 - Politique de sécurité du contenu (CSP) : le navigateur ne charge du code et n'envoie des données qu'aux sources prévues.
 - Mots de passe chiffrés de façon irréversible, refus des mots de passe divulgués, confirmation du courriel.
 - Photos d'horaire et de constat lues sur l'appareil, jamais transmises ni conservées.
-- [Politique de confidentialité](politique.html) (version 2026.11.01), nouveau consentement à chaque changement important. Politique de l'app iPhone : [`confidentialite.html`](confidentialite.html).
+- [Politique de confidentialité](politique.html) (version 2026.11.05.2), nouveau consentement à chaque changement important. Politique de l'app iPhone : [`confidentialite.html`](confidentialite.html).
 - Avertissement à chaque ouverture : aucune information opérationnelle, aucune donnée sur des citoyens, aucune photo du CRPQ.
 
 ---
