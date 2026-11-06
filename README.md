@@ -53,7 +53,7 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 
 ### Lois
 - **Québec** : Code de la sécurité routière (1 225 articles), véhicules hors route, transport rémunéré de personnes, assurance automobile. **Fédéral** : sécurité nautique.
-- Recherche par numéro ou par mots-clés (avec synonymes du terrain), favoris synchronisés, articles consultés récemment, renvois entre articles cliquables, lien vers LégisQuébec.
+- Recherche par numéro ou par mots-clés (avec synonymes du terrain), favoris synchronisés, articles consultés récemment, renvois entre articles cliquables, **codification** de chaque alinéa, paragraphe et sous-paragraphe à copier (ex. « CSR 328 al. 1 par. 4° »), lien vers LégisQuébec.
 - **Amendes et points du CSR** : l'amende prévue est repérée automatiquement dans les dispositions pénales, et les points d'inaptitude viennent de l'annexe du Règlement sur les points d'inaptitude (C-24.2, r. 37). Les deux s'affichent sous chaque article, avec un lien vers l'article de sanction.
 - **Vitesses** : amende, frais, contribution, total réclamé, points, grand excès, zones de travaux et scolaires; table complète.
 - **Frais judiciaires**.

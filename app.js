@@ -596,6 +596,7 @@
       "CSR : l'amende prévue s'affiche sous chaque article et dans la fiche, avec un lien vers l'article de sanction (cycliste, conducteur, occupant…).",
       "Les renvois « l'article 397 » sont maintenant des liens : touchez pour ouvrir l'article.",
       "Recherche plus intelligente : « cellulaire », « alcool », « vélo », « trottinette » trouvent aussi les mots du texte de loi.",
+      "Codification : chaque article est découpé en alinéas, paragraphes et sous-paragraphes. Touchez « al. 1 », « 4° » ou « a) » pour copier la référence complète (ex. CSR 328 al. 1 par. 4°).",
       "Points d'inaptitude : le nombre de points s'affiche pour chaque infraction du CSR qui en comporte, avec la description officielle (raccourci « Points d'inaptitude »).",
       "Vos derniers articles consultés reviennent en raccourci, et les onglets tiennent sur une seule ligne.",
     ] },
@@ -6556,6 +6557,28 @@ Format :
       if (!oui && e) e.remove();
     });
   }
+  // Codification : chaque alinéa, paragraphe (1°) et sous-paragraphe (a)) reçoit sa référence (ex. « CSR 328 al. 1 par. 4° »)
+  const LOIS_QC = new Set(["csr", "vhr", "transport", "assurance"]);
+  function decouperArticle(texte) {
+    const unites = []; let al = 0, par = null;
+    for (const ligne of texte.split("\n")) {
+      const mp = ligne.match(/^(\d+(?:\.\d+)*)°\s*/), ms = ligne.match(/^([a-z](?:\.\d+)?)\)\s*/);
+      if (mp) { if (!al) al = 1; par = mp[1]; unites.push({ niv: "par", ref: `al. ${al} par. ${par}°`, court: `${par}°`, texte: ligne }); }
+      else if (ms && par) unites.push({ niv: "spar", ref: `al. ${al} par. ${par}° s.-par. ${ms[1]})`, court: `${ms[1]})`, texte: ligne });
+      else { al += 1; par = null; unites.push({ niv: "al", ref: `al. ${al}`, court: `al. ${al}`, texte: ligne }); }
+    }
+    // Article d'un seul alinéa, sans paragraphe : la référence est l'article lui-même
+    if (unites.length === 1) { unites[0].ref = ""; unites[0].court = ""; }
+    return unites;
+  }
+  const refComplete = (loi, no, ref) => `${loi.court} ${no}${ref ? " " + ref : ""}`;
+  function rendreTexteArticle(a, termes) {
+    const loi = loiCourante();
+    if (!LOIS_QC.has(etat.loi)) return `<div class="texte">${lierRenvois(surligner(a.texte, termes), a.numero)}</div>`;
+    const u = decouperArticle(a.texte);
+    return `<div class="texte texte-code">${u.map((x) => `<p class="u u-${x.niv}">${x.court ? `<button type="button" class="code-ref" data-ref="${esc(refComplete(loi, a.numero, x.ref))}" title="Copier ${esc(refComplete(loi, a.numero, x.ref))}">${esc(x.court)}</button>` : ""}<span>${lierRenvois(surligner(x.niv === "al" ? x.texte : x.texte.replace(/^(\d+(?:\.\d+)*°|[a-z](?:\.\d+)?\))\s*/, ""), termes), a.numero)}</span></p>`).join("")}</div>
+      <p class="aide code-aide">Touchez une référence (al., 1°, a)) pour copier la codification complète, par exemple « ${esc(refComplete(loi, a.numero, (u.find((x) => x.niv === "par") || u[0]).ref))} ».</p>`;
+  }
   // Renvois « l'article 397 » : touchez pour ouvrir l'article dans la même loi
   function lierRenvois(html, courant) {
     if (!etat.csr || !etat.csr.length) return html;
@@ -6586,7 +6609,7 @@ Format :
     el.innerHTML = `
       <p class="fil">${esc([a.titre, a.chapitre, a.section].filter(Boolean).join(" › "))}</p>
       <h3>${esc(a.numero)}</h3>
-      <div class="texte">${lierRenvois(surligner(a.texte, termes), a.numero)}</div>
+      ${rendreTexteArticle(a, termes)}
       ${blocSanctions(a.numero)}
       <div class="outils-art">
         <button class="btn-secondaire btn-favori" data-favori aria-pressed="${estFavori(etat.loi, a.numero)}">${ETOILE}<span>${estFavori(etat.loi, a.numero) ? "Dans mes favoris" : "Ajouter aux favoris"}</span></button>
@@ -6600,6 +6623,9 @@ Format :
     $$("#csr-liste button").forEach((b) => b.setAttribute("aria-current", String(b.dataset.no === a.numero)));
     const i = etat.csr.indexOf(a);
     noterRecent(a.numero);
+    $$("[data-ref]", el).forEach((r) => r.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(r.dataset.ref); toast(`Copié : ${r.dataset.ref}`); } catch { toast(r.dataset.ref); }
+    }));
     $$("[data-renvoi]", el).forEach((r) => r.addEventListener("click", () => ouvrirArticle(etat.csr.find((x) => x.numero === r.dataset.renvoi))));
     const bv = $("[data-aller-vitesse]", el); if (bv) bv.addEventListener("click", () => { ongletLois("vitesse"); $("#vue-csr").scrollIntoView({ block: "start" }); });
     const sanc = sanctions && sanctions.map.get(a.numero);
