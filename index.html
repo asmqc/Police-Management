@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="styles.css?v=202611041336">
+  <link rel="stylesheet" href="styles.css?v=202611060057">
 </head>
 <body>
   <!-- Chargement -->
@@ -409,6 +409,7 @@
         <label for="dm-mdp">Mot de passe (10 caractères minimum)</label>
         <input id="dm-mdp" type="password" autocomplete="new-password" minlength="10" required>
         <p class="dm-invitation" id="dm-invitation" hidden></p>
+        <label class="consentement" for="dm-partage"><input type="checkbox" id="dm-partage"> <span>Facultatif : partager ma rotation avec les membres approuvés de mon poste (sans mes notes ni mes congés). Modifiable en tout temps dans Réglages › Confidentialité.</span></label>
         <label class="consentement" for="dm-consent"><input type="checkbox" id="dm-consent"> <span>J'ai lu et j'accepte la <a href="politique.html" target="_blank" rel="noopener">politique de confidentialité</a>. Je confirme avoir 18 ans ou plus et je comprends que je ne dois inscrire aucune information confidentielle ni aucune donnée sur des citoyens.</span></label>
         <button type="submit" class="btn-principal">Envoyer la demande</button>
       </form>
@@ -2233,9 +2234,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611041336"></script>
+  <script src="config.js?v=202611060057"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="app.js?v=202611041336"></script>
+  <script src="app.js?v=202611060057"></script>
 </body>
 </html>
