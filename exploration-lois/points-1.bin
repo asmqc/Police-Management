@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; CHARSET=utf-8"></meta>
+		<meta name="dc.title" content=" - Règlement sur les points d’inaptitude">
+		<meta name="dc.creator" content="">
+		<meta name="dc.language" scheme="ISO639-2"	content="fre">
+		<meta name="dc.subject" content="">
+		<meta name="Keywords" content="">
+		<meta name="dc.Publisher" content="">
+		<meta name="dc.Contributor" content="Irosoft, architecture de gestion de l'information législative - legal information management system">
+		<meta name="dc.Description" content="">
+		<meta name="Description" content="">
+		<meta name="Title" content=" - Règlement sur les points d’inaptitude">
+		<meta name="dc.date.created" content="2025-11-03">
+		<meta name="dc.date.modified" content="2025-11-03">
+
+		<title>Légis Québec</title>
+		
+		<link rel="shortcut icon" href="/img/favicon.ico">
+		<link rel="stylesheet" href="/bootstrap/5.1.3/css/bootstrap.min.css">
+		<link rel='stylesheet' href='/CSS/jquery.loadmask.css?v=2.1'>
+		<link rel='stylesheet' href='/CSS/cyberlex.jquery.loadmask.css?v=2.1'>
+		
+		
+<link rel="stylesheet" type="text/css" href="/CSS/FragmentView.css?v=2.2"></link>
+
+		<link rel="stylesheet" href="/css/publishing-bootstrap.css?v=2.1">
+		<link rel="stylesheet" href="/css/publishing.css?v=2.1">
+		<link rel="stylesheet" href="/CSS/cyberlex-bootstrap.min.css?v=2.1">
+		<link rel="stylesheet" href="/CSS/cyberlex.css?v=2.1">
+		<link rel="stylesheet" href="/css/font-awesome.min.css?v=2.1">
+		<link rel="stylesheet" href="/CSS/core.css?v=2.1">
+		<link rel="stylesheet" href="/CSS/client.css?v=2.1">
+		<link rel="stylesheet" href="/css/publications-quebec.css?v=2.1">
+		<link rel="stylesheet" href="/css/eoq.css?v=2.1">
+
+		<script type="text/javascript" src="/jquery-ui/1.13.0/external/jquery/jquery.js?v=2.1"></script>
+		<script type="text/javascript" src="/jquery-ui/1.13.0/jquery-ui.min.js?v=2.1"></script>
+		<script type="text/javascript" src="/jquery/3.6.0/jquery.min.js?v=2.1"></script>
+		<script type="text/javascript" src="/DOMPurify/dist/purify.min.js?v=2.1"></script>
+	</head>
+
+	<body>
+		<div id="wrap">
+			<div class="main-header">
+				<div class="main-header-content">
+					<a class="logo-pub-quebec" href="https://www.quebec.ca/" target="_blank"></a>
+					<div class="mtess">
+						<a href="https://boutique.publicationsduquebec.gouv.qc.ca/" target="_blank">
+							<div class="mtessTitle">Les Publications du Québec</div>
+							<div class="mtessSubTitle">Ministère de l'Emploi et de la Solidarité sociale</div>
+						</a>
+					</div>
+					<div class="end-header">
+						<a href="/fr/">Accueil</a>
+						<a href="/fr/contenu/FAQ" >FAQ</a>
+						<a href="/fr/contenu/joindre" >Nous joindre</a>
+						<a id="langSwitcher" class="d-none" href=""></a>
+					</div>
+				</div>
+			</div>
+			<div class="page-body">
+				<!-- Header -->
+				<nav class="navbar navbar-light">
+					<div class="container-fluid colorTheme">
+						<div class="navbar-header">
+							<div class="row">
+								<div class="col-sm-3">
+									<div class="input-group" class="pt-2">
+										<input type="text" class="form-control" data-bs-placement="top" data-bs-toggle="tooltip" placeholder="Recherche" id="quickSearchText" title="Rechercher dans lois et règlements codifiés">
+										<span class="input-group-btn">
+											<button class="btn btn-primary" type="button" id="goResult" data-bs-placement="top" data-bs-toggle="tooltip" title="Recherche">
+												<span class="fa fa-search" aria-hidden="true"></span>
+											</button>
+										</span>
+									</div>
+									<div class="py-2"><a href="/fr/recherche?t=a">Recherche avancée</a></div>
+								</div><div class="col-sm-9 d-flex justify-content-between">
+										<a class="navbar-brand logo-fr logo" title="Accueil" href="/fr/"></a>
+								</div>
+							</div>
+						</div>
+					</div><!-- /.container-fluid -->
+				</nav>
+				<!-- Content -->
+				<div class="row">
+					<div class="col-sm-3">
+						<div class="list-group">
+	<a href="#" class="list-group-item active disabled bg-primary bg-gradient text-white">Lois et règlements codifiés</a>
+	<a href="/fr/chapitres?corpus=lois" id="chapterStatutes" class="list-group-item">Lois codifiées</a>
+	<a href="/fr/chapitres?corpus=regs" id="chapterRegulations" class="list-group-item">Règlements codifiés</a>
+
+	<a href="#" class="list-group-item active disabled bg-primary bg-gradient text-white">Lois et règlements annuels</a>
+	<a href="/fr/annuels?filtre=lois" id="browseannual-statutes" class="list-group-item">Lois annuelles</a>
+	<a href="/fr/annuels?filtre=regs" id="browseannual-regs" class="list-group-item">Règlements annuels</a>
+	
+	<a href="#" class="list-group-item active disabled bg-primary bg-gradient text-white">Information complémentaire</a>
+	<a id="content-editoff" href="/fr/contenu/editeurofficiel" class="list-group-item">L’Éditeur officiel du Québec</a>
+	<a id="content-neuf" href="/fr/contenu/neuf" class="list-group-item">Quoi de neuf?</a>
+	<a id="content-noteinfo" href="/fr/contenu/noteinfo" class="list-group-item">Note d’information</a>
+	<a id="content-mjqpol" href="/fr/contenu/mjqpol" class="list-group-item">Politique du ministre de la Justice</a>
+	<a id="content-modlois" href="/fr/contenu/modlois" class="list-group-item">Lois : Modifications</a>
+	<a id="content-nevlois" href="/fr/contenu/nevlois" class="list-group-item">Lois : Dispositions non en vigueur</a>
+	<a id="content-eevlois" href="/fr/contenu/eevlois" class="list-group-item">Lois : Entrées en vigueur</a>
+	<a id="content-loisann" href="/fr/contenu/loisann" class="list-group-item">Lois annuelles : Versions PDF depuis 1996</a>
+	<a id="content-modreg" href="/fr/contenu/modreg" class="list-group-item">Règlements : Modifications</a>
+	<a id="content-regann" href="/fr/contenu/regann" class="list-group-item">Règlements annuels : Versions PDF depuis 1996</a>
+	<a id="content-decision" href="/fr/contenu/decision" class="list-group-item">Décisions des tribunaux</a>
+</div>
+						
+					</div>
+					<div id="contentDiv" class="col-sm-9">
+						<form id="form" onsubmit="" method="post" action="">
+	<div>
+		<input alt="Champ caché" name="command" type="hidden" value=""></input>
+		<input alt="Champ caché" name="shorttitle" type="hidden" value=""></input>
+		<input alt="Champ caché" name="marginalnotexml" type="hidden" value=""></input>
+		<input alt="Champ caché" name="heading" type="hidden" value=""></input>
+		<input alt="Champ caché" name="fragment" type="hidden" value=""></input>
+		<input alt="Champ caché" name="selfrag" type="hidden" value=""></input>
+		<input alt="Champ caché" name="search_type" type="hidden" value=""></input>
+		<input alt="Champ caché" name="title_search_type" type="hidden" value=""></input>		
+		<input alt="Champ caché" name="anchor" type="hidden" value=""></input>
+		<input alt="Champ caché" name="dateEEV" type="hidden" value=""></input>
+		<input alt="Champ caché" name="statuteyear" type="hidden" value=""></input>
+		<input alt="Champ caché" name="isPrinting" type="hidden" value="false"></input>
+		<input alt="Champ caché" name="from" type="hidden" value=""></input>
+		<input alt="Champ caché" name="output" type="hidden" value="printFull"></input>
+		<input alt="Champ caché" name="page" type="hidden" value="<<page>>"></input>
+		<input alt="Champ caché" name="length" type="hidden" value=""></input>
+		<input alt="Champ caché" name="instrumentnumber" type="hidden" value="C-24.2, r. 37 "></input>
+		<input alt="Champ caché" name="instrumentnumbersearch" type="hidden" value=""></input>
+		<input alt="Champ caché" name="stemmed" type="hidden" value=""></input>
+		
+	</div>
+
+	<div class="card">
+		<div class="card-header p-3 bg-gradient docHeader">
+						<div class="d-flex justify-content-between align-items-center">
+							<h3 class="card-title me-1"><span class="fw-bold">C-24.2, r. 37 </span> - Règlement sur les points d’inaptitude</h3>
+							<a id="contLangSwitcher" class="btn btn-outline-secondary bg-gradient " role="button" href="/fr/document/rc/C-24.2,%20r.%2037%20/?langCont=en">English</a>
+						</div>
+					</div>
+		
+		<div class="card-body">
+			<div class="d-flex justify-content-between align-items-center">
+				<div class="flex-row d-flex align-items-center">
+					<div class="pr-1">
+						<a href="/fr/tdm/rc/C-24.2,%20r.%2037%20" class="btn btn-outline-secondary bg-gradient" role="button" title="Afficher la table des matières du document" alt="Afficher la table des matières du document" data-bs-toggle="tooltip" data-bs-placement="top">Table des matières <span class="fa fa-list smallLeftSpacer" aria-hidden="true"></span></a>
+					</div>
+					<div class="px-1">
+						
+				<div class="btn-group">
+					<button id="relatedLegislativeDocument" type="button" class="btn btn-outline-secondary bg-gradient dropdown-toggle " data-bs-toggle="dropdown" aria-expanded="false" data-bs-offset="-100, 0">
+						Loi habilitante <span class="badge rounded-pill bg-secondary smallLeftSpacer">1</span> <span class="caret smallLeftSpacer"></span>
+					</button>
+					<table class="table table-responsive table-hover dropdown-menu relatedDoc" role="menu">
+						<thead>
+							<tr>
+								<th width="15%">Alphanumérique</th>
+								<th width="85%">Titre</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+<td>C-24.2</td>
+<td>
+<a class="hand boldLink" href="/fr/document/lc/C-24.2">Code de la sécurité routière   
+</a>
+</td>
+</tr>
+						</tbody>
+					</table>
+					</div>
+					</div>
+					<div class="px-1">
+						<span id="occurrenceButton" class="d-none">
+							Occurrences<span class="badge rounded-pill bg-secondary ms-3" id="occurrenceCount">0</span>
+						</span>
+					</div>
+					<div class="px-1">
+						
+					</div>
+				</div>
+
+				<div class="flex-row d-flex align-items-center">
+					<div class="px-1">
+						<a id="renditionPdf" target="_blank" class="btn btn-outline-secondary bg-gradient d-none" 
+							role="button" title="Ouvrir la version PDF" alt="Ouvrir la version PDF"
+							data-bs-toggle="tooltip" data-bs-placement="top">
+							 <span class="fa pdf-icon" aria-hidden="true"></span>
+						</a>
+					</div>
+					<div class="px-1">
+						<a id="renditionEpub" target="_blank" class="btn btn-outline-secondary bg-gradient d-none" 
+							role="button" title="Télécharger la version ePUB" alt="Télécharger la version ePUB"
+							data-bs-toggle="tooltip" data-bs-placement="top">
+							 <span class="fa epub-icon" aria-hidden="true"></span>
+						</a>
+					</div>
+					<div class="px-1">
+						<a id="btnPrintPreview" class="btn btn-outline-secondary bg-gradient last"
+							role="button" title="Préparer le document pour l'impression"
+							alt="Préparer le document pour l'impression" data-bs-toggle="tooltip" data-bs-placement="top"><span id="printBtnIcon"
+								class="fa fa-print" aria-hidden="true"></span>
+						</a>
+					</div>
+				</div>
+				
+			</div>
+			<div class="row pt-2">
+				<div class="col">
+					<div class="card ">
+						
+							<div class="card-header official-heading bg-gradient ">
+								<div class="row">
+									<div class="col">
+										<div class="text-end"></div>
+										Texte complet 
+									</div>
+								
+									<div class="col">
+										<div class="text-end">
+											À jour au 1<sup>er</sup> juillet 2026
+										</div>
+										<div class="text-end">
+											Ce document a valeur officielle.
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="card-body history current conso" id="mainContent-document">
+								<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE div
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<div xmlns="http://www.w3.org/1999/xhtml" xmlns:exsl="http://exslt.org/common" xmlns:msxsl="urn:schemas-microsoft-com:xslt" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:integrity="http://ref.irosoft.com/integrity/" integrity:Digest="4B430A7CE6667F3C456E3D38604B2291"><meta title="Ministère de la Justice du Québec" author="Ministère de la Justice du Québec" subject="Ministère de la Justice du Québec" keywords="Ministère de la Justice du Québec" description="Ministère de la Justice du Québec" timestamp="n'est pas supporter" application="CYBERLEX" version="2.2.11.1" provider="Irosoft" source="xsl"/><div xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:law="http://ref.irosoft.com/LIMS/1.0/law" class="DefaultPageSequence BodyPageSequence"><div class="LegislativeDocument Global Style_Extra_Class"><div class="Identification"><div integrity:added="1" class="Identification-Id"><span integrity:added="1">chapitre </span><span integrity:order="1">C-24.2, r. 37</span></div><div integrity:order="2" class="titre-reglement-left titre-reglement-left customLongTitleWord">Règlement sur les points d’inaptitude</div><span class="Hidden" integrity:order="3">CODE DE LA SÉCURITÉ ROUTIÈRE - POINTS D’INAPTITUDE</span><div><div class="enabling-identification"><div integrity:order="5" class="LongTitle-enabling">Code de la sécurité routière</div></div><div class="HistoricalNote-LongTitle"><span><span integrity:order="6">(chapitre C-24.2, a. 619, par. 9, 9.2 et 9.3)</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div><span class="Hidden" integrity:order="4">C-24.2</span></div><span class="Hidden"><span integrity:order="9" class="date-txt-statut Hidden">01</span><span integrity:added="1">1</span><span integrity:added="1" class="superscript_7point">er</span><span integrity:added="1"> </span><span integrity:order="8" class="Hidden">09</span><span integrity:added="1">septembre </span><span integrity:order="7" class="date-txt-statut">2012</span></span></div><div id="ga:l_i"><div class="Heading Heading" id="ga:l_i-h1"><span integrity:order="10" class="Label-group5"><span integrity:added="1">SECTION </span>I</span><div integrity:order="11" class="TitleText-group5 group5" id="ga:l_i-h1-t1-nb:1">INTERPRÉTATION</div></div><div class="section" id="se:1"><div class="Subsection SubsectionFirst" id="se:1-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:1&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:1" data-code="se:1"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="12" class="Label-Section consolidationWhipeTextDecoration consolidationClean">1<span integrity:added="1">.</span></span></span></a> <span integrity:order="13" class="Subsection">Les renvois faits dans le présent règlement doivent se lire en tenant compte des modifications qui pourront être apportées au texte des dispositions législatives et réglementaires auxquelles on fait ainsi renvoi.</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="14">D. 1003-2001, a. 1</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div></div><div id="ga:l_ii"><div class="Heading Heading" id="ga:l_ii-h1"><span integrity:order="15" class="Label-group5"><span integrity:added="1">SECTION </span>II</span><div integrity:order="16" class="TitleText-group5 group5" id="ga:l_ii-h1-t1-nb:1">SYSTÈME DE POINTS D’INAPTITUDE</div></div><div class="section" id="se:2"><div class="Subsection SubsectionFirst" id="se:2-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:2&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:2" data-code="se:2"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="17" class="Label-Section consolidationWhipeTextDecoration consolidationClean">2<span integrity:added="1">.</span></span></span></a> <span integrity:order="18" class="Subsection">Des points d’inaptitude sont prescrits pour toute infraction commise à l’encontre des dispositions du Code de la sécurité routière (chapitre C-24.2) énumérées dans la table de points d’inaptitude prévue à l’annexe, selon le nombre indiqué en regard de chacune de ces infractions.</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="19">D. 1003-2001, a. 2</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:3"><div class="Subsection SubsectionFirst" id="se:3-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:3&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:3" data-code="se:3"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="20" class="Label-Section consolidationWhipeTextDecoration consolidationClean">3<span integrity:added="1">.</span></span></span></a> <span integrity:order="21" class="Subsection">Le même nombre de points d’inaptitude est prescrit pour toute infraction dont la description correspond à l’une de celles apparaissant à l’annexe et commise à l’encontre d’une disposition:</span><div class="Paragraph" id="se:3-ss:1-p1:1"><span integrity:order="22" class="Label-Z LabelBase">1<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="23" class="Paragraph">d’un règlement en vigueur d’une municipalité;</span></div><div class="Paragraph" id="se:3-ss:1-p1:2"><span integrity:order="24" class="Label-Z LabelBase">2<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="25" class="Paragraph">d’une loi du Canada autre que le Code criminel (L.R.C. 1985, c. C-46) ou d’un règlement du Canada, pour une infraction commise sur un territoire sous la responsabilité du gouvernement du Canada.</span></div></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="26">D. 1003-2001, a. 3</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:4"><div class="Subsection SubsectionFirst" id="se:4-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:4&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:4" data-code="se:4"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="27" class="Label-Section consolidationWhipeTextDecoration consolidationClean">4<span integrity:added="1">.</span></span></span></a> <span integrity:order="28" class="Subsection">L’avis prévu à l’article 114 du Code de la sécurité routière (chapitre C-24.2) est envoyé dans les cas suivants:</span><div class="Paragraph" id="se:4-ss:1-p1:1"><span integrity:order="29" class="Label-Z LabelBase">1<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="30" class="Paragraph">lorsqu’au moins 4 points d’inaptitude sont inscrits au dossier d’une personne âgée de moins de 23 ans;</span></div><div class="Paragraph" id="se:4-ss:1-p1:2"><span integrity:order="31" class="Label-Z LabelBase">2<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="32" class="Paragraph">lorsqu’au moins 6 points d’inaptitude sont inscrits au dossier d’une personne âgée de 23 ou de 24 ans;</span></div><div class="Paragraph" id="se:4-ss:1-p1:3"><span integrity:order="33" class="Label-Z LabelBase">3<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="34" class="Paragraph">lorsqu’au moins 7 points d’inaptitude sont inscrits au dossier d’une personne âgée de 25 ans et plus.</span></div></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="35">D. 1003-2001, a. 4</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="36">L.Q. 2007, c. 40, a. 92</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:5"><div class="Subsection SubsectionFirst" id="se:5-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:5&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:5" data-code="se:5"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="37" class="Label-Section consolidationWhipeTextDecoration consolidationClean">5<span integrity:added="1">.</span></span></span></a> <span integrity:order="38" class="Subsection">Pour l’application de l’article 185 du Code de la sécurité routière (chapitre C-24.2), le nombre de points d’inaptitude est fixé à:</span><div class="Paragraph" id="se:5-ss:1-p1:1"><span integrity:order="39" class="Label-Z LabelBase">1<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="40" class="Paragraph">8, pour une personne âgée de moins de 23 ans;</span></div><div class="Paragraph" id="se:5-ss:1-p1:2"><span integrity:order="41" class="Label-Z LabelBase">2<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="42" class="Paragraph">12, pour une personne âgée de 23 ou de 24 ans;</span></div><div class="Paragraph" id="se:5-ss:1-p1:3"><span integrity:order="43" class="Label-Z LabelBase">3<span integrity:added="1">° </span><span integrity:added="1" class="WidthFixForLabel"> </span></span><span integrity:order="44" class="Paragraph">15, pour une personne âgée de 25 ans et plus.</span></div></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="45">D. 1003-2001, a. 5</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="46">L.Q. 2007, c. 40, a. 92</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:5_1"><div class="Subsection SubsectionFirst" id="se:5_1-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:5_1&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:5_1" data-code="se:5_1"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="47" class="Label-Section consolidationWhipeTextDecoration consolidationClean">5.1<span integrity:added="1">.</span></span></span></a> <span integrity:order="48" class="Subsection">Pour l’application de l’article 191.2 du Code de la sécurité routière (chapitre C-24.2), le nombre de points d’inaptitude est fixé à 4.</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="49">L.Q. 2007, c. 40, a. 92</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div></div><div id="ga:l_iii"><div class="Heading Heading" id="ga:l_iii-h1"><span integrity:order="50" class="Label-group5"><span integrity:added="1">SECTION </span>III</span><div integrity:order="51" class="TitleText-group5 group5" id="ga:l_iii-h1-t1-nb:1">DISPOSITIONS DE LA SECTION IV DU CHAPITRE II DU TITRE II DU CODE DE LA SÉCURITÉ ROUTIÈRE APPLICABLES AU TITULAIRE D’UN PERMIS D’APPRENTI- CONDUCTEUR OU D’UN PERMIS PROBATOIRE</div></div><div class="section" id="se:6"><div class="Subsection SubsectionFirst" id="se:6-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:6&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:6" data-code="se:6"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="52" class="Label-Section consolidationWhipeTextDecoration consolidationClean">6<span integrity:added="1">.</span></span></span></a> <span integrity:order="53" class="Subsection">Les dispositions de la section IV du chapitre II du titre II du Code de la sécurité routière (chapitre C-24.2) s’appliquent, à l’exception de l’article 114, au titulaire d’un permis d’apprenti-conducteur ou d’un permis probatoire ou au titulaire d’un permis autorisant uniquement la conduite d’un cyclomoteur ou d’un tracteur de ferme.</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="54">D. 1003-2001, a. 6</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="55">L.Q. 2007, c. 40, a. 93</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div></div><div id="ga:l_iv"><div class="Heading Heading" id="ga:l_iv-h1"><span integrity:order="56" class="Label-group5"><span integrity:added="1">SECTION </span>IV</span><div integrity:order="57" class="TitleText-group5 group5" id="ga:l_iv-h1-t1-nb:1">DISPOSITIONS TRANSITOIRES ET FINALES</div></div><div class="section" id="se:7"><div class="Subsection SubsectionFirst" id="se:7-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:7&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:7" data-code="se:7"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="58" class="Label-Section consolidationWhipeTextDecoration consolidationClean">7<span integrity:added="1">.</span></span></span></a> <span integrity:order="59" class="Subsection">Les points d’inaptitude présents au dossier d’une personne le jour qui précède le 20 septembre 2001 sont réputés être des points inscrits à son dossier conformément au présent règlement.</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="60">D. 1003-2001, a. 7</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:8"><div class="Subsection SubsectionFirst" id="se:8-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:8&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:8" data-code="se:8"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="61" class="Label-Section consolidationWhipeTextDecoration consolidationClean">8<span integrity:added="1">.</span></span></span></a> <span integrity:order="62" class="Subsection">Le présent règlement remplace le Règlement sur les points d’inaptitude (D. 1424-91, 91-06-16).</span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="63">D. 1003-2001, a. 8</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="section" id="se:9"><div class="Subsection SubsectionFirst" id="se:9-ss:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=se:9&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><a class="linkOtherLang" href="#se:9" data-code="se:9"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Basculement linguistique"><span integrity:order="64" class="Label-Section consolidationWhipeTextDecoration consolidationClean">9<span integrity:added="1">.</span></span></span></a> <span class="Subsection"><span integrity:order="65" class="Repealed-Text">(Omis).</span></span></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="66">D. 1003-2001, a. 9</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div></div><div class="Schedule-abrogative PageBreakBefore" id="sc-nb:1"><div integrity:added="1" class="HistoryLink"><a href="/fr/version/rc/C-24.2, r. 37 ?code=sc-nb:1&historique=20261105#20261105"><span class="tooltipInfo" data-bs-toggle="tooltip" data-bs-placement="left" title="Versions historiques"><img xmlns="" src="/img/history.png"/></span></a></div><div class="ScheduleHeading" id="d-765137375e203"><a class="linkOtherLang" href="#sc-nb:1" data-code="sc-nb:1"><span integrity:order="67" class="Label-ScheduleHeading">ANNEXE</span></a><div integrity:order="68" class="OriginatingRef"><span integrity:added="1">(</span>a. 2 et 3<span integrity:added="1">)</span></div></div><div class="ScheduleContent"><div><div class="indent-0-0"><span integrity:order="69" class="Provision">TABLE DE POINTS D’INAPTITUDE</span></div><div class="indent-0-0"><div xml:space="preserve" class="verbatim"><span integrity:order="70" class="Provision"><Hr xmlns=""/><br/><span integrity:order="71" class="bold">Description sommaire de</span>                          <br/><span integrity:order="72" class="bold">l’infraction à seule fin</span>                         <span integrity:order="73" class="bold">Articles visés (C.S.R.)</span><br/><span integrity:order="74" class="bold">de référence</span>                       ____________________________________________<br/><br/>                                    <span integrity:order="75" class="bold">Description    Imputabilité   Points</span><br/><Hr xmlns=""/><br/>1.    Conduite sans la présence     99             140.1          4<br/>      d’un accompagnateur ou au<br/>      cours de la période<br/>      interdite<br/><Hr xmlns=""/><br/>1.1   Conduite au cours de la       100            140.1          4<br/>      période interdite, avec<br/>      certains passagers<Hr xmlns=""/><br/>2.    Manquement à un devoir de     168, 169,      178 ou 179     9<br/>      conducteur impliqué dans un   170 ou 171 <br/>      accident<br/><Hr xmlns=""/><br/>3.    Conduite avec présence        202.2 ou       202.8          4<br/>      d’alcool dans l’organisme     202.8<br/>      omission de fournir un <br/>      échantillon d’haleine<br/><Hr xmlns=""/><br/>4.    Omission de se conformer aux  311            314.2          4<br/>      ordres ou signaux d’un agent <br/>      de la paix, d’un brigadier <br/>      scolaire ou d’un signaleur<br/><Hr xmlns=""/><br/>5.    Vitesse ou action imprudente  327            512            4<br/><Hr xmlns=""/><br/>6.    Vitesse supérieure à la       299, 303.2,    516<br/>      limite prescrite ou indiquée  328 ou 329<br/>      sur une signalisation <br/>      Excès de la vitesse permise de:<br/><Hr xmlns=""/><br/>      11 à 20 km/h                                                1<br/><Hr xmlns=""/><br/>      21 à 30 km/h                                                2<br/><Hr xmlns=""/><br/>      31 à 45 km/h                                                3<br/><Hr xmlns=""/><br/>      46 à 60 km/h                                                5<br/><Hr xmlns=""/><br/>      61 à 80 km/h                                                7<br/><Hr xmlns=""/><br/>      81 à 100 km/h                                               9<br/><Hr xmlns=""/><br/>      plus de 100 km/h                                            12 + 3 <br/>                                                                  points par <br/>                                                                  tranche <br/>                                                                  complète <br/>                                                                  additionnelle<br/>                                                                  de 20 km/h <br/>                                                                  au-dessus de<br/>                                                                  l’excès de<br/>                                                                  100 km/h<br/><Hr xmlns=""/><br/>6.1.  Vitesse de 40 km/h <br/>      ou plus au-delà de la <br/>      limite permise dans <br/>      une zone où la limite <br/>      maximale de vitesse           299, 303.2,    516.1,<br/>      est d’au plus 60 km/h         328 ou 329     par. 1<br/><Hr xmlns=""/><br/>      Excès de la vitesse permise de:<br/><br/>      40 à 45 km/h                                                6<br/><Hr xmlns=""/><br/>      46 à 60 km/h                                                10<br/><Hr xmlns=""/><br/>      61 à 80 km/h                                                14<br/><Hr xmlns=""/><br/>      81 à 100 km/h                                               18<br/><Hr xmlns=""/><br/>      plus de 100 km/h                                            24 + 6 <br/>                                                                  points par <br/>                                                                  tranche <br/>                                                                  complète <br/>                                                                  additionnelle <br/>                                                                  de 20 km/h <br/>                                                                  au-dessus de <br/>                                                                  l’excès de <br/>                                                                  100 km/h<br/><Hr xmlns=""/><br/>6.2.  Vitesse de 50 km/h <br/>      ou plus au-delà de la <br/>      limite permise dans <br/>      une zone où la limite <br/>      maximale de vitesse <br/>      est supérieure à 60 km/h      299, 303.2,    516.1, <br/>      et d’au plus 90 km/h          328 ou 329     par. 2<br/><Hr xmlns=""/><br/>      Excès de la vitesse permise de:<br/><br/>      50 à 60 km/h                                                10<br/><Hr xmlns=""/><br/>      61 à 80 km/h                                                14<br/><Hr xmlns=""/><br/>      81 à 100 km/h                                               18<br/><Hr xmlns=""/><br/>      plus de 100 km/h                                            24 + 6 <br/>                                                                  points par <br/>                                                                  tranche <br/>                                                                  complète <br/>                                                                  additionnelle<br/>                                                                  de 20 km/h <br/>                                                                  au-dessus de <br/>                                                                  l’excès de <br/>                                                                  100 km/h<br/><Hr xmlns=""/><br/>6.3.  Vitesse de 60 km/h ou <br/>      plus au-delà de la <br/>      limite permise dans <br/>      une zone où la limite <br/>      maximale de vitesse           299, 303.2,    516.1, <br/>      est de 100 km/h et plus       328 ou 329     par. 3<br/><Hr xmlns=""/><br/>      Excès de la vitesse permise de:<br/><br/>      60 km/h                                                     10<br/><Hr xmlns=""/><br/>      61 à 80 km/h                                                14<br/><Hr xmlns=""/><br/>      81 à 100 km/h                                               18<br/><Hr xmlns=""/><br/>      plus de 100 km/h                                            24 + 6 <br/>                                                                  points par <br/>                                                                  tranche <br/>                                                                  complète <br/>                                                                  additionnelle<br/>                                                                  de 20 km/h <br/>                                                                  au-dessus de <br/>                                                                  l’excès de <br/>                                                                  100 km/h<br/><Hr xmlns=""/><br/>7.    Franchissement prohibé d’une  326.1          510            3<br/>      ligne de démarcation de voie<br/><Hr xmlns=""/><br/>8.    Vitesse trop grande par       330            507            2<br/>      rapport aux conditions <br/>      atmosphériques ou<br/>      environnementales<br/><Hr xmlns=""/><br/>9.    Distance imprudente entre     335            509            2<br/>      véhicules <br/><Hr xmlns=""/><br/>10.   Accélération lors d’un        340            510            2<br/>      dépassement par un autre <br/>      véhicule<br/><Hr xmlns=""/><br/>11.   Dépassement d’une bicyclette  341            510            2<br/>      sans espace suffisant sur la <br/>      voie de circulation<br/><Hr xmlns=""/><br/>12.   Dépassements successifs en    342            510            4<br/>      zigzag<br/><Hr xmlns=""/><br/>13.   Dépassement prohibé sur la    345            510            4<br/>      voie réservée à la <br/>      circulation en sens inverse<br/><Hr xmlns=""/><br/>14.   Dépassement prohibé par       346            510            3<br/>      la droite<br/><Hr xmlns=""/><br/>15.   Dépassement prohibé par       348            510            3<br/>      la gauche <br/><Hr xmlns=""/><br/>16.   Défaut de respecter la        349            504 ou 509     2<br/>      priorité accordée aux <br/>      piétons et aux cyclistes à <br/>      une intersection<br/><Hr xmlns=""/><br/>17.   Défaut de respecter la        350            504 ou 509     2<br/>      priorité accordée aux <br/>      véhicules qui circulent <br/>      en sens inverse<br/><Hr xmlns=""/><br/>18.   Omission de se conformer      359 ou 360     504 ou 509     3<br/>      à un feu rouge <br/><Hr xmlns=""/><br/>19.   Omission d’arrêter avant      359.1          504 ou 509     3<br/>      d’effectuer un virage à <br/>      droite sur un feu rouge<br/><Hr xmlns=""/><br/>20.   Omission de se conformer      368, 369       504 ou 509     3<br/>      à un panneau d’arrêt          ou 370<br/><Hr xmlns=""/><br/>21.   Omission de porter la         396 ou 401     508            3<br/>      ceinture de sécurité<br/><Hr xmlns=""/><br/>21.1  Défaut de céder le passage    406            510            4<br/>      à un véhicule d’urgence dont <br/>      les signaux lumineux ou<br/>      sonores sont en marche <br/><Hr xmlns=""/><br/>21.2  Défaut de ralentir ou         406.1          510            4 <br/>      de changer de voie à<br/>      l’approche d’un véhicule<br/>      routier immobilisé et<br/>      dont les feux clignotants <br/>      ou pivotants ou le signal<br/>      lumineux d’une flèche<br/>      jaune sont actionnés <br/><Hr xmlns=""/><br/>22.   Omission de faire un arrêt    411            504 ou 509     3<br/>      obligatoire à un passage <br/>      à niveau<br/><Hr xmlns=""/><br/>23.   Omission d’arrêter à un       413            510            9<br/>      passage à niveau en <br/>      conduisant un autobus, un <br/>      minibus ou un véhicule lourd<br/>      transportant certaines <br/>      catégories de matières <br/>      dangereuses<br/><Hr xmlns=""/><br/>24.   Marche arrière prohibée       416 ou 417     509 ou 506     3<br/><Hr xmlns=""/><br/>25.   Conduite pour un pari, un     422            512            12<br/>      enjeu ou une course <br/><Hr xmlns=""/><br/>25.1. Se tenir ou prendre place     433            512            12<br/>      sur le marche-pied, sur <br/>      une partie extérieure, <br/>      dans la benne ou la <br/>      caisse d’un véhicule <br/>      routier en mouvement ou<br/>      tolérer une telle pratique<br/><Hr xmlns=""/><br/>25.2. S’agripper à un véhicule      434            512           12<br/>      routier en mouvement ou <br/>      être tiré ou poussé par <br/>      un tel véhicule ou <br/>      tolérer une telle pratique<br/><Hr xmlns=""/><br/>26.   Freinage brusque sans         436            506            2<br/>      nécessité <br/><Hr xmlns=""/><br/>26.1. Conduite en faisant           443.1          509.2.2        5<br/>      usage d’un téléphone <br/>      cellulaire, d’un autre<br/>      appareil portatif ou d’un<br/>      écran d’affichage<br/><Hr xmlns=""/><br/>27.   Omission de se conformer      460            510            9<br/>      aux feux intermittents ou<br/>      au signal d’arrêt d’un<br/>      autobus scolaire<br/><Hr xmlns=""/><br/>28.   Omission de porter le         484            510            3<br/>      casque protecteur <br/><Hr xmlns=""/><br/>29.   Conduite interdite d’un       622            646            9<br/>      véhicule routier transportant <br/>      des matières dangereuses dans <br/>      un tunnel (article 43 du <br/>      Règlement sur le transport <br/>      des matières dangereuses <br/>      (chapitre C-24.2, r. 43))<br/><Hr xmlns=""/>    </span></div></div></div></div><div class="HistoricalNote"><div class="ligne"><span integrity:added="1">
+                    </span></div><span><span integrity:order="76">D. 1003-2001, Ann</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="77">L.Q. 2012, c. 15, a. 33</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="78">D. 340-2013, a. 1</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="79">D. 268-2015, a. 1</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="80">L.Q. 2018, c. 7, a. 198</span><span><span integrity:added="1">; </span></span></span><span><span integrity:order="81">N.I. 2018-11-01</span><span integrity:added="1">.</span><span integrity:added="1"/></span></div></div><div class="AmendedTextTitle"><div class="ligne"><span integrity:added="1">
+                    </span></div><span integrity:added="1">RÉFÉRENCES</span></div><div><span><span integrity:order="82">D. 1003-2001, 2001 G.O. 2, 6194</span></span></div><div><span><span integrity:order="83">L.Q. 2007, c. 40, a. 92, 93 et 94</span></span></div><div><span><span integrity:order="84">L.Q. 2012, c. 15, a. 33</span></span></div><div><span><span integrity:order="85">D. 340-2013, 2013 G.O. 2, 1417</span></span></div><div><span><span integrity:order="86">D. 268-2015, 2015 G.O. 2, 764</span></span></div><div><span><span integrity:order="87">L.Q. 2018, c. 7, a. 198</span></span></div></div></div></div>
+							</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</form>
+
+<ul id="contextMenu" class="dropdown-menu" role="menu" >
+	<li id="contextMenuCopy" class="disabled dropdown-item"><a tabindex="-1">Copier</a></li>
+	<li class="dropdown-divider"></li>
+	<li class="dropdown-item"><a tabindex="-1"">Sélectionner cet élément</a></li>
+	<li id="contextMenuSelectParent" class="dropdown-item"><a tabindex="-1">Sélectionner l'élément parent</a></li>
+	<li id="contextMenuUnselectAll" class="disabled dropdown-item"><a tabindex="-1">Désélectionner tous les éléments</a></li>
+	<li class="dropdown-divider"></li>
+	<li id="contextMenuCopyToArbortext" class="disabled dropdown-item"><a tabindex="-1">Copier vers Rédaction</a></li>
+	<li id="contextMenuCopyToLaw" class="d-block disable dropdown-item"><a tabindex="-1">Copier vers LAW</a></li>
+</ul>
+<input type="text" class="copyContainer" id="copyToClipboardMenu">
+<div id="copyToClipboard" class="modal fade">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">
+					Copier vers le presse-papier
+				</h4>
+				<button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>				
+			</div>
+			<div class="modal-body">
+				<p>
+				<div class="description">
+					Pour copier : Ctrl+C
+				</div>
+				<input type="text" class="form-control" name="copyToInput" id="copyToInput">
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-outline-secondary bg-gradient" data-bs-dismiss="modal">OK</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<a href="#" class="back-to-top"><span class="fa fa-chevron-up"></span></a>
+
+
+	<!-- migration rapide - éventuellement call ajax JSON -->
+	<input type="hidden" id="alpha" value="C-24.2, r. 37 ">
+	<input type="hidden" id="title"  value='C-24.2, r. 37  - Règlement sur les points d’inaptitude'>
+	<input type="hidden" id="dbType"  value="cr">
+	<input type="hidden" id="langCont"  value="fr">
+	<input type="hidden" id="otherLangCont" value="en">
+
+	<input type="hidden" id="contextMenu_copy" value="Copier"/>
+	<input type="hidden" id="contextMenu_selectElement" value="Sélectionner cet élément"/>
+	<input type="hidden" id="contextMenu_selectParentElement" value="Sélectionner l'élément parent"/>
+	<input type="hidden" id="contextMenu_unselectElement" value="<<SR_contextMenu_unselectElement>>"/>
+	<input type="hidden" id="contextMenu_unselectAll" value="Désélectionner tous les éléments"/>
+
+	<input type="hidden" id="contextMenu_copyToArbortext" value="Copier vers Rédaction"/>
+	<input type="hidden" id="contextMenu_copyToLaw" value="Copier vers LAW"/>
+	<input type="hidden" id="contextMenu_FragmentSelection" value="<<SR_contextMenu_FragmentSelection>>"/>
+	<input type="hidden" id="ctrlC_toCopyToClipboard" value="Pour copier : Ctrl+C"/>
+	<input type="hidden" id="readyToPaste" value="Vos sélections ont été copiées dans le presse-papier."/>
+
+	<input type="hidden" id="readyToPasteInLAW" value="Vous pouvez coller vos sélections dans LAW en utilisant la fonction appropriée."/>
+	<input type="hidden" id="readyToPasteInArbortext" value="Vous pouvez coller vos sélections dans Arbortext en utilisant la fonction appropriée."/>
+	<input type="hidden" id="errorWhileCopyingTo" value="Une erreur est survenue lors de la préparation des données."/>
+	<input type="hidden" id="showSelections" value="false"/>
+	<input type="hidden" id="consolidetedDateLabel" value=""/>
+	<input type="hidden" id="renditions" value='{"Epub":"/fr/epub/cr/C-24.2, R. 37 .epub","Pdf":"/fr/pdf/rc/C-24.2, R. 37 .pdf"}'/>
+	<input type="hidden" id="output" value=""/>
+	
+						
+<div data-bs-toggle="modal" data-bs-target="#myModal" id="printPreviewButton" class="printPreviewButton d-none">
+<button type="button" class="btn btn-primary my-2 rounded-pill" id="goPrintPreview" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">
+<span class="fa fa-check-square-o" aria-hidden="true"></span> <span class="badge rounded-pill bg-secondary badgeWhite">0</span>
+</button>
+</div>
+
+					</div>
+				</div>
+			</div>
+			<!-- Footer -->
+		<div class="row pt-4">
+			<div align="center" class="pt-4">
+				<ul class="footer-options">
+					<li><a href="/fr/contenu/joindre/" >Nous joindre</a></li>
+					<li><a href="/fr/contenu/plan/" >Plan du site</a></li>
+					<li><a href="https://www.quebec.ca/" target="_blank">Québec.ca</a></li>
+					<li><a href="/fr/contenu/access/" >Accessibilité</a></li>
+					<li><a href="/fr/contenu/confid/" >Politique de confidentialité</a></li>
+					<li><a href="https://www.quebec.ca/gouvernement/ministeres-organismes/emploi-solidarite-sociale/cadre-legal-transparence/acces-information" target="_blank">Accès à l'information</a></li>
+				</ul>
+			</div>
+			<div  align="center"><a href="https://boutique.publicationsduquebec.gouv.qc.ca/" target="_blank"><img src="/img/pub-quebec.webp"></a></div>
+			<div  align="center" class="copyright pt-2"><a class="footer-options" href="http://www.droitauteur.gouv.qc.ca/copyright.php" target="_blank">&copy; Gouvernement du Qu&eacute;bec</a></div>
+
+		</div>
+			
+		</div>
+			
+		<!-- Fenetre modal pour l'impression -->
+		<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-impression">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title" id="myModalLabel">Sélections</h4>
+						<button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<div>
+							<h4 id="myModalSubtitle"><small></small></h4>
+						</div>
+						<div class="list-group">
+							<a href="#" class="list-group-item active disabled bg-primary bg-gradient text-white">Afficher</a>
+							<a href="#" id="showSelectionsInCurrentDocument" class="list-group-item d-none">Les sélections du document courant</a>
+							<a href="#" id="showAllSelectionsInCollection" class="list-group-item">Toutes les sélections de la collection</a>
+							<a href="#" class="list-group-item active disabled bg-primary bg-gradient text-white">Fragments sélectionnés</a>
+							<a href="#" id="printPreviewResetSelections" class="list-group-item">Supprimer toutes les sélections</a>
+							<a href="#" id="printPreviewShowSelections" class="list-group-item d-none">Afficher les sélections</a>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-outline-secondary bg-gradient" data-bs-dismiss="modal">Fermer</button>
+					</div>
+				</div>
+			</div>
+			<form name="printForm" id="printForm" encType="application/x-www-form-urlencoded" method="post">
+				<input type="hidden" name="newQuery" value=""></input>
+				<input type="hidden" name="text" value=""></input>
+				<input type="hidden" name="isPrinting" value="false"></input>
+				<input type="hidden" name="title" value=""></input>
+				<input type="hidden" name="langCont" value="fr"></input>
+				<input type="hidden" name="type" value="cs"></input>
+				<input type="hidden" name="printType" value=""></input>
+				<input type="hidden" name="summary" value=""></input>
+				<input type="hidden" name="instrumentNumber" value=""></input>
+				<input type="hidden" name="selfrag" value=""></input>
+				<input type="hidden" name="anchor" value=""></input>
+				<input type="hidden" name="anchorSS" value=""></input>
+				<input type="hidden" name="recordsWithHits" value="false"></input>
+				<input type="hidden" name="validSearch" value="false"></input>
+				<input type="hidden" name="sortmode" value="false"></input>
+				<input type="hidden" name="output" value="selections"></input>
+			</form>
+		</div>
+		
+		<div class="modal fade bs-example-modal-sm" id="aboutModal" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+			<div class="modal-dialog modal-sm">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title" id="mySmallModalLabel">Cyberlex</h4>
+						<button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+					</div>
+					<div class="modal-body">
+						Version 2.2.13.0
+					</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div>
+
+	
+		
+		<!-- migration rapide - éventuellement call ajax JSON -->
+		<input type="hidden" id="token" name="token" value="<<token>>">
+		<input type="hidden" id="config" name="config" value='{"ConfigurationMenu":{"params":{},"enabled":false},"XSLT":{"params":{"CocoonFullTextUrl":"ace-xslt-web.html","CocoonTOCUrl":"ace-xslt-toc.html"},"enabled":true},"GoogleRecaptcha":{"params":{"apiKey":"AIzaSyCgcR482ZumQ-pHNDJHCfz_xOVctdsvKH0","scoreThreshold":"0.5","siteKey":"6Lcu82UsAAAAALYHmzyrjnw7rOE-uda_bJxDO3_V","validationEndPoint":"https://recaptchaenterprise.googleapis.com:443/v1/projects/mess-legis/assessments?key=$0","alwaysLogScore":false,"supportedCommands":"result, showversion","ignoreScore":false},"enabled":false},"Import":{"params":{"odbc-AnnualStatutes":"","odbc-Regulations":"","odbc-Statutes":"","odbc-AnnualRegulations":""},"enabled":false},"GoogleAnalytic":{"params":{"trackingId":""},"enabled":false},"Export":{"params":{"exportLast":["last","external-last","report"],"formatOptions":["Xml","Html"],"export-Regulations":true,"export-AnnualRegulations":true,"typeFileOptions":["",""],"exportFull":["all","external-all","report","orphans"],"modeOptions":["Last","All","Full"],"exportAll":["all","external-all","report"],"export-DtdClient":"Quebec","export-Statutes":true,"export-AnnualStatutes":true,"exportHtml-CocoonUrl":"ace-xslt-export.html"},"enabled":true},"Conversion":{"params":{"generatePdf-Statutes":"single","generatePdf-Regulations-Overwrite":true,"generatePdf-Statutes-Path":"master\\cs\\pdf","generateEpub-Statutes-Overwrite":true,"generateEpub-Statutes-Storage":"disk","generatePdf-Regulations-SoapEnvelope":"config/conversion/single-regulations.xml","generateEpub-AnnualStatutes-SoapEnvelope":"","generateEpub-Regulations-Storage":"disk","generatePdf-AnnualStatutes-SoapEnvelope":"","generateEpub-AnnualStatutes-Storage":"none","generatePdf-Regulations-Storage":"disk","generatePdf-AnnualRegulations-Storage":"none","generatePdf-AnnualRegulations-Overwrite":false,"generatePdf-Statutes-SoapEnvelope":"config/conversion/single-statutes.xml","generateEpub-AnnualRegulations-Storage":"none","generateEpub-AnnualStatutes":"none","renditionOptions":["Pdf","Epub"],"generateEpub-AnnualRegulations-SoapEnvelope":"","generatePdf-AnnualStatutes-Storage":"none","generateEpub-Statutes-SoapEnvelope":"config/conversion/epub.xml","generateEpub-Statutes-Path":"master\\cs\\epub","generatePdf-Regulations-SoapEnvelope-TwoPhase":"config/conversion/fo-to-pdf.xml","generateEpub-Regulations-Path":"master\\cr\\epub","generateEpub-AnnualStatutes-Overwrite":false,"generateEpub-Regulations-Overwrite":true,"generateEpub-Regulations-SoapEnvelope":"config/conversion/epub.xml","generateEpub-AnnualRegulations-Path":"annuals_master\\ar\\epub","generatePdf-Regulations-Path":"master\\cr\\pdf","generatePdf-AnnualStatutes":"none","generateEpub-Statutes":"single","generatePdf-AnnualRegulations-SoapEnvelope":"","generatePdf-AnnualRegulations":"none","generateEpub-AnnualStatutes-Path":"annuals_master\\as\\epub","generateEpub-AnnualRegulations-Overwrite":false,"generatePdf-Statutes-Overwrite":true,"generateEpub-AnnualRegulations":"none","generatePdf-AnnualStatutes-Path":"annuals_master\\as\\pdf","generatePdf-Statutes-Storage":"disk","generatePdf-AnnualRegulations-Path":"annuals_master\\ar\\pdf","generatePdf-AnnualStatutes-Overwrite":false,"generatePdf-Regulations":"single","generatePdf-Statutes-SoapEnvelope-TwoPhase":"config/conversion/fo-to-pdf.xml","generateEpub-Regulations":"single"},"enabled":true},"Core":{"params":{"CopyToLaw":false,"Browse-cr-Category-Id":"","ShowBarLetter":true,"Browse-cs-Category-Id":"","CopyToArbortext":false,"Template-NotFound":"notfound.html","DoTreatment-ConsoDate":true,"Menu-cs-Category-Id":"","FutureDate":29990101000000,"ShowFutureDate":true,"Search-OptionInForce":true,"Search-OptionStemming":true,"MasterToServerChunkSize":2000,"DefaultCorpus":"statutes","StopWordsFiles":["config/StopWordFr.txt","config/StopWordEn.txt"],"CutOffDate":19990401000000,"ShowTypeFileOptions":false,"Browse-cr-HideRepealed":false,"StrikethroughConsoDateException_selectionPage":false,"FragmentSelection":true,"Browse-DefaultRecentYear":false,"Browse-cs-HideRepealed":false},"enabled":true},"ContentSecurityPolicy":{"params":{"FrameAncestors":"https://*.nexam.io"},"enabled":true},"Backup":{"params":{"backupDbList":["master","annuals_master"],"backupExternalFolderList":["master=master","annuals_master=annuals_master","loose=loose"]},"enabled":true},"Integrity":{"params":{"Validate-Conversion-Pdf":true,"Exceptions":"","Validate-Exportation":true,"RemoveIntegrityAttributesOnConversion":true,"RemoveIntegrityAttributesOnExportation":true},"enabled":true}}'>
+		<input type="hidden" id="cmdId" name="cmdId" value="">
+		<input type="hidden" id="langInt" name="langInt" value="fr">
+		<input type="hidden" id="filter" name="filter" value="">
+
+		<input type="hidden" id="langCont" name="langCont" value="fr">
+		<input type="hidden" id="hideMenu" name="hideMenu" value="Fermer le menu">				
+		<input type="hidden" id="diplayMenu" name="diplayMenu" value="Afficher le menu">						
+		<input type="hidden" id="printPreview" name="printPreview" value="<<SR_printPreview>>">						
+		<input type="hidden" id="loadingMaskText" name="loadingMaskText" value="Chargement en cours...">					
+			
+		<input type="hidden" id="showSelectionsButtonTooltipSingleFrag" name="showSelectionsButtonTooltipSingleFrag" value="1 fragment a été sélectionné">				
+		<input type="hidden" id="showSelectionsButtonTooltipMultipleFrags" name="showSelectionsButtonTooltipMultipleFrags" value="fragments ont été sélectionnés">				
+		<input type="hidden" id="bootstrapMultiselect_nonSelectedText_limitSearch" name="bootstrapMultiselect_nonSelectedText_limitSearch" value="Aucune limite">				
+		<input type="hidden" id="bootstrapMultiselect_nSelectedText_limitSearch" name="bootstrapMultiselect_nSelectedText_limitSearch" value="limites">																
+		<input type="hidden" id="bootstrapMultiselect_allSelectedText_limitSearch" name="bootstrapMultiselect_allSelectedText_limitSearch" value="Toutes les limites">																			
+		<input type="hidden" id="corpusQuickSearch" name="corpusQuickSearch" value="all">
+
+		<script type="text/javascript" src="/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+		<script type="text/javascript" src="/bootstrap-notify/3.1.5/bootstrap-notify.min.js"></script>
+		<script type="text/javascript" src="/js/Config.js?v=2.1"></script>
+		<script type="text/javascript" src="/js/Object.js?v=2.1"></script>
+		<script type="text/javascript" src="/js/mainMenu.js?v=2.1"></script>
+		<script type='text/javascript' src='/js/jquery.loadmask.js?v=2.1'></script>
+		<script type='text/javascript' src='/js/cyberlex.jquery.loadmask.js?v=2.1'></script>
+		<script type='text/javascript' src='/js/selections.js?v=2.1'></script>
+		<script type='text/javascript' src='/js/UrlHelper.js?v=2.1'></script>
+		
+<script type="text/javascript" src="/js/Config.js?v=2.2"></script>
+
+<script type="text/javascript" src="/js/showdoc.js?v=2.2"></script>
+
+		<script type='text/javascript'>
+			const g_recaptchaSiteKey = "6Lcu82UsAAAAALYHmzyrjnw7rOE-uda_bJxDO3_V"
+			const g_recaptchaEnabled = "false";
+		</script>
+	</body>
+</html>
