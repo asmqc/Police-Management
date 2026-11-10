@@ -69,6 +69,7 @@
         // Carte effective : celle du groupe ou d'un groupe parent déjà affiché
         _carteEff() { for (let g = this; g; g = g._parent) if (g._carte) return g._carte; return null; }
         addLayer(c) { this._enfants.push(c); c._parent = this; const k = this._carteEff(); if (k) attacher(k, tout(c)); return this; }
+        addLayers(l) { const k = this._carteEff(), el = { ov: [], an: [], tu: [] }; for (const c of l) { this._enfants.push(c); c._parent = this; if (k) c._elements(el); } if (k) attacher(k, el); return this; }
         removeLayer(c) { const i = this._enfants.indexOf(c); if (i < 0) return this; this._enfants.splice(i, 1); const k = this._carteEff(); if (k) detacher(k, tout(c)); c._parent = null; return this; }
         clearLayers() { const k = this._carteEff(); if (k) detacher(k, tout(this)); this._enfants.forEach((c) => (c._parent = null)); this._enfants = []; return this; }
         getLayers() { return this._enfants.slice(); }
@@ -166,6 +167,15 @@
 
       /* Grandes couches de surfaces et de lignes non cliquables (desserte SQ, municipalités, autoroutes, limites, districts) :
          dessinées sur l'appareil en tuiles (canvas), comme le rendu canvas de Leaflet. Des milliers d'overlays MapKit seraient trop lents. */
+      const MK6 = !/^5\./.test(String(mk.version || "6"));
+      const attente = [];
+      let enCours = false;
+      const tourner = () => {
+        const t0 = performance.now();
+        while (attente.length && performance.now() - t0 < 12) { const [f, ok] = attente.shift(); try { ok(f()); } catch { ok(null); } }
+        if (attente.length) setTimeout(tourner, 0); else enCours = false;
+      };
+      const planifier = (f) => new Promise((ok) => { attente.push([f, ok]); if (!enCours) { enCours = true; setTimeout(tourner, 0); } });
       const projX = (lng) => ((lng + 180) / 360) * 256;
       const projY = (lat) => { const s = Math.sin((Math.max(-85, Math.min(85, lat)) * Math.PI) / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 256; };
       class CoucheDessinee extends Couche {
@@ -185,11 +195,25 @@
             const proj = anneaux.map((r) => { const t = new Float64Array(r.length * 2); r.forEach(([lng, lat], i) => { const x = projX(lng), y = projY(lat); t[2 * i] = x; t[2 * i + 1] = y; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; this._b.extend([lat, lng]); }); return t; });
             this._formes.push({ surf, proj, x0, y0, x1, y1, st });
           }
-          this._tuiles = new mk.TileOverlay((x, y, z, echelle) => this._tuile(x, y, z, echelle || 1), { opacity: 1 });
+          this._cache = new Map(); // tuiles déjà dessinées (z/x/y), pour revenir en arrière sans redessiner
+          this._tuiles = new mk.TileOverlay((x, y, z, echelle) => this._demander(x, y, z, Math.min(echelle || 1, 2)), { opacity: 1 });
+        }
+        // MapKit 6 accepte une promesse d'image : on dessine une tuile par tranche de temps pour garder la carte fluide au toucher
+        _demander(x, y, z, echelle) {
+          const cle = `${z}/${x}/${y}/${echelle}`;
+          if (this._cache.has(cle)) { const c = this._cache.get(cle); this._cache.delete(cle); this._cache.set(cle, c); return MK6 ? c : c && c.toDataURL("image/png"); }
+          if (!MK6) { const c = this._tuile(x, y, z, echelle); this._garder(cle, c); return c && c.toDataURL("image/png"); }
+          if (!this._vide(x, y, z)) return null;
+          return planifier(() => { const c = this._tuile(x, y, z, echelle); this._garder(cle, c); return c; });
+        }
+        _garder(cle, c) { this._cache.set(cle, c); if (this._cache.size > 160) this._cache.delete(this._cache.keys().next().value); }
+        _vide(x, y, z) { // vrai si au moins une forme touche la tuile
+          const k = 2 ** z, ox = x * 256 / k, oy = y * 256 / k, t = 256 / k, m = 8 / k;
+          return this._formes.some((f) => f.x1 >= ox - m && f.x0 <= ox + t + m && f.y1 >= oy - m && f.y0 <= oy + t + m);
         }
         _tuile(x, y, z, echelle) {
-          const k = 2 ** z, ox = x * 256, oy = y * 256, marge = 8 / k;
-          const visibles = this._formes.filter((f) => f.x1 * k >= ox - marge * k && f.x0 * k <= ox + 256 + marge * k && f.y1 * k >= oy - marge * k && f.y0 * k <= oy + 256 + marge * k);
+          const k = 2 ** z, ox = x * 256, oy = y * 256, marge = 8;
+          const visibles = this._formes.filter((f) => f.x1 * k >= ox - marge && f.x0 * k <= ox + 256 + marge && f.y1 * k >= oy - marge && f.y0 * k <= oy + 256 + marge);
           if (!visibles.length) return null;
           const taille = Math.round(256 * echelle);
           const cv = document.createElement("canvas"); cv.width = cv.height = taille;
@@ -198,15 +222,24 @@
           for (const f of visibles) {
             const st = f.st;
             g.beginPath();
-            for (const t of f.proj) { for (let i = 0; i < t.length; i += 2) { const px = t[i] * k - ox, py = t[i + 1] * k - oy; i ? g.lineTo(px, py) : g.moveTo(px, py); } if (f.surf) g.closePath(); }
+            for (const t of f.proj) {
+              // Simplification : on saute les points à moins d'un demi-pixel du précédent (énorme gain aux petits zooms)
+              let lx = 1e9, ly = 1e9, n = 0;
+              for (let i = 0; i < t.length; i += 2) {
+                const px = t[i] * k - ox, py = t[i + 1] * k - oy;
+                if (i && i < t.length - 2 && Math.abs(px - lx) < 0.5 && Math.abs(py - ly) < 0.5) continue;
+                n++ ? g.lineTo(px, py) : g.moveTo(px, py); lx = px; ly = py;
+              }
+              if (f.surf) g.closePath();
+            }
             if (f.surf && st.fill !== false) { g.globalAlpha = st.fillOpacity ?? 0.2; g.fillStyle = st.fillColor || st.color || "#3388ff"; g.fill("evenodd"); }
             if (st.stroke !== false) {
               g.globalAlpha = st.opacity ?? 1; g.strokeStyle = st.color || "#3388ff"; g.lineWidth = st.weight ?? 3;
-              g.setLineDash(st.dashArray ? String(st.dashArray).split(/[ ,]+/).map(Number).filter((n) => n > 0) : []);
+              g.setLineDash(st.dashArray ? String(st.dashArray).split(/[ ,]+/).map(Number).filter((v) => v > 0) : []);
               g.stroke();
             }
           }
-          return cv.toDataURL("image/png");
+          return cv;
         }
         getBounds() { return this._b; }
       }

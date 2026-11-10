@@ -53,7 +53,9 @@
   let promesseCarte = null;
   const ajouterScript = (src, attrs = {}) => new Promise((ok, echec) => {
     const sc = document.createElement("script");
-    sc.src = src; sc.async = true; Object.assign(sc, attrs);
+    sc.src = src; sc.async = true;
+    for (const [k, v] of Object.entries(attrs)) if (v !== undefined) sc[k] = v;
+    if (/apple-mapkit\.com\/mk\/6\//.test(src)) { sc.setAttribute("data-callback", "__pmMapKitPret"); sc.setAttribute("data-libraries", "map,annotations,overlays"); }
     sc.onload = () => ok(); sc.onerror = () => echec(new Error(src));
     document.head.appendChild(sc);
   });
@@ -79,16 +81,21 @@
     try {
       await jetonCarte();
       await ajouterScript("carte-apple.js?v=" + encodeURIComponent(versionSite()));
+      // MapKit JS 6, noyau léger : seules les bibliothèques utilisées sont téléchargées
+      const langue = (() => { try { return localStorage.getItem("pm-langue") === "en" ? "en-CA" : "fr-CA"; } catch { return "fr-CA"; } })();
       await Promise.race([
-        ajouterScript("https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.js", { crossOrigin: "anonymous" }),
+        new Promise((ok, ko) => {
+          window.__pmMapKitPret = () => ok();
+          ajouterScript("https://cdn.apple-mapkit.com/mk/6/mapkit.core.js", { crossOrigin: "anonymous" }).catch(ko);
+        }),
         new Promise((_, ko) => setTimeout(() => ko(new Error("délai")), 15000)),
       ]);
       if (!window.mapkit || !window.PMCarteApple) return false;
-      const langue = (() => { try { return localStorage.getItem("pm-langue") === "en" ? "en-CA" : "fr-CA"; } catch { return "fr-CA"; } })();
       window.mapkit.init({
         authorizationCallback: (fait) => { jetonCarte().then(fait, () => fait("")); },
         language: langue,
       });
+      if (typeof window.mapkit.load === "function" && !window.mapkit.Map) await window.mapkit.load(["map", "annotations", "overlays"]);
       // Jeton refusé ou quota atteint : Leaflet pour les prochaines 24 h sur cet appareil
       window.mapkit.addEventListener("error", (e) => {
         console.warn("MapKit", e && e.status);
@@ -7219,26 +7226,34 @@ Format :
 
     // Bornes kilométriques dessinées à partir du fichier local
     etat.couches.km = L.layerGroup().addTo(carte);
+    // On garde les bornes déjà affichées et on n'ajoute ou retire que la différence (beaucoup plus fluide en déplaçant la carte)
+    const bornesAff = new Map();
     const dessinerBornes = async () => {
       const g = etat.couches.km;
-      g.clearLayers();
-      if (!$("#c-km").checked || carte.getZoom() < 11) return;
+      if (!$("#c-km").checked || carte.getZoom() < 11) { g.clearLayers(); bornesAff.clear(); return; }
       const rep = await charger("reperes.json");
       const b = carte.getBounds().pad(0.1);
-      const z = carte.getZoom();
-      let n = 0;
+      const z = carte.getZoom(), etiquette = z >= 14;
+      const max = L.apple ? 700 : 1500;
+      const voulues = new Map();
       for (const r of rep.reperes) {
         if (r[4] < b.getSouth() || r[4] > b.getNorth() || r[3] < b.getWest() || r[3] > b.getEast()) continue;
         if (z < 13 && r[1] % 5 !== 0) continue;
-        if (++n > 1500) break;
+        if (voulues.size >= max) break;
+        voulues.set(`${r[0]}|${r[1]}|${r[2]}|${etiquette ? 1 : 0}`, r);
+      }
+      for (const [k, l] of bornesAff) if (!voulues.has(k)) { g.removeLayer(l); bornesAff.delete(k); }
+      const nouvelles = [];
+      for (const [k, r] of voulues) {
+        if (bornesAff.has(k)) continue;
         const nr = nomRoute(r[0], rep);
         const titre = `${nr.court} · km ${r[1]}${r[2] ? " " + dirNom(r[2]) : ""}`;
-        if (z >= 14) {
-          L.marker([r[4], r[3]], { icon: L.divIcon({ className: "icone-borne", html: String(r[1]), iconSize: [34, 20] }), title: titre }).addTo(g);
-        } else {
-          L.circleMarker([r[4], r[3]], { renderer: rendu, radius: 4, color: "#fff", weight: 1.5, fillColor: "#1F7A3A", fillOpacity: 1 }).bindTooltip(titre).addTo(g);
-        }
+        const l = etiquette
+          ? L.marker([r[4], r[3]], { icon: L.divIcon({ className: "icone-borne", html: String(r[1]), iconSize: [34, 20] }), title: titre })
+          : L.circleMarker([r[4], r[3]], { renderer: rendu, radius: 4, color: "#fff", weight: 1.5, fillColor: "#1F7A3A", fillOpacity: 1 }).bindTooltip(titre);
+        bornesAff.set(k, l); nouvelles.push(l);
       }
+      if (nouvelles.length && g.addLayers) g.addLayers(nouvelles); else nouvelles.forEach((l) => l.addTo(g));
     };
     carte.on("moveend zoomend", dessinerBornes);
 
