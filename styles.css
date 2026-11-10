@@ -2856,3 +2856,9 @@ html.app-natif body:not(.carte-plein) .vue-carte .carte-outils { top: 10px; }
 .pm-bulle .popup-poste { display: grid; gap: 4px; }
 html.app-natif .vue-carte #carte.carte-apple .mk-controls-container { bottom: var(--natif-bas); }
 html[data-style="nuit"] #carte.carte-apple { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }
+/* App iPhone : la bande Terrain occupe déjà l'espace sous la barre native, les outils de la carte se placent juste dessous */
+html.app-natif body:not(.carte-plein) .vue-carte .btn-repere { top: 70px; }
+html.app-natif body:not(.carte-plein) .vue-carte .btn-mesure { top: 116px; }
+html.app-natif body:not(.carte-plein) .vue-carte .legende { top: 70px; }
+.vue-carte .legende { max-height: calc(100% - 72px - 110px); overflow-y: auto; overscroll-behavior: contain; }
+html.app-natif body:not(.carte-plein) .vue-carte .legende { max-height: calc(100% - 70px - var(--natif-bas, 90px) - 12px); }

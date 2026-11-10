@@ -1440,8 +1440,11 @@ Question : ${question}
   /* Cinq onglets, un par besoin : Accueil · Horaire · Paie · Terrain · Poste.
      Chaque section n'a qu'une seule place; les sous-onglets (Paie, Terrain, Poste) font le lien entre les vues existantes. */
   const contexteStats = () => { try { return stats.contexte; } catch { return "horaire"; } };
+  // App iPhone d'avant le build 3020 (2026.11.10) : barre native Accueil · Lois · Carte · Horaire · Poste
+  const appIOSAncienne = (() => { const m = navigator.userAgent.match(/PoliceManagementApp\/(\d{4})\.(\d{2})\.(\d{2})/); return !!m && +(m[1] + m[2] + m[3]) < 20261110; })();
   function ongletCourant() {
     const v = etat.vue;
+    if (appIOSAncienne && ["carte", "corps", "meteo"].includes(v)) return "carte";
     if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
     if (["forum", "feuille", "messages", "idees"].includes(v) || (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts"))) return "feuille";
     if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
