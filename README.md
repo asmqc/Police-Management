@@ -180,7 +180,7 @@ L'action GitHub **« Mettre à jour les données (carte et CSR) »** roule chaqu
 | Desserte de la Sûreté du Québec | Sûreté du Québec | CC-BY 4.0 (Données Québec) |
 | Découpages administratifs | Ministère des Ressources naturelles et des Forêts | CC-BY 4.0 (Données Québec) |
 | Météo | Environnement et Changement climatique Canada | Licence d'utilisation finale des serveurs de données d'ECCC (usage commercial permis) |
-| Fond de carte | © les contributeurs d'OpenStreetMap | ODbL |
+| Fond de carte | Apple Plans (MapKit JS, compte Apple Developer); secours : © les contributeurs d'OpenStreetMap | Conditions MapKit JS; ODbL |
 
 ---
 

@@ -2847,3 +2847,12 @@ html.app-natif body:not(.carte-plein) .vue-carte .carte-outils { top: 10px; }
 .onglets-csr button[hidden] { display: none !important; }
 #vue-horaire.ctx-paie :is(#hr-qui-bloc, #hr-cible, #hr-onglets-vue) { display: none !important; }
 .sous-nav { position: relative; }
+
+/* ---------- Carte Apple Plans (MapKit JS) ---------- */
+#carte.carte-apple { background: var(--surface-2); }
+.pm-icone, .pm-point { cursor: pointer; }
+.pm-icone.etiquette-mun, .pm-icone.etiquette-district { pointer-events: none; }
+.pm-bulle { background: var(--surface); color: var(--fg); border-radius: 14px; padding: 12px 14px; box-shadow: var(--ombre-carte, 0 6px 24px rgba(0,0,0,.25)); max-width: min(320px, 80vw); font: 14px/1.4 var(--f-texte); margin-bottom: 12px; }
+.pm-bulle .popup-poste { display: grid; gap: 4px; }
+html.app-natif .vue-carte #carte.carte-apple .mk-controls-container { bottom: var(--natif-bas); }
+html[data-style="nuit"] #carte.carte-apple { filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); }

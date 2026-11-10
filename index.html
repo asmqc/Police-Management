@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <!-- Politique de sécurité du contenu : seules les sources prévues peuvent charger du code ou recevoir des données -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://skafnhlxlptmykboqzfq.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://ws.mapserver.transports.gouv.qc.ca https://unpkg.com; connect-src 'self' https://skafnhlxlptmykboqzfq.supabase.co wss://skafnhlxlptmykboqzfq.supabase.co https://nominatim.openstreetmap.org https://api.weather.gc.ca https://cdn.jsdelivr.net data: blob:; media-src 'self' blob:; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdn.apple-mapkit.com 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com https://*.apple-mapkit.com; img-src 'self' data: blob: https://skafnhlxlptmykboqzfq.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://server.arcgisonline.com https://ws.mapserver.transports.gouv.qc.ca https://unpkg.com https://*.apple-mapkit.com https://*.ls.apple.com; connect-src 'self' https://skafnhlxlptmykboqzfq.supabase.co wss://skafnhlxlptmykboqzfq.supabase.co https://nominatim.openstreetmap.org https://api.weather.gc.ca https://cdn.jsdelivr.net https://*.apple-mapkit.com https://*.ls.apple.com data: blob:; media-src 'self' blob:; worker-src 'self' blob: https://*.apple-mapkit.com; frame-src https://*.apple-mapkit.com; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -38,7 +38,7 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="styles.css?v=202611102136">
+  <link rel="stylesheet" href="styles.css?v=202611102303">
 </head>
 <body>
   <!-- Chargement -->
@@ -2250,9 +2250,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611102136"></script>
+  <script src="config.js?v=202611102303"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="i18n.js?v=202611102136"></script>
-  <script src="app.js?v=202611102136"></script>
+  <script src="i18n.js?v=202611102303"></script>
+  <script src="app.js?v=202611102303"></script>
 </body>
 </html>

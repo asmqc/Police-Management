@@ -48,23 +48,68 @@
       sb.rpc("compter_section", { p_section: section }).then(() => {}, () => {});
     } catch { /* facultatif */ }
   }
-  // Bibliothèque de carte (Leaflet) : chargée à la première ouverture de la carte, ou en arrière-plan quand l'app est au repos
-  let promesseLeaflet = null;
+  /* Bibliothèque de carte : Apple Plans (MapKit JS) quand le jeton est offert, sinon Leaflet avec OpenStreetMap.
+     Chargée à la première ouverture de la carte, ou en arrière-plan quand l'app est au repos (membre connecté). */
+  let promesseCarte = null;
+  const ajouterScript = (src, attrs = {}) => new Promise((ok, echec) => {
+    const sc = document.createElement("script");
+    sc.src = src; sc.async = true; Object.assign(sc, attrs);
+    sc.onload = () => ok(); sc.onerror = () => echec(new Error(src));
+    document.head.appendChild(sc);
+  });
+  function chargerLeafletSeul() {
+    if (window.L && window.L.map) return Promise.resolve();
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; css.crossOrigin = "";
+    document.head.appendChild(css);
+    return ajouterScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", { crossOrigin: "" });
+  }
+  // Jeton MapKit signé par la fonction jeton-carte (la clé privée reste sur le serveur), valide 30 minutes
+  let jetonCarteCache = null;
+  async function jetonCarte() {
+    if (jetonCarteCache && jetonCarteCache.expire - 120 > Date.now() / 1000) return jetonCarteCache.jeton;
+    const { data, error } = await sb.functions.invoke("jeton-carte", { method: "GET" });
+    if (error || !data || !data.jeton) throw new Error("jeton");
+    jetonCarteCache = data;
+    return data.jeton;
+  }
+  async function chargerCarteApple() {
+    if (!etat.session) return false;
+    try { if (+localStorage.getItem("pm-carte-apple-ko") > Date.now()) return false; } catch { /* facultatif */ }
+    try {
+      await jetonCarte();
+      await ajouterScript("carte-apple.js?v=" + encodeURIComponent(versionSite()));
+      await Promise.race([
+        ajouterScript("https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.js", { crossOrigin: "anonymous" }),
+        new Promise((_, ko) => setTimeout(() => ko(new Error("délai")), 15000)),
+      ]);
+      if (!window.mapkit || !window.PMCarteApple) return false;
+      const langue = (() => { try { return localStorage.getItem("pm-langue") === "en" ? "en-CA" : "fr-CA"; } catch { return "fr-CA"; } })();
+      window.mapkit.init({
+        authorizationCallback: (fait) => { jetonCarte().then(fait, () => fait("")); },
+        language: langue,
+      });
+      // Jeton refusé ou quota atteint : Leaflet pour les prochaines 24 h sur cet appareil
+      window.mapkit.addEventListener("error", (e) => {
+        console.warn("MapKit", e && e.status);
+        try { localStorage.setItem("pm-carte-apple-ko", String(Date.now() + 86400000)); } catch { /* facultatif */ }
+        toast("Carte Apple indisponible pour le moment. Rechargez l'app pour utiliser la carte de secours.");
+      });
+      window.L = window.PMCarteApple.creer(window.mapkit);
+      return true;
+    } catch (e) {
+      console.info("Carte Apple non utilisée :", e.message);
+      return false;
+    }
+  }
   function chargerLeaflet() {
     if (window.L && window.L.map) return Promise.resolve();
-    if (promesseLeaflet) return promesseLeaflet;
-    promesseLeaflet = new Promise((ok, echec) => {
-      const css = document.createElement("link");
-      css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; css.crossOrigin = "";
-      document.head.appendChild(css);
-      const sc = document.createElement("script");
-      sc.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"; sc.crossOrigin = ""; sc.async = true;
-      sc.onload = () => ok(); sc.onerror = () => { promesseLeaflet = null; echec(new Error("leaflet")); };
-      document.head.appendChild(sc);
-    });
-    return promesseLeaflet;
+    if (promesseCarte) return promesseCarte;
+    promesseCarte = (async () => { if (!(await chargerCarteApple())) await chargerLeafletSeul(); })();
+    promesseCarte.catch(() => { promesseCarte = null; });
+    return promesseCarte;
   }
-  setTimeout(() => { const f = () => chargerLeaflet().catch(() => {}); if (window.requestIdleCallback) requestIdleCallback(f, { timeout: 4000 }); else f(); }, 4000);
+  setTimeout(() => { const f = () => { if (etat.session) chargerLeaflet().catch(() => {}); }; if (window.requestIdleCallback) requestIdleCallback(f, { timeout: 4000 }); else f(); }, 4000);
 
   const etat = { session: null, profil: null, vue: "csr", csr: null, corps: [], donnees: {}, carte: null };
 
@@ -75,6 +120,7 @@
     const sombre = t === "dark" || (t !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", sombre ? "#06070D" : "#E4ECF5");
+    try { if (etat.carte && etat.carte.definirTheme) etat.carte.definirTheme(); } catch { /* carte pas encore créée */ }
   }
   // Styles d'interface (repris de l'app iOS)
   const STYLES = [
@@ -7076,6 +7122,7 @@ Format :
   function initCarte() {
     if (etat.carte) { setTimeout(() => etat.carte.invalidateSize(), 50); return; }
     const carte = (etat.carte = L.map("carte", { zoomControl: false, preferCanvas: true }).setView([46.9, -71.8], 6));
+    $("#carte").classList.toggle("carte-apple", !!L.apple);
     L.control.zoom({ position: "bottomright" }).addTo(carte);
     // Fonds : plan OpenStreetMap (assombri en thème foncé) ou imagerie satellite Esri avec noms de routes et de lieux
     const fonds = {
@@ -7088,7 +7135,8 @@ Format :
     };
     let fond = (() => { try { return localStorage.getItem("pm-fond") === "satellite" ? "satellite" : "plan"; } catch { return "plan"; } })();
     const choisirFond = (f) => {
-      Object.entries(fonds).forEach(([k, c]) => (k === f ? c.addTo(carte) : carte.removeLayer(c)));
+      if (carte.definirFond) carte.definirFond(f); // Apple Plans : plan standard ou satellite avec routes
+      else Object.entries(fonds).forEach(([k, c]) => (k === f ? c.addTo(carte) : carte.removeLayer(c)));
       fond = f;
       $$("[data-fond]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.fond === f)));
       $("#carte").classList.toggle("fond-satellite", f === "satellite");
