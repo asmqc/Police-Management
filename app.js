@@ -682,6 +682,7 @@
       "Accueil : votre journée en un coup d'œil et 4 raccourcis que vous choisissez (touchez « Modifier »).",
       "Rien n'a été retiré : vos données et vos réglages ne changent pas.",
       "La météo vient maintenant d'Environnement Canada (ville de prévision la plus proche). Politique de confidentialité mise à jour en conséquence.",
+      "Horaire › Remplacement : nouvelle option « Je remplace un sergent superviseur de relève ». Moins de 4 jours : taux de chef d'équipe de patrouille (17.04 b); 4 jours et plus : taux de sergent gestionnaire + 2,5 % (annexe B, 11.13 b). L'ajustement d'ancienneté s'applique maintenant aussi au taux de remplacement (17.04 a).",
     ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
@@ -3284,6 +3285,9 @@ Question : ${question}
     sergent_gestionnaire: { nom: "Sergent gestionnaire", echelons: [{ mois: 0, libelle: "Taux unique", taux: [107109, 109251, 111436, 115337] }] },
     sergent_enqueteur: { nom: "Sergent enquêteur", echelons: [{ mois: 0, libelle: "Taux unique", taux: [108040, 110201, 112405, 116340] }] },
     sergent_gestionnaire_enquete: { nom: "Sergent gestionnaire enquête", echelons: [{ mois: 0, libelle: "Taux unique", taux: [108040, 110201, 112405, 116340] }] },
+    // Annexe B : superviseur de relève MRC et autoroute (fonctions 113 et 173) = classe sergent gestionnaire,
+    // avec l'ajustement de supervision de relève de 2,5 % (11.13 b), réputé faire partie du traitement régulier (11.18 a)
+    sergent_superviseur_releve: { nom: "Sergent superviseur de relève", echelons: [{ mois: 0, libelle: "Taux unique", taux: [107109, 109251, 111436, 115337] }], ajustement: 2.5 },
     sergent_responsable: { nom: "Sergent responsable d'unité", echelons: [{ mois: 0, libelle: "Taux unique", taux: [118751, 121126, 123549, 127874] }] },
   };
   // Art. 11.09 : majoration selon les années d'ancienneté
@@ -3304,7 +3308,7 @@ Question : ${question}
     const ans = mois / 12;
     const anc = (ANCIENNETE_SQ.find(([a]) => ans >= a) || [0, 0])[1];
     const niv6 = (NIVEAU6_SQ.find(([d]) => iso >= d) || [0, 0])[1];
-    const calcule = Math.round(base * (1 + anc / 100) * (1 + niv6 / 100));
+    const calcule = Math.round(base * (1 + (emploi.ajustement || 0) / 100) * (1 + anc / 100) * (1 + niv6 / 100));
     const annuel = paie.salaire_manuel ? +paie.salaire_manuel : calcule;
     const suivant = emploi.echelons.find((e) => e.mois > mois);
     return { emploi: emploi.nom, echelon: ech.libelle, base, anc, niv6, calcule, annuel, manuel: !!paie.salaire_manuel,
@@ -3315,7 +3319,28 @@ Question : ${question}
     const e = EMPLOIS_SQ[emploi]; if (!e) return 0;
     let k = 0; DATES_ECHELLE_SQ.forEach((d, i) => { if (iso >= d) k = i; });
     const niv6 = (NIVEAU6_SQ.find(([d]) => iso >= d) || [0, 0])[1];
-    return e.echelons[0].taux[k] * (1 + niv6 / 100);
+    return e.echelons[0].taux[k] * (1 + (e.ajustement || 0) / 100) * (1 + niv6 / 100);
+  }
+  // 17.04 b) : remplacement d'un superviseur de relève (17.01 e) de moins de 4 jours = traitement d'un chef d'équipe de patrouille.
+  // Annexe B : chef d'équipe patrouille (fonction 069) = classe agent, avec l'ajustement de supervision de 5 % (11.13).
+  function tauxChefEquipe(paie, iso) {
+    const agent = salaireSQ({ ...paie, emploi: "agent", salaire_manuel: null }, iso);
+    return agent ? agent.base * 1.05 * (1 + (NIVEAU6_SQ.find(([d]) => iso >= d) || [0, 0])[1] / 100) : 0;
+  }
+  // Durée d'un remplacement : jours travaillés consécutifs marqués pour le même emploi (les congés entre deux ne l'interrompent pas)
+  function joursRemplacement(iso, emploi, src) {
+    const ex = src.exceptions || {};
+    const travaille = (d) => ["J", "S", "N"].includes(quartDu(d, src).code);
+    let n = 0;
+    for (const sens of [-1, 1]) {
+      for (let i = sens === -1 ? 0 : 1; Math.abs(i) <= 60; i += sens) {
+        const d = isoPlus(iso, i);
+        if (!travaille(d)) continue;
+        if ((ex[d] || {}).remplace !== emploi) break;
+        n++;
+      }
+    }
+    return n;
   }
   // Art. 12.09 : 1 à 14 min ne comptent pas, 15 à 44 min = ½ h, 45 min et plus = 1 h
   const arrondiTS = (h) => { const t = Math.round(h * 60), r = t % 60; return Math.floor(t / 60) + (r >= 45 ? 1 : r >= 15 ? 0.5 : 0); };
@@ -3448,10 +3473,13 @@ Question : ${question}
       // Disponibilité de service (art. 13) : 1 h payée par 4 h (domicile), 3 h (hébergement) ou 8 h (régulière, annexe V)
       if (exJ.dispo && +exJ.dispo.h > 0) { const ratio = { domicile: 4, hebergement: 3, reguliere: 8 }[exJ.dispo.type] || 4; const v = +exJ.dispo.h / ratio * salJ.annuel / 2080; dispoVal += v; ligne.dispo = v; }
       // Remplacement temporaire d'un emploi supérieur (17.04) : taux minimum de l'emploi remplacé
+      // Les ajustements reliés à l'ancienneté (11.09) s'appliquent sur ce traitement.
       if (exJ.remplace && ["J", "S", "N"].includes(q.code) && EMPLOIS_SQ[exJ.remplace]) {
-        const hR = heuresJour(q.code, iso, src), minAn = tauxMinimumEmploi(exJ.remplace, iso);
+        const hR = heuresJour(q.code, iso, src);
+        const court = exJ.remplace === "sergent_superviseur_releve" && joursRemplacement(iso, exJ.remplace, src) < 4;
+        const minAn = (court ? tauxChefEquipe(paie, iso) : tauxMinimumEmploi(exJ.remplace, iso)) * (1 + (salJ.anc || 0) / 100);
         const v = hR ? Math.max(0, (minAn - salJ.annuel) / 2080 * dureeH(hR)) : 0;
-        if (v) { remplVal += v; ligne.remplacement = v; }
+        if (v) { remplVal += v; ligne.remplacement = v; ligne.remplCourt = court; }
       }
       // Repas de nuit (21.07) et allocation vestimentaire (19.01) pour chaque relève travaillée
       if (["J", "S", "N"].includes(q.code)) {
@@ -3799,7 +3827,7 @@ Question : ${question}
       else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
       else { quoi = esc(nomQ(j.code)); val = ""; }
       if (j.dispo) { quoi += `<small>+ disponibilité</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.dispo); }
-      if (j.remplacement) { quoi += `<small>+ remplacement (17.04)</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.remplacement); }
+      if (j.remplacement) { quoi += `<small>+ remplacement (17.04${j.remplCourt ? " b : taux de chef d'équipe, moins de 4 jours" : ""})</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.remplacement); }
       if (j.repasNuit) { quoi += `<small>+ repas de nuit</small>`; }
       if (j.repasNP) { quoi += `<small>+ repas non pris (12.06)</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.repasNP); }
       if (j.sansTraitement) val = (val ? val + "<br>" : "") + `<span class="perdu">− ${$$d(j.sansTraitement)} sans traitement</span>`;
