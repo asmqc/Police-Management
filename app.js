@@ -605,7 +605,7 @@
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.11.06";
+  const VERSION_POLITIQUE = "2026.11.10";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -628,6 +628,7 @@
       "Poste : la feuille et l'horaire du poste, le TS, le forum, les messages et les idées. La pastille rouge compte vos messages non lus.",
       "Accueil : votre journée en un coup d'œil et 4 raccourcis que vous choisissez (touchez « Modifier »).",
       "Rien n'a été retiré : vos données et vos réglages ne changent pas.",
+      "La météo vient maintenant d'Environnement Canada (ville de prévision la plus proche). Politique de confidentialité mise à jour en conséquence.",
     ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
@@ -2255,8 +2256,10 @@ Question : ${question}
     return { lever, coucher, aube, crepuscule, midi: enDate(Jmidi) };
   }
 
-  // Soleil (calculé ici) et météo (Open-Meteo, position arrondie à environ 10 km, seulement quand on touche « Ma position »)
-  const METEO_CODES = { 0: "Ciel dégagé", 1: "Plutôt dégagé", 2: "Partiellement nuageux", 3: "Couvert", 45: "Brouillard", 48: "Brouillard givrant", 51: "Bruine faible", 53: "Bruine", 55: "Bruine forte", 56: "Bruine verglaçante", 57: "Bruine verglaçante forte", 61: "Pluie faible", 63: "Pluie", 65: "Pluie forte", 66: "Pluie verglaçante", 67: "Pluie verglaçante forte", 71: "Neige faible", 73: "Neige", 75: "Neige forte", 77: "Grains de neige", 80: "Averses faibles", 81: "Averses", 82: "Averses fortes", 85: "Averses de neige", 86: "Averses de neige fortes", 95: "Orage", 96: "Orage et grêle", 99: "Orage et forte grêle" };
+  // Soleil (calculé ici) et météo d'Environnement et Changement climatique Canada (licence d'utilisation finale des serveurs de données d'ECCC, usage commercial permis),
+  // position arrondie à environ 10 km, seulement quand on touche « Ma position ». On prend la ville de prévision d'ECCC la plus proche.
+  const valECCC = (o) => { const v = o && o.value; const x = v && typeof v === "object" ? v.fr ?? v.en : v; return x === "" || x == null ? null : x; };
+  const nbECCC = (o) => { const x = valECCC(o); const n = typeof x === "number" ? x : parseFloat(String(x ?? "").replace(",", ".")); return Number.isFinite(n) ? n : null; };
   const ciel = { pos: undefined, meteo: null, quand: null };
   const hFr = (d) => (d ? d.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" }) : "—");
   function rendreCiel() {
@@ -2267,29 +2270,50 @@ Question : ${question}
     const jourOk = s.lever && s.coucher;
     const etatJour = !jourOk ? "" : maintenant < s.aube || maintenant > s.crepuscule ? "Nuit" : maintenant < s.lever || maintenant > s.coucher ? "Crépuscule (lumière civile)" : "Jour";
     const m = ciel.meteo;
+    const vis = m && m.visibilite != null ? ` · visibilité ${m.visibilite >= 10 ? "10 km et plus" : String(m.visibilite).replace(".", ",") + " km"}` : "";
     $("#ac-ciel-contenu").innerHTML = `
       <div class="ciel-grille">
         <div><small>Lever</small><b>${hFr(s.lever)}</b></div><div><small>Coucher</small><b>${hFr(s.coucher)}</b></div>
         <div><small>Aube civile</small><b>${hFr(s.aube)}</b></div><div><small>Fin du crépuscule</small><b>${hFr(s.crepuscule)}</b></div>
       </div>
       ${etatJour ? `<p class="ciel-etat">En ce moment : <b>${etatJour}</b></p>` : ""}
-      ${m ? `<div class="ciel-meteo"><b>${Math.round(m.temperature_2m)} °C</b><span>${esc(METEO_CODES[m.weather_code] || "—")} · ressentie ${Math.round(m.apparent_temperature)} °C<br>Vent ${Math.round(m.wind_speed_10m)} km/h${m.wind_gusts_10m ? `, rafales ${Math.round(m.wind_gusts_10m)}` : ""}${m.visibility != null ? ` · visibilité ${m.visibility >= 10000 ? "10 km et plus" : (m.visibility / 1000).toFixed(1).replace(".", ",") + " km"}` : ""}${m.precipitation ? ` · précipitations ${String(m.precipitation).replace(".", ",")} mm` : ""}</span></div>` : ""}
-      <div class="ciel-actions"><button type="button" class="btn-secondaire petit" id="ac-ciel-copier">Copier pour mon rapport</button>${m ? `<small>Météo : <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0) · position arrondie à environ 10 km</small>` : `<small>Soleil calculé sur l'appareil.</small>`}</div>`;
+      ${m ? `<div class="ciel-meteo"><b>${m.temp != null ? Math.round(m.temp) + " °C" : "—"}</b><span>${esc(m.cond || "Conditions actuelles")}${m.ressentie != null ? ` · ${m.ressentieNom} ${Math.round(m.ressentie)}` : ""}<br>Vent ${m.vent != null ? Math.round(m.vent) + " km/h" : "—"}${m.dir ? " " + esc(m.dir) : ""}${m.rafales ? `, rafales ${Math.round(m.rafales)}` : ""}${vis}${m.humidite != null ? ` · humidité ${Math.round(m.humidite)} %` : ""}</span></div>
+      <p class="aide">${esc(m.ville)}${m.station && m.station !== m.ville ? ` (station ${esc(m.station)})` : ""}${m.heure ? ` · observé à ${hFr(m.heure)}` : ""}</p>` : ""}
+      <div class="ciel-actions"><button type="button" class="btn-secondaire petit" id="ac-ciel-copier">Copier pour mon rapport</button>${m ? `<small>Source des données : <a href="https://meteo.gc.ca/" target="_blank" rel="noopener">Environnement et Changement climatique Canada</a> · position arrondie à environ 10 km</small>` : `<small>Soleil calculé sur l'appareil.</small>`}</div>`;
     $("#ac-ciel-copier").addEventListener("click", async () => {
       const d = new Date();
       const t = `Le ${d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} à ${hFr(d)} : lever du soleil ${hFr(s.lever)}, coucher ${hFr(s.coucher)}, fin du crépuscule civil ${hFr(s.crepuscule)}${etatJour ? ` (${etatJour.toLowerCase()})` : ""}.`
-        + (m ? ` Météo : ${(METEO_CODES[m.weather_code] || "").toLowerCase()}, ${Math.round(m.temperature_2m)} °C, vent ${Math.round(m.wind_speed_10m)} km/h${m.visibility != null ? `, visibilité ${m.visibility >= 10000 ? "10 km et plus" : (m.visibility / 1000).toFixed(1).replace(".", ",") + " km"}` : ""} (source : Open-Meteo, ${hFr(new Date(ciel.quand))}).` : "");
+        + (m ? ` Météo : ${m.cond ? m.cond.toLowerCase() + ", " : ""}${m.temp != null ? Math.round(m.temp) + " °C" : "température non disponible"}${m.vent != null ? `, vent ${Math.round(m.vent)} km/h` : ""}${m.visibilite != null ? `, visibilité ${m.visibilite >= 10 ? "10 km et plus" : String(m.visibilite).replace(".", ",") + " km"}` : ""} (source : Environnement et Changement climatique Canada, ${esc(m.ville)}, ${hFr(m.heure || new Date(ciel.quand))}).` : "");
       try { await navigator.clipboard.writeText(t); toast("Copié. Collez-le dans votre rapport."); } catch { toast("Copie impossible sur cet appareil."); }
     });
   }
   async function chargerMeteo() {
     if (!ciel.pos) return;
+    const { lat, lon } = ciel.pos;
     try {
-      const u = `https://api.open-meteo.com/v1/forecast?latitude=${ciel.pos.lat}&longitude=${ciel.pos.lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_gusts_10m,precipitation,visibility&wind_speed_unit=kmh&timezone=America%2FToronto`;
-      const r = await fetch(u, { cache: "no-store", referrerPolicy: "no-referrer" });
-      if (!r.ok) throw new Error(r.status);
-      const j = await r.json();
-      ciel.meteo = j.current; ciel.quand = Date.now();
+      let f = [];
+      for (const d of [0.6, 1.5, 3]) { // élargir la zone jusqu'à trouver une ville de prévision d'ECCC
+        const bb = [lon - d, lat - d, lon + d, lat + d].map((x) => x.toFixed(2)).join(",");
+        const u = `https://api.weather.gc.ca/collections/citypageweather-realtime/items?f=json&lang=fr&limit=50&bbox=${bb}`;
+        const r = await fetch(u, { cache: "no-store", referrerPolicy: "no-referrer" });
+        if (!r.ok) throw new Error(r.status);
+        f = ((await r.json()).features || []).filter((x) => x.properties && x.properties.currentConditions && x.geometry);
+        if (f.length) break;
+      }
+      if (!f.length) throw new Error("aucune ville");
+      const dist = (x) => { const [xo, ya] = x.geometry.coordinates; return (ya - lat) ** 2 + ((xo - lon) * Math.cos(lat * Math.PI / 180)) ** 2; };
+      f.sort((a, b) => dist(a) - dist(b));
+      const p = f[0].properties, c = p.currentConditions;
+      const nom = (o) => (o && typeof o === "object" ? o.fr || o.en : o) || "";
+      const humidex = nbECCC(c.humidex), refroid = nbECCC(c.windChill), vis = nbECCC(c.visibility);
+      const h = valECCC({ value: c.timestamp }) || (c.timestamp && (c.timestamp.fr || c.timestamp.en));
+      ciel.meteo = {
+        temp: nbECCC(c.temperature), cond: String(valECCC(c.condition) || nom(c.condition) || ""), vent: nbECCC(c.wind && c.wind.speed), rafales: nbECCC(c.wind && c.wind.gust),
+        dir: valECCC(c.wind && c.wind.direction) || "", humidite: nbECCC(c.relativeHumidity), visibilite: vis,
+        ressentie: refroid ?? humidex, ressentieNom: refroid != null ? "refroidissement éolien" : "humidex",
+        ville: nom(p.name), station: c.station ? nom(c.station.value) : "", heure: h ? new Date(h) : null,
+      };
+      ciel.quand = Date.now();
     } catch { ciel.meteo = null; toast("Météo indisponible pour l'instant. Les heures du soleil restent affichées."); }
     rendreCiel();
   }

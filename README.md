@@ -51,7 +51,7 @@ En haut : logo, **Admin** (administrateur seulement), Réglages et la photo (Mon
 - Raccourcis offerts : article, vitesses, Ma paie, « Où suis-je ? », borne, qui couvre, horaire, TS, dépenses (SQ), contrat, météo et 511, feuille de poste, messages, forum, idées, bien-être. Choix gardé sur l'appareil.
 
 ### Terrain › Météo et 511
-- **Soleil et météo** : lever, coucher et crépuscule civil calculés sur l'appareil, météo Open-Meteo (position arrondie à 10 km), « Copier pour mon rapport ».
+- **Soleil et météo** : lever, coucher et crépuscule civil calculés sur l'appareil, météo d'Environnement et Changement climatique Canada, ville de prévision la plus proche (position arrondie à 10 km), « Copier pour mon rapport ».
 - **Circulation Québec 511** du territoire de l'unité.
 - Cartes météo et 511 repliables.
 
@@ -179,7 +179,7 @@ L'action GitHub **« Mettre à jour les données (carte et CSR) »** roule chaqu
 | Repères kilométriques, caméras, Québec 511 | Ministère des Transports et de la Mobilité durable | CC-BY 4.0 (Données Québec) |
 | Desserte de la Sûreté du Québec | Sûreté du Québec | CC-BY 4.0 (Données Québec) |
 | Découpages administratifs | Ministère des Ressources naturelles et des Forêts | CC-BY 4.0 (Données Québec) |
-| Météo | Open-Meteo | CC-BY 4.0 |
+| Météo | Environnement et Changement climatique Canada | Licence d'utilisation finale des serveurs de données d'ECCC (usage commercial permis) |
 | Fond de carte | © les contributeurs d'OpenStreetMap | ODbL |
 
 ---

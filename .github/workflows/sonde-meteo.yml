@@ -1,9 +1,0 @@
-name: sonde-meteo
-on: workflow_dispatch
-jobs:
-  sonde:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -sS -D - -H 'Origin: https://policemanagement.ca' 'https://api.weather.gc.ca/collections/citypageweather-realtime/items?f=json&lang=fr&bbox=-73.8,45.8,-73.2,46.3&limit=1' -o r.json | grep -i 'access-control\|HTTP/'
-          python3 -c "import json;d=json.load(open('r.json'));f=d['features'][0];print(json.dumps(f['geometry']));p=f['properties'];print(list(p.keys()));print(json.dumps(p.get('currentConditions'),ensure_ascii=False)[:3500]);print(json.dumps(p.get('name'),ensure_ascii=False))"
