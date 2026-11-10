@@ -2813,3 +2813,37 @@ button.renvoi { font: inherit; font-weight: 700; color: var(--accent, #0A4FB8); 
 .auth-langue { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; z-index: 2; }
 .auth-langue .lien { font-weight: 700; }
 @media (max-width: 760px) { .site-actions .site-langue { padding-inline: 10px; } }
+
+/* ---------- Simplification : 5 onglets et sous-onglets (Paie, Terrain, Poste) ---------- */
+.sous-nav { display: flex; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; margin: 0 0 14px; }
+.sous-nav::-webkit-scrollbar { display: none; }
+.sous-nav button { flex: 1 0 auto; white-space: nowrap; font-weight: 700; padding: 9px 12px; scroll-snap-align: start; }
+.sous-nav button[hidden] { display: none; }
+body:not(.est-sq) .sous-nav .seulement-sq { display: none !important; }
+.vue-carte > .terrain-nav { margin: 10px 12px 8px; flex: 0 0 auto; }
+body.carte-plein .vue-carte > .terrain-nav { display: none; }
+.btn-admin-haut { position: relative; }
+.btn-admin-haut.actif { color: var(--marque); }
+.btn-admin-haut .badge { top: -2px; right: -2px; }
+.ac-section-titre { font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-doux); margin: 6px 2px -4px; }
+.ac-racc-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.ac-racc-tete .ac-section-titre { margin: 0; }
+.ac-raccourcis { display: grid; gap: 0; }
+.tuiles.racc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 700px) { .tuiles.racc { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tuiles.racc .tuile { min-height: 104px; }
+.tuiles.racc .tuile-ico { background: color-mix(in srgb, var(--marque) 14%, var(--surface)); color: var(--marque); }
+.racc-choix { margin-top: 12px; display: grid; gap: 12px; }
+.racc-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+.racc-option { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid var(--ligne); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 7px 12px 7px 7px; font-weight: 600; font-size: .9rem; }
+.racc-option span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); font-size: .78rem; font-weight: 800; }
+.racc-option.on { border-color: var(--marque); background: color-mix(in srgb, var(--marque) 10%, var(--surface)); }
+.racc-option.on span { background: var(--marque); color: #fff; }
+.racc-option:disabled { opacity: .45; }
+.racc-actions { display: flex; justify-content: flex-end; gap: 8px; }
+#vue-reglages .vue-tete .ref .lien { margin-left: 6px; }
+html.app-natif .vue-carte > .terrain-nav { margin-top: calc(var(--natif-haut) + 6px); }
+html.app-natif body:not(.carte-plein) .vue-carte .carte-outils { top: 10px; }
+.onglets-csr button[hidden] { display: none !important; }
+#vue-horaire.ctx-paie :is(#hr-qui-bloc, #hr-cible, #hr-onglets-vue) { display: none !important; }
+.sous-nav { position: relative; }

@@ -28,16 +28,17 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 
 ## Navigation
 
-| Barre du bas | Contenu |
-|---|---|
-| **Accueil** | Quart du jour, annonces, messages, TS à confirmer, échéances, soleil et météo, Québec 511, tuiles |
-| **Lois** | Articles, vitesses, frais judiciaires, favoris, registre des constats (app iPhone), lien vers le contrat de travail |
-| **Carte** | Bornes kilométriques, postes et territoires, « Où suis-je ? », couches |
-| **Horaire** | Calendrier, ajouts rapides, Paie et banques (SQ) |
-| **Poste** | Feuille de poste, horaire du poste et TS (SQ), forum |
-| **Admin** | Administrateur seulement |
+Cinq onglets, un par besoin. Chaque fonction a une seule place; les sous-onglets en haut de chaque section passent d'une partie à l'autre.
 
-**Messages** est en haut de l'écran, avec le nombre de messages non lus.
+| Barre du bas | Sous-onglets |
+|---|---|
+| **Accueil** | Salutation, annonces, recherche, carte **Aujourd'hui** (quart du jour et du lendemain, messages non lus, TS à confirmer, demandes d'accès pour l'admin), À ne pas oublier, **4 raccourcis** choisis par chaque membre |
+| **Horaire** | Calendrier · Heures (mois, année); échanges de quarts et partages |
+| **Paie** | Paie · Banques · Temps supp. · Dépenses · Retraite · Contrat (hors SQ : Temps supp. et Contrat si la convention existe) |
+| **Terrain** | Lois · Vitesses · Carte (« Où suis-je ? », bornes, qui couvre) · Météo et 511 |
+| **Poste** | Feuille · Horaire (SQ) · TS (SQ) · Forum · Messages · Idées; pastille des messages non lus |
+
+En haut : logo, **Admin** (administrateur seulement), Réglages et la photo (Mon compte, Bien-être et soutien, Installer l'app, Se déconnecter). « Rafraîchir l'app » est dans Réglages.
 
 ---
 
@@ -47,9 +48,12 @@ Les visiteurs non connectés voient le **site** (présentation, vidéo, appareil
 - Salutation, quart du jour et du lendemain, annonces de l'administrateur (image en bannière).
 - **Temps supplémentaire à confirmer** : un TS inscrit d'avance est présenté une fois passé : Fait, Pas fait (retiré de l'horaire et de la paie) ou Modifier les heures.
 - **À ne pas oublier** : dates limites du contrat SQ et échéances personnelles (requalification, RCR, permis…).
+- Raccourcis offerts : article, vitesses, Ma paie, « Où suis-je ? », borne, qui couvre, horaire, TS, dépenses (SQ), contrat, météo et 511, feuille de poste, messages, forum, idées, bien-être. Choix gardé sur l'appareil.
+
+### Terrain › Météo et 511
 - **Soleil et météo** : lever, coucher et crépuscule civil calculés sur l'appareil, météo Open-Meteo (position arrondie à 10 km), « Copier pour mon rapport ».
 - **Circulation Québec 511** du territoire de l'unité.
-- Cartes météo et 511 repliables; tuiles : article, vitesses, borne, « Où suis-je ? », territoires, horaire, Ma paie (SQ), Bien-être et soutien, contrat, feuille de poste, forum, idées, compte, installer l'app.
+- Cartes météo et 511 repliables.
 
 ### Lois
 - **Québec** : Code de la sécurité routière (1 225 articles), véhicules hors route, transport rémunéré de personnes, assurance automobile. **Fédéral** : sécurité nautique.

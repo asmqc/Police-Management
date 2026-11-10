@@ -2,6 +2,29 @@
 // Les textes français restent la référence; les lois et le contrat de travail restent en français.
 (function () {
   const EN = {
+"Terrain": "Field",
+"Mes raccourcis": "My shortcuts",
+"Terminé": "Done",
+"Par défaut": "Default",
+"Choisissez jusqu'à 4 raccourcis pour votre accueil.": "Choose up to 4 shortcuts for your home screen.",
+"Lois et règlements": "Laws and regulations",
+"Vitesses": "Speeds",
+"Paie, banques, réclamations": "Pay, banks, claims",
+"Réclamation de TS": "Overtime claim",
+"Compte de dépenses": "Expense account",
+"Contrat de travail": "Employment contract",
+"Météo et 511": "Weather and 511",
+"Soleil, météo, entraves": "Sun, weather, road closures",
+"L'aide-mémoire du poste": "The station's quick reference",
+"Collègues et administrateur": "Colleagues and administrator",
+"Votre corps de police": "Your police service",
+"Proposer et voter": "Suggest and vote",
+"Bien-être": "Well-being",
+"Contrat": "Contract",
+"Soleil, météo et entraves routières": "Sun, weather and road closures",
+"Paie, réclamations et retraite": "Pay, claims and retirement",
+"Réclamations": "Claims",
+"Rafraîchir l'app": "Refresh the app",
 "Essayer": "Try it",
 "Fonctionnalités": "Features",
 "Horaire": "Schedule",
@@ -847,7 +870,7 @@
 "Buanderie, plus de 3 jours ($)": "Laundry, more than 3 days ($)",
 "Rente estimée à la date sans réduction": "Estimated pension on the unreduced date"
 };
-  const ZONES = ["#ecran-site", "#ecran-auth", "nav.nav", "section.menu-feuille", "#btn-messages-haut", "#vue-accueil", "#vue-horaire", "#vue-reglages", "#vue-compte", "#vue-soutien", "#hr-voile", "#hr-rapide", "#pb-voile"];
+  const ZONES = ["#ecran-site", "#ecran-auth", "nav.nav", "section.menu-feuille", "#btn-admin-haut", "#vue-accueil", "#vue-meteo", "#vue-feuille .poste-nav", "#vue-messages .poste-nav", "#vue-idees .poste-nav", ".terrain-nav", ".paie-nav", "#vue-horaire", "#vue-reglages", "#vue-compte", "#vue-soutien", "#hr-voile", "#hr-rapide", "#pb-voile"];
   const ATTRS = ["placeholder", "aria-label", "title", "alt", "label"];
   let langue = "fr";
   try { langue = localStorage.getItem("pm-langue") === "en" ? "en" : "fr"; } catch (e) { /* facultatif */ }

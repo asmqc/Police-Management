@@ -541,7 +541,7 @@
     if (p.doit_changer_mdp) { montrer("#ecran-mdp-temp"); $("#mt-mdp").focus(); return; }
     majBarreCompte();
     $("#menu-admin").hidden = p.role !== "admin";
-    $("#nav-admin").hidden = p.role !== "admin";
+    $("#btn-admin-haut").hidden = p.role !== "admin";
     majOngletConstats();
     if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
@@ -553,7 +553,7 @@
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     signalerActivite();
-    afficherVue(["accueil", "csr", "carte", "corps", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -621,6 +621,14 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-10-simple", date: "2026-11-10", titre: "Une app plus simple : 5 onglets, un par besoin", points: [
+      "La barre du bas devient Accueil · Horaire · Paie · Terrain · Poste. Chaque fonction a maintenant une seule place.",
+      "Paie : votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail.",
+      "Terrain : les lois, les vitesses, la carte (Où suis-je ?, bornes, qui couvre) et la météo avec Québec 511.",
+      "Poste : la feuille et l'horaire du poste, le TS, le forum, les messages et les idées. La pastille rouge compte vos messages non lus.",
+      "Accueil : votre journée en un coup d'œil et 4 raccourcis que vous choisissez (touchez « Modifier »).",
+      "Rien n'a été retiré : vos données et vos réglages ne changent pas.",
+    ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
       "En anglais, les dates s'affichent aussi en anglais (November, Monday…).",
@@ -1237,6 +1245,8 @@ Question : ${question}
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
+    if (nom === "paie") { ouvrirPaie(); return; }
+    if (nom === "horaire" && !etat.versPaie && hr.onglet === "stats" && stats.contexte === "paie" && etat.vue !== "horaire") { hr.onglet = "calendrier"; stats.contexte = "horaire"; }
     if (nom !== "compte" && nom !== etat.vue) etat.vueAvant = nom;
     etat.vue = nom;
     document.body.dataset.vue = nom;
@@ -1246,7 +1256,7 @@ Question : ${question}
     $$(".vue").forEach((v) => (v.hidden = v.id !== (verrou ? "vue-verrou" : "vue-" + nom)));
     history.replaceState(null, "", "#" + nom);
     if (verrou) { afficherVerrou(nom); return; }
-    if (nom !== "admin") compterSection(nom);
+    if (nom !== "admin") compterSection(nom === "horaire" && hr.onglet === "stats" && stats.contexte === "paie" ? "paie" : nom);
     if (nom === "csr") initCsr();
     if (nom === "carte") {
       // Leaflet est chargé seulement quand la carte sert (premier affichage plus rapide)
@@ -1263,6 +1273,7 @@ Question : ${question}
     if (nom === "compte") { initCompte(); majBlocsNotif(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
+    if (nom === "meteo") initMeteo();
     visiteDeVue(nom);
     if (nom === "reglages") { rendreVisitesReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
@@ -1300,7 +1311,7 @@ Question : ${question}
         pontNatif.postMessage({
           vue: etat.vue || "accueil",
           onglet: (() => { try { return ongletCourant(); } catch { return etat.vue || "accueil"; } })(),
-          titre: etat.vue === "feuille" || etat.vue === "forum" || (etat.vue === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) ? "Mon poste" : null,
+          titre: (() => { try { const o = ongletCourant(); return o === "paie" ? (etat.vue === "convention" ? "Contrat de travail" : "Ma paie") : o === "feuille" ? (etat.vue === "messages" ? "Messages" : etat.vue === "idees" ? "Idées" : "Mon poste") : null; } catch { return null; } })(),
           connecte: !$("#ecran-app").hidden,
           modal: !!document.querySelector(".voile:not([hidden]), .avert:not([hidden])"),
           plein: document.body.classList.contains("carte-plein"),
@@ -1315,7 +1326,7 @@ Question : ${question}
   if (pontNatif) {
     new MutationObserver(informerNatif).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "class"] });
     window.pmNatif = {
-      aller: (v) => { if (!$("#ecran-app").hidden) { fermerMenu(); afficherVue(v); } },
+      aller: (v) => { if ($("#ecran-app").hidden) return; fermerMenu(); const b = $(`.nav [data-vue='${v}']`); if (b) b.click(); else afficherVue(v); },
       menu: () => { if (!$("#ecran-app").hidden) ouvrirMenu(); },
       actualiser: () => location.reload(),
     };
@@ -1351,7 +1362,7 @@ Question : ${question}
   $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
   // Mode nuit rouge : bascule rapide depuis le menu (revient ensuite au style précédent)
   function majBoutonNuit() { const b = $("#menu-nuit"); if (b) $("span", b).textContent = styleChoisi === "nuit" ? "Quitter le mode nuit rouge" : "Mode nuit rouge"; }
-  $("#menu-nuit").addEventListener("click", () => {
+  if ($("#menu-nuit")) $("#menu-nuit").addEventListener("click", () => {
     let avant = "moderne";
     try { avant = localStorage.getItem("pm-style-avant-nuit") || "moderne"; } catch { /* facultatif */ }
     if (styleChoisi === "nuit") styleChoisi = avant === "nuit" ? "moderne" : avant;
@@ -1363,30 +1374,72 @@ Question : ${question}
   majBoutonNuit();
   { const v = (document.querySelector('script[src^="app.js"]') || {}).src || ""; const m = v.match(/v=(\d{8})(\d{4})/); if (m) $("#rg-version").textContent = `Version du ${m[1].slice(6, 8)}/${m[1].slice(4, 6)}/${m[1].slice(0, 4)}`; }
   $$(".nav button").forEach((b) => b.addEventListener("click", () => {
-    if (b.dataset.vue === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) hr.onglet = "calendrier"; // l'onglet Horaire ramène toujours au calendrier
-    afficherVue(b.dataset.vue);
-    if (b.dataset.vue === "horaire") rendreHoraire();
+    const v = b.dataset.vue;
+    if (v === "horaire") { // l'onglet Horaire ramène toujours au calendrier de l'usager
+      if (hr.onglet === "poste" || hr.onglet === "ts" || (hr.onglet === "stats" && stats.contexte === "paie")) hr.onglet = "calendrier";
+      stats.contexte = "horaire";
+    }
+    afficherVue(v);
+    if (v === "horaire") rendreHoraire();
   }));
-  $("#btn-messages-haut").addEventListener("click", () => afficherVue("messages"));
-  // Onglet de la barre du bas correspondant à la section affichée
+  $("#btn-admin-haut").addEventListener("click", () => afficherVue("admin"));
+  /* Cinq onglets, un par besoin : Accueil · Horaire · Paie · Terrain · Poste.
+     Chaque section n'a qu'une seule place; les sous-onglets (Paie, Terrain, Poste) font le lien entre les vues existantes. */
+  const contexteStats = () => { try { return stats.contexte; } catch { return "horaire"; } };
   function ongletCourant() {
     const v = etat.vue;
-    if (v === "forum" || v === "feuille" || (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts"))) return "feuille";
-    if (v === "convention") return "csr";
+    if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
+    if (["forum", "feuille", "messages", "idees"].includes(v) || (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts"))) return "feuille";
+    if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
     return v;
   }
   function majOngletCourant() {
     const o = ongletCourant();
     $$(".nav button").forEach((b) => (b.dataset.vue === o ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
-    $("#btn-messages-haut").classList.toggle("actif", etat.vue === "messages");
-    const sous = etat.vue === "forum" ? "forum" : etat.vue === "feuille" ? "feuille" : etat.vue === "horaire" ? hr.onglet : "";
+    $("#btn-admin-haut").classList.toggle("actif", etat.vue === "admin");
+    const v = etat.vue;
+    const sous = ["forum", "feuille", "messages", "idees"].includes(v) ? v : v === "horaire" ? hr.onglet : "";
     $$("[data-poste]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.poste === sous)));
+    const vit = !!$("[data-csr-onglet='vitesse'][aria-selected='true']");
+    const terr = v === "csr" ? (vit ? "vitesse" : "lois") : v === "meteo" ? "meteo" : "carte";
+    $$("[data-terrain]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.terrain === terr)));
+    // Sous-onglet actif toujours visible dans la bande défilante
+    requestAnimationFrame(() => $$(".sous-nav").forEach((n) => { const b = $("[aria-checked='true']", n); if (b && n.offsetParent) n.scrollLeft = Math.max(0, b.offsetLeft - (n.clientWidth - b.offsetWidth) / 2); }));
     informerNatif();
   }
-  // Mon poste : feuille de poste, horaire du poste, TS du poste et forum
+  // Terrain : Lois, Vitesses, Carte (avec « Qui couvre ? » et « Où suis-je ? ») et Météo et 511
+  $$("[data-terrain]").forEach((b) => b.addEventListener("click", () => {
+    const t = b.dataset.terrain;
+    if (t === "lois" || t === "vitesse") {
+      afficherVue("csr");
+      if (t === "vitesse") ongletLois("vitesse");
+      else if ($("[data-csr-onglet='vitesse'][aria-selected='true']")) ongletLois("articles");
+    } else afficherVue(t);
+    majOngletCourant();
+    const vue = $("#vue-" + etat.vue); if (vue) vue.scrollTop = 0;
+  }));
+  // Paie : Paie · Banques · Temps supp. · Dépenses · Retraite (SQ) et Contrat de travail
+  const MODES_PAIE = ["paie", "banques", "ts", "depenses", "retraite"];
+  function ouvrirPaie(mode) {
+    stats.contexte = "paie";
+    $("#vue-horaire").classList.add("ctx-paie");
+    if (hr.vue || hr.cible === "conjoint") { hr.vue = null; hr.cible = "moi"; const q = $("#hr-qui"); if (q) q.value = ""; }
+    if (mode && MODES_PAIE.includes(mode)) stats.mode = mode;
+    else if (!MODES_PAIE.includes(stats.mode)) stats.mode = estSQ() ? "paie" : "ts";
+    stats.dejaOuvert = true;
+    hr.onglet = "stats";
+    etat.versPaie = true;
+    try { afficherVue("horaire"); } finally { etat.versPaie = false; }
+    history.replaceState(null, "", "#paie");
+    ouvrirOngletStats();
+    $("#vue-horaire").scrollTop = 0;
+  }
+  $$("[data-paie]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.paie !== "contrat") ouvrirPaie(b.dataset.paie); }));
+  $$("[data-stats-contrat]").forEach((b) => b.addEventListener("click", () => { afficherVue("convention"); $("#vue-convention").scrollTop = 0; }));
+  // Mon poste : feuille de poste, horaire du poste, TS du poste, forum, messages et idées
   $$("[data-poste]").forEach((b) => b.addEventListener("click", () => {
     const p = b.dataset.poste;
-    if (p === "feuille" || p === "forum") { afficherVue(p); return; }
+    if (["feuille", "forum", "messages", "idees"].includes(p)) { afficherVue(p); return; }
     hr.onglet = p;
     afficherVue("horaire");
     compterSection(p === "ts" ? "ts-poste" : "horaire-poste");
@@ -1901,6 +1954,9 @@ Question : ${question}
     ["Messages", "messages messagerie administrateur", "messages"], ["Forum", "forum discussion", "forum"], ["Idées et sondages", "idees sondages vote", "idees"],
     ["Corps de police et territoires", "corps police territoire municipal autochtone", "corps"], ["Mon compte", "compte profil photo mot de passe", "compte"],
     ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
+    ["Ma paie", "paie salaire talon remuneration", "paie"], ["Banques", "banques soldes heures vacances", "banques"], ["Temps supplémentaire", "temps supplementaire ts reclamation", "ts"],
+    ["Compte de dépenses", "depenses repas kilometrage reclamation", "depenses"], ["Retraite", "retraite rente rrmsq", "retraite"], ["Contrat de travail", "contrat convention collective clause", "convention"],
+    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"],
   ];
   let rechMinuteur;
   $("#ac-q").addEventListener("input", () => { clearTimeout(rechMinuteur); rechMinuteur = setTimeout(rechercheGlobale, 180); });
@@ -1911,6 +1967,7 @@ Question : ${question}
     const res = [];
     for (const [nom, mots, cible] of SECTIONS_RECHERCHE) {
       if (cible === "convention" && !accesConvention()) continue;
+      if (["paie", "banques", "depenses", "retraite"].includes(cible) && !estSQ()) continue;
       if (norm(nom).includes(q) || mots.split(" ").some((m) => m.startsWith(q))) res.push({ g: "Sections", titre: nom, sous: "Ouvrir", agir: () => (cible === "frais" ? (afficherVue("csr"), ongletLois("frais")) : cible === "favoris" ? (afficherVue("csr"), ongletLois("favoris")) : allerA(cible)) });
     }
     const estNumero = /^\d+(\.\d+)*$/.test(q);
@@ -2263,7 +2320,72 @@ Question : ${question}
     if (permis === null) permis = true; // première fois : on demande la position une seule fois
     if (permis) localiserCiel(true);
   }
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.vue === "accueil" && lireLocal("pm-ciel-auto", false)) localiserCiel(true); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.vue === "meteo" && lireLocal("pm-ciel-auto", false)) localiserCiel(true); });
+
+  // Terrain › Météo et 511 (déplacées de l'accueil)
+  function initMeteo() {
+    demarrer511();
+    try { rendreCiel(); } catch (e) { console.warn(e); }
+    if (!document.querySelector("#ac-ciel.replie")) cielAutomatique();
+  }
+  /* Accueil : 4 raccourcis choisis par chaque membre (gardés sur l'appareil) */
+  const RACC_ACCUEIL = {
+    csr: { t: "Chercher un article", s: "Lois et règlements", i: '<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6"/>' },
+    vitesse: { t: "Vitesses", s: "Amende, points, grand excès", i: '<path d="M12 14l4-4M4 18a9 9 0 1 1 16 0"/>' },
+    paie: { t: "Ma paie", s: "Paie, banques, réclamations", i: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/>', paie: true },
+    position: { t: "Où suis-je ?", s: "Corps de police, code municipal", i: '<path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>' },
+    carte: { t: "Localiser une borne", s: "Route et kilomètre", i: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14"/>' },
+    corps: { t: "Qui couvre ?", s: "SQ, municipal ou autochtone", i: '<path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z"/>' },
+    horaire: { t: "Mon horaire", s: "Quarts et partages", i: '<path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/>' },
+    ts: { t: "Temps supp.", s: "Réclamation de TS", i: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>' },
+    depenses: { t: "Dépenses", s: "Compte de dépenses", i: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6"/>', sq: true },
+    convention: { t: "Contrat de travail", s: "Convention collective", i: '<path d="M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5"/>', conv: true },
+    meteo: { t: "Météo et 511", s: "Soleil, météo, entraves", i: '<path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"/>' },
+    feuille: { t: "Feuille de poste", s: "L'aide-mémoire du poste", i: '<path d="M9 4H6a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-3M9 3h6v3H9zM8.5 11h7M8.5 15h5"/>' },
+    messages: { t: "Messages", s: "Collègues et administrateur", i: '<path d="M4 5h16v11H9l-5 4z"/>' },
+    forum: { t: "Forum", s: "Votre corps de police", i: '<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>' },
+    idees: { t: "Idées", s: "Proposer et voter", i: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>' },
+    soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
+  };
+  const RACC_DEFAUT = ["csr", "vitesse", "paie", "position"];
+  const cleRacc = () => "pm-raccourcis-" + (etat.profil ? etat.profil.id : "");
+  const raccOffert = (k) => { const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
+  function mesRaccourcis() {
+    let l = null;
+    try { l = JSON.parse(localStorage.getItem(cleRacc()) || "null"); } catch { /* facultatif */ }
+    if (!Array.isArray(l) || !l.length) l = RACC_DEFAUT;
+    return l.filter(raccOffert).slice(0, 4);
+  }
+  const racc = { choix: null };
+  function rendreRaccourcis() {
+    const l = mesRaccourcis();
+    $("#ac-racc").innerHTML = l.map((k) => { const r = RACC_ACCUEIL[k];
+      return `<button class="tuile" data-racc="${k}"><span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.i}</svg></span><span class="tuile-txt"><b>${esc(r.t)}</b><small>${esc(r.s)}</small></span></button>`; }).join("");
+    $$("[data-racc]", $("#ac-racc")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
+  }
+  function rendreChoixRacc() {
+    const ch = racc.choix;
+    $("#ac-racc-liste").innerHTML = Object.keys(RACC_ACCUEIL).filter(raccOffert).map((k) => {
+      const on = ch.includes(k), plein = !on && ch.length >= 4;
+      return `<button type="button" class="racc-option${on ? " on" : ""}" data-racc-choix="${k}" aria-pressed="${on}"${plein ? " disabled" : ""}><span>${on ? ch.indexOf(k) + 1 : "+"}</span>${esc(RACC_ACCUEIL[k].t)}</button>`;
+    }).join("");
+    $$("[data-racc-choix]").forEach((b) => b.addEventListener("click", () => {
+      const k = b.dataset.raccChoix;
+      racc.choix = racc.choix.includes(k) ? racc.choix.filter((x) => x !== k) : [...racc.choix, k].slice(0, 4);
+      rendreChoixRacc();
+    }));
+  }
+  $("#ac-racc-modifier").addEventListener("click", () => {
+    const p = $("#ac-racc-choix");
+    if (!p.hidden) { $("#ac-racc-ok").click(); return; }
+    racc.choix = mesRaccourcis(); rendreChoixRacc(); p.hidden = false; $("#ac-racc-modifier").textContent = "Terminé";
+  });
+  $("#ac-racc-defaut").addEventListener("click", () => { racc.choix = RACC_DEFAUT.filter(raccOffert); rendreChoixRacc(); });
+  $("#ac-racc-ok").addEventListener("click", () => {
+    if (racc.choix && racc.choix.length) { try { localStorage.setItem(cleRacc(), JSON.stringify(racc.choix)); } catch { /* facultatif */ } }
+    $("#ac-racc-choix").hidden = true; $("#ac-racc-modifier").textContent = "Modifier";
+    rendreRaccourcis();
+  });
 
   async function initAccueil() {
     const p = etat.profil;
@@ -2273,9 +2395,7 @@ Question : ${question}
     $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
     $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
-    demarrer511();
-    try { rendreCiel(); } catch (e) { console.warn(e); }
-    if (!document.querySelector("#ac-ciel.replie")) cielAutomatique();
+    rendreRaccourcis();
     try { rendreEcheances(); } catch (e) { console.warn(e); }
     chargerEvenements().then(() => { try { rendreEcheances(); } catch (e) { console.warn(e); } }).catch(() => {});
     // Quart du jour
@@ -2310,9 +2430,9 @@ Question : ${question}
   }
 
   function allerA(cible) {
-    if (cible === "vitesse") { afficherVue("csr"); $("[data-csr-onglet='vitesse']").click(); return; }
+    if (cible === "vitesse") { afficherVue("csr"); ongletLois("vitesse"); majOngletCourant(); return; }
     if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
-    if (cible === "paie") { hr.onglet = "stats"; afficherVue("horaire"); setTimeout(() => { const t = $("[data-hr-vue='stats']"); if (t && !t.hidden) t.click(); }, 700); return; }
+    if (cible === "paie" || MODES_PAIE.includes(cible)) { ouvrirPaie(cible === "paie" ? (estSQ() ? "paie" : "ts") : cible); return; }
     afficherVue(cible);
     const champ = { csr: "#csr-q", carte: "#adresse-q", corps: "#corps-q" }[cible];
     if (champ) setTimeout(() => $(champ).focus(), 150);
@@ -2467,6 +2587,7 @@ Question : ${question}
   }
 
   function rendreHoraire() {
+    $("#vue-horaire").classList.toggle("ctx-paie", hr.onglet === "stats" && stats.contexte === "paie");
     const src = affichee();
     const lecture = !!hr.vue;
     const conj = !lecture && hr.cible === "conjoint" && !!hr.conj;
@@ -2500,7 +2621,7 @@ Question : ${question}
       rendrePoste();
       return;
     }
-    $("[data-hr-vue='stats']").textContent = estSQ() && !lecture && !conj ? "Paie et banques" : "Statistiques";
+    if (ongletStats && stats.contexte === "paie") { $("#hr-onglets-vue").hidden = true; $("#hr-qui-bloc").hidden = true; $("#hr-cible").hidden = true; }
     $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === (ongletStats ? "stats" : "calendrier"))));
     $("#stats-voile").hidden = !ongletStats;
     if (ongletStats) setTimeout(() => { try { rendreStats(); } catch (e) { console.warn(e); } }, 0);
@@ -3020,7 +3141,7 @@ Question : ${question}
   }));
 
   /* ---------------- Statistiques d'heures et rapport de temps supplémentaire ---------------- */
-  const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth(), paie: 0 };
+  const stats = { mode: "mois", a: new Date().getFullYear(), m: new Date().getMonth(), paie: 0, contexte: "horaire" };
   const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
   function calculerMois(a, m, src) {
     const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [], tsEq: 0, tsVal: 0, valPaie: 0, eqBanque: 0, valBanque: 0, hPaie: 0, hBanque: 0 };
@@ -3654,8 +3775,13 @@ Question : ${question}
     $("#stats-rapport").hidden = stats.mode !== "mois";
     compterSection("stats-" + stats.mode);
     const sqMoi = estSQ() && affichee() === hr;
-    $$("[data-stats='paie'], [data-stats='banques'], [data-stats='depenses'], [data-stats='retraite']").forEach((b) => (b.hidden = !sqMoi));
-    if (!sqMoi && ["paie", "banques", "depenses", "retraite"].includes(stats.mode)) { stats.mode = "ts"; rendreStats(); return; }
+    // Onglet Paie : réclamations et rémunération; onglet Horaire › Heures : heures du mois et de l'année
+    const ctxPaie = stats.contexte === "paie";
+    $$("[data-stats]").forEach((b) => { const m = b.dataset.stats; b.hidden = ctxPaie ? !MODES_PAIE.includes(m) || (m !== "ts" && !sqMoi) : MODES_PAIE.includes(m); });
+    $$("[data-stats-contrat]").forEach((b) => (b.hidden = !ctxPaie));
+    if (ctxPaie && !sqMoi && stats.mode !== "ts") { stats.mode = "ts"; rendreStats(); return; }
+    if (!ctxPaie && MODES_PAIE.includes(stats.mode)) { stats.mode = "mois"; rendreStats(); return; }
+    if (ctxPaie && etat.vue === "horaire") { for (const id of ["#hr-qui-bloc", "#hr-cible", "#hr-onglets-vue"]) $(id).hidden = true; $("#hr-titre").textContent = "Ma paie"; $("#hr-resume").textContent = sqMoi ? "Paie, réclamations et retraite" : "Réclamations"; }
     $(".hr-mois-tete", $("#stats-voile")).classList.toggle("sans-fleches", stats.mode === "banques" || stats.mode === "retraite");
     const actif = $(`[data-stats='${stats.mode}']`); if (actif && actif.scrollIntoView) actif.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (stats.mode === "retraite") { rendreRetraiteStats(); return; }
@@ -3691,13 +3817,15 @@ Question : ${question}
   // Onglet Rémunération (SQ) ou Statistiques de l'horaire
   async function ouvrirOngletStats() {
     const d = new Date(); stats.a = d.getFullYear(); stats.m = d.getMonth(); stats.paie = 0;
-    if (!stats.dejaOuvert) { stats.mode = estSQ() && affichee() === hr ? "paie" : "mois"; stats.dejaOuvert = true; }
+    if (!stats.dejaOuvert) { stats.mode = stats.contexte === "paie" ? (estSQ() && affichee() === hr ? "paie" : "ts") : "mois"; stats.dejaOuvert = true; }
     try { await chargerPaie(); } catch { /* facultatif */ }
     rendreStats();
   }
   $$("[data-hr-vue]").forEach((b) => b.addEventListener("click", () => {
     hr.onglet = b.dataset.hrVue;
-    if (hr.onglet === "stats") setTimeout(() => visiteAutomatique("remuneration"), 900);
+    stats.contexte = "horaire";
+    if (hr.onglet === "stats" && MODES_PAIE.includes(stats.mode)) stats.mode = "mois";
+    if (hr.onglet === "stats" && stats.contexte === "paie") setTimeout(() => visiteAutomatique("remuneration"), 900);
     rendreHoraire();
     if (hr.onglet === "stats") ouvrirOngletStats();
     if (hr.onglet === "poste" || hr.onglet === "ts") chargerPoste(true);
@@ -4937,7 +5065,7 @@ Format :
     if (ongletAdmin === "stats") rendreBilanAdmin();
   }));
   // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
-  const NOMS_SECTIONS = { accueil: "Accueil", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · constats",
+  const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · constats",
     carte: "Carte", horaire: "Horaire", "stats-paie": "Paie", "stats-banques": "Banques", "stats-ts": "Temps supplémentaire", "stats-depenses": "Dépenses", "stats-retraite": "Retraite", "stats-mois": "Heures du mois", "stats-annee": "Année",
     feuille: "Feuille de poste", "horaire-poste": "Horaire du poste", "ts-poste": "TS du poste", forum: "Forum", messages: "Messages", convention: "Contrat de travail", compte: "Réglages", idees: "Idées", corps: "Corps de police" };
   async function rendreBilanAdmin() {
@@ -6032,6 +6160,7 @@ Format :
     if (nom === "frais") initFrais();
     if (nom === "vitesse") initVitesse();
     if (nom === "favoris") rendreFavoris();
+    if (etat.vue === "csr") majOngletCourant();
   }
   $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => ongletLois(b.dataset.csrOnglet)));
 
@@ -7949,17 +8078,16 @@ Format :
       { titre: "Bienvenue !", texte: "Voici une visite rapide de l'app. Vous pourrez la revoir en tout temps dans Réglages › Visite guidée." },
       { sel: "#ac-q", titre: "Recherche", texte: "Trouvez un article de loi, une municipalité ou une section de l'app en tapant quelques lettres." },
       { sel: "#ac-echeances", titre: "À ne pas oublier", texte: "Les dates limites du contrat de travail et les congés à planifier avant de les perdre." },
-      { sel: ".ac-511", titre: "Québec 511", texte: "Les entraves et travaux sur le territoire de votre unité, mis à jour automatiquement." },
-      { sel: ".nav [data-vue='csr']", titre: "Lois", texte: "CSR, Code criminel et autres lois, vitesses et amendes, frais et vos articles favoris." },
-      { sel: ".nav [data-vue='carte']", titre: "Carte", texte: "Postes, territoires, bornes kilométriques et « Où suis-je ? »." },
-      { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre rotation, vos congés, votre temps supplémentaire et, pour la SQ, votre paie et vos banques." },
-      { sel: ".nav [data-vue='feuille']", titre: "Mon poste", texte: "Tout ce qui concerne votre poste : la feuille de poste, l'horaire du poste et le TS (SQ), et le forum de votre corps de police." },
-      { sel: "#btn-messages-haut", titre: "Messages", texte: "Écrivez à vos collègues ou à l'administrateur. Ne partagez jamais d'informations opérationnelles." },
-      { sel: "#btn-menu", titre: "Votre compte", texte: "Votre profil, votre rémunération, vos soldes de banques et la déconnexion." },
+      { sel: ".ac-raccourcis", titre: "Vos raccourcis", texte: "Quatre raccourcis vers ce que vous utilisez le plus. Touchez « Modifier » pour les choisir." },
+      { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre calendrier, vos échanges de quarts, les partages et vos heures du mois et de l'année." },
+      { sel: ".nav [data-vue='paie']", titre: "Paie", texte: "Votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail." },
+      { sel: ".nav [data-vue='csr']", titre: "Terrain", texte: "Les lois, les vitesses, la carte (« Où suis-je ? », bornes, qui couvre le territoire) et la météo avec Québec 511." },
+      { sel: ".nav [data-vue='feuille']", titre: "Poste", texte: "La feuille et l'horaire du poste, le TS du poste, le forum, les messages et les idées. La pastille indique vos messages non lus." },
+      { sel: "#btn-menu", titre: "Votre compte", texte: "Mon compte, Bien-être et soutien, installer l'app et se déconnecter." },
       { sel: "#btn-reglages", titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée." },
     ] },
     horaire: { titre: "L'horaire", vue: "horaire", nouveau: true, etapes: [
-      { sel: "#hr-onglets-vue", titre: "Calendrier et Paie", texte: "Votre calendrier d'un côté, et de l'autre votre paie, vos banques et vos heures (Statistiques hors SQ). L'horaire et le TS du poste sont dans l'onglet Poste." },
+      { sel: "#hr-onglets-vue", titre: "Calendrier et Heures", texte: "Votre calendrier d'un côté, vos heures du mois et de l'année de l'autre. La paie a maintenant son propre onglet, et l'horaire du poste est dans l'onglet Poste." },
       { sel: "#cal-ajout", titre: "Le bouton +", texte: "Modifier le quart d'une journée, planifier le congé des Fêtes ou ajouter un événement personnel." },
       { sel: "#hr-grille, #cal-zone", titre: "Toucher une journée", texte: "Touchez une journée pour voir son détail, puis « Modifier » pour noter vacances, maladie, temps supplémentaire, etc." },
       { sel: "#hr-config", titre: "Votre rotation", texte: "Configurez votre rotation une seule fois (H1 hybride et autres modèles). L'app calcule ensuite tous vos quarts." },
@@ -7971,7 +8099,7 @@ Format :
       { sel: "#hr-jour-ok", titre: "Enregistrer", texte: "Enregistre les deux onglets. « Revenir à la rotation » efface les changements de la journée." },
     ] },
     remuneration: { titre: "Rémunération (SQ)", nouveau: true, sq: true, etapes: [
-      { sel: ".hr-stats-vue .stats-mode", titre: "Paie, réclamations et retraite", texte: "Paie aux deux semaines, banques, réclamation de temps supplémentaire, compte de dépenses, retraite, heures du mois et de l'année. Glissez pour voir toutes les sections." },
+      { sel: ".hr-stats-vue .stats-mode", titre: "Paie, réclamations et retraite", texte: "Paie aux deux semaines, banques, réclamation de temps supplémentaire, compte de dépenses, retraite et contrat de travail. Glissez pour voir toutes les sections." },
       { sel: "#stats-contenu", titre: "Calcul selon le contrat", texte: "Primes, temps supplémentaire, impôts et cotisations 2026. Entrez vos retenues et vos soldes dans Mon compte pour un résultat exact." },
     ] },
     csr: { titre: "Les lois", vue: "csr", etapes: [
