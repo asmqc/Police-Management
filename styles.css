@@ -2944,3 +2944,9 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 @media (min-width: 900px) {
   html[data-style="patrouille"] .nav { background: rgba(10,22,46,.92); border-right: 1px solid #1B2E57; }
 }
+
+/* Confirmation par code à 6 chiffres */
+.champ-code{font-size:28px;font-weight:800;letter-spacing:.35em;text-align:center;font-variant-numeric:tabular-nums;padding:12px 8px}
+.champ-code::placeholder{opacity:.25;letter-spacing:.35em}
+.code-titre{margin:0 0 4px;font-size:17px;font-weight:800}
+.verrou-code{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px;margin:4px auto 0;text-align:left}

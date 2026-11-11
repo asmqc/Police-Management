@@ -31,22 +31,23 @@
         <!-- Contenu -->
         <tr><td style="background:#FFFFFF;padding:34px 32px 10px;">
           <h1 style="margin:0 0 16px;font-size:24px;line-height:1.25;font-weight:800;color:#0E1B2C;">Confirmez votre courriel</h1>
-          <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#22334A;">Bonjour,</p><p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#22334A;">Merci pour votre demande d'accès à <b>Police Management</b>. Confirmez que cette adresse vous appartient en touchant le bouton ci-dessous.</p>
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:26px auto 26px;">
-            <tr><td align="center" bgcolor="#FFC53D" style="border-radius:999px;background:#FFC53D;">
-              <a href="{{ .ConfirmationURL }}" target="_blank" style="display:inline-block;padding:16px 34px;font-size:17px;line-height:1.2;font-weight:800;color:#1A1204;text-decoration:none;border-radius:999px;">Confirmer mon courriel</a>
+          <p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#22334A;">Bonjour,</p><p style="margin:0 0 14px;font-size:16px;line-height:1.6;color:#22334A;">Merci pour votre demande d'accès à <b>Police Management</b>. Pour confirmer que cette adresse vous appartient, entrez le code ci-dessous dans l'app.</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:24px auto 8px;">
+            <tr><td align="center" style="background:#0B1220;border-radius:16px;padding:18px 28px;">
+              <div style="font-size:12px;line-height:1.2;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9FB0C6;margin-bottom:8px;">Votre code</div>
+              <div style="font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:38px;line-height:1.1;font-weight:800;letter-spacing:.3em;color:#FFC53D;padding-left:.3em;">{{ .Token }}</div>
             </td></tr>
           </table>
+          <p style="margin:0 0 24px;text-align:center;font-size:13px;line-height:1.5;color:#5A6B82;">Dans l'app : <b>Connexion › J'ai reçu un code par courriel</b></p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F1F6FD;border:1px solid #D9E5F6;border-radius:14px;">
             <tr><td style="padding:14px 16px;font-size:14.5px;line-height:1.55;color:#22334A;"><b style="color:#0E1B2C;">Et ensuite ?</b><br>L'accès est réservé au personnel policier et aux agents de la paix. Une fois votre courriel confirmé, l'administrateur examine votre demande. Vous pourrez vous connecter dès qu'elle sera approuvée.</td></tr>
           </table>
-          <p style="margin:22px 0 6px;font-size:13px;line-height:1.5;color:#5A6B82;">Le bouton ne fonctionne pas ? Copiez ce lien dans votre navigateur :</p>
-          <p style="margin:0 0 26px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#0A4FB8;">{{ .ConfirmationURL }}</a></p>
+          <div style="height:22px;line-height:22px;font-size:0;">&nbsp;</div>
         </td></tr>
 
         <!-- Pied -->
         <tr><td style="background:#F4F7FB;border-top:1px solid #E1E7EF;border-radius:0 0 22px 22px;padding:22px 32px 26px;font-size:12.5px;line-height:1.6;color:#6B7A90;">
-          Ce courriel a été envoyé à {{ .Email }} à la suite d'une demande d'accès à Police Management. Si ce n'est pas vous, ignorez ce message : aucun compte ne sera activé. Le lien est valide 24 heures.
+          Ce courriel a été envoyé à {{ .Email }} à la suite d'une demande d'accès à Police Management. Si ce n'est pas vous, ignorez ce message : aucun compte ne sera activé. Le code ne fonctionne qu'une fois; vous pouvez en demander un nouveau dans l'app.
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:16px;"><tr>
             <td style="vertical-align:middle;"><img src="https://policemanagement.ca/assets/logo.png" width="22" height="22" alt="" style="display:block;border:0;border-radius:6px;"></td>
             <td style="vertical-align:middle;padding-left:8px;font-size:12.5px;"><b style="color:#0E1B2C;">Police Management</b> · <a href="https://policemanagement.ca/" style="color:#0A4FB8;text-decoration:none;">policemanagement.ca</a></td>

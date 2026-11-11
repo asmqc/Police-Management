@@ -2,6 +2,16 @@
 // Les textes français restent la référence; les lois et le contrat de travail restent en français.
 (function () {
   const EN = {
+"J'ai reçu un code par courriel": "I received a code by email",
+"Entrez le code reçu par courriel": "Enter the code you received by email",
+"Entrez le code pour changer votre mot de passe": "Enter the code to change your password",
+"Code à 6 chiffres": "6-digit code",
+"Valider le code": "Confirm the code",
+"Renvoyer un code": "Send a new code",
+"Retour à la connexion": "Back to sign in",
+"Recevoir un code de confirmation": "Get a confirmation code",
+"M'envoyer un code de confirmation": "Send me a confirmation code",
+"Déjà confirmé ? Vérifier": "Already confirmed? Check",
 "Terrain": "Field",
 "Mes raccourcis": "My shortcuts",
 "Terminé": "Done",

@@ -266,7 +266,8 @@
     if (/Invalid login credentials/i.test(m)) return "Courriel ou mot de passe incorrect.";
     if (/banned/i.test(m)) return "Ce compte est bloqué. Communiquez avec l'administrateur.";
     if (/should be different/i.test(m)) return "Le nouveau mot de passe doit être différent de l'ancien.";
-    if (/Email not confirmed/i.test(m)) return "Votre courriel n'est pas encore confirmé. Ouvrez le lien reçu par courriel, ou touchez « Renvoyer » ci-dessous. L'approbation de l'administrateur confirme aussi votre courriel.";
+    if (/Email not confirmed/i.test(m)) return "Votre courriel n'est pas encore confirmé. Touchez « Recevoir un code de confirmation » ci-dessous, puis entrez le code reçu. L'approbation de l'administrateur confirme aussi votre courriel.";
+    if (/Token has expired|otp.*(expired|invalid)|invalid.*(otp|token)/i.test(m)) return "Code invalide ou expiré. Vérifiez les chiffres ou touchez « Renvoyer un code ».";
     if (/security purposes|rate limit/i.test(m)) return "Trop de demandes. Patientez une minute, puis réessayez.";
     if (/already registered|already been registered/i.test(m)) return "Ce courriel a déjà une demande. Utilisez « Connexion » ou « Mot de passe oublié ».";
     if (/Password should be at least/i.test(m)) return "Le mot de passe doit contenir au moins 10 caractères.";
@@ -285,6 +286,7 @@
     $$(".onglets-auth button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.auth === nom)));
     $("#form-connexion").hidden = nom !== "connexion";
     $("#form-demande").hidden = nom !== "demande";
+    $("#form-code").hidden = true;
     messageAuth("");
   }
   $$(".onglets-auth button").forEach((b) => b.addEventListener("click", () => ongletAuth(b.dataset.auth)));
@@ -313,8 +315,63 @@
     const { error } = await sb.auth.resend({ type: "signup", email: courriel, options: { emailRedirectTo: urlRetour() } });
     ev.currentTarget.disabled = false;
     if (error) return messageAuth(traduireErreur(error), "erreur");
+    ouvrirCode("inscription", courriel, "Code de confirmation envoyé. Vérifiez aussi vos courriels indésirables. Si vous ne le recevez pas, votre accès s'ouvrira quand même dès que l'administrateur aura approuvé votre demande.");
+  });
+
+  /* Confirmation par code à 6 chiffres plutôt que par lien : les filtres des employeurs
+     bloquent ou « ouvrent » souvent les liens des courriels, ce qui les rend inutilisables. */
+  let modeCode = "inscription"; // inscription | recuperation | connexion
+  function ouvrirCode(mode, courriel, texte) {
+    modeCode = mode;
+    ongletAuth("connexion");
+    $("#form-connexion").hidden = true;
+    $("#form-code").hidden = false;
+    $("#cd-titre").textContent = mode === "recuperation" ? "Entrez le code pour changer votre mot de passe" : "Entrez le code reçu par courriel";
+    $("#cd-courriel").value = courriel || $("#cx-courriel").value.trim().toLowerCase();
+    $("#cd-code").value = "";
     $("#btn-renvoyer").hidden = true;
-    messageAuth("Nouveau courriel de confirmation envoyé. Vérifiez aussi vos courriels indésirables. Si vous ne le recevez pas, votre accès s'ouvrira quand même dès que l'administrateur aura approuvé votre demande.", "ok");
+    messageAuth(texte || "", texte ? "ok" : "");
+    setTimeout(() => ($("#cd-courriel").value ? $("#cd-code") : $("#cd-courriel")).focus(), 60);
+  }
+  $("#btn-code").addEventListener("click", () => ouvrirCode("connexion", "", "Entrez votre courriel et le code reçu. Le code ne fonctionne qu'une fois."));
+  $("#cd-annuler").addEventListener("click", () => ongletAuth("connexion"));
+  $("#cd-code").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
+  $("#form-code").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const courriel = $("#cd-courriel").value.trim().toLowerCase();
+    const code = $("#cd-code").value.replace(/\D/g, "");
+    if (!courriel || !$("#cd-courriel").checkValidity()) { $("#cd-courriel").focus(); return messageAuth("Écrivez le courriel qui a reçu le code.", "erreur"); }
+    if (code.length < 6) { $("#cd-code").focus(); return messageAuth("Le code contient au moins 6 chiffres.", "erreur"); }
+    const btn = $("#form-code .btn-principal");
+    btn.disabled = true;
+    messageAuth("");
+    const types = modeCode === "recuperation" ? ["recovery"] : ["email", "signup"];
+    if (modeCode === "recuperation") etat.recupMdp = true;
+    let res = null;
+    for (const type of types) {
+      res = await sb.auth.verifyOtp({ email: courriel, token: code, type });
+      if (!res.error) break;
+    }
+    btn.disabled = false;
+    if (res.error) { etat.recupMdp = false; $("#cd-code").select(); return messageAuth(traduireErreur(res.error), "erreur"); }
+    $("#form-code").hidden = true;
+    if (modeCode === "recuperation") { etat.session = res.data.session; formNouveauMdp(); return; }
+    messageAuth("Courriel confirmé. Connexion en cours…", "ok");
+    if (res.data && res.data.session && (!etat.session || etat.session.user.id !== res.data.session.user.id)) { etat.session = res.data.session; demarrer(); }
+  });
+  $("#cd-renvoyer").addEventListener("click", async (ev) => {
+    const courriel = $("#cd-courriel").value.trim().toLowerCase();
+    if (!courriel || !$("#cd-courriel").checkValidity()) { $("#cd-courriel").focus(); return messageAuth("Écrivez votre courriel, puis touchez de nouveau « Renvoyer un code ».", "erreur"); }
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    const { error } = modeCode === "recuperation"
+      ? await sb.auth.resetPasswordForEmail(courriel, { redirectTo: urlRetour() })
+      : modeCode === "inscription"
+        ? await sb.auth.resend({ type: "signup", email: courriel, options: { emailRedirectTo: urlRetour() } })
+        : await sb.auth.signInWithOtp({ email: courriel, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });
+    setTimeout(() => (btn.disabled = false), 60000);
+    if (error) { btn.disabled = false; return messageAuth(traduireErreur(error), "erreur"); }
+    messageAuth("Nouveau code envoyé. Seul le plus récent fonctionne. Vérifiez aussi vos courriels indésirables.", "ok");
   });
 
   // Lien d'invitation d'un collègue : ?invitation=code (préremplit le corps et le poste de la demande d'accès)
@@ -353,7 +410,7 @@
       etat.forcerAuth = true;
       setTimeout(() => {
         montrer("#ecran-auth"); ongletAuth("connexion");
-        messageAuth("Ce lien de confirmation a expiré. Écrivez votre courriel ci-dessus et touchez « Renvoyer le courriel de confirmation ». Votre accès s'ouvrira aussi dès que l'administrateur aura approuvé votre demande.", "erreur");
+        messageAuth("Ce lien a expiré ou a déjà été utilisé. Écrivez votre courriel ci-dessus et touchez « Recevoir un code de confirmation ». Votre accès s'ouvrira aussi dès que l'administrateur aura approuvé votre demande.", "erreur");
         $("#btn-renvoyer").hidden = false;
       }, 0);
     }
@@ -364,7 +421,7 @@
     if (!courriel) return messageAuth("Écrivez votre courriel dans le champ ci-dessus, puis appuyez de nouveau sur « Mot de passe oublié ».", "erreur");
     const { error } = await sb.auth.resetPasswordForEmail(courriel, { redirectTo: urlRetour() });
     if (error) return messageAuth(traduireErreur(error), "erreur");
-    messageAuth("Si ce courriel a un compte, un lien pour choisir un nouveau mot de passe vient d'y être envoyé.", "ok");
+    ouvrirCode("recuperation", courriel, "Si ce courriel a un compte, un code pour choisir un nouveau mot de passe vient d'y être envoyé.");
   });
 
   $("#form-demande").addEventListener("submit", async (ev) => {
@@ -402,17 +459,13 @@
     if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
       return messageAuth("Ce courriel a déjà une demande. Utilisez « Connexion ».", "erreur");
     }
+    const courrielDemande = champs.courriel.value.trim().toLowerCase();
     $("#form-demande").reset();
     try { sessionStorage.removeItem("pm-invitation"); } catch { /* facultatif */ }
     $("#dm-invitation").hidden = true;
     majChampPoste();
-    ongletAuth("connexion");
-    messageAuth(
-      data.session
-        ? "Demande envoyée. L'administrateur doit maintenant l'approuver."
-        : "Demande envoyée. Ouvrez le courriel de confirmation que vous venez de recevoir, puis connectez-vous. L'accès s'ouvrira dès que l'administrateur aura approuvé votre demande.",
-      "ok"
-    );
+    if (data.session) { ongletAuth("connexion"); messageAuth("Demande envoyée. L'administrateur doit maintenant l'approuver.", "ok"); }
+    else ouvrirCode("inscription", courrielDemande, "Demande envoyée. Entrez le code à 6 chiffres que vous venez de recevoir par courriel (vérifiez aussi les indésirables). L'accès s'ouvrira dès que l'administrateur aura approuvé votre demande.");
   });
 
   /* Menu « Unité / poste » du formulaire d'inscription, selon le corps de police choisi */
@@ -547,6 +600,7 @@
         const { error } = await sb.auth.updateUser({ password: v });
         if (error) return messageAuth(traduireErreur(error), "erreur");
         f.remove();
+        etat.recupMdp = false;
         toast("Mot de passe enregistré");
         demarrer();
       });
@@ -624,6 +678,7 @@
 
   sb.auth.onAuthStateChange((evenement, session) => {
     if (evenement === "PASSWORD_RECOVERY") { etat.session = session; formNouveauMdp(); return; }
+    if (evenement === "SIGNED_IN" && etat.recupMdp) return; // code de récupération : on choisit d'abord le mot de passe
     if (evenement === "SIGNED_IN" && (!etat.session || etat.session.user.id !== session.user.id)) { etat.session = session; demarrer(); }
     else if (evenement === "SIGNED_IN" && etat.profil && !etat.profil.courriel_verifie_le) {
       // Lien de confirmation ouvert dans le même navigateur : on débloque sans recharger
@@ -653,15 +708,36 @@
     const { error } = await sb.auth.signInWithOtp({ email: etat.profil.email, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });
     if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     $("#verrou-etat").hidden = false;
-    $("#verrou-etat").textContent = `Lien envoyé à ${etat.profil.email}. Ouvrez-le sur cet appareil ou un autre, puis touchez « J'ai confirmé ». Vérifiez aussi vos courriels indésirables.`;
+    $("#verrou-etat").className = "message ok";
+    $("#verrou-etat").textContent = `Code envoyé à ${etat.profil.email}. Entrez-le ci-dessous. Vérifiez aussi vos courriels indésirables.`;
+    $("#verrou-form-code").hidden = false;
+    btn.textContent = "Renvoyer un code";
+    $("#verrou-code").focus();
     setTimeout(() => (btn.disabled = false), 60000);
+  });
+  $("#verrou-code").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10); });
+  $("#verrou-form-code").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const code = $("#verrou-code").value.replace(/\D/g, "");
+    const etatMsg = $("#verrou-etat");
+    if (code.length < 6) { $("#verrou-code").focus(); etatMsg.className = "message erreur"; etatMsg.textContent = "Le code contient au moins 6 chiffres."; return; }
+    const btn = $("#verrou-form-code .btn-principal");
+    btn.disabled = true;
+    const { error } = await sb.auth.verifyOtp({ email: etat.profil.email, token: code, type: "email" });
+    btn.disabled = false;
+    if (error) { etatMsg.className = "message erreur"; etatMsg.textContent = traduireErreur(error); $("#verrou-code").select(); return; }
+    await verifierCourriel();
+    $("#verrou-code").value = "";
+    $("#verrou-form-code").hidden = true;
+    if (courrielVerifie()) afficherVue(etat.vue);
+    else { etatMsg.className = "message"; etatMsg.textContent = "Code accepté. La confirmation peut prendre quelques secondes : touchez « Déjà confirmé ? Vérifier »."; }
   });
   $("#verrou-verifier").addEventListener("click", async () => {
     const frais = await chargerProfil().catch(() => null);
     if (frais) etat.profil = frais;
     await verifierCourriel();
     if (courrielVerifie()) afficherVue(etat.vue);
-    else toast("Pas encore confirmé. Ouvrez le lien reçu par courriel.");
+    else toast("Pas encore confirmé. Demandez un code et entrez-le ici.");
   });
 
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
@@ -8943,7 +9019,7 @@ Format :
         <div class="boutons">
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
             <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
-          ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Renvoyer le lien</button>` : ""}
+          ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Envoyer un code</button>` : ""}
           ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
         </div>
@@ -8953,7 +9029,7 @@ Format :
       btn.disabled = true;
       const { error } = await sb.auth.signInWithOtp({ email: btn.dataset.relance, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
-      btn.textContent = "Lien envoyé";
+      btn.textContent = "Code envoyé";
     }));
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
     $$("button[data-confirmer]", el).forEach((btn) => btn.addEventListener("click", () => confirmerCourrielAdmin(btn, btn.dataset.confirmer)));
