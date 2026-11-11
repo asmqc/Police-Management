@@ -683,6 +683,7 @@
       "Rien n'a été retiré : vos données et vos réglages ne changent pas.",
       "La météo vient maintenant d'Environnement Canada (ville de prévision la plus proche). Politique de confidentialité mise à jour en conséquence.",
       "Horaire › Remplacement : nouvelle option « Je remplace un sergent superviseur de relève ». Moins de 4 jours : taux de chef d'équipe de patrouille (17.04 b); 4 jours et plus : taux de sergent gestionnaire + 2,5 % (annexe B, 11.13 b). L'ajustement d'ancienneté s'applique maintenant aussi au taux de remplacement (17.04 a).",
+      "Mon compte › Paie (SQ) : « Je suis doté en remplacement (art. 17) ». Inscrivez l'emploi remplacé et les dates : le traitement de remplacement est ajouté à chaque jour travaillé, sans cocher chaque journée. Plus de 30 jours : temps supplémentaire au taux de l'emploi occupé (17.04 d).",
     ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
@@ -3327,10 +3328,28 @@ Question : ${question}
     const agent = salaireSQ({ ...paie, emploi: "agent", salaire_manuel: null }, iso);
     return agent ? agent.base * 1.05 * (1 + (NIVEAU6_SQ.find(([d]) => iso >= d) || [0, 0])[1] / 100) : 0;
   }
+  // Désignation en remplacement temporaire ou prêt (art. 17), inscrite dans Réglages › Paie : vaut pour chaque jour travaillé de la période
+  function designationDu(iso, paie = etat.paie) {
+    if (!paie || !paie.rempl_emploi || !EMPLOIS_SQ[paie.rempl_emploi] || !paie.rempl_debut) return null;
+    return iso >= paie.rempl_debut && (!paie.rempl_fin || iso <= paie.rempl_fin) ? paie.rempl_emploi : null;
+  }
+  // 17.04 d) et 17.05 : remplacement de plus de 30 jours, le temps supplémentaire se calcule sur le traitement de l'emploi occupé
+  function designationPlus30(iso, paie = etat.paie) {
+    if (!designationDu(iso, paie)) return false;
+    return paie.rempl_fin ? moisJours(paie.rempl_debut, paie.rempl_fin) + 1 > 30 : moisJours(paie.rempl_debut, iso) >= 30;
+  }
+  const moisJours = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
   // Durée d'un remplacement : jours travaillés consécutifs marqués pour le même emploi (les congés entre deux ne l'interrompent pas)
   function joursRemplacement(iso, emploi, src) {
     const ex = src.exceptions || {};
     const travaille = (d) => ["J", "S", "N"].includes(quartDu(d, src).code);
+    // Désignation inscrite : durée prévue de la désignation (sans date de fin : 4 jours et plus)
+    if (!(ex[iso] || {}).remplace && designationDu(iso) === emploi) {
+      const p = etat.paie;
+      if (!p.rempl_fin) return 99;
+      let n = 0; for (let d = p.rempl_debut; d <= p.rempl_fin && n < 99; d = isoPlus(d, 1)) if (travaille(d)) n++;
+      return n;
+    }
     let n = 0;
     for (const sens of [-1, 1]) {
       for (let i = sens === -1 ? 0 : 1; Math.abs(i) <= 60; i += sens) {
@@ -3367,7 +3386,7 @@ Question : ${question}
   async function chargerPaie(forcer) {
     if (!estSQ()) { etat.paie = null; return null; }
     if (etat.paie !== undefined && !forcer) return etat.paie;
-    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel, retenues, banques").eq("user_id", etat.profil.id).maybeSingle();
+    const { data } = await sb.from("paie_sq").select("date_entree, emploi, salaire_manuel, retenues, banques, rempl_emploi, rempl_debut, rempl_fin").eq("user_id", etat.profil.id).maybeSingle();
     etat.paie = data || null;
     return etat.paie;
   }
@@ -3438,7 +3457,9 @@ Question : ${question}
     const autreRegime = new Set();
     for (let i = 0; i < 14; i++) {
       const iso = isoPlus(debut, i), q = quartDu(iso, src);
-      const salJ = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
+      const salJ0 = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
+      // 17.04 d) : désignation de plus de 30 jours, temps supplémentaire au traitement de l'emploi occupé (s'il est plus élevé)
+      const salJ = designationPlus30(iso, paie) ? { ...salJ0, tauxTS: Math.max(salJ0.tauxTS, tauxMinimumEmploi(designationDu(iso, paie), iso) * (1 + (salJ0.anc || 0) / 100) / 2000) } : salJ0;
       const prevuTravail = ["J", "S", "N"].includes(q.prevu);
       if (prevuTravail) regPrevus++;
       const ligne = { iso, code: q.code, prevu: q.prevu, note: q.note };
@@ -3470,16 +3491,17 @@ Question : ${question}
         else { tsH += d; tsVal += v; ligne.tsp = (ligne.tsp || 0) + v; }
       }
       const exJ = (src.exceptions || {})[iso] || {};
+      const remplJ = exJ.remplace || designationDu(iso, paie);
       // Disponibilité de service (art. 13) : 1 h payée par 4 h (domicile), 3 h (hébergement) ou 8 h (régulière, annexe V)
       if (exJ.dispo && +exJ.dispo.h > 0) { const ratio = { domicile: 4, hebergement: 3, reguliere: 8 }[exJ.dispo.type] || 4; const v = +exJ.dispo.h / ratio * salJ.annuel / 2080; dispoVal += v; ligne.dispo = v; }
       // Remplacement temporaire d'un emploi supérieur (17.04) : taux minimum de l'emploi remplacé
       // Les ajustements reliés à l'ancienneté (11.09) s'appliquent sur ce traitement.
-      if (exJ.remplace && ["J", "S", "N"].includes(q.code) && EMPLOIS_SQ[exJ.remplace]) {
+      if (remplJ && ["J", "S", "N"].includes(q.code) && EMPLOIS_SQ[remplJ]) {
         const hR = heuresJour(q.code, iso, src);
-        const court = exJ.remplace === "sergent_superviseur_releve" && joursRemplacement(iso, exJ.remplace, src) < 4;
-        const minAn = (court ? tauxChefEquipe(paie, iso) : tauxMinimumEmploi(exJ.remplace, iso)) * (1 + (salJ.anc || 0) / 100);
+        const court = remplJ === "sergent_superviseur_releve" && joursRemplacement(iso, remplJ, src) < 4;
+        const minAn = (court ? tauxChefEquipe(paie, iso) : tauxMinimumEmploi(remplJ, iso)) * (1 + (salJ.anc || 0) / 100);
         const v = hR ? Math.max(0, (minAn - salJ.annuel) / 2080 * dureeH(hR)) : 0;
-        if (v) { remplVal += v; ligne.remplacement = v; ligne.remplCourt = court; }
+        if (v) { remplVal += v; ligne.remplacement = v; ligne.remplCourt = court; ligne.designation = !exJ.remplace; }
       }
       // Repas de nuit (21.07) et allocation vestimentaire (19.01) pour chaque relève travaillée
       if (["J", "S", "N"].includes(q.code)) {
@@ -3827,7 +3849,7 @@ Question : ${question}
       else if (j.perdu !== undefined) { quoi = `${esc(nomQ(j.code))} <small>au lieu de ${esc(nomQ(j.prevu).toLowerCase())}</small>`; val = j.perdu ? `<span class="perdu">${$$d(j.perdu)} non versé</span>` : "—"; }
       else { quoi = esc(nomQ(j.code)); val = ""; }
       if (j.dispo) { quoi += `<small>+ disponibilité</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.dispo); }
-      if (j.remplacement) { quoi += `<small>+ remplacement (17.04${j.remplCourt ? " b : taux de chef d'équipe, moins de 4 jours" : ""})</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.remplacement); }
+      if (j.remplacement) { quoi += `<small>+ ${j.designation ? "désignation" : "remplacement"} (17.04${j.remplCourt ? " b : taux de chef d'équipe, moins de 4 jours" : ""})</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.remplacement); }
       if (j.repasNuit) { quoi += `<small>+ repas de nuit</small>`; }
       if (j.repasNP) { quoi += `<small>+ repas non pris (12.06)</small>`; val = (val ? val + "<br>" : "") + "+ " + $$d(j.repasNP); }
       if (j.sansTraitement) val = (val ? val + "<br>" : "") + `<span class="perdu">− ${$$d(j.sansTraitement)} sans traitement</span>`;
@@ -5507,6 +5529,7 @@ Format :
     $("#hr-jour-rappel").value = ex.rappel && RAPPELS_TS[ex.rappel] ? ex.rappel : "";
     $("#hr-repasnp").checked = !!ex.repasNP; $("#hr-gaind").checked = !!ex.gainD;
     $("#hr-remplace").value = ex.remplace && EMPLOIS_SQ[ex.remplace] ? ex.remplace : "";
+    { const d = cibleEdition() === hr && designationDu(iso); const a = $("#hr-remplace-desig"); if (a) { a.hidden = !d; a.textContent = d ? `Désignation en cours (Réglages) : ${EMPLOIS_SQ[d].nom}. Elle s'applique déjà à cette journée si elle est travaillée.` : ""; } }
     $("#hr-dispo-actif").checked = !!(ex.dispo && +ex.dispo.h > 0);
     $("#hr-dispo-type").value = (ex.dispo && ex.dispo.type) || "domicile"; $("#hr-dispo-h").value = ex.dispo ? ex.dispo.h : "";
     $("#hr-jour-retirer").hidden = !q.exception;
@@ -7916,7 +7939,9 @@ Format :
   const pctFr = (n) => String(n).replace(".", ",") + " %";
   function lirePaieForm() {
     const manuel = parseFloat(String($("#paie-manuel").value).replace(/\s/g, "").replace(",", "."));
-    return { date_entree: $("#paie-entree").value || null, emploi: $("#paie-emploi").value || null, salaire_manuel: manuel >= 20000 && manuel <= 400000 ? manuel : null };
+    const re = $("#paie-rempl-emploi").value || null;
+    return { date_entree: $("#paie-entree").value || null, emploi: $("#paie-emploi").value || null, salaire_manuel: manuel >= 20000 && manuel <= 400000 ? manuel : null,
+      rempl_emploi: re, rempl_debut: re ? $("#paie-rempl-debut").value || null : null, rempl_fin: re ? $("#paie-rempl-fin").value || null : null };
   }
   function rendrePaie() {
     const out = $("#paie-resultat"), f = lirePaieForm();
@@ -7937,6 +7962,18 @@ Format :
           <dt>Temps et demi · temps double</dt><dd>${dollarsTS(s.tauxTS * 1.5)} · ${dollarsTS(s.tauxTS * 2)}</dd>
         </dl>
         ${s.prochainEchelon ? `<p class="aide">Prochain échelon : ${esc(s.prochainEchelon)} de service.</p>` : ""}
+        ${(() => {
+          if (!f.rempl_emploi || !f.rempl_debut) return "";
+          const iso = f.rempl_debut > aujourdhuiISO() ? f.rempl_debut : aujourdhuiISO();
+          const r = tauxMinimumEmploi(f.rempl_emploi, iso) * (1 + (s.anc || 0) / 100);
+          const plus = Math.max(0, r - s.annuel);
+          const sup = f.rempl_emploi === "sergent_superviseur_releve";
+          return `<div class="paie-desig"><b>Désignation : ${esc(EMPLOIS_SQ[f.rempl_emploi].nom)}</b>
+            <span>Du ${esc(f.rempl_debut)}${f.rempl_fin ? ` au ${esc(f.rempl_fin)}` : " · sans date de fin"}</span>
+            <dl class="vt-detail"><dt>Traitement de l'emploi remplacé (minimum + ancienneté, 17.04 a)</dt><dd>${dollarsTS(r)}</dd>
+            <dt>En plus, par heure travaillée à temps régulier</dt><dd>${plus ? dollarsTS(plus / 2080) : "— (votre traitement est déjà égal ou plus élevé)"}</dd></dl>
+            <p class="aide">Ajouté à chaque jour travaillé de la période dans Horaire et Ma paie (17.04 c). ${sup ? "Moins de 4 jours travaillés : taux de chef d'équipe de patrouille (17.04 b). " : ""}Plus de 30 jours : votre temps supplémentaire est calculé sur le traitement de l'emploi occupé (17.04 d). Un remplacement inscrit sur une journée dans Horaire a priorité.</p></div>`;
+        })()}
         <p class="aide">Estimation selon l'échelle et l'ancienneté comptée depuis la date d'entrée. Les ajustements de fonction (annexe B), les primes (soir, nuit, fin de semaine, rotation) et les absences ne sont pas inclus. Votre talon de paie fait foi.</p>
       </div>`;
   }
@@ -7948,14 +7985,20 @@ Format :
     $("#paie-emploi").value = (p && p.emploi) || "";
     $("#paie-manuel").value = (p && p.salaire_manuel) ? Math.round(p.salaire_manuel) : "";
     $("#paie-ajuster").open = !!(p && p.salaire_manuel);
+    $("#paie-rempl-emploi").value = (p && p.rempl_emploi) || "";
+    $("#paie-rempl-debut").value = (p && p.rempl_debut) || "";
+    $("#paie-rempl-fin").value = (p && p.rempl_fin) || "";
+    $("#paie-rempl").open = !!(p && p.rempl_emploi);
     rendrePaie();
   }
-  ["#paie-entree", "#paie-emploi", "#paie-manuel"].forEach((q) => $(q).addEventListener("input", rendrePaie));
+  ["#paie-entree", "#paie-emploi", "#paie-manuel", "#paie-rempl-emploi", "#paie-rempl-debut", "#paie-rempl-fin"].forEach((q) => $(q).addEventListener("input", rendrePaie));
   $("#form-paie").addEventListener("submit", async (e) => {
     e.preventDefault();
     const f = lirePaieForm();
     if (!f.date_entree || !f.emploi) return toast("Indiquez votre date d'entrée et votre emploi");
     if (f.date_entree > aujourdhuiISO()) return toast("La date d'entrée ne peut pas être dans le futur");
+    if (f.rempl_emploi && !f.rempl_debut) return toast("Indiquez la date de début de la désignation");
+    if (f.rempl_fin && f.rempl_debut && f.rempl_fin < f.rempl_debut) return toast("La date de fin doit suivre la date de début");
     const { error } = await sb.from("paie_sq").upsert({ user_id: etat.profil.id, ...f, maj_le: new Date().toISOString() });
     if (error) return toast(traduireErreur(error));
     etat.paie = { ...(etat.paie || {}), ...f }; toast("Rémunération enregistrée");

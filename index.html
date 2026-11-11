@@ -38,7 +38,7 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="styles.css?v=202611102353">
+  <link rel="stylesheet" href="styles.css?v=202611110022">
 </head>
 <body>
   <!-- Chargement -->
@@ -1449,6 +1449,24 @@
             <label for="paie-manuel">Traitement annuel régulier ($)</label>
             <input id="paie-manuel" type="number" inputmode="decimal" min="20000" max="400000" step="1" placeholder="Ex. 103 500">
           </details>
+          <details class="paie-ajuster" id="paie-rempl">
+            <summary>Je suis doté en remplacement (art. 17)</summary>
+            <p class="aide">Désignation pour remplacer temporairement un emploi de grade, de fonction ou de classe supérieur (17.01, 17.03), ou prêt de personnel (17.05). Le traitement de remplacement est ajouté pour chaque jour travaillé à temps régulier (17.04).</p>
+            <label for="paie-rempl-emploi">Emploi remplacé</label>
+            <select id="paie-rempl-emploi">
+              <option value="">Aucune désignation</option>
+              <option value="agent_specialiste">Agent spécialiste</option>
+              <option value="sergent_superviseur_releve">Sergent superviseur de relève</option>
+              <option value="sergent_gestionnaire">Sergent gestionnaire (autre fonction)</option>
+              <option value="sergent_enqueteur">Sergent enquêteur</option>
+              <option value="sergent_gestionnaire_enquete">Sergent gestionnaire enquête</option>
+              <option value="sergent_responsable">Sergent responsable d'unité</option>
+            </select>
+            <div class="rangee">
+              <div><label for="paie-rempl-debut">Du</label><input id="paie-rempl-debut" type="date"></div>
+              <div><label for="paie-rempl-fin">Au (facultatif)</label><input id="paie-rempl-fin" type="date"></div>
+            </div>
+          </details>
           <div class="fc-ligne">
             <button type="submit" class="btn-principal" style="margin:0">Enregistrer</button>
             <button type="button" class="lien" id="paie-effacer">Effacer mes données de rémunération</button>
@@ -1887,6 +1905,7 @@
           <option value="sergent_gestionnaire_enquete">Je remplace un sergent gestionnaire enquête</option>
           <option value="sergent_responsable">Je remplace un sergent responsable d'unité</option>
         </select>
+        <p class="aide" id="hr-remplace-desig" hidden></p>
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
       </div>
       <p class="aide hr-ts-vide hr-edition" id="hr-ts-vide" data-tab="ts" hidden></p>
@@ -2252,9 +2271,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611102353"></script>
+  <script src="config.js?v=202611110022"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="i18n.js?v=202611102353"></script>
-  <script src="app.js?v=202611102353"></script>
+  <script src="i18n.js?v=202611110022"></script>
+  <script src="app.js?v=202611110022"></script>
 </body>
 </html>
