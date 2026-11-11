@@ -2865,3 +2865,9 @@ html.app-natif body:not(.carte-plein) .vue-carte .legende { max-height: calc(100
 .paie-desig { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--marque) 9%, var(--surface)); display: grid; gap: 6px; }
 .paie-desig > span { color: var(--fg-doux); font-size: .9rem; }
 select.a-choisir { outline: 2px solid var(--rouge, #C62F3A); outline-offset: 1px; }
+.ag-plus-actions { display: flex; gap: 14px; align-items: center; }
+.ag-plus-form { display: grid; gap: 8px; margin: 8px 0; }
+.ag-plus-form .ag-plus-ts { display: grid; gap: 8px; }
+.ag-plus-form .ag-plus-ts[hidden] { display: none; }
+.ag-plus-ligne small { white-space: normal; overflow: visible; text-overflow: clip; }
+.ag-plus-ligne > span:nth-child(2) { min-width: 0; flex: 1; }

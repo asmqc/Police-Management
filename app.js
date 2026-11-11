@@ -684,6 +684,7 @@
       "La météo vient maintenant d'Environnement Canada (ville de prévision la plus proche). Politique de confidentialité mise à jour en conséquence.",
       "Horaire › Remplacement : nouvelle option « Je remplace un sergent superviseur de relève ». Moins de 4 jours : taux de chef d'équipe de patrouille (17.04 b); 4 jours et plus : taux de sergent gestionnaire + 2,5 % (annexe B, 11.13 b). L'ajustement d'ancienneté s'applique maintenant aussi au taux de remplacement (17.04 a).",
       "Mon compte › Paie (SQ) : « Je suis doté en remplacement (art. 17) ». Inscrivez l'emploi remplacé et les dates : le traitement de remplacement est ajouté à chaque jour travaillé, sans cocher chaque journée. Plus de 30 jours : le temps supplémentaire fait comme sergent est au taux de l'emploi occupé (17.04 d); celui fait comme agent reste à votre taux. Choisissez « Fait comme » sur chaque temps supplémentaire.",
+      "Horaire : un élément « ajouté en plus » (temps supp., cour, formation…) se modifie maintenant en tout temps : type, heures, note. Un temps supp. ajouté en plus avec ses heures compte dans Ma paie et la réclamation.",
     ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
@@ -1629,7 +1630,9 @@ Question : ${question}
     const mo = e && e.motif && MOTIFS[e.type] ? MOTIFS[e.type].find(([k]) => k === e.motif) : null;
     const tsps = e ? [e.tspAvant && e.tspAvant.debut ? { ...e.tspAvant, moment: "avant" } : null, e.tsp && e.tsp.debut ? { ...e.tsp, moment: "apres" } : null].filter(Boolean) : [];
     const plus = e && Array.isArray(e.plus) ? e.plus.filter((k) => QUARTS[k]) : [];
-    const seulementPlus = !!e && e.type === prevu && Object.keys(e).every((k) => ["type", "plus", "note"].includes(k)) && !e.note;
+    const pi = e && e.plusInfo && e.plusInfo.X;
+    if (plus.includes("X") && pi && pi.debut && pi.fin && e.type !== "X") tsps.push({ ...pi, moment: "plus" });
+    const seulementPlus = !!e && e.type === prevu && Object.keys(e).every((k) => ["type", "plus", "plusInfo", "note"].includes(k)) && !e.note;
     return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e && !seulementPlus, tsp: tsps[0] || null, tsps, motif: mo ? mo[1] : "", motifCle: e && e.motif || "", plus };
   }
   // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
@@ -2917,18 +2920,64 @@ Question : ${question}
       <h4>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))}</h4>
       ${rotationVisible() && qq.code && !(qq.code === "C" && !qq.note && !qq.tsps.length) ? `<button type="button" class="ag-quart" data-quart="${iso}">
         <span class="chip-grand q q-${esc(qq.code)}">${esc(qq.code)}</span>
-        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsps.map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
+        <span><b>${esc(QUARTS[qq.code].nom)}</b>${travail ? ` <span class="ref">${esc(heuresDe(qq.code, undefined, iso))}</span>` : ""}${qq.motif ? `<small>${esc(qq.motif)}</small>` : ""}${qq.tsps.filter((t) => t.moment !== "plus").map((t) => `<small class="tsp-ligne">+ Temps supp. ${t.moment === "avant" ? "avant" : "après"} : ${esc(t.debut)} – ${esc(t.fin)}${+t.maj === 2 ? " (× 2)" : ""}${t.pris === "banque" ? " · compensé" : ""}</small>`).join("")}${qq.note ? `<small>${esc(qq.note)}</small>` : ""}</span>
         ${lecture ? "" : `<i>Modifier</i>`}</button>${peutOffrir ? `<button type="button" class="lien ag-offrir" data-offrir="${iso}">Offrir ce quart à mon poste</button>` : ""}` : ""}
-      ${rotationVisible() ? (qq.plus || []).map((k) => `<div class="ag-quart ag-plus-ligne">
+      ${rotationVisible() ? (qq.plus || []).map((k) => { const inf = ((affichee().exceptions || {})[iso] || {}).plusInfo?.[k] || {};
+        return `<div class="ag-quart ag-plus-ligne" data-plus-ligne="${esc(k)}">
         <span class="chip-grand q q-${esc(k)}">${esc(k)}</span>
-        <span><b>${esc(QUARTS[k].nom)}</b><small>Ajouté en plus</small></span>
-        ${lecture ? "" : `<button type="button" class="lien" data-ag-retirer="${esc(k)}" data-iso="${iso}">Retirer</button>`}</div>`).join("") : ""}
+        <span><b>${esc(QUARTS[k].nom)}</b><small>Ajouté en plus${inf.debut ? ` · ${esc(inf.debut)} – ${esc(inf.fin)}` : ""}${inf.comme ? ` · fait comme ${inf.comme === "sergent" ? "sergent" : "agent"}` : ""}${inf.pris === "banque" ? " · compensé" : ""}</small>${inf.note ? `<small>${esc(inf.note)}</small>` : ""}${k === "X" && !inf.debut && !lecture ? `<small class="tsp-ligne">Ajoutez les heures pour qu'il compte dans la paie</small>` : ""}</span>
+        ${lecture ? "" : `<span class="ag-plus-actions"><button type="button" class="lien" data-ag-modifier="${esc(k)}" data-iso="${iso}">Modifier</button><button type="button" class="lien" data-ag-retirer="${esc(k)}" data-iso="${iso}">Retirer</button></span>`}</div>`; }).join("") : ""}
       ${(() => { try { const al = estSQ() ? alertesRepos(iso) : []; return al.map((a) => `<p class="ag-alerte">${esc(a)}</p>`).join(""); } catch { return ""; } })()}
       ${occs.map((o) => `<button type="button" class="ag-ev" data-ev="${o.ev.id}" data-occ="${o.debut.toISOString()}" style="--c:${couleurEv(o.ev)}">
         <span class="ag-heure">${esc(plageTexte(o, iso))}</span><span><b>${esc(o.ev.titre)}</b>${o.ev.lieu ? `<small>${esc(o.ev.lieu)}</small>` : ""}</span></button>`).join("")}
 `;
     brancherCal($("#cal-agenda"));
     $$("[data-ag-retirer]", $("#cal-agenda")).forEach((b) => b.addEventListener("click", () => retirerPlus(b.dataset.iso, b.dataset.agRetirer)));
+    $$("[data-ag-modifier]", $("#cal-agenda")).forEach((b) => b.addEventListener("click", () => editerPlus(b.dataset.iso, b.dataset.agModifier)));
+  }
+  // Modifier un élément « en plus » en tout temps : type, heures, note; pour le temps supp. : taux, situation, payé ou compensé, fait comme
+  function editerPlus(iso, code) {
+    const ligne = $(`#cal-agenda [data-plus-ligne="${code}"]`); if (!ligne) return;
+    const ex = hr.exceptions[iso] || {}, inf = (ex.plusInfo || {})[code] || {};
+    const desig = estSQ() && designationPlus30(iso);
+    const codes = Object.keys(QUARTS).filter((k) => k === code || (k !== ex.type && !(ex.plus || []).includes(k)));
+    ligne.outerHTML = `<form class="ag-plus-form panneau" data-plus-form="${esc(code)}" novalidate>
+      <label class="ref">Type</label>
+      <select name="type">${codes.map((k) => `<option value="${esc(k)}"${k === code ? " selected" : ""}>${esc(k)} · ${esc(QUARTS[k].nom)}</option>`).join("")}</select>
+      <label class="ref">Heures (facultatif)</label>
+      <div class="fc-ligne"><input type="time" name="debut" value="${esc(inf.debut || "")}" aria-label="Début"><span>à</span><input type="time" name="fin" value="${esc(inf.fin || "")}" aria-label="Fin"></div>
+      <div class="ag-plus-ts" ${code === "X" ? "" : "hidden"}>
+        <select name="maj" aria-label="Taux"><option value="1.5">Temps et demi (1 ½)</option><option value="2"${+inf.maj === 2 ? " selected" : ""}>Temps double (art. 12.02)</option></select>
+        <select name="rappel" aria-label="Situation"><option value="hors">Rappel séparé de mon quart (min. 3 h × 1,5)</option><option value=""${inf.rappel === "" ? " selected" : ""}>Temps supplémentaire planifié, sans minimum</option></select>
+        <select name="pris" aria-label="Payé ou compensé"><option value="paie">Temps payé (sur la paie)</option><option value="banque"${inf.pris === "banque" ? " selected" : ""}>Temps compensé (banque de temps)</option></select>
+        ${desig ? `<select name="comme" aria-label="Fait dans quel emploi"><option value="">Fait comme… (à choisir)</option><option value="sergent"${inf.comme === "sergent" ? " selected" : ""}>Fait comme ${esc(EMPLOIS_SQ[designationDu(iso)].nom.toLowerCase())} (emploi remplacé, 17.04 d)</option><option value="agent"${inf.comme === "agent" ? " selected" : ""}>Fait comme agent (mon emploi)</option></select>` : ""}
+      </div>
+      <label class="ref">Note (facultatif)</label>
+      <input name="note" maxlength="140" value="${esc(inf.note || "")}" placeholder="Ex. cour, formation, rappel">
+      <div class="fc-ligne"><button type="submit" class="btn-principal petit">Enregistrer</button><button type="button" class="lien" data-plus-annuler>Annuler</button></div>
+    </form>`;
+    const f = $(`#cal-agenda [data-plus-form="${code}"]`);
+    f.type.addEventListener("change", () => { $(".ag-plus-ts", f).hidden = f.type.value !== "X"; });
+    $("[data-plus-annuler]", f).addEventListener("click", () => rendreHoraire());
+    f.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nouveau = f.type.value, debut = f.debut.value, fin = f.fin.value;
+      if ((debut && !fin) || (!debut && fin)) return toast("Indiquez l'heure de début et de fin");
+      const estTS = nouveau === "X";
+      if (estTS && f.comme && debut && !f.comme.value) { f.comme.classList.add("a-choisir"); f.comme.focus(); return toast("Choisissez : temps supplémentaire fait comme sergent ou comme agent"); }
+      const avant = JSON.parse(JSON.stringify(hr.exceptions[iso] || null));
+      const cur = hr.exceptions[iso] || { type: quartDu(iso, hr).prevu, note: "" };
+      cur.plus = [...new Set((cur.plus || []).map((k) => (k === code ? nouveau : k)))];
+      const info = { ...(debut ? { debut, fin } : {}), ...(f.note.value.trim() ? { note: f.note.value.trim() } : {}),
+        ...(estTS ? { ...(f.maj.value === "2" ? { maj: 2 } : {}), rappel: f.rappel.value, ...(f.pris.value === "banque" ? { pris: "banque" } : {}), ...(f.comme && f.comme.value ? { comme: f.comme.value } : {}) } : {}) };
+      const pi = { ...(cur.plusInfo || {}) }; delete pi[code];
+      if (Object.keys(info).some((k) => k !== "rappel") || (estTS && debut)) pi[nouveau] = info;
+      if (Object.keys(pi).length) cur.plusInfo = pi; else delete cur.plusInfo;
+      hr.exceptions[iso] = cur;
+      try { await sauverHoraire(); rendreHoraire(); toast("Modification enregistrée"); }
+      catch (err) { if (avant) hr.exceptions[iso] = avant; else delete hr.exceptions[iso]; toast(traduireErreur(err)); }
+    });
+    setTimeout(() => f.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50);
   }
 
   // Vues Jour et Semaine : grille horaire avec les quarts en bandes et les événements positionnés
@@ -3244,7 +3293,7 @@ Question : ${question}
       if (q.code !== "X") for (const t of q.tsps) {
         const d = dureeH([t.debut, t.fin]), maj = +t.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
         const pris = t.pris === "banque" ? "banque" : "paie";
-        r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: t.rappel, adjacent: !t.rappel } });
+        r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : t.moment === "plus" ? "En plus du" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: t.rappel, adjacent: !t.rappel } });
         const comme = commeTS(t, "agent"); r.lignesTS[r.lignesTS.length - 1].comme = comme;
         compter(pris, d, maj, iso, { rappel: t.rappel, adjacent: !t.rappel }, comme);
       }
@@ -5658,6 +5707,7 @@ Format :
     const avant = JSON.parse(JSON.stringify(ex));
     ex.plus = ex.plus.filter((k) => k !== code);
     if (!ex.plus.length) delete ex.plus;
+    if (ex.plusInfo) { delete ex.plusInfo[code]; if (!Object.keys(ex.plusInfo).length) delete ex.plusInfo; }
     if (Object.keys(ex).every((k) => ["type", "note"].includes(k)) && !ex.note && ex.type === quartDu(iso, hr).prevu) delete hr.exceptions[iso];
     try { await sauverHoraire(); rendreHoraire(); rendreEnPlus(iso); toast(`${QUARTS[code].nom} retiré`); }
     catch (e) { hr.exceptions[iso] = avant; toast(traduireErreur(e)); }
@@ -5794,7 +5844,8 @@ Format :
     const options = (!$("#hr-options-quart").hidden && ($("#hr-repasnp").checked || $("#hr-remplace").value)) || (!$("#hr-dispo-champs").hidden && +$("#hr-dispo-h").value > 0);
     const plusAvant = avant && Array.isArray(avant.plus) && avant.plus.length ? avant.plus.filter((k) => k !== type) : null; // les éléments « en plus » restent
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !tspAvant && !options && !(plusAvant && plusAvant.length)) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(type === "X" && !$("#hr-jour-comme").hidden && $("#hr-jour-comme").value ? { comme: $("#hr-jour-comme").value } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
+    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}),
+      ...(plusAvant && plusAvant.length && avant.plusInfo ? (() => { const pi = Object.fromEntries(Object.entries(avant.plusInfo).filter(([k]) => plusAvant.includes(k))); return Object.keys(pi).length ? { plusInfo: pi } : {}; })() : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(type === "X" && !$("#hr-jour-comme").hidden && $("#hr-jour-comme").value ? { comme: $("#hr-jour-comme").value } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
       ...(type === "X" && $("#hr-jour-rappel").value ? { rappel: $("#hr-jour-rappel").value } : {}),
       ...(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked ? { repasNP: true } : {}),
       ...(!$("#hr-options-quart").hidden && !$("#hr-gaind-bloc").hidden && $("#hr-gaind").checked ? { gainD: true } : {}),
