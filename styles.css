@@ -2864,3 +2864,4 @@ html.app-natif body:not(.carte-plein) .vue-carte .legende { top: 70px; }
 html.app-natif body:not(.carte-plein) .vue-carte .legende { max-height: calc(100% - 70px - var(--natif-bas, 90px) - 12px); }
 .paie-desig { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: color-mix(in srgb, var(--marque) 9%, var(--surface)); display: grid; gap: 6px; }
 .paie-desig > span { color: var(--fg-doux); font-size: .9rem; }
+select.a-choisir { outline: 2px solid var(--rouge, #C62F3A); outline-offset: 1px; }

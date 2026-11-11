@@ -3245,7 +3245,7 @@ Question : ${question}
         const d = dureeH([t.debut, t.fin]), maj = +t.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
         const pris = t.pris === "banque" ? "banque" : "paie";
         r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: t.rappel, adjacent: !t.rappel } });
-        const comme = commeTS(t, t.rappel ? "agent" : "sergent"); r.lignesTS[r.lignesTS.length - 1].comme = comme;
+        const comme = commeTS(t, "agent"); r.lignesTS[r.lignesTS.length - 1].comme = comme;
         compter(pris, d, maj, iso, { rappel: t.rappel, adjacent: !t.rappel }, comme);
       }
       if (["J", "S", "N"].includes(q.code) && ((src.exceptions || {})[iso] || {}).repasNP) {
@@ -3342,7 +3342,7 @@ Question : ${question}
     return paie.rempl_fin ? moisJours(paie.rempl_debut, paie.rempl_fin) + 1 > 30 : moisJours(paie.rempl_debut, iso) >= 30;
   }
   // TS pendant une désignation de plus de 30 jours (17.04 d) : au traitement de l'emploi remplacé seulement s'il est fait dans cet emploi.
-  // Défaut : prolongation collée au quart et repas non pris = emploi remplacé; rappel séparé, journée de TS ou cour = mon emploi.
+  // Le membre choisit pour chaque TS (« Fait comme »); tant que ce n'est pas choisi, le taux de son propre emploi est utilisé.
   const commeTS = (e, defaut) => (e && (e.comme === "agent" || e.comme === "sergent") ? e.comme : defaut);
   function tauxTSJour(iso, comme, paie = etat.paie) {
     const s = salaireSQ(paie, iso); if (!s) return 0;
@@ -3494,7 +3494,7 @@ Question : ${question}
       }
       if ((q.code === "P" && RQAP_P.includes(q.motifCle)) || q.code === "A") autreRegime.add(q.code === "A" ? "CNESST (accident de travail)" : "RQAP et indemnité de la Sûreté (art. 33)");
       if (q.code !== "X") for (const p of q.tsps) {
-        const maj = +p.maj || 1.5, t = eqTS(dureeH([p.debut, p.fin]), maj, { rappel: p.rappel, adjacent: !p.rappel }), d = t.h, v = t.eq * tauxTSJour(iso, commeTS(p, p.rappel ? "agent" : "sergent"), paie);
+        const maj = +p.maj || 1.5, t = eqTS(dureeH([p.debut, p.fin]), maj, { rappel: p.rappel, adjacent: !p.rappel }), d = t.h, v = t.eq * tauxTSJour(iso, commeTS(p, "agent"), paie);
         ligne.tspMaj = maj; indemRepas += t.indemnite;
         if (p.pris === "banque") { tsBanque += t.eq; ligne.tspBanque = (ligne.tspBanque || 0) + t.eq; }
         else { tsH += d; tsVal += v; ligne.tsp = (ligne.tsp || 0) + v; }
@@ -5536,7 +5536,7 @@ Format :
     $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
     $("#hr-jour-maj").value = String(+ex.maj || 1.5);
     $("#hr-jour-pris").value = ex.pris === "banque" ? "banque" : "paie";
-    $("#hr-jour-comme").value = commeTS(ex, "agent");
+    $("#hr-jour-comme").value = commeTS(ex, "");
     majChampsComme();
     remplirBlocTS("tsp", ex.tsp); remplirBlocTS("tspa", ex.tspAvant);
     $("#hr-jour-rappel").value = ex.rappel && RAPPELS_TS[ex.rappel] ? ex.rappel : "";
@@ -5689,7 +5689,7 @@ Format :
     for (const p of ["tspa", "tsp", "jour"]) {
       const el = $(`#hr-${p}-comme`); if (!el) continue;
       el.hidden = !d;
-      if (d) el.options[0].textContent = `Fait comme ${nom} (emploi remplacé, 17.04 d)`;
+      if (d) el.options[1].textContent = `Fait comme ${nom} (emploi remplacé, 17.04 d)`;
     }
   }
   function remplirBlocTS(p, d) {
@@ -5698,13 +5698,13 @@ Format :
     $(`#hr-${p}-maj`).value = String((d && +d.maj) || 1.5);
     $(`#hr-${p}-rappel`).value = d && d.rappel === "hors" ? "hors" : "";
     $(`#hr-${p}-pris`).value = d && d.pris === "banque" ? "banque" : "paie";
-    $(`#hr-${p}-comme`).value = commeTS(d, d && d.rappel === "hors" ? "agent" : "sergent");
+    $(`#hr-${p}-comme`).value = commeTS(d, "");
   }
   function lireBlocTS(p) {
     if ($(`#hr-${p}-champs`).hidden) return null;
     const td = $(`#hr-${p}-debut`).value, tf = $(`#hr-${p}-fin`).value;
     if (!td || !tf) return false;
-    return { debut: td, fin: tf, ...($(`#hr-${p}-maj`).value === "2" ? { maj: 2 } : {}), ...($(`#hr-${p}-pris`).value === "banque" ? { pris: "banque" } : {}), ...($(`#hr-${p}-rappel`).value ? { rappel: $(`#hr-${p}-rappel`).value } : {}), ...(!$(`#hr-${p}-comme`).hidden ? { comme: $(`#hr-${p}-comme`).value } : {}) };
+    return { debut: td, fin: tf, ...($(`#hr-${p}-maj`).value === "2" ? { maj: 2 } : {}), ...($(`#hr-${p}-pris`).value === "banque" ? { pris: "banque" } : {}), ...($(`#hr-${p}-rappel`).value ? { rappel: $(`#hr-${p}-rappel`).value } : {}), ...(!$(`#hr-${p}-comme`).hidden && $(`#hr-${p}-comme`).value ? { comme: $(`#hr-${p}-comme`).value } : {}) };
   }
   ["tspa", "tsp"].forEach((p) => {
     $(`#hr-${p}-actif`).addEventListener("change", () => {
@@ -5716,8 +5716,7 @@ Format :
       majChampsJour();
     });
     [`#hr-${p}-debut`, `#hr-${p}-fin`, `#hr-${p}-maj`, `#hr-${p}-pris`, `#hr-${p}-rappel`, `#hr-${p}-comme`].forEach((q) => $(q).addEventListener("input", () => majValeurBlocTS(p)));
-    // Rappel séparé : par défaut fait comme agent; prolongation : comme sergent
-    $(`#hr-${p}-rappel`).addEventListener("change", () => { $(`#hr-${p}-comme`).value = $(`#hr-${p}-rappel`).value ? "agent" : "sergent"; majValeurBlocTS(p); });
+
   });
   function majValeurBlocTS(p) {
     const out = $(`#hr-${p}-montant`);
@@ -5726,7 +5725,7 @@ Format :
     out.hidden = !actif || !deb || !fin;
     if (out.hidden) return;
     const sal0 = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), maj = +$(`#hr-${p}-maj`).value || 1.5, rap = $(`#hr-${p}-rappel`).value;
-    const sal = { ...sal0, tauxTS: tauxTSJour(hr.jourChoisi, commeChoisi(p, rap ? "agent" : "sergent")) };
+    const sal = { ...sal0, tauxTS: tauxTSJour(hr.jourChoisi, commeChoisi(p, "agent")) };
     const t = eqTS(d, maj, { rappel: rap, adjacent: !rap }), h = t.h;
     out.innerHTML = `<b>${dollarsTS(t.eq * sal.tauxTS + t.indemnite)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")}${t.repasH ? ` + repas ${fmtH(t.repasH)} (12.08)` : ""} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (12.09)` : ""}${t.indemnite ? ` + ${dollarsTS(t.indemnite)} d'indemnité de repas` : ""}</span>${t.minimum ? `<small class="tsp-ligne">Minimum garanti appliqué : ${RAPPELS_TS[rap].aide}</small>` : ""}<small>${$(`#hr-${p}-pris`).value === "banque" ? `Compensé : ${fmtH(t.eq)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(t.eq)}`} · estimation</small>`;
   }
@@ -5751,6 +5750,7 @@ Format :
   $("#hr-jour-rappel").addEventListener("input", () => { if ($("#hr-jour-rappel").value === "vacances") $("#hr-jour-maj").value = "2"; majValeurJour(); });
   $("#hr-jour-pris").addEventListener("input", () => majValeurJour());
   $("#hr-jour-comme").addEventListener("input", () => majValeurJour());
+  ["tsp", "tspa", "jour"].forEach((q) => $(`#hr-${q}-comme`).addEventListener("change", (e) => e.target.classList.remove("a-choisir")));
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   $("#hr-jour-fetes").addEventListener("click", () => { fermerJour(); ouvrirFetes(); });
   // « En plus ce jour-là » : un élément ajouté à la journée (cour, formation, rendez-vous…) sans remplacer le quart ou le congé
@@ -5786,11 +5786,15 @@ Format :
     if (!$("#hr-jour-ts").hidden) $$("#hr-ts-champs input").forEach((i) => { if (i.value.trim()) ts[i.dataset.ts] = i.value.trim(); });
     const tsp = lireBlocTS("tsp"), tspAvant = lireBlocTS("tspa");
     if (tsp === false || tspAvant === false) return toast("Indiquez le début et la fin du temps supplémentaire");
+    // Désignation de plus de 30 jours : le membre doit indiquer dans quel emploi le TS a été fait (17.04 d)
+    const sansComme = [["tsp", tsp], ["tspa", tspAvant]].find(([q, v]) => v && !$(`#hr-${q}-comme`).hidden && !$(`#hr-${q}-comme`).value)
+      || (type === "X" && !$("#hr-jour-comme").hidden && !$("#hr-jour-comme").value ? ["jour"] : null);
+    if (sansComme) { const el = $(`#hr-${sansComme[0]}-comme`); el.focus(); el.classList.add("a-choisir"); return toast("Choisissez : temps supplémentaire fait comme sergent ou comme agent"); }
     const avant = cible.exceptions[iso], sauvegarde = { ...cible.exceptions };
     const options = (!$("#hr-options-quart").hidden && ($("#hr-repasnp").checked || $("#hr-remplace").value)) || (!$("#hr-dispo-champs").hidden && +$("#hr-dispo-h").value > 0);
     const plusAvant = avant && Array.isArray(avant.plus) && avant.plus.length ? avant.plus.filter((k) => k !== type) : null; // les éléments « en plus » restent
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !tspAvant && !options && !(plusAvant && plusAvant.length)) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(type === "X" && !$("#hr-jour-comme").hidden ? { comme: $("#hr-jour-comme").value } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
+    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(type === "X" && !$("#hr-jour-comme").hidden && $("#hr-jour-comme").value ? { comme: $("#hr-jour-comme").value } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
       ...(type === "X" && $("#hr-jour-rappel").value ? { rappel: $("#hr-jour-rappel").value } : {}),
       ...(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked ? { repasNP: true } : {}),
       ...(!$("#hr-options-quart").hidden && !$("#hr-gaind-bloc").hidden && $("#hr-gaind").checked ? { gainD: true } : {}),
