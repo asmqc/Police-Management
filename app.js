@@ -772,7 +772,7 @@
       "Absences sans traitement déduites de la paie; congés payés par le RQAP ou la CNESST signalés.",
     ] },
     { date: "2026-10-22", titre: "Banques et dates limites (Sûreté du Québec)", points: [
-      "Mes banques en jours et heures, comme soldes officiels : vacances, fériés, maladie (avec avis de certificat médical), banques de temps de 189 h et 1 040 h, congés D et autres congés de l'année.",
+      "Mes banques en jours et heures, comme vos soldes officiels : vacances, fériés, maladie (avec avis de certificat médical), banques de temps de 189 h et 1 040 h, congés D et autres congés de l'année.",
       "Vos soldes, votre rémunération, vos retenues et vos allocations se modifient dans Mon compte.",
       "À l'accueil, « À ne pas oublier » : choix des vacances, demande des Fêtes avant le 31 octobre, fériés et vacances à prendre, changement d'heure.",
       "Échelle salariale de l'annexe T dans Convention.",
@@ -3703,7 +3703,7 @@ Question : ${question}
     const p = total > 0 ? Math.max(0, Math.min(100, utilise / total * 100)) : 0;
     return `<span class="banque-barre"><i style="width:${p.toFixed(1)}%"></i></span>`;
   }
-  // Comme soldes officiels : soldes en jours et heures (1 jour = 9 h, ou 12 h sur l'horaire de 12 heures)
+  // Comme les soldes officiels : soldes en jours et heures (1 jour = 9 h, ou 12 h sur l'horaire de 12 heures)
   function fmtJH(h, base) {
     const neg = h < 0, t = Math.round(Math.abs(h) * 60), jour = base * 60;
     const j = Math.floor(t / jour), r = t - j * jour, hh = Math.floor(r / 60), mm = r % 60;
@@ -3724,7 +3724,7 @@ Question : ${question}
     const h = (n) => jh(Math.max(0, n)) + (n < 0 ? " (dépassé de " + jh(-n) + ")" : "");
     const dc = (iso) => dateCourte(iso, true);
     el.innerHTML = `
-      <p class="aide">Soldes en jours et heures, comme soldes officiels (1 jour = ${base} h). Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
+      <p class="aide">Soldes en jours et heures, comme vos soldes officiels (1 jour = ${base} h). Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
       <section class="banque">
         <h4>Vacances <small>${esc(dc(vac.debut))} – ${esc(dc(vac.fin))}</small></h4>
         <div class="banque-chiffre"><b>${h(vac.solde)}</b><span>${vac.depart ? `solde selon votre talon du ${esc(dc(vac.depart.date))}` : "restantes aujourd'hui"}</span></div>
