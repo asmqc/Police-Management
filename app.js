@@ -131,6 +131,7 @@
   }
   // Styles d'interface (repris de l'app iOS)
   const STYLES = [
+    { id: "patrouille", nom: "Patrouille", desc: "Bleu nuit, damier, gyrophares", c: ["#08132A", "#E11D2E", "#1D4ED8"] },
     { id: "moderne", nom: "Liquid Glass", desc: "Verre clair ou sombre", c: ["#06070D", "#E0263B", "#2563EB"] },
     { id: "mdt", nom: "Terminal MDT", desc: "Noir, vert, chasse fixe", c: ["#000000", "#33FF66", "#0A140C"] },
     { id: "officiel", nom: "Terminal officiel", desc: "Noir et or", c: ["#0B0B0B", "#D4AF37", "#171512"] },
@@ -139,8 +140,14 @@
     { id: "poste", nom: "Poste de police", desc: "Logiciel de poste rétro", c: ["#0A246A", "#3A6EA5", "#ECE9D8"] },
     { id: "nuit", nom: "Nuit rouge", desc: "Auto-patrouille la nuit", c: ["#000000", "#D23A3A", "#140303"] },
   ];
-  let styleChoisi = "moderne";
-  try { styleChoisi = localStorage.getItem("pm-style") || "moderne"; } catch { /* stockage indisponible */ }
+  // Style par défaut : Patrouille (10 novembre 2026). Ceux qui avaient le style par défaut d'avant passent à Patrouille une fois;
+  // un autre style choisi est gardé, et Liquid Glass reste offert dans Réglages.
+  let styleChoisi = "patrouille";
+  try {
+    const s0 = localStorage.getItem("pm-style");
+    if (!localStorage.getItem("pm-style-v2")) { localStorage.setItem("pm-style-v2", "1"); if (!s0 || s0 === "moderne") localStorage.setItem("pm-style", "patrouille"); }
+    styleChoisi = localStorage.getItem("pm-style") || "patrouille";
+  } catch { /* stockage indisponible */ }
   function appliquerStyle(id) {
     const st = STYLES.find((x) => x.id === id) || STYLES[0];
     if (st.id === "moderne") document.documentElement.removeAttribute("data-style");
@@ -674,6 +681,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-10-patrouille", date: "2026-11-10", titre: "Nouveau look : Patrouille", points: [
+      "Bleu nuit, bande à damier, touches de gyrophare et tuiles de couleur sur l'accueil.",
+      "Les autres styles (Liquid Glass, Nuit rouge, Marine…) restent offerts dans Réglages › Style d'interface.",
+    ] },
     { id: "2026-11-10-simple", date: "2026-11-10", titre: "Une app plus simple : 5 onglets, un par besoin", points: [
       "La barre du bas devient Accueil · Horaire · Paie · Terrain · Poste. Chaque fonction a maintenant une seule place.",
       "Paie : votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail.",

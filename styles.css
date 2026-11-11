@@ -2871,3 +2871,76 @@ select.a-choisir { outline: 2px solid var(--rouge, #C62F3A); outline-offset: 1px
 .ag-plus-form .ag-plus-ts[hidden] { display: none; }
 .ag-plus-ligne small { white-space: normal; overflow: visible; text-overflow: clip; }
 .ag-plus-ligne > span:nth-child(2) { min-width: 0; flex: 1; }
+
+/* =====================================================================
+   Style « Patrouille » (par défaut) : bento bleu nuit, gyrophares, damier
+   ===================================================================== */
+html:root[data-style="patrouille"] {
+  --bg: #08132A; --surface: #0F1F40; --surface-2: #162A52; --champ: #0C1A36; --ligne: #23396A; --bord-carte: #23396A;
+  --fg: #EAF0F8; --fg-doux: #9DB0CC; --encre: #12317F; --ambre: #3B7BFF; --ambre-vif: #3B7BFF; --sur-ambre: #FFFFFF;
+  --marque: #6EA2FF; --focus: #6EA2FF; --bleu: #6EA2FF; --rouge: #FF4D5E; --or: #E9C750; --vert: #3FBF82;
+  --ombre-carte: none; --ombre: 0 18px 48px rgba(0,0,0,.55); --r: 22px; color-scheme: dark;
+  --onglet-actif: #FFFFFF;
+}
+html[data-style="patrouille"] body {
+  background: radial-gradient(90% 45% at 0% 0%, rgba(225,29,46,.20) 0%, rgba(225,29,46,0) 70%),
+              radial-gradient(90% 45% at 100% 0%, rgba(37,99,235,.28) 0%, rgba(37,99,235,0) 70%), #08132A;
+  background-attachment: fixed;
+}
+html[data-style="patrouille"] .app, html[data-style="patrouille"] .vue { background: transparent; }
+html[data-style="patrouille"] :is(.panneau, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages, .fiche) { border-radius: 22px; border-color: var(--ligne); }
+html[data-style="patrouille"] .barre { background: rgba(8,19,42,.86); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: inset 0 -1px 0 #1B2E57; }
+html[data-style="patrouille"] .marque span { color: var(--or); }
+html[data-style="patrouille"] h2, html[data-style="patrouille"] h3 { letter-spacing: .01em; }
+html[data-style="patrouille"] .btn-principal { border-radius: 14px; box-shadow: 0 6px 18px rgba(59,123,255,.35); }
+html[data-style="patrouille"] .btn-secondaire { border-radius: 14px; }
+html[data-style="patrouille"] .toast { background: #162A52; color: var(--fg); border: 1px solid var(--ligne); }
+html[data-style="patrouille"] .segmente { border-radius: 14px; border-color: var(--ligne); }
+html[data-style="patrouille"] .segmente button { background: var(--surface); }
+html[data-style="patrouille"] .segmente button[aria-checked="true"] { background: #FFFFFF; color: #08132A; }
+html[data-style="patrouille"] :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) { background-color: var(--champ); border-color: var(--ligne); border-radius: 12px; }
+
+/* Accueil : carte du quart bleue avec bande à damier, chiffres de signalisation */
+html[data-style="patrouille"] .ac-quart { position: relative; overflow: hidden; background: linear-gradient(135deg, #1D4ED8 0%, #12317F 100%); border-radius: 26px; padding-top: 28px; color: #fff; }
+html[data-style="patrouille"] .ac-quart::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: repeating-linear-gradient(90deg, #FFFFFF 0 12px, #0B1E4A 12px 24px); }
+html[data-style="patrouille"] .ac-quart::after { content: ""; position: absolute; right: -18px; bottom: -24px; width: 120px; height: 120px; opacity: .12;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z' fill='%23fff'/%3E%3C/svg%3E"); pointer-events: none; }
+html[data-style="patrouille"] .ac-quart small { color: #CFE0FF; letter-spacing: .14em; }
+html[data-style="patrouille"] .ac-quart strong { font-size: 1.7rem; }
+html[data-style="patrouille"] .ac-quart .heures { font-family: var(--f-titre); font-size: 1.5rem; font-weight: 800; color: #FFFFFF; }
+html[data-style="patrouille"] .ac-quart em { color: #CFE0FF; }
+html[data-style="patrouille"] .ac-section-titre { font-family: var(--f-titre); letter-spacing: .14em; color: #8EA4C4; }
+/* Raccourcis : tuiles bento, pastilles bleu, rouge, or, blanc */
+html[data-style="patrouille"] .tuiles.racc .tuile { border-radius: 26px; background: var(--surface); }
+html[data-style="patrouille"] .tuiles.racc .tuile-txt b { font-family: var(--f-titre); font-size: 1.15rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+html[data-style="patrouille"] .tuiles.racc .tuile-ico { width: 42px; height: 42px; border-radius: 14px; }
+html[data-style="patrouille"] .tuiles.racc .tuile:nth-child(4n+1) .tuile-ico { background: #1D4ED8; color: #fff; }
+html[data-style="patrouille"] .tuiles.racc .tuile:nth-child(4n+2) .tuile-ico { background: #E11D2E; color: #fff; }
+html[data-style="patrouille"] .tuiles.racc .tuile:nth-child(4n+3) .tuile-ico { background: #C9A227; color: #08132A; }
+html[data-style="patrouille"] .tuiles.racc .tuile:nth-child(4n+4) .tuile-ico { background: #FFFFFF; color: #1D4ED8; }
+html[data-style="patrouille"] .badge { background: #E11D2E; box-shadow: 0 0 8px rgba(255,59,78,.7); }
+
+/* Onglets du bas : barre flottante bleu nuit, onglet actif en pastille blanche (site et Android) */
+html[data-style="patrouille"] .nav button { color: #8EA4C4; }
+html[data-style="patrouille"] .nav button[aria-current="page"] { color: #FFFFFF; }
+html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { background: #1D4ED8; }
+@media (max-width: 899px) {
+  html[data-style="patrouille"]:not(.app-natif) .app { grid-template-rows: var(--barre-h) minmax(0, 1fr) 0; }
+  html[data-style="patrouille"]:not(.app-natif) .nav {
+    position: fixed; z-index: 1200; left: 50%; right: auto; width: min(560px, calc(100% - 24px)); transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    height: 66px; padding: 6px; box-sizing: border-box; border-radius: 33px;
+    background: rgba(15,31,64,.94); border: 1px solid #23396A; box-shadow: 0 12px 30px rgba(0,0,0,.45);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  }
+  html[data-style="patrouille"]:not(.app-natif) .nav button { border-radius: 26px; }
+  html[data-style="patrouille"]:not(.app-natif) .vue { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); }
+  html[data-style="patrouille"]:not(.app-natif) .vue.vue-carte { padding-bottom: 0 !important; }
+  html[data-style="patrouille"]:not(.app-natif) .vue-carte .leaflet-bottom { bottom: calc(env(safe-area-inset-bottom, 0px) + 78px); }
+  html[data-style="patrouille"]:not(.app-natif) .vue-carte :is(.fiche, .mesure-boite) { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
+  html[data-style="patrouille"]:not(.app-natif) #vue-messages { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); }
+  html[data-style="patrouille"]:not(.app-natif) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 86px); }
+  html[data-style="patrouille"]:not(.app-natif) body.carte-plein .app { grid-template-rows: 0 minmax(0, 1fr) 0; }
+}
+@media (min-width: 900px) {
+  html[data-style="patrouille"] .nav { background: rgba(10,22,46,.92); border-right: 1px solid #1B2E57; }
+}
