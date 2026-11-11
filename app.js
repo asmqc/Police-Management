@@ -683,7 +683,7 @@
       "Rien n'a été retiré : vos données et vos réglages ne changent pas.",
       "La météo vient maintenant d'Environnement Canada (ville de prévision la plus proche). Politique de confidentialité mise à jour en conséquence.",
       "Horaire › Remplacement : nouvelle option « Je remplace un sergent superviseur de relève ». Moins de 4 jours : taux de chef d'équipe de patrouille (17.04 b); 4 jours et plus : taux de sergent gestionnaire + 2,5 % (annexe B, 11.13 b). L'ajustement d'ancienneté s'applique maintenant aussi au taux de remplacement (17.04 a).",
-      "Mon compte › Paie (SQ) : « Je suis doté en remplacement (art. 17) ». Inscrivez l'emploi remplacé et les dates : le traitement de remplacement est ajouté à chaque jour travaillé, sans cocher chaque journée. Plus de 30 jours : temps supplémentaire au taux de l'emploi occupé (17.04 d).",
+      "Mon compte › Paie (SQ) : « Je suis doté en remplacement (art. 17) ». Inscrivez l'emploi remplacé et les dates : le traitement de remplacement est ajouté à chaque jour travaillé, sans cocher chaque journée. Plus de 30 jours : le temps supplémentaire fait comme sergent est au taux de l'emploi occupé (17.04 d); celui fait comme agent reste à votre taux. Choisissez « Fait comme » sur chaque temps supplémentaire.",
     ] },
     { id: "2026-11-06-en2", date: "2026-11-06", titre: "English : accueil, horaire, paie et réglages", points: [
       "La version anglaise couvre maintenant l'accueil, l'horaire, la fiche de la journée, la paie, les banques, les réclamations, la retraite, les réglages et la page Bien-être.",
@@ -3227,10 +3227,10 @@ Question : ${question}
   const fmtH = (h) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)} h${t % 60 ? " " + String(t % 60).padStart(2, "0") : ""}`; };
   function calculerMois(a, m, src) {
     const r = { jours: {}, heures: 0, ts: 0, travailles: 0, lignesTS: [], tsEq: 0, tsVal: 0, valPaie: 0, eqBanque: 0, valBanque: 0, hPaie: 0, hBanque: 0 };
-    const compter = (pris, d, maj, iso, o) => {
+    const compter = (pris, d, maj, iso, o, comme) => {
       if (pris === "banque") r.hBanque += d; else r.hPaie += d;
       if (!paie) return;
-      const sal = salaireSQ(paie, iso), t = eqTS(d, maj, o), v = t.eq * sal.tauxTS;
+      const t = eqTS(d, maj, o), v = t.eq * tauxTSJour(iso, comme, paie);
       r.tsEq += t.eq; r.tsVal += v; r.indemnites = (r.indemnites || 0) + t.indemnite;
       if (pris === "banque") { r.eqBanque += t.eq; r.valBanque += v; } else r.valPaie += v;
     };
@@ -3245,12 +3245,14 @@ Question : ${question}
         const d = dureeH([t.debut, t.fin]), maj = +t.maj || 1.5, ex = (src.exceptions || {})[iso] || {};
         const pris = t.pris === "banque" ? "banque" : "paie";
         r.ts += d; r.lignesTS.push({ iso, h: [t.debut, t.fin], d, note: [`${t.moment === "avant" ? "Avant" : "Après"} le quart ${QUARTS[q.code] ? QUARTS[q.code].nom.toLowerCase() : q.code}`, pris === "banque" ? "compensé en banque" : "payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: t.rappel, adjacent: !t.rappel } });
-        compter(pris, d, maj, iso, { rappel: t.rappel, adjacent: !t.rappel });
+        const comme = commeTS(t, t.rappel ? "agent" : "sergent"); r.lignesTS[r.lignesTS.length - 1].comme = comme;
+        compter(pris, d, maj, iso, { rappel: t.rappel, adjacent: !t.rappel }, comme);
       }
       if (["J", "S", "N"].includes(q.code) && ((src.exceptions || {})[iso] || {}).repasNP) {
         const hrp = paie ? heuresRepasNonPris() : 1;
         r.ts += hrp; r.lignesTS.push({ iso, h: null, d: hrp, note: "Repas ou repos non pris (12.06)", ts: {}, maj: 1.5, pris: "paie", repasNP: true, o: {} });
-        compter("paie", hrp, 1.5, iso, {});
+        r.lignesTS[r.lignesTS.length - 1].comme = "sergent";
+        compter("paie", hrp, 1.5, iso, {}, "sergent");
       }
       if (!["J", "S", "N", "X"].includes(q.code)) continue;
       const h = heuresJour(q.code, iso, src), d = dureeH(h);
@@ -3259,7 +3261,8 @@ Question : ${question}
         const ex = (src.exceptions || {})[iso] || {}, maj = +ex.maj || 1.5;
         const pris = ex.pris === "banque" ? "banque" : "paie";
         r.ts += d; r.lignesTS.push({ iso, h, d, note: [pris === "banque" ? "Compensé en banque" : "Payé", q.note].filter(Boolean).join(" · "), ts: ex.ts || {}, maj, pris, o: { rappel: ex.rappel } });
-        compter(pris, d, maj, iso, { rappel: ex.rappel });
+        const comme = commeTS(ex, "agent"); r.lignesTS[r.lignesTS.length - 1].comme = comme;
+        compter(pris, d, maj, iso, { rappel: ex.rappel }, comme);
       }
     }
     for (const [iso, e] of Object.entries(src.exceptions || {})) { // formations avec détails, pour le rapport
@@ -3337,6 +3340,14 @@ Question : ${question}
   function designationPlus30(iso, paie = etat.paie) {
     if (!designationDu(iso, paie)) return false;
     return paie.rempl_fin ? moisJours(paie.rempl_debut, paie.rempl_fin) + 1 > 30 : moisJours(paie.rempl_debut, iso) >= 30;
+  }
+  // TS pendant une désignation de plus de 30 jours (17.04 d) : au traitement de l'emploi remplacé seulement s'il est fait dans cet emploi.
+  // Défaut : prolongation collée au quart et repas non pris = emploi remplacé; rappel séparé, journée de TS ou cour = mon emploi.
+  const commeTS = (e, defaut) => (e && (e.comme === "agent" || e.comme === "sergent") ? e.comme : defaut);
+  function tauxTSJour(iso, comme, paie = etat.paie) {
+    const s = salaireSQ(paie, iso); if (!s) return 0;
+    if (comme === "sergent" && designationPlus30(iso, paie)) return Math.max(s.tauxTS, tauxMinimumEmploi(designationDu(iso, paie), iso) * (1 + (s.anc || 0) / 100) / 2000);
+    return s.tauxTS;
   }
   const moisJours = (a, b) => Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000);
   // Durée d'un remplacement : jours travaillés consécutifs marqués pour le même emploi (les congés entre deux ne l'interrompent pas)
@@ -3457,9 +3468,7 @@ Question : ${question}
     const autreRegime = new Set();
     for (let i = 0; i < 14; i++) {
       const iso = isoPlus(debut, i), q = quartDu(iso, src);
-      const salJ0 = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
-      // 17.04 d) : désignation de plus de 30 jours, temps supplémentaire au traitement de l'emploi occupé (s'il est plus élevé)
-      const salJ = designationPlus30(iso, paie) ? { ...salJ0, tauxTS: Math.max(salJ0.tauxTS, tauxMinimumEmploi(designationDu(iso, paie), iso) * (1 + (salJ0.anc || 0) / 100) / 2000) } : salJ0;
+      const salJ = salaireSQ(paie, iso), ans = Math.max(0, moisEntre(paie.date_entree, iso)) / 12;
       const prevuTravail = ["J", "S", "N"].includes(q.prevu);
       if (prevuTravail) regPrevus++;
       const ligne = { iso, code: q.code, prevu: q.prevu, note: q.note };
@@ -3471,7 +3480,7 @@ Question : ${question}
         const maj = +ex.maj || 1.5, t = eqTS(h ? dureeH(h) : 0, maj, { rappel: ex.rappel }), d = t.h;
         ligne.h = h; ligne.maj = maj; ligne.rappel = ex.rappel; ligne.minimum = t.minimum; ligne.repasH = t.repasH;
         if (ex.pris === "banque") { tsBanque += t.eq; ligne.banque = t.eq; }
-        else { tsH += d; tsVal += t.eq * salJ.tauxTS; ligne.ts = t.eq * salJ.tauxTS; }
+        else { const tx = tauxTSJour(iso, commeTS(ex, "agent"), paie); tsH += d; tsVal += t.eq * tx; ligne.ts = t.eq * tx; }
       } else if (prevuTravail && q.code && q.code !== q.prevu) {
         const h = heuresJour(q.prevu, iso, src);
         if (h) { const pq = primesQuart(iso, h, salJ, ans); ligne.perdu = pq.nuit + pq.soir + pq.fds; ligne.hPrevu = h; }
@@ -3485,7 +3494,7 @@ Question : ${question}
       }
       if ((q.code === "P" && RQAP_P.includes(q.motifCle)) || q.code === "A") autreRegime.add(q.code === "A" ? "CNESST (accident de travail)" : "RQAP et indemnité de la Sûreté (art. 33)");
       if (q.code !== "X") for (const p of q.tsps) {
-        const maj = +p.maj || 1.5, t = eqTS(dureeH([p.debut, p.fin]), maj, { rappel: p.rappel, adjacent: !p.rappel }), d = t.h, v = t.eq * salJ.tauxTS;
+        const maj = +p.maj || 1.5, t = eqTS(dureeH([p.debut, p.fin]), maj, { rappel: p.rappel, adjacent: !p.rappel }), d = t.h, v = t.eq * tauxTSJour(iso, commeTS(p, p.rappel ? "agent" : "sergent"), paie);
         ligne.tspMaj = maj; indemRepas += t.indemnite;
         if (p.pris === "banque") { tsBanque += t.eq; ligne.tspBanque = (ligne.tspBanque || 0) + t.eq; }
         else { tsH += d; tsVal += v; ligne.tsp = (ligne.tsp || 0) + v; }
@@ -3509,7 +3518,7 @@ Question : ${question}
         if (hR && r.repasNuit !== false) { const deb = hR[0], douze = dureeH(hR) >= 11.5; if (deb >= "19:00" || deb <= "01:00" || (douze && deb === "16:00")) { repasNuit += 30.5; ligne.repasNuit = 30.5; } }
         if (r.habit === "ville") habitVal += 9.1; else if (r.habit === "civil") habitVal += 7.3;
       }
-      if (exJ.repasNP && ["J", "S", "N"].includes(q.code)) { const v = heuresRepasNonPris() * 1.5 * salJ.tauxTS; tsVal += v; ligne.repasNP = v; }
+      if (exJ.repasNP && ["J", "S", "N"].includes(q.code)) { const v = heuresRepasNonPris() * 1.5 * tauxTSJour(iso, "sergent", paie); tsVal += v; ligne.repasNP = v; }
       jours.push(ligne);
     }
     const primes = prNuit + prSoir + prFds;
@@ -4010,7 +4019,9 @@ Question : ${question}
       if (e.minimum) arts.push(l.o && l.o.rappel === "hebdo12" ? "ann. I 2.1" : "12.03");
       if (l.repasNP) arts.push("12.06");
       if (l.pris === "banque") arts.push("12.10");
-      return { ...l, e, valeur: sal ? e.eq * sal.tauxTS : null, arts };
+      const plus30 = paie && designationPlus30(l.iso, paie);
+      if (plus30 && l.comme === "sergent") arts.push("17.04 d");
+      return { ...l, e, valeur: sal ? e.eq * tauxTSJour(l.iso, l.comme, paie) : null, arts };
     });
     const tot = lignes.reduce((t, l) => {
       t.h += l.d; t.eq += l.e.eq; t.ind += l.e.indemnite;
@@ -5525,6 +5536,8 @@ Format :
     $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
     $("#hr-jour-maj").value = String(+ex.maj || 1.5);
     $("#hr-jour-pris").value = ex.pris === "banque" ? "banque" : "paie";
+    $("#hr-jour-comme").value = commeTS(ex, "agent");
+    majChampsComme();
     remplirBlocTS("tsp", ex.tsp); remplirBlocTS("tspa", ex.tspAvant);
     $("#hr-jour-rappel").value = ex.rappel && RAPPELS_TS[ex.rappel] ? ex.rappel : "";
     $("#hr-repasnp").checked = !!ex.repasNP; $("#hr-gaind").checked = !!ex.gainD;
@@ -5658,7 +5671,7 @@ Format :
     const actif = !hr.vue && cibleEdition() === hr && tq === "X" && estSQ() && etat.paie && salaireSQ(etat.paie, hr.jourChoisi);
     bloc.hidden = !actif;
     if (!actif) return;
-    const sal = salaireSQ(etat.paie, hr.jourChoisi);
+    const sal = { ...salaireSQ(etat.paie, hr.jourChoisi), tauxTS: tauxTSJour(hr.jourChoisi, commeChoisi("jour", "agent")) };
     const debut = $("#hr-jour-debut").value || $("#hr-jour-debut").placeholder, fin = $("#hr-jour-fin").value || $("#hr-jour-fin").placeholder;
     const d = debut && fin ? dureeH([debut, fin]) : 0, maj = +$("#hr-jour-maj").value || 1.5, rap = $("#hr-jour-rappel").value;
     const t = eqTS(d, maj, { rappel: rap }), h = t.h;
@@ -5668,18 +5681,30 @@ Format :
   }
   ["#hr-jour-debut", "#hr-jour-fin", "#hr-jour-maj"].forEach((q) => $(q).addEventListener("input", majValeurJour));
   // Périodes de temps supplémentaire avant et après le quart (préfixes « tspa » et « tsp »)
+  // « Fait comme » : visible seulement pendant une désignation de plus de 30 jours (17.04 d)
+  function commeChoisi(p, defaut) { const el = $(`#hr-${p}-comme`); return el && !el.hidden && el.value ? el.value : defaut; }
+  function majChampsComme() {
+    const iso = hr.jourChoisi, d = cibleEdition() === hr && iso && designationPlus30(iso);
+    const nom = d ? EMPLOIS_SQ[designationDu(iso)].nom.toLowerCase() : "";
+    for (const p of ["tspa", "tsp", "jour"]) {
+      const el = $(`#hr-${p}-comme`); if (!el) continue;
+      el.hidden = !d;
+      if (d) el.options[0].textContent = `Fait comme ${nom} (emploi remplacé, 17.04 d)`;
+    }
+  }
   function remplirBlocTS(p, d) {
     $(`#hr-${p}-actif`).checked = !!(d && d.debut);
     $(`#hr-${p}-debut`).value = (d && d.debut) || ""; $(`#hr-${p}-fin`).value = (d && d.fin) || "";
     $(`#hr-${p}-maj`).value = String((d && +d.maj) || 1.5);
     $(`#hr-${p}-rappel`).value = d && d.rappel === "hors" ? "hors" : "";
     $(`#hr-${p}-pris`).value = d && d.pris === "banque" ? "banque" : "paie";
+    $(`#hr-${p}-comme`).value = commeTS(d, d && d.rappel === "hors" ? "agent" : "sergent");
   }
   function lireBlocTS(p) {
     if ($(`#hr-${p}-champs`).hidden) return null;
     const td = $(`#hr-${p}-debut`).value, tf = $(`#hr-${p}-fin`).value;
     if (!td || !tf) return false;
-    return { debut: td, fin: tf, ...($(`#hr-${p}-maj`).value === "2" ? { maj: 2 } : {}), ...($(`#hr-${p}-pris`).value === "banque" ? { pris: "banque" } : {}), ...($(`#hr-${p}-rappel`).value ? { rappel: $(`#hr-${p}-rappel`).value } : {}) };
+    return { debut: td, fin: tf, ...($(`#hr-${p}-maj`).value === "2" ? { maj: 2 } : {}), ...($(`#hr-${p}-pris`).value === "banque" ? { pris: "banque" } : {}), ...($(`#hr-${p}-rappel`).value ? { rappel: $(`#hr-${p}-rappel`).value } : {}), ...(!$(`#hr-${p}-comme`).hidden ? { comme: $(`#hr-${p}-comme`).value } : {}) };
   }
   ["tspa", "tsp"].forEach((p) => {
     $(`#hr-${p}-actif`).addEventListener("change", () => {
@@ -5690,7 +5715,9 @@ Format :
       }
       majChampsJour();
     });
-    [`#hr-${p}-debut`, `#hr-${p}-fin`, `#hr-${p}-maj`, `#hr-${p}-pris`, `#hr-${p}-rappel`].forEach((q) => $(q).addEventListener("input", () => majValeurBlocTS(p)));
+    [`#hr-${p}-debut`, `#hr-${p}-fin`, `#hr-${p}-maj`, `#hr-${p}-pris`, `#hr-${p}-rappel`, `#hr-${p}-comme`].forEach((q) => $(q).addEventListener("input", () => majValeurBlocTS(p)));
+    // Rappel séparé : par défaut fait comme agent; prolongation : comme sergent
+    $(`#hr-${p}-rappel`).addEventListener("change", () => { $(`#hr-${p}-comme`).value = $(`#hr-${p}-rappel`).value ? "agent" : "sergent"; majValeurBlocTS(p); });
   });
   function majValeurBlocTS(p) {
     const out = $(`#hr-${p}-montant`);
@@ -5698,7 +5725,8 @@ Format :
     const deb = $(`#hr-${p}-debut`).value, fin = $(`#hr-${p}-fin`).value;
     out.hidden = !actif || !deb || !fin;
     if (out.hidden) return;
-    const sal = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), maj = +$(`#hr-${p}-maj`).value || 1.5, rap = $(`#hr-${p}-rappel`).value;
+    const sal0 = salaireSQ(etat.paie, hr.jourChoisi), d = dureeH([deb, fin]), maj = +$(`#hr-${p}-maj`).value || 1.5, rap = $(`#hr-${p}-rappel`).value;
+    const sal = { ...sal0, tauxTS: tauxTSJour(hr.jourChoisi, commeChoisi(p, rap ? "agent" : "sergent")) };
     const t = eqTS(d, maj, { rappel: rap, adjacent: !rap }), h = t.h;
     out.innerHTML = `<b>${dollarsTS(t.eq * sal.tauxTS + t.indemnite)}</b><span>${fmtH(h)} × ${String(maj).replace(".", ",")}${t.repasH ? ` + repas ${fmtH(t.repasH)} (12.08)` : ""} × ${dollarsTS(sal.tauxTS)}/h${h !== d ? ` · ${fmtH(d)} arrondies (12.09)` : ""}${t.indemnite ? ` + ${dollarsTS(t.indemnite)} d'indemnité de repas` : ""}</span>${t.minimum ? `<small class="tsp-ligne">Minimum garanti appliqué : ${RAPPELS_TS[rap].aide}</small>` : ""}<small>${$(`#hr-${p}-pris`).value === "banque" ? `Compensé : ${fmtH(t.eq)} ajoutées à votre banque de temps` : `Payé sur la paie · en banque, ce serait ${fmtH(t.eq)}`} · estimation</small>`;
   }
@@ -5722,6 +5750,7 @@ Format :
   ["#hr-dispo-type", "#hr-dispo-h"].forEach((q) => $(q).addEventListener("input", majValeurDispo));
   $("#hr-jour-rappel").addEventListener("input", () => { if ($("#hr-jour-rappel").value === "vacances") $("#hr-jour-maj").value = "2"; majValeurJour(); });
   $("#hr-jour-pris").addEventListener("input", () => majValeurJour());
+  $("#hr-jour-comme").addEventListener("input", () => majValeurJour());
   $("#hr-jour-offrir").addEventListener("click", () => { fermerJour(); ouvrirOffre(hr.jourChoisi); });
   $("#hr-jour-fetes").addEventListener("click", () => { fermerJour(); ouvrirFetes(); });
   // « En plus ce jour-là » : un élément ajouté à la journée (cour, formation, rendez-vous…) sans remplacer le quart ou le congé
@@ -5761,7 +5790,7 @@ Format :
     const options = (!$("#hr-options-quart").hidden && ($("#hr-repasnp").checked || $("#hr-remplace").value)) || (!$("#hr-dispo-champs").hidden && +$("#hr-dispo-h").value > 0);
     const plusAvant = avant && Array.isArray(avant.plus) && avant.plus.length ? avant.plus.filter((k) => k !== type) : null; // les éléments « en plus » restent
     if (type === quartDu(iso, cible).prevu && !note && !debut && !Object.keys(ts).length && !tsp && !tspAvant && !options && !(plusAvant && plusAvant.length)) delete cible.exceptions[iso];
-    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
+    else cible.exceptions[iso] = { type, note, ...(plusAvant && plusAvant.length ? { plus: plusAvant } : {}), ...(debut ? { debut, fin } : {}), ...(Object.keys(ts).length ? { ts } : {}), ...(type === "X" && $("#hr-jour-maj").value === "2" ? { maj: 2 } : {}), ...(type === "X" && $("#hr-jour-pris").value === "banque" ? { pris: "banque" } : {}), ...(type === "X" && !$("#hr-jour-comme").hidden ? { comme: $("#hr-jour-comme").value } : {}), ...(tsp ? { tsp } : {}), ...(tspAvant ? { tspAvant } : {}), ...(MOTIFS[type] ? { motif: $("#hr-jour-motif").value } : {}),
       ...(type === "X" && $("#hr-jour-rappel").value ? { rappel: $("#hr-jour-rappel").value } : {}),
       ...(!$("#hr-options-quart").hidden && $("#hr-repasnp").checked ? { repasNP: true } : {}),
       ...(!$("#hr-options-quart").hidden && !$("#hr-gaind-bloc").hidden && $("#hr-gaind").checked ? { gainD: true } : {}),
@@ -7972,7 +8001,7 @@ Format :
             <span>Du ${esc(f.rempl_debut)}${f.rempl_fin ? ` au ${esc(f.rempl_fin)}` : " · sans date de fin"}</span>
             <dl class="vt-detail"><dt>Traitement de l'emploi remplacé (minimum + ancienneté, 17.04 a)</dt><dd>${dollarsTS(r)}</dd>
             <dt>En plus, par heure travaillée à temps régulier</dt><dd>${plus ? dollarsTS(plus / 2080) : "— (votre traitement est déjà égal ou plus élevé)"}</dd></dl>
-            <p class="aide">Ajouté à chaque jour travaillé de la période dans Horaire et Ma paie (17.04 c). ${sup ? "Moins de 4 jours travaillés : taux de chef d'équipe de patrouille (17.04 b). " : ""}Plus de 30 jours : votre temps supplémentaire est calculé sur le traitement de l'emploi occupé (17.04 d). Un remplacement inscrit sur une journée dans Horaire a priorité.</p></div>`;
+            <p class="aide">Ajouté à chaque jour travaillé de la période dans Horaire et Ma paie (17.04 c). ${sup ? "Moins de 4 jours travaillés : taux de chef d'équipe de patrouille (17.04 b). " : ""}Plus de 30 jours : le temps supplémentaire fait dans l'emploi remplacé est calculé sur son traitement (17.04 d); celui fait comme agent reste à votre taux (choix « Fait comme » dans Horaire). Un remplacement inscrit sur une journée dans Horaire a priorité.</p></div>`;
         })()}
         <p class="aide">Estimation selon l'échelle et l'ancienneté comptée depuis la date d'entrée. Les ajustements de fonction (annexe B), les primes (soir, nuit, fin de semaine, rotation) et les absences ne sont pas inclus. Votre talon de paie fait foi.</p>
       </div>`;

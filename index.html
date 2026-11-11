@@ -38,7 +38,7 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;500;600;700;800&family=Overpass+Mono:wght@500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
-  <link rel="stylesheet" href="styles.css?v=202611110022">
+  <link rel="stylesheet" href="styles.css?v=202611110049">
 </head>
 <body>
   <!-- Chargement -->
@@ -1930,6 +1930,7 @@
             <option value="">Juste avant mon quart (en continu)</option>
             <option value="hors">Rappel plus tôt, séparé de mon quart (min. 3 h × 1,5)</option>
           </select>
+          <select id="hr-tspa-comme" aria-label="Fait dans quel emploi" hidden><option value="sergent">Fait comme sergent (emploi remplacé, 17.04 d)</option><option value="agent">Fait comme agent (mon emploi)</option></select>
           <select id="hr-tspa-pris" aria-label="Payé ou compensé">
             <option value="paie">Temps payé (sur la paie)</option>
             <option value="banque">Temps compensé (banque de temps)</option>
@@ -1949,6 +1950,7 @@
             <option value="">Prolongation de mon quart (en continu)</option>
             <option value="hors">Rappel après avoir quitté (min. 3 h × 1,5)</option>
           </select>
+          <select id="hr-tsp-comme" aria-label="Fait dans quel emploi" hidden><option value="sergent">Fait comme sergent (emploi remplacé, 17.04 d)</option><option value="agent">Fait comme agent (mon emploi)</option></select>
           <select id="hr-tsp-pris" aria-label="Payé ou compensé">
             <option value="paie">Temps payé (sur la paie)</option>
             <option value="banque">Temps compensé (banque de temps)</option>
@@ -1965,6 +1967,7 @@
           <option value="vacances">Rappel pendant mes vacances ou un férié (min. 9 h ou 12 h)</option>
           <option value="cour-annulee">Cour annulée pendant mon congé (3 h)</option>
         </select>
+        <select id="hr-jour-comme" aria-label="Fait dans quel emploi" hidden><option value="sergent">Fait comme sergent (emploi remplacé, 17.04 d)</option><option value="agent">Fait comme agent (mon emploi)</option></select>
         <label class="ref" for="hr-jour-pris">Temps supplémentaire</label>
         <select id="hr-jour-pris">
             <option value="paie">Temps payé (sur la paie)</option>
@@ -2271,9 +2274,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611110022"></script>
+  <script src="config.js?v=202611110049"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-  <script src="i18n.js?v=202611110022"></script>
-  <script src="app.js?v=202611110022"></script>
+  <script src="i18n.js?v=202611110049"></script>
+  <script src="app.js?v=202611110049"></script>
 </body>
 </html>
