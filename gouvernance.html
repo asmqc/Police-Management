@@ -49,7 +49,7 @@
 <header><a href="./"><img src="assets/icone-192.png" alt="">Police <span>Management</span></a></header>
 <main>
   <h1>Gouvernance des renseignements personnels</h1>
-  <p class="maj">Politiques et pratiques de Police Management, publiées en application de l'article 3.2 de la Loi sur la protection des renseignements personnels dans le secteur privé. Version 2026.10.21, approuvée par le responsable de la protection des renseignements personnels.</p>
+  <p class="maj">Politiques et pratiques de Police Management, publiées en application de l'article 3.2 de la Loi sur la protection des renseignements personnels dans le secteur privé. Version 2026.11.13, approuvée par le responsable de la protection des renseignements personnels.</p>
 
   <section>
     <h2>1. Rôles et responsabilités</h2>
@@ -73,7 +73,7 @@
       <tr><td>Utilisation</td><td>Limitée aux finalités annoncées. Aucune publicité, aucun profilage, aucune décision entièrement automatisée.</td></tr>
       <tr><td>Communication</td><td>Aucune vente ni communication commerciale. Communication sans consentement seulement dans les cas prévus par la loi; chacune serait consignée.</td></tr>
       <tr><td>Conservation</td><td>Selon le calendrier ci-dessous</td></tr>
-      <tr><td>Destruction</td><td>Suppression définitive dans la base de données et le stockage de fichiers. Destruction automatique des demandes refusées.</td></tr>
+      <tr><td>Destruction</td><td>Suppression définitive dans la base de données et le stockage de fichiers. Destruction automatique et quotidienne des renseignements dont la durée de conservation est écoulée (voir le calendrier).</td></tr>
     </table></div>
   </section>
 
@@ -82,8 +82,14 @@
     <div class="table"><table>
       <tr><th>Renseignements</th><th>Durée</th><th>Mode de destruction</th></tr>
       <tr><td>Compte approuvé et ses données</td><td>Tant que le compte existe</td><td>Suppression par la personne ou par l'administrateur sur demande</td></tr>
-      <tr><td>Compte inactif</td><td>Revue après 24 mois d'inactivité</td><td>Avis par courriel, puis suppression sans réponse dans les 30 jours</td></tr>
+      <tr><td>Compte inactif</td><td>Revue après 24 mois d'inactivité (liste « Inactifs 24 mois + » de l'administration)</td><td>Avis par courriel, puis suppression sans réponse dans les 30 jours</td></tr>
       <tr><td>Demande d'accès refusée</td><td>90 jours après le refus</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Demande d'accès jamais traitée</td><td>12 mois après l'envoi</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Signalements de contenu traités</td><td>12 mois après leur création</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Échanges de quarts</td><td>12 mois après la date du quart</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Problèmes signalés réglés</td><td>6 mois</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Statistiques anonymes par section</td><td>13 mois</td><td>Suppression automatique quotidienne</td></tr>
+      <tr><td>Sauvegardes de la base de données</td><td>7 jours</td><td>Rotation automatique chez Supabase</td></tr>
       <tr><td>Demande d'exercice de droits ou plainte, et sa réponse</td><td>2 ans après la réponse</td><td>Suppression des courriels et des notes</td></tr>
       <tr><td>Registre des incidents</td><td>5 ans après la connaissance de l'incident</td><td>Suppression de l'entrée</td></tr>
     </table></div>
@@ -95,6 +101,7 @@
       <li><b>Réception :</b> par courriel, avec un accusé de réception.</li>
       <li><b>Vérification de l'identité :</b> la demande doit venir de l'adresse liée au compte, ou d'une confirmation équivalente.</li>
       <li><b>Réponse dans les 30 jours, sans frais :</b> accès, rectification, suppression, cessation de diffusion ou portabilité (format JSON ou CSV).</li>
+      <li><b>Libre-service :</b> chaque membre peut, sans passer par le responsable, télécharger ses renseignements en JSON (Mon compte › Mes données), en corriger plusieurs et supprimer son compte.</li>
       <li><b>Refus :</b> le cas échéant, il est motivé par écrit et indique le recours possible devant la Commission d'accès à l'information.</li>
       <li><b>Trace :</b> chaque demande est consignée (date, nature, réponse).</li>
     </ol>
@@ -123,12 +130,13 @@
   <section>
     <h2>7. Évaluations des facteurs relatifs à la vie privée</h2>
     <p>Une ÉFVP est réalisée avant tout projet de système d'information touchant des renseignements personnels, et avant toute communication de renseignements à l'extérieur du Québec (art. 3.3 et 17).</p>
-    <p>La dernière ÉFVP a été réalisée le 20 octobre 2026. Elle couvre :</p>
+    <p>L'ÉFVP de référence a été réalisée le 20 octobre 2026, et complétée par des addendas à chaque changement (le plus récent : 13 novembre 2026). Elle couvre notamment :</p>
     <ul>
       <li>le passage de l'hébergement Apple iCloud à Supabase (données hébergées à Montréal);</li>
       <li>l'application iPhone et iPad;</li>
       <li>les notifications;</li>
-      <li>l'ouverture aux agents de la paix.</li>
+      <li>l'ouverture aux agents de la paix;</li>
+      <li>l'envoi des courriels par Brevo (France), la carte Apple Plans et la météo d'Environnement Canada.</li>
     </ul>
     <p>Elle conclut à une protection adéquate et à des risques résiduels faibles. Elle est mise à jour à chaque changement important : nouveau fournisseur, nouvelle catégorie de renseignements ou nouvelle finalité.</p>
   </section>
@@ -140,11 +148,14 @@
         <ul>
           <li>notifications, photo, position GPS et 2ᵉ calendrier désactivés tant que la personne ne les active pas;</li>
           <li>événements, notes et repères toujours privés;</li>
-          <li>seul le partage de la rotation au poste est activé, et il peut être désactivé.</li>
+          <li>le partage de la rotation avec le poste est désactivé par défaut : la personne l'active si elle le souhaite, et peut le retirer en tout temps.</li>
         </ul>
       </li>
       <li>Règles d'accès appliquées par la base de données, séparation par corps de police et approbation humaine de chaque compte.</li>
-      <li>Aucun outil d'analyse, de mesure ou de publicité, dans le site comme dans l'app.</li>
+      <li>Aucun outil d'analyse, de mesure ou de publicité de tiers, dans le site comme dans l'app. Seul un compteur interne anonyme (ouvertures par section et par jour, sans identifiant) est tenu.</li>
+      <li>Polices de caractères et bibliothèques hébergées sur le site même, pour ne pas transmettre l'adresse IP des visiteurs à des tiers.</li>
+      <li>Double authentification du compte administrateur (code à usage unique), exigée par la base de données dès son activation.</li>
+      <li>Confirmation du courriel et réinitialisation du mot de passe par un code à usage unique plutôt que par un lien.</li>
     </ul>
   </section>
 

@@ -25,6 +25,14 @@ function cleSecrete(): string {
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 }
 
+// Niveau d'authentification de la session (aal1 : mot de passe; aal2 : mot de passe + code). Le jeton est déjà validé par getUser.
+function niveauSession(jeton: string): string {
+  try {
+    const charge = JSON.parse(atob(jeton.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return charge.aal || "aal1";
+  } catch { return "aal1"; }
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 Deno.serve(async (req) => {
@@ -66,6 +74,10 @@ Deno.serve(async (req) => {
     // Les actions suivantes sont réservées à l'administrateur
     const { data: profil } = await admin.from("profiles").select("role, statut").eq("id", moi.id).maybeSingle();
     if (!profil || profil.role !== "admin" || profil.statut !== "approuve") return erreur("Réservé à l'administrateur", 403);
+    // Loi 25 (sécurité) : si l'administrateur a activé la double authentification, la session doit l'avoir validée (aal2)
+    const { data: mfa } = await admin.auth.admin.mfa.listFactors({ userId: moi.id });
+    const aDeuxEtapes = (mfa?.factors ?? []).some((f: { status: string }) => f.status === "verified");
+    if (aDeuxEtapes && niveauSession(jeton) !== "aal2") return erreur("Entrez votre code de double authentification pour faire cette action.", 403);
     if (!id || !UUID.test(id)) return erreur("Compte introuvable");
     if (id === moi.id) return erreur("Cette action ne s'applique pas à votre propre compte. Utilisez « Mon compte ».");
 

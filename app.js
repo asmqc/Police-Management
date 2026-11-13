@@ -62,9 +62,9 @@
   function chargerLeafletSeul() {
     if (window.L && window.L.map) return Promise.resolve();
     const css = document.createElement("link");
-    css.rel = "stylesheet"; css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; css.crossOrigin = "";
+    css.rel = "stylesheet"; css.href = "assets/lib/leaflet/leaflet.css";
     document.head.appendChild(css);
-    return ajouterScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js", { crossOrigin: "" });
+    return ajouterScript("assets/lib/leaflet/leaflet.js");
   }
   // Jeton MapKit signé par la fonction jeton-carte (la clé privée reste sur le serveur), valide 30 minutes
   let jetonCarteCache = null;
@@ -657,6 +657,7 @@
     $("#menu-admin").hidden = p.role !== "admin";
     $("#btn-admin-haut").hidden = p.role !== "admin";
     majOngletConstats();
+    if (p.role === "admin") await exigerMfaAdmin();
     if (p.role === "admin") { document.body.classList.add("est-admin"); comptesApprouves().then(() => remplirCorpsAdmin()); }
     montrer("#ecran-app");
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
@@ -740,8 +741,90 @@
     else toast("Pas encore confirmé. Demandez un code et entrez-le ici.");
   });
 
+  /* ---------------- Double authentification de l'administrateur (Loi 25 : mesures de sécurité) ----------------
+     Une fois activée, la base de données et la fonction admin-comptes exigent une session validée par le code (aal2). */
+  const chiffres = (el) => el.addEventListener("input", () => { el.value = el.value.replace(/\D/g, "").slice(0, 6); });
+  chiffres($("#mfa-code")); chiffres($("#mc-mfa-code"));
+  async function facteurVerifie() {
+    const { data } = await sb.auth.mfa.listFactors();
+    return ((data && data.totp) || []).find((f) => f.status === "verified") || null;
+  }
+  function exigerMfaAdmin() {
+    return new Promise(async (fini) => {
+      try {
+        const { data } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (!data || data.nextLevel !== "aal2" || data.currentLevel === "aal2") return fini();
+      } catch { return fini(); }
+      const voile = $("#mfa-voile");
+      voile.hidden = false;
+      $("#mfa-code").value = ""; $("#mfa-erreur").hidden = true;
+      setTimeout(() => $("#mfa-code").focus(), 80);
+      $("#mfa-form").onsubmit = async (ev) => {
+        ev.preventDefault();
+        const code = $("#mfa-code").value;
+        const err = $("#mfa-erreur");
+        if (code.length !== 6) { err.textContent = "Le code contient 6 chiffres."; err.hidden = false; return; }
+        const f = await facteurVerifie();
+        const { error } = f ? await sb.auth.mfa.challengeAndVerify({ factorId: f.id, code }) : { error: new Error("Aucun facteur") };
+        if (error) { err.textContent = "Code invalide. Attendez le prochain code et réessayez."; err.hidden = false; $("#mfa-code").select(); return; }
+        voile.hidden = true;
+        fini();
+      };
+      $("#mfa-deconnexion").onclick = async () => { voile.hidden = true; await sb.auth.signOut(); };
+    });
+  }
+  let facteurEnCours = null;
+  async function majMfaCompte() {
+    const estAdm = etat.profil && etat.profil.role === "admin";
+    $("#mc-mfa-bloc").hidden = !estAdm;
+    if (!estAdm) return;
+    const f = await facteurVerifie().catch(() => null);
+    $("#mc-mfa-etat").textContent = f
+      ? "✓ Activée. Un code de votre app d'authentification est demandé à chaque connexion au compte administrateur."
+      : "Protégez le compte administrateur avec un code à 6 chiffres d'une app d'authentification (Google Authenticator, Microsoft Authenticator, 1Password, Mots de passe d'Apple…), en plus du mot de passe.";
+    $("#mc-mfa-activer").hidden = !!f || !!facteurEnCours;
+    $("#mc-mfa-retirer").hidden = !f;
+  }
+  $("#mc-mfa-activer").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget; btn.disabled = true;
+    // Nettoie une inscription précédente non terminée
+    const { data: liste } = await sb.auth.mfa.listFactors();
+    for (const f of ((liste && liste.all) || []).filter((x) => x.status !== "verified")) await sb.auth.mfa.unenroll({ factorId: f.id }).catch(() => {});
+    const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "Police Management " + new Date().toISOString().slice(0, 10) });
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    facteurEnCours = data.id;
+    $("#mc-mfa-qr").src = data.totp.qr_code;
+    $("#mc-mfa-cle").textContent = data.totp.secret;
+    $("#mc-mfa-inscription").hidden = false;
+    btn.hidden = true;
+    $("#mc-mfa-code").focus();
+  });
+  $("#mc-mfa-valider").addEventListener("click", async (ev) => {
+    const code = $("#mc-mfa-code").value;
+    if (!facteurEnCours || code.length !== 6) return toast("Entrez le code à 6 chiffres de votre app.");
+    const btn = ev.currentTarget; btn.disabled = true;
+    const { error } = await sb.auth.mfa.challengeAndVerify({ factorId: facteurEnCours, code });
+    btn.disabled = false;
+    if (error) return toast("Code invalide. Attendez le prochain code et réessayez.");
+    facteurEnCours = null;
+    $("#mc-mfa-inscription").hidden = true; $("#mc-mfa-code").value = "";
+    toast("Double authentification activée");
+    majMfaCompte();
+  });
+  $("#mc-mfa-retirer").addEventListener("click", async () => {
+    if (!confirm("Désactiver la double authentification du compte administrateur ? Le compte sera protégé seulement par le mot de passe.")) return;
+    const f = await facteurVerifie();
+    if (!f) return majMfaCompte();
+    const { error } = await sb.auth.mfa.unenroll({ factorId: f.id });
+    if (error) return toast(traduireErreur(error));
+    await sb.auth.refreshSession().catch(() => {});
+    toast("Double authentification désactivée");
+    majMfaCompte();
+  });
+
   /* ---------------- Loi 25 : consentement, nouveautés ---------------- */
-  const VERSION_POLITIQUE = "2026.11.10";
+  const VERSION_POLITIQUE = "2026.11.13";
   $("#consent-ok").addEventListener("click", async () => {
     const { error } = await sb.rpc("accepter_politique", { p_version: VERSION_POLITIQUE });
     if (error) return toast(traduireErreur(error));
@@ -757,6 +840,12 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-13-vie-privee", date: "2026-11-13", titre: "Vos renseignements personnels, mieux protégés", points: [
+      "Nouveau : Mon compte › Mes données › Télécharger mes données vous remet une copie de tout ce que Police Management garde sur vous.",
+      "Les courriels de confirmation et de mot de passe contiennent maintenant un code à 6 chiffres plutôt qu'un lien.",
+      "Les polices et les bibliothèques sont hébergées sur notre site : votre adresse IP n'est plus envoyée à Google Fonts.",
+      "Certains renseignements anciens (signalements traités, vieux échanges de quarts, demandes non traitées) sont maintenant effacés automatiquement.",
+    ] },
     { id: "2026-11-10-patrouille", date: "2026-11-10", titre: "Nouveau look : Patrouille", points: [
       "Bleu nuit, bande à damier, touches de gyrophare et tuiles de couleur sur l'accueil.",
       "Les autres styles (Liquid Glass, Nuit rouge, Marine…) restent offerts dans Réglages › Style d'interface.",
@@ -1414,7 +1503,7 @@ Question : ${question}
     }
     if (nom === "corps") initCorps();
     if (nom === "admin") initAdmin();
-    if (nom === "compte") { initCompte(); majBlocsNotif(); }
+    if (nom === "compte") { initCompte(); majBlocsNotif(); majMfaCompte(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
     if (nom === "meteo") initMeteo();
@@ -6304,6 +6393,36 @@ Format :
     return data;
   }
 
+  // Loi 25, art. 27 : portabilité — copie de tous les renseignements du membre, en JSON
+  $("#mc-exporter").addEventListener("click", async (ev) => {
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    const ancien = btn.textContent;
+    btn.textContent = "Préparation…";
+    try {
+      const { data, error } = await sb.rpc("exporter_mes_donnees");
+      if (error) throw error;
+      const nom = `mes-donnees-police-management-${aujourdhuiISO()}.json`;
+      const fichier = new File([JSON.stringify(data, null, 2)], nom, { type: "application/json" });
+      if (navigator.canShare && navigator.canShare({ files: [fichier] })) {
+        await navigator.share({ files: [fichier], title: "Mes données Police Management" }).catch(() => {});
+      } else {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(fichier);
+        a.download = nom;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      }
+      toast("Copie de vos données prête");
+    } catch (e) {
+      toast(traduireErreur(e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = ancien;
+    }
+  });
+
   $("#mc-confirmer-suppr").addEventListener("input", (e) => {
     $("#mc-supprimer").disabled = e.target.value.trim().toUpperCase() !== "SUPPRIMER";
   });
@@ -8988,13 +9107,17 @@ Format :
     $("#badge-nav-admin").textContent = enAttenteTous || ""; $("#badge-nav-admin").hidden = !enAttenteTous;
     $("#adm-onglet-nb").textContent = compte("en_attente") || ""; $("#adm-onglet-nb").hidden = !compte("en_attente");
     // Confirmation du courriel (colonne lue directement : l'administrateur voit tous les profils)
-    const { data: verif } = await sb.from("profiles").select("id, courriel_verifie_le");
-    const verifies = new Map((verif || []).map((v) => [v.id, v.courriel_verifie_le]));
-    comptesAdmin.forEach((p) => (p.courriel_verifie_le = verifies.get(p.id) || null));
+    const { data: verif } = await sb.from("profiles").select("id, courriel_verifie_le, derniere_activite_le");
+    const verifies = new Map((verif || []).map((v) => [v.id, v]));
+    comptesAdmin.forEach((p) => { const v = verifies.get(p.id) || {}; p.courriel_verifie_le = v.courriel_verifie_le || null; p.derniere_activite_le = v.derniere_activite_le || null; });
+    // Loi 25 (art. 23) : comptes sans activité depuis plus de 24 mois, à aviser puis supprimer
+    const limiteInactif = Date.now() - 730 * 864e5;
+    const inactif = (p) => p.statut === "approuve" && p.role !== "admin" && new Date(p.derniere_activite_le || p.cree_le).getTime() < limiteInactif;
+    $("#nb-inactif").textContent = vus.filter(inactif).length;
     const nonConfirme = (p) => !p.courriel_verifie_le && (p.statut === "approuve" || p.statut === "en_attente");
     $("#nb-non-confirme").textContent = vus.filter(nonConfirme).length;
     // Trié par corps de police, puis du plus récent au plus ancien
-    const liste = vus.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : p.statut === filtreAdmin))
+    const liste = vus.filter((p) => (filtreAdmin === "non_confirme" ? nonConfirme(p) : filtreAdmin === "inactif" ? inactif(p) : p.statut === filtreAdmin))
       .sort((x, y) => corpsDe(x).localeCompare(corpsDe(y), "fr") || String(y.cree_le).localeCompare(String(x.cree_le)));
     const urls = await urlsAvatars(liste.map((p) => p.avatar_path));
     const { data: invs } = await sb.rpc("admin_invitations");
@@ -9024,7 +9147,7 @@ Format :
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
         </div>
       </div>`).join("")
-      : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : filtreAdmin === "non_confirme" ? "Tout le monde a confirmé son courriel." : "Aucun compte dans cette catégorie."}</p>`;
+      : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : filtreAdmin === "non_confirme" ? "Tout le monde a confirmé son courriel." : filtreAdmin === "inactif" ? "Aucun compte inactif depuis plus de 24 mois. Quand il y en aura, écrivez au membre, puis supprimez le compte s'il ne se reconnecte pas dans les 30 jours." : "Aucun compte dans cette catégorie."}</p>`;
     $$("button[data-relance]", el).forEach((btn) => btn.addEventListener("click", async () => {
       btn.disabled = true;
       const { error } = await sb.auth.signInWithOtp({ email: btn.dataset.relance, options: { shouldCreateUser: false, emailRedirectTo: urlRetour() } });

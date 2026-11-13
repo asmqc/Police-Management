@@ -53,7 +53,7 @@
 <header><a href="./"><img src="assets/icone-192.png" alt="">Police <span>Management</span></a></header>
 <main>
   <h1>Politique de confidentialité</h1>
-  <p class="maj">Site web, application web et application iPhone et iPad Police Management — version <b>2026.11.10</b>, en vigueur le 10 novembre 2026.</p>
+  <p class="maj">Site web, application web et application iPhone et iPad Police Management — version <b>2026.11.13</b>, en vigueur le 13 novembre 2026.</p>
 
   <section class="resume">
     <h2>En bref</h2>
@@ -130,7 +130,7 @@
       <tr><td>Événements personnels et rappels</td><td>Afficher votre calendrier et vous envoyer les rappels demandés</td></tr>
       <tr><td>Repères personnels sur la carte</td><td>Retrouver vos lieux de travail</td></tr>
       <tr><td>Feuille de poste (photo ou PDF envoyé par un membre, version web créée à partir de la photo, date, nom de la personne qui l'a envoyée)</td><td>Partager l'aide-mémoire du poste (adresses, numéros publics, repères kilométriques, codes de lieux) avec les membres du même poste</td></tr>
-      <tr><td>Rémunération (facultatif, membres de la Sûreté du Québec) : date d'entrée, emploi et, si vous les inscrivez, traitement annuel, retenues et soldes de banques de votre talon de paie</td><td>Estimer votre traitement, votre paie aux deux semaines (primes, temps supplémentaire, impôts et retenues) et vos banques de vacances, de fériés et de temps supplémentaire selon le contrat de travail. Visible par vous seulement. Vous pouvez l'effacer en tout temps dans Mon compte.</td></tr>
+      <tr><td>Rémunération (facultatif, membres de la Sûreté du Québec) : date d'entrée, emploi et, si vous les inscrivez, traitement annuel, retenues et soldes de banques de votre talon de paie, et une désignation ou un remplacement temporaire (emploi, date de début et de fin)</td><td>Estimer votre traitement, votre paie aux deux semaines (primes, temps supplémentaire, impôts et retenues) et vos banques de vacances, de fériés et de temps supplémentaire selon le contrat de travail. Visible par vous seulement. Vous pouvez l'effacer en tout temps dans Mon compte.</td></tr>
       <tr><td>Compte de dépenses (facultatif, membres de la Sûreté du Québec) : date, motif court du déplacement, repas, kilométrage, péages, coucher, montants et description des déboursés</td><td>Calculer les montants à réclamer selon l'article 21 et l'annexe K du contrat de travail et produire votre compte de dépenses du mois. Visible par vous seulement. N'y inscrivez aucun numéro de dossier ni renseignement sur une personne. Le cumul de kilométrage antérieur que vous inscrivez reste sur votre appareil.</td></tr>
       <tr><td>Lien d'abonnement au calendrier (facultatif) : un code secret aléatoire</td><td>Permettre à votre application de calendrier de lire votre horaire de travail et de le garder à jour. Vous pouvez le remplacer ou le désactiver en tout temps.</td></tr>
       <tr><td>Articles de loi mis en favoris (loi et numéro d'article)</td><td>Retrouver rapidement vos articles sur tous vos appareils</td></tr>
@@ -199,8 +199,9 @@
     <div class="table"><table>
       <tr><th>Fournisseur</th><th>Rôle</th><th>Lieu</th></tr>
       <tr><td><b>Supabase</b></td><td>Base de données, comptes, fichiers (photos, images des annonces, feuilles de poste), fonctions serveur, sauvegardes quotidiennes. Contient tous les renseignements du compte.</td><td>Données hébergées au <b>Canada (Montréal)</b>. L'entreprise est située aux États-Unis, et son personnel peut y accéder de façon limitée pour l'exploitation et le soutien.</td></tr>
-      <tr><td><b>Brevo (Sendinblue SAS)</b></td><td>Envoi des courriels du compte : confirmation de l'adresse, réinitialisation du mot de passe, changement d'adresse. Reçoit votre adresse courriel et le contenu de ces courriels (dont le lien de confirmation). Ne reçoit aucune autre donnée de compte. Brevo agit comme sous-traitant, selon ses conditions et le RGPD européen.</td><td>France (Union européenne)</td></tr>
+      <tr><td><b>Brevo (Sendinblue SAS)</b></td><td>Envoi des courriels du compte : confirmation de l'adresse, réinitialisation du mot de passe, changement d'adresse. Reçoit votre adresse courriel et le contenu de ces courriels (dont le code de confirmation à 6 chiffres, valide une seule fois). Ne reçoit aucune autre donnée de compte. Brevo agit comme sous-traitant, selon ses conditions et le RGPD européen.</td><td>France (Union européenne)</td></tr>
       <tr><td><b>GitHub</b> (Microsoft)</td><td>Hébergement du site et des données publiques (lois, carte). Aucune donnée de compte. Reçoit l'adresse IP des visiteurs, comme tout site web.</td><td>États-Unis</td></tr>
+      <tr><td><b>jsDelivr</b> (réseau de diffusion de fichiers)</td><td>Seulement si vous utilisez « Lire le constat avec une photo » dans le navigateur : le module de lecture de texte est téléchargé une fois à partir de jsDelivr. Reçoit l'adresse IP de l'appareil, jamais la photo. Les polices de caractères et les autres bibliothèques sont hébergées sur notre propre site : aucune requête n'est faite à Google Fonts ni à un autre service de polices.</td><td>Mondial (serveurs de Cloudflare et Fastly)</td></tr>
       <tr><td><b>OpenStreetMap</b></td><td>Fond de carte de secours (si la carte Apple Plans n'est pas offerte), et recherche d'adresse (Nominatim) quand vous cherchez une adresse sur la carte. Reçoit l'adresse IP, la zone affichée et le texte de l'adresse cherchée.</td><td>Royaume-Uni et Europe</td></tr>
       <tr><td><b>Esri</b></td><td>Imagerie satellite de la carte de secours, seulement si vous choisissez le fond « Satellite » et que la carte Apple Plans n'est pas offerte. Reçoit l'adresse IP et la zone affichée.</td><td>États-Unis</td></tr>
       <tr><td><b>Québec 511 (MTMD)</b></td><td>Entraves et travaux routiers, relayés par notre serveur : aucun renseignement personnel n'est transmis.</td><td>Québec</td></tr>
@@ -232,7 +233,8 @@
       <li>Sécurité au niveau des lignes dans la base de données.</li>
       <li>Données séparées par corps de police.</li>
       <li>Fichiers privés accessibles seulement par des liens temporaires.</li>
-      <li>Accès administrateur limité au responsable.</li>
+      <li>Accès administrateur limité au responsable, protégé par une double authentification (code à usage unique) une fois activée : sans ce code, la base de données refuse les pouvoirs d'administrateur.</li>
+      <li>Confirmation du courriel et réinitialisation du mot de passe par un code à usage unique, plutôt que par un lien.</li>
       <li>Refus des mots de passe connus pour avoir été divulgués lors de fuites de données.</li>
       <li>Sauvegarde automatique quotidienne de la base de données, chiffrée et hébergée chez Supabase.</li>
       <li>Avertissement à chaque ouverture de l'app.</li>
@@ -244,8 +246,11 @@
     <h2>9. Conservation et destruction</h2>
     <div class="table"><table>
       <tr><th>Renseignement</th><th>Durée</th></tr>
-      <tr><td>Compte approuvé et toutes ses données</td><td>Tant que le compte existe. Un compte inactif depuis plus de 24 mois peut être supprimé, après un avis par courriel.</td></tr>
+      <tr><td>Compte approuvé et toutes ses données</td><td>Tant que le compte existe. Un compte inactif depuis plus de 24 mois est repéré dans l'administration; il est supprimé si vous ne vous reconnectez pas dans les 30 jours suivant un avis par courriel.</td></tr>
       <tr><td>Demande d'accès refusée</td><td>Détruite automatiquement 90 jours après le refus</td></tr>
+      <tr><td>Demande d'accès jamais traitée</td><td>Détruite automatiquement 12 mois après son envoi</td></tr>
+      <tr><td>Signalements de contenu (avec l'extrait signalé)</td><td>Jusqu'à 12 mois après leur création, une fois traités, puis effacés automatiquement; supprimés avec le compte de la personne qui a signalé</td></tr>
+      <tr><td>Échanges de quarts</td><td>Effacés automatiquement 12 mois après la date du quart; supprimés avec le compte de la personne qui l'a offert</td></tr>
       <tr><td>Feuille de poste</td><td>Jusqu'à ce qu'un membre du poste la remplace ou la retire, ou que l'administrateur la retire. L'ancienne version est effacée à chaque remplacement.</td></tr>
       <tr><td>Messages</td><td>Jusqu'à leur suppression par l'administrateur ou jusqu'à la suppression du compte, sous réserve de la copie détenue par l'autre personne de la conversation</td></tr>
       <tr><td>Publications et idées</td><td>Jusqu'à leur suppression par vous ou par l'administrateur, ou jusqu'à la suppression du compte</td></tr>
@@ -273,6 +278,7 @@
       <li>la <b>cessation de leur diffusion</b>, ou la désindexation d'un lien;</li>
       <li>leur communication dans un <b>format technologique structuré et couramment utilisé</b> (portabilité), par exemple JSON ou CSV.</li>
     </ul>
+    <p>Vous pouvez le faire vous-même en tout temps : <b>Mon compte › Mes données › Télécharger mes données</b> vous remet un fichier JSON avec tous les renseignements que nous gardons sur vous. Plusieurs renseignements se corrigent dans Mon compte, et <b>Mon compte › Supprimer mon compte</b> efface votre compte.</p>
     <p>Écrivez au responsable (section 1). Nous vérifions votre identité, puis nous répondons <b>dans les 30 jours</b>, sans frais. En cas de refus, nous vous en donnons les motifs par écrit et nous vous informons de vos recours.</p>
     <p>Vous pouvez porter plainte :</p>
     <ul>
@@ -310,7 +316,7 @@
   <section id="modifications">
     <h2>14. Modifications</h2>
     <p>Toute modification est publiée sur cette page, avec un nouveau numéro de version. Si elle touche les renseignements recueillis, leurs finalités ou leurs destinataires, l'application vous demande de l'accepter à votre prochaine ouverture.</p>
-    <p>Versions précédentes : 2026.11.05.2, 2026.11.05, 2026.11.03, 2026.11.01, 2026.10.28, 2026.10.24, 2026.10.23, 2026.10.22, 2026.10.21, 2026.10.20.3, 2026.10.20.2, 2026.10.20, 2026.10.19 (site web), 2026.09.01 (ancienne app iPhone).</p>
+    <p>Versions précédentes : 2026.11.10, 2026.11.06, 2026.11.05.2, 2026.11.05, 2026.11.03, 2026.11.01, 2026.10.28, 2026.10.24, 2026.10.23, 2026.10.22, 2026.10.21, 2026.10.20.3, 2026.10.20.2, 2026.10.20, 2026.10.19 (site web), 2026.09.01 (ancienne app iPhone).</p>
   </section>
 
   <a class="retour" href="./">‹ Retour à Police Management</a>
