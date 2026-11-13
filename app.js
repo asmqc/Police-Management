@@ -668,7 +668,7 @@
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     signalerActivite();
-    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -966,9 +966,19 @@
       "App iPhone : « Dis Siri, mon prochain quart dans Police Management ».",
     ] },
   ];
+  const cleNouv = (n) => n.id || n.date;
+  const dateNouv = (d) => new Date(d + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  const carteNouv = (n, avecDate = true) => `<article>${avecDate ? `<small>${esc(dateNouv(n.date))}</small>` : ""}
+      <b>${esc(n.titre)}</b><ul>${n.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></article>`;
+  // Nouveautés : seulement ce qui a été ajouté depuis la dernière visite (sinon, la dernière mise à jour)
   function ouvrirNouveautes() {
-    $("#nouv-liste").innerHTML = NOUVEAUTES.map((n) => `<article><small>${esc(new Date(n.date + "T12:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>
-      <b>${esc(n.titre)}</b><ul>${n.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></article>`).join("");
+    let vu = null; try { vu = localStorage.getItem("pm-nouv-vu"); } catch { /* facultatif */ }
+    const i = vu ? NOUVEAUTES.findIndex((n) => cleNouv(n) === vu) : -1;
+    let liste = i > 0 ? NOUVEAUTES.slice(0, i) : [];
+    if (!liste.length) liste = NOUVEAUTES.filter((n) => n.date === NOUVEAUTES[0].date);
+    const dates = [...new Set(liste.map((n) => n.date))];
+    $("#nouv-sous-titre").textContent = dates.length === 1 ? `Mise à jour du ${dateNouv(dates[0])}` : `Depuis votre dernière visite · ${dates.length} mises à jour`;
+    $("#nouv-liste").innerHTML = liste.map((n) => carteNouv(n, dates.length > 1)).join("");
     $("#nouv-voile").hidden = false;
     try { localStorage.setItem("pm-nouv-vu", NOUVEAUTES[0].id || NOUVEAUTES[0].date); } catch { /* facultatif */ }
   }
@@ -978,6 +988,16 @@
   }
   $$("[data-action='nouveautes']").forEach((b) => b.addEventListener("click", ouvrirNouveautes));
   $("#nouv-fermer").addEventListener("click", () => ($("#nouv-voile").hidden = true));
+  $("#nouv-historique").addEventListener("click", () => { $("#nouv-voile").hidden = true; afficherVue("apropos"); });
+  // À propos : historique complet des mises à jour, regroupé par date
+  function rendreAPropos() {
+    $("#ap-version").textContent = `Version ${NOUVEAUTES[0].date.replace(/-/g, ".")} · politique de confidentialité ${VERSION_POLITIQUE}`;
+    const parDate = new Map();
+    NOUVEAUTES.forEach((n) => { if (!parDate.has(n.date)) parDate.set(n.date, []); parDate.get(n.date).push(n); });
+    $("#ap-historique").innerHTML = [...parDate].map(([d, ns], k) => `<details class="ap-maj"${k === 0 ? " open" : ""}>
+      <summary><b>${esc(dateNouv(d))}</b><small>${ns.length > 1 ? ns.length + " changements" : esc(ns[0].titre)}</small></summary>
+      ${ns.map((n) => carteNouv(n, false)).join("")}</details>`).join("");
+  }
   $("#nouv-voile").addEventListener("click", (e) => { if (e.target.id === "nouv-voile") e.target.hidden = true; });
 
 
@@ -1509,6 +1529,7 @@ Question : ${question}
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
     if (nom === "meteo") initMeteo();
+    if (nom === "apropos") rendreAPropos();
     visiteDeVue(nom);
     if (nom === "reglages") { rendreVisitesReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
@@ -2198,7 +2219,7 @@ Question : ${question}
     ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
     ["Ma paie", "paie salaire talon remuneration", "paie"], ["Banques", "banques soldes heures vacances", "banques"], ["Temps supplémentaire", "temps supplementaire ts reclamation", "ts"],
     ["Compte de dépenses", "depenses repas kilometrage reclamation", "depenses"], ["Retraite", "retraite rente rrmsq", "retraite"], ["Contrat de travail", "contrat convention collective clause", "convention"],
-    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"],
+    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"], ["À propos et mises à jour", "a propos version historique mises a jour nouveautes", "apropos"],
   ];
   let rechMinuteur;
   $("#ac-q").addEventListener("input", () => { clearTimeout(rechMinuteur); rechMinuteur = setTimeout(rechercheGlobale, 180); });

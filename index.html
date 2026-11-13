@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611131625">
+  <link rel="stylesheet" href="styles.css?v=202611131704">
 </head>
 <body>
   <!-- Chargement -->
@@ -907,7 +907,7 @@
         <a class="rg-lien" href="https://discord.gg/bgrJVwPqyV" target="_blank" rel="noopener"><span>Discord de soutien</span><small>Entraide entre membres</small><i>↗</i></a>
         <a class="rg-lien" href="mailto:police.management@hotmail.com"><span>Courriel du soutien</span><small>police.management@hotmail.com</small><i>↗</i></a>
         <a class="rg-lien" href="politique.html" target="_blank" rel="noopener"><span>Politique de confidentialité</span><small>Loi 25 · vos droits · <span id="rg-consentement"></span></small><i>↗</i></a>
-        <a class="rg-lien" href="a-propos.html" target="_blank" rel="noopener"><span>À propos de Police Management</span><small>Pourquoi l'app existe · qui peut s'inscrire</small><i>↗</i></a>
+        <button data-menu="apropos"><span>À propos de Police Management</span><small>Version · historique des mises à jour</small><i>›</i></button>
         <a class="rg-lien" href="gouvernance.html" target="_blank" rel="noopener"><span>Gouvernance des renseignements personnels</span><small>Conservation · plaintes · incidents</small><i>↗</i></a>
       </div>
       </div>
@@ -1214,6 +1214,23 @@
 
     <!-- Vue App (installation) -->
     <!-- Bien-être et soutien : ressources publiques vérifiées, aucun renseignement recueilli -->
+    <section id="vue-apropos" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>À propos</h2>
+        <p class="ref" id="ap-version">Police Management</p>
+      </div>
+      <div class="panneau">
+        <p>Police Management est un outil indépendant de référence et d'horaire pour le personnel policier et les agents de la paix. Il n'est affilié à aucun corps de police ni organisme public.</p>
+        <div class="liste-reglages">
+          <a class="rg-lien" href="a-propos.html" target="_blank" rel="noopener"><span>Présentation de l'app</span><small>Pourquoi l'app existe · qui peut s'inscrire</small><i>↗</i></a>
+          <a class="rg-lien" href="politique.html" target="_blank" rel="noopener"><span>Politique de confidentialité</span><small>Loi 25 · vos droits</small><i>↗</i></a>
+          <a class="rg-lien" href="gouvernance.html" target="_blank" rel="noopener"><span>Gouvernance des renseignements personnels</span><small>Conservation · plaintes · incidents</small><i>↗</i></a>
+        </div>
+      </div>
+      <h3 class="intertitre">Historique des mises à jour</h3>
+      <div id="ap-historique" class="nouv-liste ap-historique"></div>
+    </section>
+
     <section id="vue-soutien" class="vue" hidden>
       <div class="vue-tete">
         <h2>Bien-être et soutien</h2>
@@ -2121,7 +2138,9 @@
     <section class="fiche-compte" role="dialog" aria-modal="true" aria-labelledby="nouv-titre">
       <button class="btn-icone fermer" id="nouv-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="nouv-titre">Nouveautés</h3>
+      <p class="ref" id="nouv-sous-titre"></p>
       <div id="nouv-liste" class="nouv-liste"></div>
+      <button type="button" class="btn-secondaire" id="nouv-historique">Voir l'historique des mises à jour</button>
     </section>
   </div>
 
@@ -2325,9 +2344,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611131625"></script>
+  <script src="config.js?v=202611131704"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611131625"></script>
-  <script src="app.js?v=202611131625"></script>
+  <script src="i18n.js?v=202611131704"></script>
+  <script src="app.js?v=202611131704"></script>
 </body>
 </html>

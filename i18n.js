@@ -2,6 +2,11 @@
 // Les textes français restent la référence; les lois et le contrat de travail restent en français.
 (function () {
   const EN = {
+"Historique des mises à jour": "Update history",
+"Voir l'historique des mises à jour": "See the update history",
+"À propos de Police Management": "About Police Management",
+"Version · historique des mises à jour": "Version · update history",
+"Présentation de l'app": "About the app",
 "J'ai reçu un code par courriel": "I received a code by email",
 "Entrez le code reçu par courriel": "Enter the code you received by email",
 "Entrez le code pour changer votre mot de passe": "Enter the code to change your password",

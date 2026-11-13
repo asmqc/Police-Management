@@ -2953,3 +2953,15 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 
 /* Messagerie retirée le 13 novembre 2026 */
 [data-poste="messages"], [data-menu="messages"], #ac-msg, #badge-messages, [data-adm-onglet="messagerie"], [data-adm-panneau="messagerie"] { display: none !important; }
+
+/* À propos : historique des mises à jour */
+.ap-historique { display: grid; gap: 10px; }
+.ap-maj { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 0 14px; }
+.ap-maj > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 14px 0; }
+.ap-maj > summary::-webkit-details-marker { display: none; }
+.ap-maj > summary small { color: var(--fg-doux); text-align: right; }
+.ap-maj[open] > summary { border-bottom: 1px solid var(--ligne); }
+.ap-maj article { padding: 12px 0; }
+.ap-maj article + article { border-top: 1px dashed var(--ligne); }
+#nouv-historique { margin-top: 12px; width: 100%; }
+#nouv-sous-titre { margin: -4px 0 8px; }
