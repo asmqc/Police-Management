@@ -2950,3 +2950,6 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .champ-code::placeholder{opacity:.25;letter-spacing:.35em}
 .code-titre{margin:0 0 4px;font-size:17px;font-weight:800}
 .verrou-code{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px;margin:4px auto 0;text-align:left}
+
+/* Messagerie retirée le 13 novembre 2026 */
+[data-poste="messages"], [data-menu="messages"], #ac-msg, #badge-messages, [data-adm-onglet="messagerie"], [data-adm-panneau="messagerie"] { display: none !important; }

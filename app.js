@@ -845,6 +845,7 @@
       "Les courriels de confirmation et de mot de passe contiennent maintenant un code à 6 chiffres plutôt qu'un lien.",
       "Les polices et les bibliothèques sont hébergées sur notre site : votre adresse IP n'est plus envoyée à Google Fonts.",
       "Certains renseignements anciens (signalements traités, vieux échanges de quarts, demandes non traitées) sont maintenant effacés automatiquement.",
+      "La messagerie est retirée. Pour joindre l'administrateur : Réglages › Signaler un problème, ou par courriel.",
     ] },
     { id: "2026-11-10-patrouille", date: "2026-11-10", titre: "Nouveau look : Patrouille", points: [
       "Bleu nuit, bande à damier, touches de gyrophare et tuiles de couleur sur l'accueil.",
@@ -1478,6 +1479,7 @@ Question : ${question}
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
+    if (nom === "messages") nom = "feuille"; // messagerie retirée le 13 novembre 2026
     if (nom === "paie") { ouvrirPaie(); return; }
     if (nom === "horaire" && !etat.versPaie && hr.onglet === "stats" && stats.contexte === "paie" && etat.vue !== "horaire") { hr.onglet = "calendrier"; stats.contexte = "horaire"; }
     if (nom !== "compte" && nom !== etat.vue) etat.vueAvant = nom;
@@ -1853,6 +1855,7 @@ Question : ${question}
   };
 
   async function compterMessages() {
+    return; // messagerie retirée
     if (!etat.profil) return 0;
     const { count } = await sb.from("messages").select("id", { count: "exact", head: true }).eq("destinataire", etat.profil.id).is("lu_le", null);
     const b = $("#badge-messages");
@@ -1870,6 +1873,7 @@ Question : ${question}
 
   // Messages en direct (Supabase Realtime)
   function ecouterMessages() {
+    return; // messagerie retirée
     if (msg.canal || !etat.profil) return;
     const moi = etat.profil.id;
     msg.canal = sb.channel("messages-" + moi)
@@ -2189,7 +2193,7 @@ Question : ${question}
     ["Horaire", "horaire rotation quart calendrier conge vacances", "horaire"], ["Carte", "carte borne kilometre route position", "carte"],
     ["Lois", "lois csr code securite routiere article", "csr"], ["Table des vitesses", "vitesse amende points grand exces", "vitesse"],
     ["Frais et contribution", "frais contribution amende tarif", "frais"], ["Feuille de poste", "feuille pad poste aide memoire", "feuille"],
-    ["Messages", "messages messagerie administrateur", "messages"], ["Forum", "forum discussion", "forum"], ["Idées et sondages", "idees sondages vote", "idees"],
+    ["Forum", "forum discussion", "forum"], ["Idées et sondages", "idees sondages vote", "idees"],
     ["Corps de police et territoires", "corps police territoire municipal autochtone", "corps"], ["Mon compte", "compte profil photo mot de passe", "compte"],
     ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
     ["Ma paie", "paie salaire talon remuneration", "paie"], ["Banques", "banques soldes heures vacances", "banques"], ["Temps supplémentaire", "temps supplementaire ts reclamation", "ts"],
@@ -4890,7 +4894,7 @@ Question : ${question}
   async function signalerFeuille(sig, f) {
     if (!sig.dataset.arme) { sig.dataset.arme = "1"; sig.textContent = "Confirmer le signalement"; return; }
     sig.disabled = true;
-    const { error } = await sb.rpc("envoyer_message", { p_destinataire: null, p_contenu: `Signalement — Feuille de poste de ${f.unite}${etat.profil.corps_police ? " (" + etat.profil.corps_police + ")" : ""} : elle pourrait contenir un élément interdit (code d'accès, fréquence radio, numéro interne ou renseignement sur une personne). Merci de la vérifier.` });
+    const { error } = await sb.from("signalements").insert({ type: "feuille", cible: null, extrait: `Feuille de poste de ${f.unite}${etat.profil.corps_police ? " (" + etat.profil.corps_police + ")" : ""}`.slice(0, 300), raison: "Elle pourrait contenir un élément interdit (code d'accès, fréquence radio, numéro interne ou renseignement sur une personne)." });
     if (error) { sig.disabled = false; return toast(traduireErreur(error)); }
     sig.textContent = "Signalé ✓"; toast("L'administrateur a été avisé et vérifiera la feuille");
   }
@@ -4914,8 +4918,9 @@ Question : ${question}
       <div class="fc-ligne">${estAdmin() ? "" : `<button type="button" class="lien" id="fp-signaler">Signaler à l'administrateur</button>`}<button type="button" class="lien rouge" id="fp-retirer">Retirer la photo</button></div>
     </div>`;
     if (image) {
-      const img = $("#fp-img"), cadre = $("#fp-cadre");
-      const appliquer = () => { img.style.width = fp.zoom * 100 + "%"; $("#fp-pc").textContent = Math.round(fp.zoom * 100) + " %"; cadre.classList.toggle("zoom", fp.zoom > 1); };
+      const img = $("#fp-img", el), cadre = $("#fp-cadre", el);
+      if (!img || !cadre) return; // affichage remplacé entre-temps
+      const appliquer = () => { img.style.width = fp.zoom * 100 + "%"; const pc = $("#fp-pc", el); if (pc) pc.textContent = Math.round(fp.zoom * 100) + " %"; cadre.classList.toggle("zoom", fp.zoom > 1); };
       $$("[data-fp-zoom]", el).forEach((b) => b.addEventListener("click", () => { fp.zoom = Math.min(4, Math.max(1, fp.zoom + 0.5 * Number(b.dataset.fpZoom))); appliquer(); }));
       img.addEventListener("dblclick", (e) => {
         const r = img.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
@@ -4924,10 +4929,10 @@ Question : ${question}
       });
       appliquer();
     }
-    const sig = $("#fp-signaler");
+    const sig = $("#fp-signaler", el);
     if (sig) sig.addEventListener("click", () => signalerFeuille(sig, f));
-    const ret = $("#fp-retirer");
-    ret.addEventListener("click", async () => {
+    const ret = $("#fp-retirer", el);
+    if (ret) ret.addEventListener("click", async () => {
       if (!ret.dataset.arme) { ret.dataset.arme = "1"; ret.textContent = "Toucher encore pour retirer la photo du poste"; return; }
       ret.disabled = true;
       const { data: ancien, error } = await sb.rpc("feuille_poste_retirer", {});
@@ -5368,8 +5373,8 @@ Format :
     const { data } = await sb.from("signalements").select("*").eq("traite", false).order("cree_le", { ascending: false });
     const n = (data || []).length;
     $("#adm-sig-nb").textContent = n || ""; $("#adm-sig-nb").hidden = !n;
-    $("#adm-signalements").innerHTML = n ? data.map((x) => `<li><span><b>${x.type === "sujet" ? "Sujet" : "Réponse"} signalé${x.type === "reponse" ? "e" : ""}</b><small>« ${esc(x.extrait || "")} » · ${esc(dateFr(x.cree_le))}</small></span>
-      <span class="fc-ligne"><button class="btn-danger petit" data-retirer-pub="${x.id}" data-type="${x.type}" data-cible="${x.cible}">Retirer la publication</button>
+    $("#adm-signalements").innerHTML = n ? data.map((x) => `<li><span><b>${x.type === "feuille" ? "Feuille de poste signalée" : x.type === "sujet" ? "Sujet signalé" : "Réponse signalée"}</b><small>« ${esc(x.extrait || "")} » · ${esc(dateFr(x.cree_le))}</small></span>
+      <span class="fc-ligne">${x.type === "feuille" ? `<span class="aide">${esc(x.raison || "")} Vérifiez-la dans Feuilles de poste.</span>` : `<button class="btn-danger petit" data-retirer-pub="${x.id}" data-type="${x.type}" data-cible="${x.cible}">Retirer la publication</button>`}
       <button class="btn-secondaire petit" data-traiter="${x.id}">Rien à faire</button></span></li>`).join("") : `<li class="vide-petit">Aucun signalement à traiter.</li>`;
     const traiter = (id) => sb.from("signalements").update({ traite: true }).eq("id", id);
     $$("[data-traiter]").forEach((b) => b.addEventListener("click", async () => { await traiter(b.dataset.traiter); rendreSignalements(); }));
