@@ -9356,9 +9356,10 @@ Format :
             ${p.statut === "refuse" ? `<button class="btn-secondaire" data-fc-statut="en_attente">Remettre en attente</button>` : ""}`}
         </div>
       </div>
-      ${p.statut === "approuve" ? `<div class="fc-section">
-        <h4>Message <span class="beta">BÊTA</span></h4>
-        <div class="fc-ligne"><button class="btn-secondaire" id="fc-ecrire">Envoyer un message personnel</button></div>
+      ${p.email ? `<div class="fc-section">
+        <h4>Courriel</h4>
+        <p>Ouvre votre app de courriel avec un message déjà adressé à ${esc(p.nom_complet || "cette personne")}.</p>
+        <div class="fc-ligne"><a class="btn-secondaire" id="fc-courriel" href="mailto:${encodeURIComponent(p.email).replace(/%40/g, "@")}?subject=${encodeURIComponent("Police Management")}&body=${encodeURIComponent(`Bonjour ${(p.nom_complet || "").split(" ")[0]},\n\n\n\nAnthony Smith\nAdministrateur, Police Management`)}">✉︎ Envoyer un courriel</a></div>
       </div>` : ""}
       <div class="fc-section">
         <h4>Mot de passe temporaire</h4>
@@ -9390,7 +9391,6 @@ Format :
     $$("[data-fc-statut]").forEach((btn) => btn.addEventListener("click", async () => {
       if (await decider(btn, id, btn.dataset.fcStatut)) ouvrirFiche(id);
     }));
-    if ($("#fc-ecrire")) $("#fc-ecrire").addEventListener("click", () => { fermerFiche(); ecrireA(id); });
     if ($("#fc-confirmer")) $("#fc-confirmer").addEventListener("click", async (e) => { if (await confirmerCourrielAdmin(e.currentTarget, id)) ouvrirFiche(id); });
     $("#fc-generer").addEventListener("click", () => { $("#fc-mdp").value = motDePasseAleatoire(); });
     $("#fc-copier").addEventListener("click", () => copier($("#fc-mdp").value));
