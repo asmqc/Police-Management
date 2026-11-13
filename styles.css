@@ -2965,3 +2965,21 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .ap-maj article + article { border-top: 1px dashed var(--ligne); }
 #nouv-historique { margin-top: 12px; width: 100%; }
 #nouv-sous-titre { margin: -4px 0 8px; }
+
+/* Bilan annuel Loi 25 */
+.bl-tete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.bl-tete select { width: auto; }
+.bl-progres { height: 8px; border-radius: 99px; background: var(--ligne); overflow: hidden; margin: 10px 0 6px; }
+.bl-progres span { display: block; height: 100%; width: 0; background: var(--ok, #2fbf71); border-radius: 99px; transition: width .3s; }
+.bl-auto { display: grid; gap: 6px; padding: 12px 14px; margin: 12px 0; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); font-size: .9rem; }
+.bl-etat.ok { color: var(--ok, #2fbf71); }
+.bl-etat.alerte { color: var(--alerte, #f5a524); font-weight: 600; }
+.bl-liste { display: grid; gap: 8px; }
+.bl-groupe { margin: 14px 0 2px; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-doux); }
+.bl-tache { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; padding: 12px 14px; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); cursor: pointer; }
+.bl-tache input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--ok, #2fbf71); }
+.bl-tache span { display: grid; gap: 4px; }
+.bl-tache small { color: var(--fg-doux); line-height: 1.45; }
+.bl-tache.fait b { text-decoration: line-through; opacity: .7; }
+.bl-date { color: var(--ok, #2fbf71) !important; font-weight: 600; }
+.bl-alerte { font-style: normal; font-size: .75rem; padding: 1px 7px; border-radius: 99px; background: var(--alerte, #f5a524); color: #111; margin-left: 4px; }

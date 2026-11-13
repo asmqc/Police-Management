@@ -674,7 +674,7 @@
     compterMessages();
     ecouterMessages();
     verifierAbonnement();
-    if (p.role === "admin") compterAttente();
+    if (p.role === "admin") { compterAttente(); compterBilanLoi25(); }
   }
 
   sb.auth.onAuthStateChange((evenement, session) => {
@@ -5455,7 +5455,89 @@ Format :
     if (ongletAdmin === "messagerie") rendreMessagerieAdmin();
     if (ongletAdmin === "outils") { initAdminEtat(); chargerEtatService(); }
     if (ongletAdmin === "stats") rendreBilanAdmin();
+    if (ongletAdmin === "loi25") rendreBilanLoi25();
   }));
+
+  /* ---------------- Bilan annuel Loi 25 (administrateur) ----------------
+     Liste des tâches à refaire chaque année avant le 13 novembre. Les cases cochées sont gardées dans bilan_loi25. */
+  const BILAN_LOI25 = [
+    { cle: "politique", groupe: "Documents", titre: "Relire la politique de confidentialité", aide: "Elle décrit-elle encore exactement ce que l'app recueille, pourquoi, qui y a accès et combien de temps c'est gardé ? Sinon, la mettre à jour (nouvelle version = nouvelle acceptation des membres).", lien: "politique.html" },
+    { cle: "efvp", groupe: "Documents", titre: "Mettre à jour l'EFVP", aide: "Ajouter un addenda qui résume les changements de l'année (nouvelles fonctions, nouveaux fournisseurs, données hors Québec) et confirmer que les risques restent faibles." },
+    { cle: "gouvernance", groupe: "Documents", titre: "Relire la page de gouvernance", aide: "Rôles, calendrier de conservation, traitement des plaintes et des incidents : tout est-il encore vrai ?", lien: "gouvernance.html" },
+    { cle: "incidents", groupe: "Documents", titre: "Relire le registre des incidents", aide: "Ajouter tout incident de l'année oublié (accès non autorisé, perte, envoi par erreur), même mineur. Garder chaque entrée 5 ans." },
+    { cle: "fournisseurs", groupe: "Fournisseurs", titre: "Vérifier la liste des fournisseurs", aide: "Supabase, Brevo, GitHub, Apple, Environnement Canada… Un fournisseur ajouté ou changé ? L'inscrire dans la politique et l'EFVP. L'entente de traitement des données (DPA) de Supabase est-elle signée ?" },
+    { cle: "mfa", groupe: "Sécurité", titre: "Double authentification partout", aide: "Active dans l'app (Mon compte) et sur Supabase, GitHub, Apple Developer et Brevo.", auto: "mfa_admin" },
+    { cle: "acces", groupe: "Sécurité", titre: "Revoir les accès et les clés", aide: "Personne d'autre n'a accès aux consoles. Remplacer toute clé ou tout jeton qui a été affiché ou partagé (GitHub, MapKit, Brevo)." },
+    { cle: "conseiller", groupe: "Sécurité", titre: "Conseiller de sécurité Supabase", aide: "Supabase › Advisors › Security : aucune alerte critique (tables sans règles d'accès, fonctions ouvertes)." },
+    { cle: "sauvegardes", groupe: "Sécurité", titre: "Vérifier les sauvegardes", aide: "Supabase › Database › Backups : une sauvegarde par jour, gardée 7 jours." },
+    { cle: "purges", groupe: "Conservation", titre: "Purges automatiques en marche", aide: "Les effacements automatiques (demandes refusées, problèmes réglés, statistiques, signalements, échanges) ont roulé récemment sans erreur.", auto: "purges" },
+    { cle: "inactifs", groupe: "Conservation", titre: "Comptes inactifs depuis 24 mois", aide: "Onglet Demandes › Inactifs 24 mois + : écrire au membre, puis supprimer le compte s'il ne revient pas dans les 30 jours.", auto: "inactifs" },
+    { cle: "signalements", groupe: "Conservation", titre: "Signalements et feuilles de poste", aide: "Aucun signalement en attente. Survoler les feuilles de poste : aucun code d'accès, aucune fréquence radio, aucun numéro non public ni renseignement sur une personne.", auto: "signalements" },
+    { cle: "demandes", groupe: "Droits", titre: "Demandes de droits de l'année", aide: "Chaque demande d'accès, de correction ou de suppression reçue par courriel a eu une réponse dans les 30 jours, et elle est notée." },
+    { cle: "veille", groupe: "Droits", titre: "Se tenir informé", aide: "Lire les nouveautés de la Commission d'accès à l'information (cai.gouv.qc.ca) de l'année : un changement à la loi ou aux lignes directrices ?" },
+  ];
+  const ECHEANCE_BILAN = "11-13"; // chaque année, le 13 novembre
+  let bilanAnnee = new Date().getFullYear();
+  let bilanFaits = new Map();
+  async function compterBilanLoi25() {
+    if (!estAdmin()) return;
+    const an = new Date().getFullYear();
+    const { data } = await sb.from("bilan_loi25").select("tache").eq("annee", an);
+    const reste = BILAN_LOI25.length - (data || []).length;
+    const proche = new Date() >= new Date(`${an}-10-01T00:00`);
+    const b = $("#adm-loi25-nb");
+    b.textContent = reste; b.hidden = !(proche && reste > 0);
+  }
+  async function rendreBilanLoi25() {
+    const sel = $("#bl-annee");
+    const anCourant = new Date().getFullYear();
+    if (!sel.options.length) {
+      for (let a = anCourant; a >= 2026; a--) sel.add(new Option(`Bilan ${a}`, a));
+      sel.addEventListener("change", () => { bilanAnnee = +sel.value; rendreBilanLoi25(); });
+    }
+    sel.value = bilanAnnee;
+    const [{ data: faits, error }, { data: auto }] = await Promise.all([
+      sb.from("bilan_loi25").select("tache, fait_le").eq("annee", bilanAnnee),
+      sb.rpc("admin_bilan_auto"),
+    ]);
+    if (error) { $("#bl-liste").innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    bilanFaits = new Map((faits || []).map((f) => [f.tache, f.fait_le]));
+    const n = bilanFaits.size, total = BILAN_LOI25.length;
+    const echeance = new Date(`${bilanAnnee}-${ECHEANCE_BILAN}T23:59`);
+    $("#bl-echeance").textContent = n === total ? `Bilan ${bilanAnnee} complété ✓ Prochain bilan avant le 13 novembre ${bilanAnnee + 1}.` : `À faire avant le ${echeance.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}.`;
+    $("#bl-compte").textContent = `${n} sur ${total} tâches faites`;
+    $("#bl-barre").style.width = Math.round((n / total) * 100) + "%";
+    // Vérifications automatiques (état actuel)
+    const a = auto || {};
+    const purgesOk = (a.purges || []).every((p) => !p.statut || p.statut === "succeeded");
+    const etats = {
+      mfa_admin: a.mfa_admin ? ["ok", "Double authentification active sur ce compte"] : ["alerte", "Double authentification pas encore activée dans l'app (Mon compte)"],
+      purges: purgesOk ? ["ok", "Purges automatiques : aucune erreur"] : ["alerte", "Une purge automatique a échoué : voir Supabase › Cron"],
+      inactifs: a.inactifs ? ["alerte", `${a.inactifs} compte${a.inactifs > 1 ? "s" : ""} inactif${a.inactifs > 1 ? "s" : ""} depuis plus de 24 mois`] : ["ok", "Aucun compte inactif depuis 24 mois"],
+      signalements: a.signalements ? ["alerte", `${a.signalements} signalement${a.signalements > 1 ? "s" : ""} à traiter`] : ["ok", "Aucun signalement en attente"],
+    };
+    $("#bl-auto").innerHTML = `<b>Vérifications automatiques</b>` + Object.values(etats).map(([t, txt]) => `<span class="bl-etat ${t}">${t === "ok" ? "✓" : "!"} ${esc(txt)}</span>`).join("");
+    let groupe = "";
+    $("#bl-liste").innerHTML = BILAN_LOI25.map((t) => {
+      const fait = bilanFaits.get(t.cle);
+      const tete = t.groupe !== groupe ? `<h4 class="bl-groupe">${esc((groupe = t.groupe))}</h4>` : "";
+      const alerte = t.auto && etats[t.auto] && etats[t.auto][0] === "alerte";
+      return `${tete}<label class="bl-tache${fait ? " fait" : ""}">
+        <input type="checkbox" data-bl="${t.cle}"${fait ? " checked" : ""}>
+        <span><b>${esc(t.titre)}${alerte ? ` <em class="bl-alerte">à vérifier</em>` : ""}</b><small>${esc(t.aide)}${t.lien ? ` <a href="${t.lien}" target="_blank" rel="noopener">Ouvrir ↗</a>` : ""}</small>
+        ${fait ? `<small class="bl-date">Fait le ${esc(new Date(fait).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}</small>` : ""}</span>
+      </label>`;
+    }).join("");
+    $$("[data-bl]", $("#bl-liste")).forEach((c) => c.addEventListener("change", async () => {
+      c.disabled = true;
+      const { error: e } = c.checked
+        ? await sb.from("bilan_loi25").upsert({ annee: bilanAnnee, tache: c.dataset.bl, fait_le: new Date().toISOString() })
+        : await sb.from("bilan_loi25").delete().eq("annee", bilanAnnee).eq("tache", c.dataset.bl);
+      if (e) { c.checked = !c.checked; c.disabled = false; return toast(traduireErreur(e)); }
+      if (c.checked && bilanFaits.size + 1 === BILAN_LOI25.length) toast(`Bilan ${bilanAnnee} complété. Bravo !`);
+      rendreBilanLoi25(); compterBilanLoi25();
+    }));
+  }
   // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
   const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · constats",
     carte: "Carte", horaire: "Horaire", "stats-paie": "Paie", "stats-banques": "Banques", "stats-ts": "Temps supplémentaire", "stats-depenses": "Dépenses", "stats-retraite": "Retraite", "stats-mois": "Heures du mois", "stats-annee": "Année",

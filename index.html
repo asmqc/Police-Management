@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611131704">
+  <link rel="stylesheet" href="styles.css?v=202611131715">
 </head>
 <body>
   <!-- Chargement -->
@@ -1780,7 +1780,22 @@
         <button type="button" role="tab" data-adm-onglet="messagerie" aria-checked="false">Messagerie</button>
         <button type="button" role="tab" data-adm-onglet="communaute" aria-checked="false">Communauté</button>
         <button type="button" role="tab" data-adm-onglet="outils" aria-checked="false">Outils</button>
-        <button type="button" role="tab" data-adm-onglet="stats" aria-checked="false">Bilan</button>
+        <button type="button" role="tab" data-adm-onglet="stats" aria-checked="false">Statistiques</button>
+        <button type="button" role="tab" data-adm-onglet="loi25" aria-checked="false">Bilan Loi 25 <b class="badge-ligne" id="adm-loi25-nb" hidden></b></button>
+      </div>
+      <div class="adm-panneau" data-adm-panneau="loi25" hidden>
+        <div class="bl-tete">
+          <div>
+            <h3 class="intertitre" style="margin:0">Bilan annuel Loi 25</h3>
+            <p class="aide" id="bl-echeance"></p>
+          </div>
+          <select id="bl-annee" aria-label="Année du bilan"></select>
+        </div>
+        <div class="bl-progres"><span id="bl-barre"></span></div>
+        <p class="ref" id="bl-compte"></p>
+        <div id="bl-auto" class="bl-auto"></div>
+        <div id="bl-liste" class="bl-liste"></div>
+        <p class="aide">Chaque case cochée est enregistrée avec la date, pour garder la preuve que le bilan a été fait. Les documents (EFVP, registre des incidents) sont dans le projet Police Management.</p>
       </div>
       <div class="adm-panneau" data-adm-panneau="stats" hidden>
         <p class="aide">Chiffres d'ensemble, calculés à partir des données déjà présentes (comptes, dernières connexions, fonctions configurées). Aucun suivi de ce que chaque membre consulte.</p>
@@ -2344,9 +2359,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611131704"></script>
+  <script src="config.js?v=202611131715"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611131704"></script>
-  <script src="app.js?v=202611131704"></script>
+  <script src="i18n.js?v=202611131715"></script>
+  <script src="app.js?v=202611131715"></script>
 </body>
 </html>
