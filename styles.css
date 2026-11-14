@@ -3152,3 +3152,39 @@ body.est-admin .admin-seul { display: grid; gap: 12px; margin-bottom: 16px; }
 .annonce-d-rabais[hidden] { display: none; }
 .annonce-d-rabais h4 { margin: 0 0 6px; font-size: 1rem; color: #FFC53D; }
 .annonce-d-rabais p { margin: 0; white-space: pre-line; }
+
+/* ===== Accueil professionnel : fiche de service (briefing) ===== */
+#ac-p-infos { gap: 18px !important; }
+.ac-fiche { position: relative; overflow: hidden; border-radius: 18px; background: linear-gradient(160deg, #0F2147 0%, #0A1631 100%); border: 1px solid #22396A; box-shadow: 0 14px 34px rgba(0,0,0,.35); color: #EAF0F8; }
+html[data-theme="clair"] .ac-fiche, html:not([data-theme]) .ac-fiche { color: #EAF0F8; }
+.ac-fiche-bande { height: 8px; background: repeating-linear-gradient(90deg, #FFFFFF 0 10px, #0B1E4A 10px 20px); opacity: .9; }
+.ac-fiche-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 18px 0; }
+.ac-fiche-label { font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: #8EA4C4; }
+.ac-fiche-heure { font-size: .82rem; color: #B9C7DB; text-transform: capitalize; white-space: nowrap; }
+.ac-fiche-heure b { font-family: var(--f-mono, ui-monospace, monospace); color: #fff; font-weight: 700; }
+.ac-fiche-id { display: flex; align-items: center; gap: 14px; padding: 14px 18px 16px; }
+.ac-fiche-id .avatar { width: 54px; height: 54px; flex: 0 0 54px; font-size: 1.15rem; border: 2px solid #C9A227; box-shadow: 0 0 0 3px rgba(201,162,39,.15); }
+.ac-fiche-id h2 { margin: 0; font-size: clamp(1.25rem, 4.6vw, 1.6rem); font-weight: 800; letter-spacing: -.01em; line-height: 1.15; color: #fff; }
+.ac-fiche-id .ac-sous { margin: 3px 0 0; font-size: .86rem; color: #B9C7DB; }
+.ac-statut { display: grid; grid-template-columns: 1fr 1fr auto; align-items: stretch; width: 100%; margin: 0; padding: 0; border: 0; border-top: 1px solid #22396A; background: rgba(255,255,255,.03); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ac-statut:active { background: rgba(255,255,255,.07); }
+.ac-statut-cel { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto auto; column-gap: 10px; row-gap: 2px; align-items: center; padding: 12px 18px 14px; min-width: 0; }
+.ac-statut-cel + .ac-statut-cel { border-left: 1px solid #22396A; }
+.ac-statut-cel small { grid-column: 1 / -1; font-size: .68rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #8EA4C4; }
+.ac-statut-cel > span { display: contents; }
+.ac-statut-cel .pastille-q { grid-row: 2 / span 2; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 1rem; }
+.ac-statut-cel b { font-size: .98rem; color: #fff; line-height: 1.15; }
+.ac-statut-cel em { font-style: normal; font-family: var(--f-mono, ui-monospace, monospace); font-size: .8rem; color: #CFE0FF; }
+.ac-statut > i { display: grid; place-items: center; padding: 0 14px; font-style: normal; font-size: 1.4rem; color: #8EA4C4; border-left: 1px solid #22396A; }
+.ac-bloc { display: grid; gap: 10px; }
+.ac-bloc-tete { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-left: 3px solid #C9A227; padding-left: 10px; }
+.ac-bloc-tete h3 { margin: 0; font-size: .78rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--fg-doux); }
+.ac-bloc-tete .ac-annonces-tout { margin: 0 !important; font-size: .85rem; text-decoration: none; }
+#ac-bloc-annonces:not(:has(> .ac-carrousel:not([hidden]))) { display: none; }
+#ac-bloc-traiter:not(:has(> .ac-admin:not([hidden]), > .ts-confirmer:not([hidden]))) { display: none; }
+.ac-echeances.ac-bloc { padding: 14px 16px; }
+.ac-echeances.ac-bloc > .ac-bloc-tete { margin-bottom: 2px; }
+#ac-p-infos .car-piste { border-radius: 16px; }
+#ac-p-infos .ac-admin { border-radius: 14px; }
+.pied-accueil { font-size: .72rem; opacity: .75; }
+.ac-fiche-label { white-space: nowrap; }

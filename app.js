@@ -2656,11 +2656,18 @@ Question : ${question}
   }
   async function initAccueil() {
     const p = etat.profil;
-    const h = new Date().getHours();
-    const prenom = (p.nom_complet || "").trim().split(/\s+/)[0] || "";
-    $("#ac-bonjour").textContent = `${h >= 18 || h < 5 ? "Bonsoir" : "Bonjour"}${prenom ? ", " + prenom : ""}`;
-    $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
-    $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
+    // Fiche de service : grade et nom, corps et poste, date et heure
+    const grade = (p.grade || "").trim();
+    $("#ac-bonjour").textContent = [grade ? grade.charAt(0).toUpperCase() + grade.slice(1) : "", (p.nom_complet || "").trim()].filter(Boolean).join(" ");
+    $("#ac-unite").textContent = [p.corps_police, p.unite].filter(Boolean).join(" · ");
+    const majHeure = () => {
+      const d = new Date();
+      $("#ac-date").textContent = d.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+      $("#ac-heure").textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    };
+    majHeure();
+    clearInterval(initAccueil.minuteur);
+    initAccueil.minuteur = setInterval(() => { if (etat.vue === "accueil" && document.visibilityState === "visible") majHeure(); }, 20000);
     remplirAvatar($("#ac-avatar"), p);
     rendreFonctions();
     try { rendreEcheances(); } catch (e) { console.warn(e); }
@@ -2671,6 +2678,19 @@ Question : ${question}
       await chargerMonHoraire();
       chargerPaie().then(rendreEcheances).catch(() => {});
       try { rendreTsAConfirmer(); } catch (e) { console.warn(e); }
+      const celQuart = (iso) => {
+        const q = quartDu(iso, hr);
+        const t = !!heuresJour(q.code, iso, hr);
+        return `<span class="pastille-q q q-${esc(q.code || "C")}">${esc(q.code || "–")}</span><b>${esc(q.code ? QUARTS[q.code].nom : "—")}</b>${t ? `<em>${esc(heuresDe(q.code, hr, iso))}</em>` : ""}`;
+      };
+      if (!hr.config) {
+        $("#ac-statut-auj").innerHTML = `<b>Configurer ma rotation</b>`;
+        $("#ac-statut-dem").innerHTML = `<em>Votre quart s'affichera ici</em>`;
+      } else {
+        const a0 = aujourdhuiISO();
+        $("#ac-statut-auj").innerHTML = celQuart(a0);
+        $("#ac-statut-dem").innerHTML = celQuart(isoDe(jourUTC(a0) + 1));
+      }
       if (!hr.config) {
         carte.innerHTML = `<span class="pastille-q q q-C">?</span><span><small>Mon horaire</small><strong>Configurer ma rotation</strong><em>Votre quart du jour s'affichera ici</em></span>`;
       } else {
@@ -5313,7 +5333,7 @@ Format :
     const tout = $("#ac-annonces-tout");
     tout.hidden = !annoncesCache.length;
     const nbNouv = annoncesCache.filter((a) => annonceNouvelle(a, lues)).length;
-    tout.textContent = `Toutes les annonces (${annoncesCache.length})${nbNouv ? ` · ${nbNouv} nouvelle${nbNouv > 1 ? "s" : ""}` : ""} ›`;
+    tout.textContent = `Tout voir (${annoncesCache.length})${nbNouv ? ` · ${nbNouv} nouv.` : ""} ›`;
     const parId = Object.fromEntries(annoncesCache.map((a) => [a.id, a]));
     $$("[data-annonce]", piste).forEach((n) => n.addEventListener("click", () => ouvrirAnnonce(parId[n.dataset.annonce], urls)));
   }
@@ -5473,7 +5493,7 @@ Format :
     // La pastille « Nouveau » disparaît une fois l'annonce ouverte
     $$(`[data-annonce="${a.id}"] .an-nouveau`).forEach((x) => x.remove());
     const tout = $("#ac-annonces-tout");
-    if (tout && !tout.hidden) { const lues = annoncesLues(); const n = annoncesCache.filter((x) => annonceNouvelle(x, lues)).length; tout.textContent = `Toutes les annonces (${annoncesCache.length})${n ? ` · ${n} nouvelle${n > 1 ? "s" : ""}` : ""} ›`; }
+    if (tout && !tout.hidden) { const lues = annoncesLues(); const n = annoncesCache.filter((x) => annonceNouvelle(x, lues)).length; tout.textContent = `Tout voir (${annoncesCache.length})${n ? ` · ${n} nouv.` : ""} ›`; }
   }
   $("#annonce-d-fermer").addEventListener("click", () => ($("#annonce-voile").hidden = true));
   $("#annonce-voile").addEventListener("click", (e) => { if (e.target.id === "annonce-voile") $("#annonce-voile").hidden = true; });

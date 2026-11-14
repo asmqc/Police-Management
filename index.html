@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611141812">
+  <link rel="stylesheet" href="styles.css?v=202611141818">
 </head>
 <body>
   <!-- Chargement -->
@@ -546,38 +546,52 @@
     <section id="vue-accueil" class="vue">
 
       <div id="ac-p-infos">
-      <section class="ac-carrousel" id="ac-carrousel" hidden aria-roledescription="carrousel" aria-label="Annonces">
-        <div class="car-piste" id="car-piste"></div>
-        <div class="car-points" id="car-points" role="tablist" aria-label="Choisir une annonce"></div>
-      </section>
-      <div class="ac-fixes" id="ac-fixes" hidden aria-label="Annonces importantes"></div>
-      <div class="accueil-tete">
-        <span class="avatar grand" id="ac-avatar"></span>
-        <div>
-          <p class="ref" id="ac-date"></p>
-          <h2 id="ac-bonjour">Bonjour</h2>
-          <p class="ac-sous" id="ac-unite"></p>
+      <!-- Fiche de service : identité, date, statut du jour -->
+      <section class="ac-fiche" aria-label="Fiche de service">
+        <div class="ac-fiche-bande" aria-hidden="true"></div>
+        <div class="ac-fiche-tete">
+          <span class="ac-fiche-label">Briefing</span>
+          <span class="ac-fiche-heure"><span id="ac-date"></span> · <b id="ac-heure"></b></span>
         </div>
-      </div>
+        <div class="ac-fiche-id">
+          <span class="avatar" id="ac-avatar"></span>
+          <div>
+            <h2 id="ac-bonjour"></h2>
+            <p class="ac-sous" id="ac-unite"></p>
+          </div>
+        </div>
+        <button type="button" class="ac-statut" id="ac-statut" data-aller="horaire">
+          <span class="ac-statut-cel"><small>Aujourd'hui</small><span id="ac-statut-auj">—</span></span>
+          <span class="ac-statut-cel"><small>Demain</small><span id="ac-statut-dem">—</span></span>
+          <i aria-hidden="true">›</i>
+        </button>
+      </section>
+      <button class="ac-quart" id="ac-quart" data-aller="horaire" hidden></button>
 
-      <h3 class="ac-section-titre" id="ac-auj-titre">Aujourd'hui</h3>
-      <button class="ac-quart" id="ac-quart" data-aller="horaire"></button>
+      <section class="ac-bloc" id="ac-bloc-annonces" aria-labelledby="ac-annonces-titre">
+        <div class="ac-bloc-tete"><h3 id="ac-annonces-titre">Avis et annonces</h3><button type="button" class="lien ac-annonces-tout" id="ac-annonces-tout" hidden>Tout voir ›</button></div>
+        <section class="ac-carrousel" id="ac-carrousel" hidden aria-roledescription="carrousel" aria-label="Annonces">
+          <div class="car-piste" id="car-piste"></div>
+          <div class="car-points" id="car-points" role="tablist" aria-label="Choisir une annonce"></div>
+        </section>
+        <div class="ac-fixes" id="ac-fixes" hidden aria-label="Annonces importantes"></div>
+        <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
+      </section>
 
-      <button class="ac-admin ac-msg" id="ac-msg" data-aller="messages" hidden></button>
-      <button class="ac-admin" id="ac-admin" data-aller="admin" hidden></button>
+      <section class="ac-bloc" id="ac-bloc-traiter" aria-labelledby="ac-traiter-titre">
+        <div class="ac-bloc-tete"><h3 id="ac-traiter-titre">À traiter</h3></div>
+        <button class="ac-admin ac-msg" id="ac-msg" data-aller="messages" hidden></button>
+        <button class="ac-admin" id="ac-admin" data-aller="admin" hidden></button>
+        <section class="panneau ts-confirmer" id="ac-tsc" hidden aria-label="Temps supplémentaire à confirmer"></section>
+      </section>
 
-      <section class="panneau ts-confirmer" id="ac-tsc" hidden aria-label="Temps supplémentaire à confirmer"></section>
-
-      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
-      <button type="button" class="lien ac-annonces-tout" id="ac-annonces-tout" hidden>Toutes les annonces ›</button>
-
-      <section class="panneau ac-echeances" id="ac-echeances" aria-labelledby="ac-echeances-titre" hidden>
-        <h3 id="ac-echeances-titre">À ne pas oublier</h3>
+      <section class="ac-bloc panneau ac-echeances" id="ac-echeances" aria-labelledby="ac-echeances-titre" hidden>
+        <div class="ac-bloc-tete"><h3 id="ac-echeances-titre">Échéances</h3></div>
         <ul id="ac-echeances-liste"></ul>
       </section>
       </div>
 
-      <p class="pied-accueil">Police Management · Outil indépendant de référence. Les textes officiels prévalent.</p>
+      <p class="pied-accueil">Police Management · Outil indépendant, non affilié à un corps de police. Les textes officiels prévalent.</p>
     </section>
 
     <!-- Vue Fonctionnalités : tous les outils, regroupés -->
@@ -2422,9 +2436,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611141812"></script>
+  <script src="config.js?v=202611141818"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611141812"></script>
-  <script src="app.js?v=202611141812"></script>
+  <script src="i18n.js?v=202611141818"></script>
+  <script src="app.js?v=202611141818"></script>
 </body>
 </html>
