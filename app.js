@@ -5286,7 +5286,7 @@ Format :
   async function afficherAnnonces() {
     const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(40);
     const maintenant = new Date();
-    annoncesCache = (data || []).filter((a) => (a.categorie || "annonce") === "annonce" && (!a.corps || corpsVisible(a.corps)) && (!a.debut_le || new Date(a.debut_le) <= maintenant))
+    annoncesCache = (data || []).filter((a) => (!a.corps || corpsVisible(a.corps)) && (!a.debut_le || new Date(a.debut_le) <= maintenant))
       .sort((x, y) => new Date(annonceDebut(y)) - new Date(annonceDebut(x)));
     const ordre = { urgent: 0, important: 1, info: 2 };
     const courantes = annoncesCache.filter((a) => !annonceExpiree(a))
@@ -5324,38 +5324,104 @@ Format :
     $$("[data-ent-filtre]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
     rendreEntreprises();
   }));
+  // Entreprises (table séparée des annonces). L'administrateur les ajoute et les modifie ici même.
+  let entEdition = null;
   async function rendreEntreprises() {
     const z = $("#ent-liste");
-    const { data, error } = await sb.from("annonces").select("*").eq("actif", true).eq("categorie", "entreprise").order("cree_le", { ascending: false }).limit(100);
+    const admin = estAdmin();
+    const { data, error } = await sb.from("entreprises").select("*").order("cree_le", { ascending: false }).limit(200);
     if (error) { z.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
-    const maintenant = new Date();
-    const toutes = (data || []).filter((a) => (!a.corps || corpsVisible(a.corps)) && (!a.debut_le || new Date(a.debut_le) <= maintenant) && !annonceExpiree(a));
-    const liste = filtreEnt === "policier" ? toutes.filter((a) => a.entreprise_policier) : toutes;
+    const toutes = (data || []).filter((e) => admin || e.actif);
+    const liste = filtreEnt === "policier" ? toutes.filter((e) => e.geree_par_policier) : toutes;
     if (!liste.length) {
-      z.innerHTML = `<p class="vide">${filtreEnt === "policier" ? "Aucune entreprise gérée par un policier pour le moment." : "Aucune entreprise pour le moment. Revenez bientôt !"}</p>`;
+      z.innerHTML = `<p class="vide">${filtreEnt === "policier" ? "Aucune entreprise gérée par un policier pour le moment." : admin ? "Aucune entreprise. Touchez « Ajouter une entreprise »." : "Aucune entreprise pour le moment. Revenez bientôt !"}</p>`;
       return;
     }
-    const urls = await urlsAnnonces(liste.map((a) => a.image_path));
+    const urls = await urlsAnnonces(liste.map((e) => e.image_path));
     const lues = annoncesLues();
-    z.innerHTML = liste.map((a) => {
-      const img = a.image_path && urls[a.image_path];
-      let site = ""; try { site = a.lien ? new URL(a.lien).hostname.replace(/^www\./, "") : ""; } catch { /* lien invalide */ }
-      return `<article class="ent-carte" role="button" tabindex="0" data-entreprise="${a.id}">
-        ${img ? `<div class="ent-image" style="--fond:url('${esc(img)}')"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></div>` : `<div class="ent-image sans-image"><span>${esc(a.titre.slice(0, 1).toUpperCase())}</span></div>`}
+    z.innerHTML = liste.map((e) => {
+      const img = e.image_path && urls[e.image_path];
+      let site = ""; try { site = e.lien ? new URL(e.lien).hostname.replace(/^www\./, "") : ""; } catch { /* lien invalide */ }
+      const nouv = !lues.has(e.id) && Date.now() - new Date(e.cree_le).getTime() < 21 * 864e5;
+      return `<article class="ent-carte${e.actif ? "" : " ent-masquee"}">
+        <div role="button" tabindex="0" data-entreprise="${e.id}" class="ent-ouvrir">
+        ${img ? `<div class="ent-image" style="--fond:url('${esc(img)}')"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></div>` : `<div class="ent-image sans-image"><span>${esc(e.nom.slice(0, 1).toUpperCase())}</span></div>`}
         <div class="ent-corps">
-          <div class="ent-marques">${a.entreprise_policier ? `<span class="ent-policier">👮 Gérée par un policier</span>` : ""}${annonceNouvelle(a, lues) ? `<span class="an-nouveau">Nouveau</span>` : ""}</div>
-          <b>${esc(a.titre)}</b>
-          ${a.texte ? `<p>${esc(a.texte)}</p>` : ""}
+          <div class="ent-marques">${e.geree_par_policier ? `<span class="ent-policier">👮 Gérée par un policier</span>` : ""}${nouv ? `<span class="an-nouveau">Nouveau</span>` : ""}${e.actif ? "" : `<span class="an-fin">Masquée</span>`}</div>
+          <b>${esc(e.nom)}</b>
+          ${e.histoire ? `<p>${esc(e.histoire)}</p>` : ""}
           <span class="ent-actions"><span class="annonce-lien">Lire leur histoire ›</span>${site ? `<small>${esc(site)}</small>` : ""}</span>
-        </div></article>`;
+        </div></div>
+        ${admin ? `<div class="fc-ligne ent-adm"><button class="btn-secondaire petit" data-ent-modifier="${e.id}">Modifier</button><button class="btn-secondaire petit" data-ent-basculer="${e.id}" data-actif="${e.actif}">${e.actif ? "Masquer" : "Afficher"}</button><button class="btn-danger petit" data-ent-suppr="${e.id}">Supprimer</button></div>` : ""}
+      </article>`;
     }).join("");
-    const parId = Object.fromEntries(liste.map((a) => [a.id, a]));
+    const parId = Object.fromEntries(liste.map((e) => [e.id, e]));
     $$("[data-entreprise]", z).forEach((n) => {
-      const ouvrir = () => { ouvrirAnnonce(parId[n.dataset.entreprise], urls); const m = n.querySelector(".an-nouveau"); if (m) m.remove(); };
+      const ouvrir = () => {
+        const e = parId[n.dataset.entreprise];
+        ouvrirAnnonce({ id: e.id, entreprise: true, geree_par_policier: e.geree_par_policier, titre: e.nom, texte: e.histoire, lien: e.lien, image_path: e.image_path, cree_le: e.cree_le, modifie_le: e.modifie_le }, urls);
+        const m = n.querySelector(".an-nouveau"); if (m) m.remove();
+      };
       n.addEventListener("click", ouvrir);
-      n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ouvrir(); } });
+      n.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ouvrir(); } });
     });
+    $$("[data-ent-modifier]", z).forEach((b) => b.addEventListener("click", () => ouvrirFormEnt(parId[b.dataset.entModifier])));
+    $$("[data-ent-basculer]", z).forEach((b) => b.addEventListener("click", async () => {
+      const { error: e } = await sb.from("entreprises").update({ actif: b.dataset.actif !== "true" }).eq("id", b.dataset.entBasculer);
+      if (e) return toast(traduireErreur(e));
+      rendreEntreprises();
+    }));
+    $$("[data-ent-suppr]", z).forEach((b) => b.addEventListener("click", async () => {
+      if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
+      const e = parId[b.dataset.entSuppr];
+      const { error: er } = await sb.from("entreprises").delete().eq("id", e.id);
+      if (er) return toast(traduireErreur(er));
+      if (e.image_path) await sb.storage.from("annonces").remove([e.image_path]);
+      toast("Entreprise supprimée"); rendreEntreprises();
+    }));
   }
+  function ouvrirFormEnt(e) {
+    entEdition = e || null;
+    $("#ent-form").hidden = false; $("#ent-ajouter").hidden = true;
+    $("#ent-form-titre").textContent = e ? `Modifier « ${e.nom} »` : "Nouvelle entreprise";
+    $("#ent-nom").value = e ? e.nom : ""; $("#ent-histoire").value = e ? e.histoire || "" : ""; $("#ent-lien").value = e ? e.lien || "" : "";
+    $("#ent-policier").checked = !!(e && e.geree_par_policier);
+    $("#ent-image").value = ""; $("#ent-fichier").textContent = "";
+    $("#ent-image-btn").textContent = e && e.image_path ? "Remplacer l'image" : "Ajouter une image (1600 × 900 idéalement)";
+    $("#ent-envoyer").textContent = e ? "Enregistrer les modifications" : "Publier l'entreprise";
+    $("#ent-form").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("#ent-nom").focus();
+  }
+  function fermerFormEnt() { entEdition = null; $("#ent-form").hidden = true; $("#ent-ajouter").hidden = false; }
+  $("#ent-ajouter").addEventListener("click", () => ouvrirFormEnt(null));
+  $("#ent-annuler").addEventListener("click", fermerFormEnt);
+  $("#ent-image").addEventListener("change", (e) => { const f = e.target.files[0]; $("#ent-fichier").textContent = f ? `Image : ${f.name}` : ""; });
+  $("#ent-form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const nom = $("#ent-nom").value.trim();
+    if (!nom) return $("#ent-nom").focus();
+    const lien = $("#ent-lien").value.trim();
+    if (lien && !/^https:\/\/\S+$/.test(lien)) return toast("Le site web doit commencer par https://");
+    const btn = $("#ent-envoyer"); btn.disabled = true;
+    let image_path = entEdition ? entEdition.image_path : null;
+    const f = $("#ent-image").files[0];
+    if (f) {
+      if (f.size > 5 * 1024 * 1024) { btn.disabled = false; return toast("Image trop lourde (5 Mo maximum)"); }
+      image_path = `entreprises/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${(f.type.split("/")[1] || "jpg").replace("jpeg", "jpg")}`;
+      const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
+      if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
+    }
+    const champs = { nom, histoire: $("#ent-histoire").value.trim() || null, lien: lien || null, image_path, geree_par_policier: $("#ent-policier").checked };
+    const ancienne = entEdition && entEdition.image_path;
+    const { error } = entEdition
+      ? await sb.from("entreprises").update({ ...champs, modifie_le: new Date().toISOString() }).eq("id", entEdition.id)
+      : await sb.from("entreprises").insert(champs);
+    btn.disabled = false;
+    if (error) return toast(traduireErreur(error));
+    if (f && ancienne && ancienne !== image_path) await sb.storage.from("annonces").remove([ancienne]);
+    toast(entEdition ? "Entreprise modifiée" : "Entreprise publiée");
+    fermerFormEnt(); rendreEntreprises();
+  });
 
   async function ouvrirToutesAnnonces() {
     const urls = await urlsAnnonces(annoncesCache.map((a) => a.image_path));
@@ -5374,10 +5440,10 @@ Format :
     const img = $("#annonce-d-img"), u = a.image_path && urls[a.image_path];
     img.hidden = !u; if (u) { img.src = u; img.alt = a.titre; }
     const type = a.type || "info";
-    $("#annonce-d-type").hidden = type === "info" || a.categorie === "entreprise";
+    $("#annonce-d-type").hidden = type === "info" || !!a.entreprise;
     $("#annonce-d-type").className = `an-pastille an-${type}`;
     $("#annonce-d-type").textContent = TYPES_ANNONCE[type];
-    $("#annonce-d-date").textContent = `${a.categorie === "entreprise" ? (a.entreprise_policier ? "Entreprise · gérée par un policier" : "Entreprise") : "Annonce"} · ${quand(annonceDebut(a))}${a.expire_le ? (annonceExpiree(a) ? " · terminée" : ` · jusqu'au ${dateFr(a.expire_le)}`) : ""}${a.modifie_le ? " · modifiée" : ""}`;
+    $("#annonce-d-date").textContent = `${a.entreprise ? (a.geree_par_policier ? "Entreprise · gérée par un policier" : "Entreprise") : "Annonce"} · ${quand(annonceDebut(a))}${a.expire_le ? (annonceExpiree(a) ? " · terminée" : ` · jusqu'au ${dateFr(a.expire_le)}`) : ""}${a.modifie_le ? " · modifiée" : ""}`;
     $("#annonce-d-titre").textContent = a.titre;
     $("#annonce-d-texte").textContent = a.texte || ""; $("#annonce-d-texte").hidden = !a.texte;
     const l = $("#annonce-d-lien");
@@ -5400,19 +5466,7 @@ Format :
   let annonceEdition = null; // annonce en cours de modification
   let annoncesAdmin = [];
   let typeAnnonce = "info";
-  let categorieAnnonce = "annonce";
-  function choisirCategorieAnnonce(c, auto = true) {
-    categorieAnnonce = c;
-    $$("[data-an-cat]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.anCat === c)));
-    const ent = c === "entreprise";
-    $("#adm-annonce-policier-l").hidden = !ent;
-    $(".an-types").hidden = ent;
-    $("#adm-annonce-fixe").closest("label").hidden = ent;
-    $("#adm-annonce-cat-aide").textContent = ent ? "Affichée dans Fonctionnalités › Entreprises (pas dans la bannière de l'accueil)." : "Affichée dans la bannière de l'accueil.";
-    if (auto && !annonceEdition) $("#adm-annonce-notifier").checked = !ent; // par défaut, pas de notification pour une entreprise
-    apercuAnnonce();
-  }
-  $$("[data-an-cat]").forEach((b) => b.addEventListener("click", () => choisirCategorieAnnonce(b.dataset.anCat)));
+
   const versLocal = (iso) => { if (!iso) return ""; const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); };
   const depuisLocal = (v) => (v ? new Date(v).toISOString() : null);
   function choisirTypeAnnonce(t) {
@@ -5439,7 +5493,7 @@ Format :
   function viderFormAnnonce() {
     annonceEdition = null;
     ["#adm-annonce-titre", "#adm-annonce-texte", "#adm-annonce-lien", "#adm-annonce-debut", "#adm-annonce-fin", "#adm-annonce-image"].forEach((s) => ($(s).value = ""));
-    $("#adm-annonce-fixe").checked = false; $("#adm-annonce-notifier").checked = true; $("#adm-annonce-policier").checked = false;
+    $("#adm-annonce-fixe").checked = false; $("#adm-annonce-notifier").checked = true;
     $("#adm-annonce-fichier").textContent = "";
     if (apercuImage) URL.revokeObjectURL(apercuImage);
     apercuImage = null;
@@ -5449,7 +5503,6 @@ Format :
     $("#adm-annonce-image-btn").textContent = "Ajouter une image (facultatif)";
     $("#adm-annonce-mode").textContent = "Les annonces s'affichent en haut de l'accueil des membres visés.";
     choisirTypeAnnonce("info");
-    choisirCategorieAnnonce("annonce", false);
   }
   async function modifierAnnonce(a) {
     annonceEdition = a;
@@ -5459,7 +5512,6 @@ Format :
     $("#adm-annonce-debut").value = versLocal(a.debut_le);
     $("#adm-annonce-fin").value = versLocal(a.expire_le);
     $("#adm-annonce-fixe").checked = !!a.epinglee;
-    $("#adm-annonce-policier").checked = !!a.entreprise_policier;
     $("#adm-annonce-corps").value = a.corps || "";
     $("#adm-annonce-notifier-l").hidden = !!a.notifie_le; // une annonce déjà annoncée ne renvoie pas de notification
     $("#adm-annonce-notifier").checked = !a.notifie_le && a.notifier;
@@ -5469,7 +5521,6 @@ Format :
     $("#adm-annonce-annuler").hidden = false;
     $("#adm-annonce-mode").textContent = `Modification de « ${a.titre} ». Les membres verront la mention « modifiée ».`;
     choisirTypeAnnonce(a.type || "info");
-    choisirCategorieAnnonce(a.categorie || "annonce", false);
     $("#adm-annonce-form").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   $("#adm-annonce-annuler").addEventListener("click", viderFormAnnonce);
@@ -5492,8 +5543,7 @@ Format :
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     }
     const champs = { titre, lien: lien || null, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null,
-      epinglee: categorieAnnonce === "annonce" && $("#adm-annonce-fixe").checked, type: categorieAnnonce === "annonce" ? typeAnnonce : "info", debut_le: debut, expire_le: fin,
-      categorie: categorieAnnonce, entreprise_policier: categorieAnnonce === "entreprise" && $("#adm-annonce-policier").checked };
+      epinglee: $("#adm-annonce-fixe").checked, type: typeAnnonce, debut_le: debut, expire_le: fin };
     let error;
     if (annonceEdition) {
       const ancienneImage = annonceEdition.image_path;
@@ -5505,8 +5555,7 @@ Format :
     btn.disabled = false;
     if (error) return toast(traduireErreur(error));
     const programmee = debut && new Date(debut) > new Date();
-    if (categorieAnnonce === "entreprise") rendreEntreprises().catch(() => {});
-    toast(annonceEdition ? "Annonce modifiée" : categorieAnnonce === "entreprise" && !programmee ? "Entreprise ajoutée dans Fonctionnalités › Entreprises" : programmee ? `Annonce programmée pour le ${dateFr(debut)}` : $("#adm-annonce-notifier").checked ? "Annonce publiée : les membres sont avisés" : "Annonce publiée sans notification");
+    toast(annonceEdition ? "Annonce modifiée" : programmee ? `Annonce programmée pour le ${dateFr(debut)}` : $("#adm-annonce-notifier").checked ? "Annonce publiée : les membres sont avisés" : "Annonce publiée sans notification");
     viderFormAnnonce(); rendreAnnoncesAdmin(); afficherAnnonces();
   });
   function etatAnnonce(a) {
@@ -5519,7 +5568,7 @@ Format :
     if (!$("#adm-annonce-apercu").innerHTML) apercuAnnonce();
     const { data: brut } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(60);
     annoncesAdmin = (brut || []).filter((a) => !a.corps || corpsVisible(a.corps));
-    $("#adm-annonces").innerHTML = annoncesAdmin.length ? annoncesAdmin.map((a) => `<li class="an-adm an-${a.categorie === "entreprise" ? "entreprise" : a.type || "info"}"><span><b>${a.categorie === "entreprise" ? `🏪 Entreprise${a.entreprise_policier ? " (policier)" : ""}` : esc(TYPES_ANNONCE[a.type || "info"])} · ${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · publiée le ${esc(dateFr(a.cree_le))} · <b>${esc(etatAnnonce(a))}</b>${a.image_path ? " · avec image" : ""}${a.epinglee ? " · bannière fixe" : ""}${a.lien ? " · avec lien" : ""}${a.notifie_le ? " · membres avisés" : a.notifier ? " · notification prévue" : " · sans notification"}</small></span>
+    $("#adm-annonces").innerHTML = annoncesAdmin.length ? annoncesAdmin.map((a) => `<li class="an-adm an-${a.type || "info"}"><span><b>${esc(TYPES_ANNONCE[a.type || "info"])} · ${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · publiée le ${esc(dateFr(a.cree_le))} · <b>${esc(etatAnnonce(a))}</b>${a.image_path ? " · avec image" : ""}${a.epinglee ? " · bannière fixe" : ""}${a.lien ? " · avec lien" : ""}${a.notifie_le ? " · membres avisés" : a.notifier ? " · notification prévue" : " · sans notification"}</small></span>
       <span class="fc-ligne"><button class="btn-secondaire petit" data-modifier-annonce="${a.id}">Modifier</button><button class="btn-secondaire petit" data-epingler-annonce="${a.id}" data-fixe="${a.epinglee}">${a.epinglee ? "Retirer de la bannière" : "Bannière fixe"}</button><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
       <button class="btn-danger petit" data-suppr-annonce="${a.id}" data-image="${esc(a.image_path || "")}">Supprimer</button></span></li>`).join("") : `<li class="vide-petit">Aucune annonce publiée.</li>`;
     const parId = Object.fromEntries(annoncesAdmin.map((a) => [a.id, a]));

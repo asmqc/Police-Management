@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611141801">
+  <link rel="stylesheet" href="styles.css?v=202611141807">
 </head>
 <body>
   <!-- Chargement -->
@@ -598,6 +598,24 @@
       <div class="segmente ent-filtres" role="radiogroup" aria-label="Filtrer les entreprises">
         <button type="button" role="radio" data-ent-filtre="toutes" aria-checked="true">Toutes</button>
         <button type="button" role="radio" data-ent-filtre="policier" aria-checked="false">Gérées par des policiers</button>
+      </div>
+      <div class="ent-admin admin-seul">
+        <button type="button" class="btn-principal" id="ent-ajouter">＋ Ajouter une entreprise</button>
+        <form class="panneau formulaire" id="ent-form" novalidate hidden>
+          <h3 class="intertitre" id="ent-form-titre" style="margin:0">Nouvelle entreprise</h3>
+          <input id="ent-nom" maxlength="120" placeholder="Nom de l'entreprise" aria-label="Nom de l'entreprise">
+          <textarea id="ent-histoire" rows="6" maxlength="3000" placeholder="Son histoire : qui l'a fondée, ce qu'elle offre, où la trouver…" aria-label="Histoire de l'entreprise"></textarea>
+          <input id="ent-lien" type="url" inputmode="url" maxlength="500" placeholder="Site web, ex. https://exemple.ca" aria-label="Site web">
+          <label class="btn-secondaire petit" for="ent-image" id="ent-image-btn">Ajouter une image (1600 × 900 idéalement)</label>
+          <input type="file" id="ent-image" accept="image/jpeg,image/png,image/webp" hidden>
+          <small class="aide" id="ent-fichier"></small>
+          <label class="interrupteur" for="ent-policier"><span class="interrupteur-txt"><b>Gérée par un policier ou une policière</b><small>Ajoute la mention « Gérée par un policier » et la place dans ce filtre.</small></span><input type="checkbox" id="ent-policier" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+          <small class="aide">Avant de publier, obtenez l'accord de l'entreprise pour son nom, son image et son histoire.</small>
+          <div class="fc-ligne">
+            <button class="btn-principal" type="submit" id="ent-envoyer" style="margin:0">Publier l'entreprise</button>
+            <button class="btn-secondaire" type="button" id="ent-annuler">Annuler</button>
+          </div>
+        </form>
       </div>
       <div id="ent-liste" class="ent-liste"></div>
     </section>
@@ -1841,19 +1859,13 @@
       <form class="panneau formulaire" id="adm-annonce-form" novalidate>
         <p class="aide" id="adm-annonce-mode">Les annonces s'affichent en haut de l'accueil des membres visés.</p>
         <label class="ev-ligne adm-cible"><span>Destinataires</span><select id="adm-annonce-corps"></select></label>
-        <div class="segmente an-categories" role="radiogroup" aria-label="Catégorie">
-          <button type="button" role="radio" data-an-cat="annonce" aria-checked="true">📣 Annonce</button>
-          <button type="button" role="radio" data-an-cat="entreprise" aria-checked="false">🏪 Entreprise</button>
-        </div>
-        <small class="aide" id="adm-annonce-cat-aide">Affichée dans la bannière de l'accueil.</small>
-        <label class="interrupteur" for="adm-annonce-policier" id="adm-annonce-policier-l" hidden><span class="interrupteur-txt"><b>Gérée par un policier ou une policière</b><small>Ajoute la mention « Gérée par un policier » et la place dans ce filtre.</small></span><input type="checkbox" id="adm-annonce-policier" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
         <div class="segmente an-types" role="radiogroup" aria-label="Type d'annonce">
           <button type="button" role="radio" data-an-type="info" aria-checked="true">Info</button>
           <button type="button" role="radio" data-an-type="important" aria-checked="false">❗ Important</button>
           <button type="button" role="radio" data-an-type="urgent" aria-checked="false">🚨 Urgent</button>
         </div>
-        <input id="adm-annonce-titre" maxlength="120" placeholder="Titre (ou nom de l'entreprise)" aria-label="Titre de l'annonce">
-        <textarea id="adm-annonce-texte" rows="4" maxlength="3000" placeholder="Texte (facultatif) · pour une entreprise : son histoire, ce qu'elle offre, où la trouver" aria-label="Texte de l'annonce"></textarea>
+        <input id="adm-annonce-titre" maxlength="120" placeholder="Titre" aria-label="Titre de l'annonce">
+        <textarea id="adm-annonce-texte" rows="4" maxlength="3000" placeholder="Texte (facultatif)" aria-label="Texte de l'annonce"></textarea>
         <input id="adm-annonce-lien" type="url" inputmode="url" maxlength="500" placeholder="Lien (facultatif), ex. https://manmade.ca" aria-label="Lien affiché dans l'annonce">
         <div class="an-dates">
           <label><span>Début (facultatif)</span><input type="datetime-local" id="adm-annonce-debut"></label>
@@ -2407,9 +2419,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611141801"></script>
+  <script src="config.js?v=202611141807"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611141801"></script>
-  <script src="app.js?v=202611141801"></script>
+  <script src="i18n.js?v=202611141807"></script>
+  <script src="app.js?v=202611141807"></script>
 </body>
 </html>
