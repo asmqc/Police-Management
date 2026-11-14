@@ -2752,15 +2752,44 @@ Question : ${question}
       try {
         const r = await identifier(lat, lon);
         const lieu = (r.muni && r.muni.nom) || (r.municipalite && r.municipalite.nom) || "Lieu hors municipalité";
+        // Emplacement : sur une route numérotée, la route, le kilomètre et la direction; sinon, l'adresse civique
+        let emplacement = "";
+        if (r.borne && (r.autoroutier || r.borne.d <= 400)) {
+          const rep = await charger("reperes.json");
+          const [no, km, dir] = r.borne.r;
+          const nr = nomRoute(no, rep);
+          emplacement = `${nr.court} · km ${km % 1 ? km.toFixed(1) : km}${dir ? " · direction " + dirNom(dir) : ""}`;
+        }
         const mrc = r.muni ? [r.muni.mrc, r.muni.region].filter(Boolean).join(" · ") : "";
         const corps = r.corps ? `<span class="etiquette-corps" style="--c:${r.corps.couleur}">${esc(r.corps.nom)}</span>`
           : r.sq ? `<span class="etiquette-corps" style="--c:var(--sq)">Sûreté du Québec</span><small>${esc(r.sq.NOM_UNIT)}</small>` : `<small>Corps de police : hors des territoires connus</small>`;
-        $("#ac-pos-info").innerHTML = `<b>${esc(lieu)}</b>${mrc ? `<small>${esc(mrc)}</small>` : ""}<span class="ac-pos-corps">${corps}</span>${r.autoroutier ? `<small>Autoroute : ${esc(r.autoroutier.NOM_UNIT)}</small>` : ""}<i>Ouvrir la carte ›</i>`;
+        $("#ac-pos-info").innerHTML = `${emplacement ? `<span class="ac-pos-adr route">${esc(emplacement)}</span>` : `<span class="ac-pos-adr" id="ac-pos-adr"></span>`}<b>${esc(lieu)}</b>${mrc ? `<small>${esc(mrc)}</small>` : ""}<span class="ac-pos-corps">${corps}</span>${r.autoroutier ? `<small>Autoroute : ${esc(r.autoroutier.NOM_UNIT)}</small>` : ""}<i>Ouvrir la carte ›</i>`;
+        if (!emplacement) adresseCivique(lat, lon).then((adr) => { const z = $("#ac-pos-adr"); if (z && adr && miniPos.lat === lat) z.textContent = adr; }).catch(() => {});
       } catch { $("#ac-pos-info").innerHTML = `<b>Position trouvée</b><i>Ouvrir la carte ›</i>`; }
     }, () => {
       $("#ac-pos-info").innerHTML = `<b>Position introuvable</b><small>Autorisez la localisation pour ce site, puis touchez ici.</small>`;
       miniPos.dernier = 0;
     }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
+  }
+  // Adresse civique de la position : géocodage inversé d'Apple Plans (ou OpenStreetMap si la carte Apple n'est pas offerte)
+  async function adresseCivique(lat, lon) {
+    if (window.mapkit && window.L && L.apple) {
+      try {
+        if (!window.mapkit.Geocoder && typeof window.mapkit.load === "function") await window.mapkit.load(["services"]);
+        if (window.mapkit.Geocoder) {
+          const res = await new Promise((ok, ko) => new window.mapkit.Geocoder({ language: "fr-CA" })
+            .reverseLookup(new window.mapkit.Coordinate(lat, lon), (err, data) => (err ? ko(err) : ok(data)), { language: "fr-CA" }));
+          const p = res && res.results && res.results[0];
+          if (p) return [p.fullThoroughfare || [p.subThoroughfare, p.thoroughfare].filter(Boolean).join(" "), p.locality].filter(Boolean).join(", ") || p.formattedAddress || "";
+        }
+      } catch (e) { console.info("Géocodage Apple :", e && e.message); }
+    }
+    const rep = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=fr&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
+    if (!rep.ok) return "";
+    const d = await rep.json();
+    const a = d.address || {};
+    const rue = [a.house_number, a.road].filter(Boolean).join(" ");
+    return [rue, a.city || a.town || a.village || a.municipality].filter(Boolean).join(", ");
   }
   $("#ac-pos-activer").addEventListener("click", () => {
     try { localStorage.setItem("pm-minicarte", "1"); } catch { /* facultatif */ }

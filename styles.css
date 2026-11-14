@@ -3205,3 +3205,7 @@ html[data-theme="clair"] .ac-fiche, html:not([data-theme]) .ac-fiche { color: #E
 .ac-pos-info i { font-style: normal; font-weight: 700; font-size: .85rem; color: var(--accent, #3b82f6); margin-top: 4px; }
 .icone-moi { width: 18px !important; height: 18px !important; border-radius: 50%; background: #2563EB; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(37,99,235,.28), 0 2px 6px rgba(0,0,0,.4); }
 @media (max-width: 360px) { .ac-pos-vue { grid-template-columns: 1fr; } .ac-pos-info { border-left: 0; border-top: 1px solid var(--ligne); } }
+
+.ac-pos-adr { font-weight: 800; font-size: .92rem; line-height: 1.25; color: var(--fg); }
+.ac-pos-adr:empty { display: none; }
+.ac-pos-adr.route { display: inline-block; justify-self: start; padding: 3px 9px; border-radius: 8px; background: #0E7A3E; color: #fff; font-family: var(--f-mono, ui-monospace, monospace); font-size: .85rem; letter-spacing: .02em; }
