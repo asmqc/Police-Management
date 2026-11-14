@@ -2704,6 +2704,7 @@ Question : ${question}
     } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
     compterMessages();
     afficherAnnonces();
+    try { majBlocPosition(); } catch (e) { console.warn(e); }
     // Demandes en attente (admin)
     const ad = $("#ac-admin");
     if (p.role === "admin") {
@@ -2715,6 +2716,66 @@ Question : ${question}
       ad.classList.toggle("urgent", !!count);
     }
   }
+
+  /* ---------------- Accueil : mini-carte « Ma position » (sur demande, puis à chaque ouverture) ---------------- */
+  const miniPos = { carte: null, marqueur: null, dernier: 0, lat: null, lon: null };
+  const miniPosActive = () => { try { return localStorage.getItem("pm-minicarte") === "1"; } catch { return false; } };
+  function majBlocPosition() {
+    const bloc = $("#ac-bloc-position");
+    // Comme la carte, réservé aux membres dont le courriel est confirmé
+    bloc.hidden = !(etat.profil && etat.profil.statut === "approuve" && courrielVerifie() && navigator.geolocation);
+    if (bloc.hidden) return;
+    const actif = miniPosActive();
+    $("#ac-pos-invite").hidden = actif;
+    $("#ac-pos-vue").hidden = !actif;
+    $("#ac-pos-masquer").hidden = !actif;
+    if (actif && Date.now() - miniPos.dernier > 120000) localiserMini();
+  }
+  function localiserMini() {
+    miniPos.dernier = Date.now();
+    $("#ac-pos-info").innerHTML = `<small>Recherche de votre position…</small>`;
+    navigator.geolocation.getCurrentPosition(async (p) => {
+      const lat = p.coords.latitude, lon = p.coords.longitude;
+      miniPos.lat = lat; miniPos.lon = lon;
+      try {
+        await chargerLeaflet();
+        if (!miniPos.carte) {
+          miniPos.carte = L.map($("#ac-minicarte"), { zoomControl: false, attributionControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false });
+          if (!L.apple) L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, className: "tuiles-plan" }).addTo(miniPos.carte);
+          if (miniPos.carte.map) { try { miniPos.carte.map.showsZoomControl = false; miniPos.carte.map.isScrollEnabled = false; miniPos.carte.map.isZoomEnabled = false; } catch { /* facultatif */ } }
+        }
+        miniPos.carte.setView([lat, lon], 13);
+        if (miniPos.marqueur) miniPos.carte.removeLayer(miniPos.marqueur);
+        miniPos.marqueur = L.marker([lat, lon], { interactive: false, icon: L.divIcon({ className: "icone-moi", html: "", iconSize: [18, 18] }) }).addTo(miniPos.carte);
+        setTimeout(() => miniPos.carte.invalidateSize && miniPos.carte.invalidateSize(), 60);
+      } catch (e) { console.warn("mini-carte", e); }
+      try {
+        const r = await identifier(lat, lon);
+        const lieu = (r.muni && r.muni.nom) || (r.municipalite && r.municipalite.nom) || "Lieu hors municipalité";
+        const mrc = r.muni ? [r.muni.mrc, r.muni.region].filter(Boolean).join(" · ") : "";
+        const corps = r.corps ? `<span class="etiquette-corps" style="--c:${r.corps.couleur}">${esc(r.corps.nom)}</span>`
+          : r.sq ? `<span class="etiquette-corps" style="--c:var(--sq)">Sûreté du Québec</span><small>${esc(r.sq.NOM_UNIT)}</small>` : `<small>Corps de police : hors des territoires connus</small>`;
+        $("#ac-pos-info").innerHTML = `<b>${esc(lieu)}</b>${mrc ? `<small>${esc(mrc)}</small>` : ""}<span class="ac-pos-corps">${corps}</span>${r.autoroutier ? `<small>Autoroute : ${esc(r.autoroutier.NOM_UNIT)}</small>` : ""}<i>Ouvrir la carte ›</i>`;
+      } catch { $("#ac-pos-info").innerHTML = `<b>Position trouvée</b><i>Ouvrir la carte ›</i>`; }
+    }, () => {
+      $("#ac-pos-info").innerHTML = `<b>Position introuvable</b><small>Autorisez la localisation pour ce site, puis touchez ici.</small>`;
+      miniPos.dernier = 0;
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
+  }
+  $("#ac-pos-activer").addEventListener("click", () => {
+    try { localStorage.setItem("pm-minicarte", "1"); } catch { /* facultatif */ }
+    miniPos.dernier = 0; majBlocPosition();
+  });
+  $("#ac-pos-masquer").addEventListener("click", () => {
+    try { localStorage.removeItem("pm-minicarte"); } catch { /* facultatif */ }
+    majBlocPosition();
+  });
+  $("#ac-pos-vue").addEventListener("click", () => {
+    if (miniPos.lat == null) { localiserMini(); return; }
+    afficherVue("carte");
+    const placer = () => (etat.placer ? etat.placer(miniPos.lat, miniPos.lon, "Ma position", 14) : setTimeout(placer, 200));
+    setTimeout(placer, 300);
+  });
 
   function allerA(cible) {
     if (cible === "vitesse") { afficherVue("csr"); ongletLois("vitesse"); majOngletCourant(); return; }
