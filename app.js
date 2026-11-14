@@ -5258,29 +5258,62 @@ Format :
       n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ouvrir(); } });
     });
   }
+  // Bannière en haut de l'accueil : seulement l'image de chaque annonce, en rotation; un toucher ouvre l'annonce complète
+  const car = { minuteur: null, i: 0, n: 0 };
+  function allerDiapo(i, doux = true) {
+    const piste = $("#car-piste");
+    if (!piste || !car.n) return;
+    car.i = (i + car.n) % car.n;
+    piste.scrollTo({ left: car.i * piste.clientWidth, behavior: doux ? "smooth" : "auto" });
+    $$("#car-points button").forEach((b, k) => b.setAttribute("aria-selected", String(k === car.i)));
+  }
+  function demarrerRotation() {
+    clearInterval(car.minuteur);
+    if (car.n < 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    car.minuteur = setInterval(() => { if (document.visibilityState === "visible" && etat.vue === "accueil") allerDiapo(car.i + 1); }, 5000);
+  }
+  function diapo(a, urls, lues) {
+    const img = a.image_path && urls[a.image_path];
+    const type = a.type || "info";
+    const nouv = annonceNouvelle(a, lues);
+    const marque = type !== "info" || nouv ? `<span class="car-marque an-${type}">${type !== "info" ? esc(TYPES_ANNONCE[type]) : "Nouveau"}</span>` : "";
+    return img
+      ? `<button type="button" class="car-diapo" data-annonce="${a.id}" aria-label="${esc(a.titre)} : voir l'annonce" style="--fond:url('${esc(img)}')"><img src="${esc(img)}" alt="" decoding="async">${marque}</button>`
+      : `<button type="button" class="car-diapo sans-image an-${type}" data-annonce="${a.id}" aria-label="${esc(a.titre)} : voir l'annonce"><span class="car-titre">${esc(a.titre)}</span>${marque}</button>`;
+  }
   async function afficherAnnonces() {
     const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(40);
     const maintenant = new Date();
     annoncesCache = (data || []).filter((a) => (!a.corps || corpsVisible(a.corps)) && (!a.debut_le || new Date(a.debut_le) <= maintenant))
       .sort((x, y) => new Date(annonceDebut(y)) - new Date(annonceDebut(x)));
-    const courantes = annoncesCache.filter((a) => !annonceExpiree(a));
     const ordre = { urgent: 0, important: 1, info: 2 };
-    const fixes = courantes.filter((a) => a.epinglee).sort((x, y) => ordre[x.type || "info"] - ordre[y.type || "info"]);
-    const liste = courantes.filter((a) => !a.epinglee).sort((x, y) => (ordre[x.type || "info"] - ordre[y.type || "info"]) || (new Date(annonceDebut(y)) - new Date(annonceDebut(x)))).slice(0, 3);
-    const urls = await urlsAnnonces([...fixes, ...liste].map((a) => a.image_path));
+    const courantes = annoncesCache.filter((a) => !annonceExpiree(a))
+      .sort((x, y) => (y.epinglee - x.epinglee) || (ordre[x.type || "info"] - ordre[y.type || "info"]) || (new Date(annonceDebut(y)) - new Date(annonceDebut(x))))
+      .slice(0, 8);
+    // Les anciennes zones de cartes ne servent plus : tout passe par la bannière
+    $("#ac-fixes").hidden = true; $("#ac-fixes").innerHTML = "";
+    $("#ac-annonces").hidden = true; $("#ac-annonces").innerHTML = "";
+    const urls = await urlsAnnonces(courantes.map((a) => a.image_path));
     const lues = annoncesLues();
-    const zf = $("#ac-fixes");
-    zf.hidden = !fixes.length;
-    zf.innerHTML = fixes.map((a) => carteAnnonce(a, urls, lues)).join("");
-    const el = $("#ac-annonces");
-    el.hidden = !liste.length;
-    el.innerHTML = liste.map((a) => carteAnnonce(a, urls, lues)).join("");
+    const bloc = $("#ac-carrousel");
+    car.n = courantes.length; car.i = 0;
+    bloc.hidden = !car.n;
+    $("#car-piste").innerHTML = courantes.map((a) => diapo(a, urls, lues)).join("");
+    $("#car-points").innerHTML = car.n > 1 ? courantes.map((a, k) => `<button type="button" role="tab" aria-selected="${k === 0}" aria-label="Annonce ${k + 1} sur ${car.n}"></button>`).join("") : "";
+    $$("#car-points button").forEach((b, k) => b.addEventListener("click", () => { allerDiapo(k); demarrerRotation(); }));
+    const piste = $("#car-piste");
+    piste.onscroll = () => { const k = Math.round(piste.scrollLeft / Math.max(1, piste.clientWidth)); if (k !== car.i) { car.i = k; $$("#car-points button").forEach((b, x) => b.setAttribute("aria-selected", String(x === k))); } };
+    // Le membre fait glisser ou touche : la rotation repart de zéro
+    piste.onpointerdown = () => demarrerRotation();
+    bloc.onmouseenter = () => clearInterval(car.minuteur);
+    bloc.onmouseleave = () => demarrerRotation();
+    demarrerRotation();
     const tout = $("#ac-annonces-tout");
     tout.hidden = !annoncesCache.length;
     const nbNouv = annoncesCache.filter((a) => annonceNouvelle(a, lues)).length;
     tout.textContent = `Toutes les annonces (${annoncesCache.length})${nbNouv ? ` · ${nbNouv} nouvelle${nbNouv > 1 ? "s" : ""}` : ""} ›`;
     const parId = Object.fromEntries(annoncesCache.map((a) => [a.id, a]));
-    brancherAnnonces(zf, parId, urls); brancherAnnonces(el, parId, urls);
+    $$("[data-annonce]", piste).forEach((n) => n.addEventListener("click", () => ouvrirAnnonce(parId[n.dataset.annonce], urls)));
   }
   async function ouvrirToutesAnnonces() {
     const urls = await urlsAnnonces(annoncesCache.map((a) => a.image_path));
@@ -5308,7 +5341,10 @@ Format :
     const l = $("#annonce-d-lien");
     const lienOk = a.lien && /^https:\/\//.test(a.lien);
     l.hidden = !lienOk;
-    if (lienOk) { l.href = a.lien; l.textContent = "Ouvrir le lien ↗"; }
+    if (lienOk) { l.href = a.lien; l.textContent = "Visiter le site web ↗"; }
+    const site = $("#annonce-d-site");
+    site.hidden = !lienOk;
+    if (lienOk) { try { site.textContent = new URL(a.lien).hostname.replace(/^www\./, ""); } catch { site.hidden = true; } }
     $("#annonce-voile").hidden = false;
     // La pastille « Nouveau » disparaît une fois l'annonce ouverte
     $$(`[data-annonce="${a.id}"] .an-nouveau`).forEach((x) => x.remove());

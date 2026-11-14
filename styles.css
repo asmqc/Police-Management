@@ -3087,3 +3087,25 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 #vue-fonctions { width: 100%; max-width: 760px; margin-inline: auto; }
 #vue-fonctions .vue-tete { text-align: center; }
 .nav [data-vue="fonctions"] .nav-txt { letter-spacing: -.02em; }
+
+/* Bannière d'annonces en rotation (Accueil) */
+.ac-carrousel { position: relative; margin: 0 0 4px; }
+.ac-carrousel[hidden] { display: none; }
+.car-piste { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 22px; box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+.car-piste::-webkit-scrollbar { display: none; }
+.car-diapo { position: relative; flex: 0 0 100%; scroll-snap-align: start; aspect-ratio: 16 / 9; border: 0; padding: 0; margin: 0; cursor: pointer; overflow: hidden; background: #05060C; display: grid; place-items: center; }
+.car-diapo::before { content: ""; position: absolute; inset: -20px; background: var(--fond) center / cover no-repeat; filter: blur(22px) brightness(.55); }
+.car-diapo img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
+.car-diapo.sans-image { background: linear-gradient(135deg, #1D4ED8 0%, #12317F 100%); padding: 24px; }
+.car-diapo.sans-image::before { display: none; }
+.car-diapo.sans-image.an-important { background: linear-gradient(135deg, #F5A524 0%, #B45309 100%); }
+.car-diapo.sans-image.an-urgent { background: linear-gradient(135deg, #E11D2E 0%, #7F1D1D 100%); }
+.car-titre { position: relative; color: #fff; font: 800 clamp(1.3rem, 5vw, 1.9rem)/1.15 var(--f-titre, inherit); text-align: center; text-wrap: balance; }
+.car-marque { position: absolute; top: 12px; left: 12px; font-size: .74rem; font-weight: 800; padding: 4px 10px; border-radius: 99px; background: #1D4ED8; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.35); }
+.car-marque.an-important { background: #F5A524; color: #111; }
+.car-marque.an-urgent { background: #E11D2E; }
+.car-points { display: flex; justify-content: center; gap: 7px; margin-top: 10px; }
+.car-points button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 99px; background: var(--ligne, #2a3a5c); transition: width .25s, background .25s; cursor: pointer; }
+.car-points button[aria-selected="true"] { width: 22px; background: var(--accent, #3b82f6); }
+.annonce-d-site { display: block; text-align: center; margin-top: 6px; }
+.annonce-detail p#annonce-d-texte { white-space: pre-line; display: block; -webkit-line-clamp: unset; overflow: visible; }
