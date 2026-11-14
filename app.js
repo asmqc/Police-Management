@@ -5473,7 +5473,7 @@ Format :
       ? "Seuil atteint : passez le serveur Supabase à « Small » (Settings › Compute) et Brevo au forfait payant, et accélérez l'approbation des demandes."
       : actifs >= alerte
         ? `On approche des ${seuil} : prévoyez dès maintenant Brevo payant, le serveur « Small » et une approbation plus rapide.`
-        : `Tout va bien. Vous recevrez une notification à ${alerte} puis à ${seuil} membres actifs.`;
+        : `Tout va bien. Dès ${alerte} membres actifs, vous recevrez une notification 3 fois par jour (8 h, 12 h et 18 h) jusqu'à ce que ce soit réglé. La santé de l'app (connexions, espace, tâches automatiques, demandes en attente) est aussi vérifiée chaque heure.`;
   }
 
   /* ---------------- Bilan annuel Loi 25 (administrateur) ----------------
