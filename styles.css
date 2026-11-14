@@ -3000,3 +3000,15 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .hr-tuile[aria-expanded="true"] { border-color: #0E9F6E; box-shadow: 0 0 0 2px rgba(14,159,110,.35) inset; }
 @media (min-width: 760px) { .hr-tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .hr-tuiles[hidden] { display: none; }
+
+/* Capacité (admin) */
+.adm-capacite { margin: 0 0 14px; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--ligne); }
+.adm-cap-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.adm-cap-tete span { font-variant-numeric: tabular-nums; font-weight: 800; }
+.adm-cap-barre { height: 8px; border-radius: 99px; background: var(--ligne); overflow: hidden; margin: 8px 0 4px; }
+.adm-cap-barre span { display: block; height: 100%; width: 0; background: #2fbf71; border-radius: 99px; }
+.adm-capacite.proche { border-color: #f5a524; }
+.adm-capacite.proche .adm-cap-barre span { background: #f5a524; }
+.adm-capacite.atteint { border-color: #E11D2E; }
+.adm-capacite.atteint .adm-cap-barre span { background: #E11D2E; }
+.adm-capacite .aide { margin: 4px 0 0; }

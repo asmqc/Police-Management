@@ -1524,7 +1524,7 @@ Question : ${question}
       }).catch(() => toast("La carte n'a pas pu se charger. Vérifiez votre connexion, puis réessayez."));
     }
     if (nom === "corps") initCorps();
-    if (nom === "admin") initAdmin();
+    if (nom === "admin") { initAdmin(); majCapacite(); }
     if (nom === "compte") { initCompte(); majBlocsNotif(); majMfaCompte(); }
     if (nom === "horaire") initHoraire();
     if (nom === "accueil") initAccueil();
@@ -5457,6 +5457,24 @@ Format :
     if (ongletAdmin === "stats") rendreBilanAdmin();
     if (ongletAdmin === "loi25") rendreBilanLoi25();
   }));
+
+  // Capacité : avertir l'admin à l'approche de 400 membres actifs (une notification part aussi à 350 et à 400)
+  async function majCapacite() {
+    const { data } = await sb.rpc("admin_membres_actifs");
+    const bloc = $("#adm-capacite");
+    if (!data) { bloc.hidden = true; return; }
+    const { actifs, seuil, alerte } = data;
+    bloc.hidden = false;
+    bloc.classList.toggle("proche", actifs >= alerte && actifs < seuil);
+    bloc.classList.toggle("atteint", actifs >= seuil);
+    $("#adm-cap-nb").textContent = `${actifs} / ${seuil}`;
+    $("#adm-cap-barre").style.width = Math.min(100, Math.round((actifs / seuil) * 100)) + "%";
+    $("#adm-cap-msg").textContent = actifs >= seuil
+      ? "Seuil atteint : passez le serveur Supabase à « Small » (Settings › Compute) et Brevo au forfait payant, et accélérez l'approbation des demandes."
+      : actifs >= alerte
+        ? `On approche des ${seuil} : prévoyez dès maintenant Brevo payant, le serveur « Small » et une approbation plus rapide.`
+        : `Tout va bien. Vous recevrez une notification à ${alerte} puis à ${seuil} membres actifs.`;
+  }
 
   /* ---------------- Bilan annuel Loi 25 (administrateur) ----------------
      Liste des tâches à refaire chaque année avant le 13 novembre. Les cases cochées sont gardées dans bilan_loi25. */
