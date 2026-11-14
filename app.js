@@ -5242,62 +5242,175 @@ Format :
     toast("Sondage publié"); chargerSondages();
   });
 
-  /* ---------------- Communauté : Annonces de l'administrateur ---------------- */
+  /* ---------------- Communauté : Annonces de l'administrateur ----------------
+     Types (info, important, urgent), début et fin programmés, pastille « Nouveau », page de toutes les annonces. */
+  const TYPES_ANNONCE = { info: "Annonce", important: "❗ Important", urgent: "🚨 Urgent" };
   async function urlsAnnonces(chemins) {
-    const c = chemins.filter(Boolean);
+    const c = [...new Set(chemins.filter(Boolean))];
     if (!c.length) return {};
     const { data } = await sb.storage.from("annonces").createSignedUrls(c, 3600);
     return Object.fromEntries((data || []).filter((d) => d.signedUrl).map((d) => [d.path, d.signedUrl]));
   }
-  async function afficherAnnonces() {
-    const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(10);
-    const el = $("#ac-annonces");
-    let vues = []; try { vues = JSON.parse(localStorage.getItem("pm-annonces-masquees") || "[]"); } catch { /* facultatif */ }
-    const visibles = (data || []).filter((a) => !a.corps || corpsVisible(a.corps));
-    const fixes = visibles.filter((a) => a.epinglee);
-    const liste = visibles.filter((a) => !a.epinglee); // les membres ne peuvent plus masquer les annonces
-    const urls = await urlsAnnonces([...fixes, ...liste].map((a) => a.image_path));
-    // Bannières fixes : tout en haut, sans bouton pour les masquer (seul l'administrateur les retire)
-    const zf = $("#ac-fixes");
-    zf.hidden = !fixes.length;
-    zf.innerHTML = fixes.map((a) => `<article class="annonce annonce-fixe${a.image_path && urls[a.image_path] ? " avec-image" : ""}" role="button" tabindex="0" data-annonce="${a.id}">
-      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" decoding="async">` : ""}
-      <div><small>Annonce</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}</div></article>`).join("");
-    el.hidden = !liste.length;
-    if (!liste.length) return;
-    // Annonce avec image : l'image s'affiche en bannière, sur toute la largeur
-    el.innerHTML = liste.map((a) => `<article class="annonce${a.image_path && urls[a.image_path] ? " avec-image" : ""}" role="button" tabindex="0" data-annonce="${a.id}">
-      ${a.image_path && urls[a.image_path] ? `<img src="${esc(urls[a.image_path])}" alt="${esc(a.titre)}" decoding="async">` : ""}
-      <div><small>Annonce · ${esc(quand(a.cree_le))}</small><b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}${a.lien ? `<span class="annonce-lien">En savoir plus ›</span>` : ""}</div></article>`).join("");
-    void vues;
-    // Toucher une annonce : son lien s'ouvre, sinon l'annonce s'affiche au complet
-    const parId = Object.fromEntries([...fixes, ...liste].map((a) => [a.id, a]));
-    $$("[data-annonce]").forEach((n) => {
+  const annonceExpiree = (a) => a.expire_le && new Date(a.expire_le) <= new Date();
+  const annonceDebut = (a) => a.debut_le || a.cree_le;
+  function annoncesLues() { try { return new Set(JSON.parse(localStorage.getItem("pm-annonces-lues") || "[]")); } catch { return new Set(); } }
+  function marquerAnnonceLue(id) {
+    const s = annoncesLues(); if (s.has(id)) return;
+    s.add(id);
+    try { localStorage.setItem("pm-annonces-lues", JSON.stringify([...s].slice(-200))); } catch { /* facultatif */ }
+  }
+  // Nouvelle = pas encore ouverte et publiée depuis moins de 21 jours
+  const annonceNouvelle = (a, lues) => !lues.has(a.id) && Date.now() - new Date(annonceDebut(a)).getTime() < 21 * 864e5;
+  function carteAnnonce(a, urls, lues, opts = {}) {
+    const img = a.image_path && urls[a.image_path];
+    const type = a.type || "info";
+    const nouv = annonceNouvelle(a, lues);
+    const fin = annonceExpiree(a);
+    return `<article class="annonce an-${type}${a.epinglee && !opts.liste ? " annonce-fixe" : ""}${img ? " avec-image" : ""}${fin ? " an-terminee" : ""}" role="button" tabindex="0" data-annonce="${a.id}">
+      ${img ? `<img src="${esc(img)}" alt="${esc(a.titre)}" decoding="async">` : ""}
+      <div><small>${esc(TYPES_ANNONCE[type])} · ${esc(quand(annonceDebut(a)))}${nouv ? ` <em class="an-nouveau">Nouveau</em>` : ""}${fin ? ` <em class="an-fin">Terminée</em>` : ""}</small>
+      <b>${esc(a.titre)}</b>${a.texte ? `<p>${esc(a.texte)}</p>` : ""}${a.texte && a.texte.length > 140 || a.lien ? `<span class="annonce-lien">${a.lien ? "Voir l'annonce et le lien ›" : "Lire la suite ›"}</span>` : ""}</div></article>`;
+  }
+  let annoncesCache = [];
+  function brancherAnnonces(racine, parId, urls) {
+    $$("[data-annonce]", racine).forEach((n) => {
       const ouvrir = () => ouvrirAnnonce(parId[n.dataset.annonce], urls);
       n.addEventListener("click", ouvrir);
       n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ouvrir(); } });
     });
   }
+  async function afficherAnnonces() {
+    const { data } = await sb.from("annonces").select("*").eq("actif", true).order("cree_le", { ascending: false }).limit(40);
+    const maintenant = new Date();
+    annoncesCache = (data || []).filter((a) => (!a.corps || corpsVisible(a.corps)) && (!a.debut_le || new Date(a.debut_le) <= maintenant))
+      .sort((x, y) => new Date(annonceDebut(y)) - new Date(annonceDebut(x)));
+    const courantes = annoncesCache.filter((a) => !annonceExpiree(a));
+    const ordre = { urgent: 0, important: 1, info: 2 };
+    const fixes = courantes.filter((a) => a.epinglee).sort((x, y) => ordre[x.type || "info"] - ordre[y.type || "info"]);
+    const liste = courantes.filter((a) => !a.epinglee).sort((x, y) => (ordre[x.type || "info"] - ordre[y.type || "info"]) || (new Date(annonceDebut(y)) - new Date(annonceDebut(x)))).slice(0, 3);
+    const urls = await urlsAnnonces([...fixes, ...liste].map((a) => a.image_path));
+    const lues = annoncesLues();
+    const zf = $("#ac-fixes");
+    zf.hidden = !fixes.length;
+    zf.innerHTML = fixes.map((a) => carteAnnonce(a, urls, lues)).join("");
+    const el = $("#ac-annonces");
+    el.hidden = !liste.length;
+    el.innerHTML = liste.map((a) => carteAnnonce(a, urls, lues)).join("");
+    const tout = $("#ac-annonces-tout");
+    tout.hidden = !annoncesCache.length;
+    const nbNouv = annoncesCache.filter((a) => annonceNouvelle(a, lues)).length;
+    tout.textContent = `Toutes les annonces (${annoncesCache.length})${nbNouv ? ` · ${nbNouv} nouvelle${nbNouv > 1 ? "s" : ""}` : ""} ›`;
+    const parId = Object.fromEntries(annoncesCache.map((a) => [a.id, a]));
+    brancherAnnonces(zf, parId, urls); brancherAnnonces(el, parId, urls);
+  }
+  async function ouvrirToutesAnnonces() {
+    const urls = await urlsAnnonces(annoncesCache.map((a) => a.image_path));
+    const lues = annoncesLues();
+    const z = $("#annonces-t-liste");
+    z.innerHTML = annoncesCache.length ? annoncesCache.map((a) => carteAnnonce(a, urls, lues, { liste: true })).join("") : `<p class="vide">Aucune annonce pour le moment.</p>`;
+    brancherAnnonces(z, Object.fromEntries(annoncesCache.map((a) => [a.id, a])), urls);
+    $("#annonces-voile").hidden = false;
+  }
+  $("#ac-annonces-tout").addEventListener("click", ouvrirToutesAnnonces);
+  $("#annonces-t-fermer").addEventListener("click", () => ($("#annonces-voile").hidden = true));
+  $("#annonces-voile").addEventListener("click", (e) => { if (e.target.id === "annonces-voile") $("#annonces-voile").hidden = true; });
   function ouvrirAnnonce(a, urls) {
     if (!a) return;
-    if (a.lien && /^https:\/\//.test(a.lien)) { window.open(a.lien, "_blank", "noopener,noreferrer"); return; }
+    marquerAnnonceLue(a.id);
     const img = $("#annonce-d-img"), u = a.image_path && urls[a.image_path];
     img.hidden = !u; if (u) { img.src = u; img.alt = a.titre; }
-    $("#annonce-d-date").textContent = "Annonce · " + quand(a.cree_le);
+    const type = a.type || "info";
+    $("#annonce-d-type").hidden = type === "info";
+    $("#annonce-d-type").className = `an-pastille an-${type}`;
+    $("#annonce-d-type").textContent = TYPES_ANNONCE[type];
+    $("#annonce-d-date").textContent = `Annonce · ${quand(annonceDebut(a))}${a.expire_le ? (annonceExpiree(a) ? " · terminée" : ` · jusqu'au ${dateFr(a.expire_le)}`) : ""}${a.modifie_le ? " · modifiée" : ""}`;
     $("#annonce-d-titre").textContent = a.titre;
     $("#annonce-d-texte").textContent = a.texte || ""; $("#annonce-d-texte").hidden = !a.texte;
-    $("#annonce-d-lien").hidden = true;
+    const l = $("#annonce-d-lien");
+    const lienOk = a.lien && /^https:\/\//.test(a.lien);
+    l.hidden = !lienOk;
+    if (lienOk) { l.href = a.lien; l.textContent = "Ouvrir le lien ↗"; }
     $("#annonce-voile").hidden = false;
+    // La pastille « Nouveau » disparaît une fois l'annonce ouverte
+    $$(`[data-annonce="${a.id}"] .an-nouveau`).forEach((x) => x.remove());
+    const tout = $("#ac-annonces-tout");
+    if (tout && !tout.hidden) { const lues = annoncesLues(); const n = annoncesCache.filter((x) => annonceNouvelle(x, lues)).length; tout.textContent = `Toutes les annonces (${annoncesCache.length})${n ? ` · ${n} nouvelle${n > 1 ? "s" : ""}` : ""} ›`; }
   }
   $("#annonce-d-fermer").addEventListener("click", () => ($("#annonce-voile").hidden = true));
   $("#annonce-voile").addEventListener("click", (e) => { if (e.target.id === "annonce-voile") $("#annonce-voile").hidden = true; });
-  $("#adm-annonce-image").addEventListener("change", (e) => { const f = e.target.files[0]; $("#adm-annonce-fichier").textContent = f ? `Image : ${f.name}` : ""; });
+
+  /* --- Administration des annonces : publier, programmer, modifier, aperçu --- */
+  let annonceEdition = null; // annonce en cours de modification
+  let annoncesAdmin = [];
+  let typeAnnonce = "info";
+  const versLocal = (iso) => { if (!iso) return ""; const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); };
+  const depuisLocal = (v) => (v ? new Date(v).toISOString() : null);
+  function choisirTypeAnnonce(t) {
+    typeAnnonce = t;
+    $$("[data-an-type]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.anType === t)));
+    apercuAnnonce();
+  }
+  $$("[data-an-type]").forEach((b) => b.addEventListener("click", () => choisirTypeAnnonce(b.dataset.anType)));
+  let apercuImage = null;
+  function apercuAnnonce() {
+    const a = { id: "apercu", titre: $("#adm-annonce-titre").value.trim() || "Titre de l'annonce", texte: $("#adm-annonce-texte").value.trim() || null, lien: $("#adm-annonce-lien").value.trim() || null,
+      type: typeAnnonce, epinglee: $("#adm-annonce-fixe").checked, debut_le: depuisLocal($("#adm-annonce-debut").value), cree_le: new Date().toISOString(), image_path: apercuImage ? "apercu" : null };
+    $("#adm-annonce-apercu").innerHTML = carteAnnonce(a, apercuImage ? { apercu: apercuImage } : {}, new Set());
+  }
+  ["#adm-annonce-titre", "#adm-annonce-texte", "#adm-annonce-lien", "#adm-annonce-debut", "#adm-annonce-fixe"].forEach((s) => $(s).addEventListener("input", apercuAnnonce));
+  $("#adm-annonce-fixe").addEventListener("change", apercuAnnonce);
+  $("#adm-annonce-image").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    $("#adm-annonce-fichier").textContent = f ? `Image : ${f.name}` : "";
+    if (apercuImage) URL.revokeObjectURL(apercuImage);
+    apercuImage = f ? URL.createObjectURL(f) : null;
+    apercuAnnonce();
+  });
+  function viderFormAnnonce() {
+    annonceEdition = null;
+    ["#adm-annonce-titre", "#adm-annonce-texte", "#adm-annonce-lien", "#adm-annonce-debut", "#adm-annonce-fin", "#adm-annonce-image"].forEach((s) => ($(s).value = ""));
+    $("#adm-annonce-fixe").checked = false; $("#adm-annonce-notifier").checked = true;
+    $("#adm-annonce-fichier").textContent = "";
+    if (apercuImage) URL.revokeObjectURL(apercuImage);
+    apercuImage = null;
+    $("#adm-annonce-envoyer").textContent = "Publier l'annonce";
+    $("#adm-annonce-annuler").hidden = true;
+    $("#adm-annonce-notifier-l").hidden = false;
+    $("#adm-annonce-image-btn").textContent = "Ajouter une image (facultatif)";
+    $("#adm-annonce-mode").textContent = "Les annonces s'affichent en haut de l'accueil des membres visés.";
+    choisirTypeAnnonce("info");
+  }
+  async function modifierAnnonce(a) {
+    annonceEdition = a;
+    $("#adm-annonce-titre").value = a.titre || "";
+    $("#adm-annonce-texte").value = a.texte || "";
+    $("#adm-annonce-lien").value = a.lien || "";
+    $("#adm-annonce-debut").value = versLocal(a.debut_le);
+    $("#adm-annonce-fin").value = versLocal(a.expire_le);
+    $("#adm-annonce-fixe").checked = !!a.epinglee;
+    $("#adm-annonce-corps").value = a.corps || "";
+    $("#adm-annonce-notifier-l").hidden = !!a.notifie_le; // une annonce déjà annoncée ne renvoie pas de notification
+    $("#adm-annonce-notifier").checked = !a.notifie_le && a.notifier;
+    $("#adm-annonce-image-btn").textContent = a.image_path ? "Remplacer l'image" : "Ajouter une image (facultatif)";
+    if (a.image_path) { const u = await urlsAnnonces([a.image_path]); apercuImage = u[a.image_path] || null; }
+    $("#adm-annonce-envoyer").textContent = "Enregistrer les modifications";
+    $("#adm-annonce-annuler").hidden = false;
+    $("#adm-annonce-mode").textContent = `Modification de « ${a.titre} ». Les membres verront la mention « modifiée ».`;
+    choisirTypeAnnonce(a.type || "info");
+    $("#adm-annonce-form").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("#adm-annonce-annuler").addEventListener("click", viderFormAnnonce);
   $("#adm-annonce-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const titre = $("#adm-annonce-titre").value.trim();
     if (!titre) return $("#adm-annonce-titre").focus();
-    const btn = $("#adm-annonce-form .btn-principal"); btn.disabled = true;
-    let image_path = null;
+    const lien = $("#adm-annonce-lien").value.trim();
+    if (lien && !/^https:\/\/\S+$/.test(lien)) return toast("Le lien doit commencer par https://");
+    const debut = depuisLocal($("#adm-annonce-debut").value), fin = depuisLocal($("#adm-annonce-fin").value);
+    if (debut && fin && new Date(fin) <= new Date(debut)) return toast("La fin doit être après le début.");
+    if (fin && new Date(fin) <= new Date()) return toast("La date de fin est déjà passée.");
+    const btn = $("#adm-annonce-envoyer"); btn.disabled = true;
+    let image_path = annonceEdition ? annonceEdition.image_path : null;
     const f = $("#adm-annonce-image").files[0];
     if (f) {
       if (f.size > 5 * 1024 * 1024) { btn.disabled = false; return toast("Image trop lourde (5 Mo maximum)"); }
@@ -5305,45 +5418,54 @@ Format :
       const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     }
-    const lien = $("#adm-annonce-lien").value.trim();
-    if (lien && !/^https:\/\/\S+$/.test(lien)) { btn.disabled = false; return toast("Le lien doit commencer par https://"); }
-    const { error } = await sb.from("annonces").insert({ titre, lien: lien || null, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null, epinglee: $("#adm-annonce-fixe").checked });
+    const champs = { titre, lien: lien || null, texte: $("#adm-annonce-texte").value.trim() || null, image_path, corps: $("#adm-annonce-corps").value || null,
+      epinglee: $("#adm-annonce-fixe").checked, type: typeAnnonce, debut_le: debut, expire_le: fin };
+    let error;
+    if (annonceEdition) {
+      const ancienneImage = annonceEdition.image_path;
+      ({ error } = await sb.from("annonces").update({ ...champs, modifie_le: new Date().toISOString(), ...(annonceEdition.notifie_le ? {} : { notifier: $("#adm-annonce-notifier").checked }) }).eq("id", annonceEdition.id));
+      if (!error && f && ancienneImage && ancienneImage !== image_path) await sb.storage.from("annonces").remove([ancienneImage]);
+    } else {
+      ({ error } = await sb.from("annonces").insert({ ...champs, notifier: $("#adm-annonce-notifier").checked }));
+    }
     btn.disabled = false;
     if (error) return toast(traduireErreur(error));
-    $("#adm-annonce-titre").value = ""; $("#adm-annonce-texte").value = ""; $("#adm-annonce-fixe").checked = false; $("#adm-annonce-lien").value = ""; $("#adm-annonce-image").value = ""; $("#adm-annonce-fichier").textContent = "";
-    toast("Annonce publiée : les membres sont avisés"); rendreAnnoncesAdmin();
+    const programmee = debut && new Date(debut) > new Date();
+    toast(annonceEdition ? "Annonce modifiée" : programmee ? `Annonce programmée pour le ${dateFr(debut)}` : $("#adm-annonce-notifier").checked ? "Annonce publiée : les membres sont avisés" : "Annonce publiée sans notification");
+    viderFormAnnonce(); rendreAnnoncesAdmin(); afficherAnnonces();
   });
+  function etatAnnonce(a) {
+    if (!a.actif) return "masquée";
+    if (a.debut_le && new Date(a.debut_le) > new Date()) return `programmée pour le ${dateFr(a.debut_le)}`;
+    if (annonceExpiree(a)) return "terminée";
+    return a.expire_le ? `en ligne jusqu'au ${dateFr(a.expire_le)}` : "en ligne";
+  }
   async function rendreAnnoncesAdmin() {
+    if (!$("#adm-annonce-apercu").innerHTML) apercuAnnonce();
     const { data: brut } = await sb.from("annonces").select("*").order("cree_le", { ascending: false }).limit(60);
-    const data = (brut || []).filter((a) => !a.corps || corpsVisible(a.corps));
-    $("#adm-annonces").innerHTML = (data || []).length ? data.map((a) => `<li><span><b>${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · ${esc(dateFr(a.cree_le))}${a.actif ? "" : " · masquée"}${a.image_path ? " · avec image" : ""}${a.epinglee ? " · bannière fixe" : ""}${a.lien ? " · lien : " + esc(a.lien) : ""}</small>
-      <span class="adm-lien" hidden><input type="url" inputmode="url" maxlength="500" placeholder="https://…" value="${esc(a.lien || "")}" aria-label="Lien de l'annonce"><button class="btn-ok petit" data-lien-ok="${a.id}">OK</button></span></span>
-      <span class="fc-ligne"><button class="btn-secondaire petit" data-lien-annonce="${a.id}">${a.lien ? "Modifier le lien" : "Ajouter un lien"}</button><button class="btn-secondaire petit" data-epingler-annonce="${a.id}" data-fixe="${a.epinglee}">${a.epinglee ? "Retirer de la bannière" : "Mettre en bannière fixe"}</button><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
+    annoncesAdmin = (brut || []).filter((a) => !a.corps || corpsVisible(a.corps));
+    $("#adm-annonces").innerHTML = annoncesAdmin.length ? annoncesAdmin.map((a) => `<li class="an-adm an-${a.type || "info"}"><span><b>${esc(TYPES_ANNONCE[a.type || "info"])} · ${esc(a.titre)}</b><small>${esc(a.corps || "Tous les corps")} · publiée le ${esc(dateFr(a.cree_le))} · <b>${esc(etatAnnonce(a))}</b>${a.image_path ? " · avec image" : ""}${a.epinglee ? " · bannière fixe" : ""}${a.lien ? " · avec lien" : ""}${a.notifie_le ? " · membres avisés" : a.notifier ? " · notification prévue" : " · sans notification"}</small></span>
+      <span class="fc-ligne"><button class="btn-secondaire petit" data-modifier-annonce="${a.id}">Modifier</button><button class="btn-secondaire petit" data-epingler-annonce="${a.id}" data-fixe="${a.epinglee}">${a.epinglee ? "Retirer de la bannière" : "Bannière fixe"}</button><button class="btn-secondaire petit" data-basculer-annonce="${a.id}" data-actif="${a.actif}">${a.actif ? "Masquer" : "Afficher"}</button>
       <button class="btn-danger petit" data-suppr-annonce="${a.id}" data-image="${esc(a.image_path || "")}">Supprimer</button></span></li>`).join("") : `<li class="vide-petit">Aucune annonce publiée.</li>`;
-    $$("[data-lien-annonce]").forEach((b) => b.addEventListener("click", () => { const z = b.closest("li").querySelector(".adm-lien"); z.hidden = !z.hidden; if (!z.hidden) z.querySelector("input").focus(); }));
-    $$("[data-lien-ok]").forEach((b) => b.addEventListener("click", async () => {
-      const v = b.previousElementSibling.value.trim();
-      if (v && !/^https:\/\/\S+$/.test(v)) return toast("Le lien doit commencer par https://");
-      const { error } = await sb.from("annonces").update({ lien: v || null }).eq("id", b.dataset.lienOk);
-      if (error) return toast(traduireErreur(error));
-      toast(v ? "Lien enregistré" : "Lien retiré"); rendreAnnoncesAdmin(); afficherAnnonces();
-    }));
+    const parId = Object.fromEntries(annoncesAdmin.map((a) => [a.id, a]));
+    $$("[data-modifier-annonce]").forEach((b) => b.addEventListener("click", () => modifierAnnonce(parId[b.dataset.modifierAnnonce])));
     $$("[data-epingler-annonce]").forEach((b) => b.addEventListener("click", async () => {
       const { error } = await sb.from("annonces").update({ epinglee: b.dataset.fixe !== "true" }).eq("id", b.dataset.epinglerAnnonce);
       if (error) return toast(traduireErreur(error));
-      toast(b.dataset.fixe !== "true" ? "Annonce en bannière fixe pour tous" : "Bannière retirée"); rendreAnnoncesAdmin(); afficherAnnonces();
+      toast(b.dataset.fixe !== "true" ? "Annonce en bannière fixe" : "Bannière retirée"); rendreAnnoncesAdmin(); afficherAnnonces();
     }));
     $$("[data-basculer-annonce]").forEach((b) => b.addEventListener("click", async () => {
       const { error } = await sb.from("annonces").update({ actif: b.dataset.actif !== "true" }).eq("id", b.dataset.basculerAnnonce);
       if (error) return toast(traduireErreur(error));
-      rendreAnnoncesAdmin();
+      rendreAnnoncesAdmin(); afficherAnnonces();
     }));
     $$("[data-suppr-annonce]").forEach((b) => b.addEventListener("click", async () => {
       if (!b.dataset.arme) { b.dataset.arme = "1"; b.textContent = "Confirmer"; return; }
       if (b.dataset.image) await sb.storage.from("annonces").remove([b.dataset.image]);
       const { error } = await sb.from("annonces").delete().eq("id", b.dataset.supprAnnonce);
       if (error) return toast(traduireErreur(error));
-      toast("Annonce supprimée"); rendreAnnoncesAdmin();
+      if (annonceEdition && annonceEdition.id === b.dataset.supprAnnonce) viderFormAnnonce();
+      toast("Annonce supprimée"); rendreAnnoncesAdmin(); afficherAnnonces();
     }));
   }
   /* ---------------- Signaler un problème : description + contexte technique minimal, lu par l'administrateur ---------------- */
