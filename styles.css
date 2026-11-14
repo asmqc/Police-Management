@@ -3209,3 +3209,5 @@ html[data-theme="clair"] .ac-fiche, html:not([data-theme]) .ac-fiche { color: #E
 .ac-pos-adr { font-weight: 800; font-size: .92rem; line-height: 1.25; color: var(--fg); }
 .ac-pos-adr:empty { display: none; }
 .ac-pos-adr.route { display: inline-block; justify-self: start; padding: 3px 9px; border-radius: 8px; background: #0E7A3E; color: #fff; font-family: var(--f-mono, ui-monospace, monospace); font-size: .85rem; letter-spacing: .02em; }
+
+#btn-reglages { display: none !important; }

@@ -1650,7 +1650,7 @@ Question : ${question}
     const v = etat.vue;
     if (appIOSAncienne && ["carte", "corps", "meteo"].includes(v)) return "carte";
     if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
-    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
+    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien", "reglages", "compte", "apropos"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
     if (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) return "horaire";
     if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
     return v;
@@ -2635,6 +2635,9 @@ Question : ${question}
     forum: { t: "Forum", s: "Votre corps de police", i: '<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>' },
     idees: { t: "Idées", s: "Proposer et voter", i: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>' },
     entreprises: { t: "Entreprises", s: "D'ici et gérées par des policiers", i: '<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5"/>' },
+    reglages: { t: "Réglages", s: "Apparence, notifications, confidentialité", i: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' },
+    compte: { t: "Mon compte", s: "Profil, photo, mes données", i: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>' },
+    apropos: { t: "À propos", s: "Version et mises à jour", i: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>' },
     soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
   };
   const raccOffert = (k) => { const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
@@ -2644,6 +2647,7 @@ Question : ${question}
     ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention"]],
     ["Mon poste", ["feuille", "forum", "idees"]],
     ["Pour moi", ["soutien", "entreprises"]],
+    ["Mon compte et réglages", ["reglages", "compte", "apropos"]],
   ];
   function rendreFonctions() {
     $("#ac-fonctions").innerHTML = GROUPES_FONCTIONS.map(([titre, cles]) => {
@@ -9044,7 +9048,7 @@ Format :
       { sel: ".nav [data-vue='csr']", titre: "Terrain", texte: "Les lois, les vitesses, la carte (« Où suis-je ? », bornes, qui couvre le territoire) et la météo avec Québec 511." },
       { sel: ".nav [data-vue='fonctions']", titre: "Fonctionnalités", texte: "Tous les outils au même endroit : lois, vitesses, carte, paie, feuille de poste, forum, idées… avec la recherche." },
       { sel: "#btn-menu", titre: "Votre compte", texte: "Mon compte, Bien-être et soutien, installer l'app et se déconnecter." },
-      { sel: "#btn-reglages", titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée." },
+      { sel: '.nav [data-vue="fonctions"]', titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée : dans Fonctionnalités › Mon compte et réglages." },
     ] },
     horaire: { titre: "L'horaire", vue: "horaire", nouveau: true, etapes: [
       { sel: "#hr-onglets-vue", titre: "Calendrier et Heures", texte: "Votre calendrier d'un côté, vos heures du mois et de l'année de l'autre. La paie a maintenant son propre onglet, et l'horaire du poste est dans l'onglet Poste." },
