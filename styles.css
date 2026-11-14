@@ -2983,3 +2983,20 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .bl-tache.fait b { text-decoration: line-through; opacity: .7; }
 .bl-date { color: var(--ok, #2fbf71) !important; font-weight: 600; }
 .bl-alerte { font-style: normal; font-size: .75rem; padding: 1px 7px; border-radius: 99px; background: var(--alerte, #f5a524); color: #111; margin-left: 4px; }
+
+/* Horaire : grosses tuiles d'actions */
+.hr-tuiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.hr-tuile { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; text-align: left; min-height: 118px; padding: 14px; border-radius: 20px; border: 1px solid var(--ligne); background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; transition: transform .12s, border-color .12s; }
+.hr-tuile:active { transform: scale(.97); }
+.hr-tuile:hover { border-color: var(--accent, #3b82f6); }
+.hr-tuile[hidden] { display: none; }
+.hr-tuile b { font-size: 1.02rem; line-height: 1.2; }
+.hr-tuile small { color: var(--fg-doux); font-size: .82rem; line-height: 1.35; }
+.hr-tuile-ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; color: #fff; margin-bottom: 4px; }
+.t-bleu .hr-tuile-ico { background: #1D4ED8; }
+.t-rouge .hr-tuile-ico { background: #E11D2E; }
+.t-vert .hr-tuile-ico { background: #0E9F6E; }
+.t-or .hr-tuile-ico { background: #C9A227; color: #08132A; }
+.hr-tuile[aria-expanded="true"] { border-color: #0E9F6E; box-shadow: 0 0 0 2px rgba(14,159,110,.35) inset; }
+@media (min-width: 760px) { .hr-tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.hr-tuiles[hidden] { display: none; }
