@@ -2,6 +2,11 @@
 // Les textes français restent la référence; les lois et le contrat de travail restent en français.
 (function () {
   const EN = {
+"Fonctionnalités": "Features",
+"Tous les outils de Police Management": "All Police Management tools",
+"Horaire et paie": "Schedule and pay",
+"Mon poste": "My station",
+"Pour moi": "For me",
 "Historique des mises à jour": "Update history",
 "Voir l'historique des mises à jour": "See the update history",
 "À propos de Police Management": "About Police Management",

@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611141720">
+  <link rel="stylesheet" href="styles.css?v=202611141729">
 </head>
 <body>
   <!-- Chargement -->
@@ -544,6 +544,12 @@
 
     <!-- Vue Accueil -->
     <section id="vue-accueil" class="vue">
+      <div class="segmente sous-nav accueil-nav" role="tablist" aria-label="Accueil">
+        <button type="button" role="tab" data-ac-onglet="infos" aria-checked="true">Accueil</button>
+        <button type="button" role="tab" data-ac-onglet="fonctions" aria-checked="false">Fonctionnalités</button>
+      </div>
+
+      <div id="ac-p-infos">
       <div class="ac-fixes" id="ac-fixes" hidden aria-label="Annonces importantes"></div>
       <div class="accueil-tete">
         <span class="avatar grand" id="ac-avatar"></span>
@@ -554,16 +560,6 @@
         </div>
       </div>
 
-      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
-      <button type="button" class="lien ac-annonces-tout" id="ac-annonces-tout" hidden>Toutes les annonces ›</button>
-      <div class="ac-recherche" role="search">
-        <label for="ac-q" class="visuellement-cache">Rechercher dans Police Management</label>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-        <input id="ac-q" type="search" placeholder="Article, municipalité, section…" autocomplete="off" enterkeyhint="search">
-      </div>
-      <div class="ac-resultats" id="ac-resultats" hidden></div>
-
-
       <h3 class="ac-section-titre" id="ac-auj-titre">Aujourd'hui</h3>
       <button class="ac-quart" id="ac-quart" data-aller="horaire"></button>
 
@@ -571,22 +567,26 @@
       <button class="ac-admin" id="ac-admin" data-aller="admin" hidden></button>
 
       <section class="panneau ts-confirmer" id="ac-tsc" hidden aria-label="Temps supplémentaire à confirmer"></section>
+
+      <div class="ac-annonces" id="ac-annonces" hidden aria-label="Annonces"></div>
+      <button type="button" class="lien ac-annonces-tout" id="ac-annonces-tout" hidden>Toutes les annonces ›</button>
+
       <section class="panneau ac-echeances" id="ac-echeances" aria-labelledby="ac-echeances-titre" hidden>
         <h3 id="ac-echeances-titre">À ne pas oublier</h3>
         <ul id="ac-echeances-liste"></ul>
       </section>
+      </div>
 
-
-
-      <section class="ac-raccourcis" aria-labelledby="ac-racc-titre">
-        <div class="ac-racc-tete"><h3 class="ac-section-titre" id="ac-racc-titre">Mes raccourcis</h3><button type="button" class="lien" id="ac-racc-modifier">Modifier</button></div>
-        <div class="tuiles racc" id="ac-racc"></div>
-        <div class="panneau racc-choix" id="ac-racc-choix" hidden>
-          <p class="aide">Choisissez jusqu'à 4 raccourcis pour votre accueil.</p>
-          <div class="racc-liste" id="ac-racc-liste"></div>
-          <div class="racc-actions"><button type="button" class="btn-secondaire petit" id="ac-racc-defaut">Par défaut</button><button type="button" class="btn-ok petit" id="ac-racc-ok">Terminé</button></div>
-        </div>
-      </section>
+      <div id="ac-p-fonctions" hidden>
+        <div class="vue-tete"><h2>Fonctionnalités</h2><p class="ref">Tous les outils de Police Management</p></div>
+      <div class="ac-recherche" role="search">
+        <label for="ac-q" class="visuellement-cache">Rechercher dans Police Management</label>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <input id="ac-q" type="search" placeholder="Article, municipalité, section…" autocomplete="off" enterkeyhint="search">
+      </div>
+      <div class="ac-resultats" id="ac-resultats" hidden></div>
+        <div id="ac-fonctions" class="ac-fonctions"></div>
+      </div>
       <p class="pied-accueil">Police Management · Outil indépendant de référence. Les textes officiels prévalent.</p>
     </section>
 
@@ -2388,9 +2388,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611141720"></script>
+  <script src="config.js?v=202611141729"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611141720"></script>
-  <script src="app.js?v=202611141720"></script>
+  <script src="i18n.js?v=202611141729"></script>
+  <script src="app.js?v=202611141729"></script>
 </body>
 </html>

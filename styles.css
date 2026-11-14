@@ -3046,3 +3046,13 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .an-adm.an-urgent { border-left-color: #E11D2E; }
 .an-pastille { justify-self: start; width: max-content; }
 .an-types button { white-space: nowrap; }
+
+/* Accueil : onglets Accueil / Fonctionnalités */
+.accueil-nav { margin-bottom: 12px; }
+#ac-p-infos[hidden], #ac-p-fonctions[hidden] { display: none; }
+.ac-fonctions { display: grid; gap: 4px; }
+.ac-fonctions .ac-section-titre { margin: 14px 0 6px; }
+.ac-fonctions .tuiles.racc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 760px) { .ac-fonctions .tuiles.racc { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+#ac-p-fonctions .ac-recherche { margin-bottom: 4px; }
+#ac-p-infos #ac-auj-titre { margin-top: 18px; }

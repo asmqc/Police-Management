@@ -2633,45 +2633,31 @@ Question : ${question}
     idees: { t: "Idées", s: "Proposer et voter", i: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>' },
     soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
   };
-  const RACC_DEFAUT = ["csr", "vitesse", "paie", "position"];
-  const cleRacc = () => "pm-raccourcis-" + (etat.profil ? etat.profil.id : "");
   const raccOffert = (k) => { const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
-  function mesRaccourcis() {
-    let l = null;
-    try { l = JSON.parse(localStorage.getItem(cleRacc()) || "null"); } catch { /* facultatif */ }
-    if (!Array.isArray(l) || !l.length) l = RACC_DEFAUT;
-    return l.filter(raccOffert).slice(0, 4);
-  }
-  const racc = { choix: null };
-  function rendreRaccourcis() {
-    const l = mesRaccourcis();
-    $("#ac-racc").innerHTML = l.map((k) => { const r = RACC_ACCUEIL[k];
-      return `<button class="tuile" data-racc="${k}"><span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.i}</svg></span><span class="tuile-txt"><b>${esc(r.t)}</b><small>${esc(r.s)}</small></span></button>`; }).join("");
-    $$("[data-racc]", $("#ac-racc")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
-  }
-  function rendreChoixRacc() {
-    const ch = racc.choix;
-    $("#ac-racc-liste").innerHTML = Object.keys(RACC_ACCUEIL).filter(raccOffert).map((k) => {
-      const on = ch.includes(k), plein = !on && ch.length >= 4;
-      return `<button type="button" class="racc-option${on ? " on" : ""}" data-racc-choix="${k}" aria-pressed="${on}"${plein ? " disabled" : ""}><span>${on ? ch.indexOf(k) + 1 : "+"}</span>${esc(RACC_ACCUEIL[k].t)}</button>`;
+  // Onglet « Fonctionnalités » de l'accueil : tous les outils, regroupés
+  const GROUPES_FONCTIONS = [
+    ["Terrain", ["csr", "vitesse", "position", "carte", "corps", "meteo"]],
+    ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention"]],
+    ["Mon poste", ["feuille", "forum", "idees"]],
+    ["Pour moi", ["soutien"]],
+  ];
+  function rendreFonctions() {
+    $("#ac-fonctions").innerHTML = GROUPES_FONCTIONS.map(([titre, cles]) => {
+      const l = cles.filter(raccOffert);
+      if (!l.length) return "";
+      return `<h3 class="ac-section-titre">${esc(titre)}</h3><div class="tuiles racc">${l.map((k) => { const r = RACC_ACCUEIL[k];
+        return `<button class="tuile" data-racc="${k}"><span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.i}</svg></span><b>${esc(r.t)}</b><small>${esc(r.s)}</small></button>`; }).join("")}</div>`;
     }).join("");
-    $$("[data-racc-choix]").forEach((b) => b.addEventListener("click", () => {
-      const k = b.dataset.raccChoix;
-      racc.choix = racc.choix.includes(k) ? racc.choix.filter((x) => x !== k) : [...racc.choix, k].slice(0, 4);
-      rendreChoixRacc();
-    }));
+    $$("[data-racc]", $("#ac-fonctions")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
   }
-  $("#ac-racc-modifier").addEventListener("click", () => {
-    const p = $("#ac-racc-choix");
-    if (!p.hidden) { $("#ac-racc-ok").click(); return; }
-    racc.choix = mesRaccourcis(); rendreChoixRacc(); p.hidden = false; $("#ac-racc-modifier").textContent = "Terminé";
-  });
-  $("#ac-racc-defaut").addEventListener("click", () => { racc.choix = RACC_DEFAUT.filter(raccOffert); rendreChoixRacc(); });
-  $("#ac-racc-ok").addEventListener("click", () => {
-    if (racc.choix && racc.choix.length) { try { localStorage.setItem(cleRacc(), JSON.stringify(racc.choix)); } catch { /* facultatif */ } }
-    $("#ac-racc-choix").hidden = true; $("#ac-racc-modifier").textContent = "Modifier";
-    rendreRaccourcis();
-  });
+  function ongletAccueil(nom) {
+    $$("[data-ac-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.acOnglet === nom)));
+    $("#ac-p-infos").hidden = nom !== "infos";
+    $("#ac-p-fonctions").hidden = nom !== "fonctions";
+    if (nom === "fonctions") rendreFonctions();
+    window.scrollTo({ top: 0 });
+  }
+  $$("[data-ac-onglet]").forEach((b) => b.addEventListener("click", () => ongletAccueil(b.dataset.acOnglet)));
 
   async function initAccueil() {
     const p = etat.profil;
@@ -2681,7 +2667,7 @@ Question : ${question}
     $("#ac-date").textContent = new Date().toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
     $("#ac-unite").textContent = [p.grade, p.corps_police, p.unite].filter(Boolean).join(" · ");
     remplirAvatar($("#ac-avatar"), p);
-    rendreRaccourcis();
+    rendreFonctions();
     try { rendreEcheances(); } catch (e) { console.warn(e); }
     chargerEvenements().then(() => { try { rendreEcheances(); } catch (e) { console.warn(e); } }).catch(() => {});
     // Quart du jour
@@ -8775,9 +8761,9 @@ Format :
   const VISITES = {
     bienvenue: { titre: "Bienvenue dans Police Management", vue: "accueil", etapes: [
       { titre: "Bienvenue !", texte: "Voici une visite rapide de l'app. Vous pourrez la revoir en tout temps dans Réglages › Visite guidée." },
-      { sel: "#ac-q", titre: "Recherche", texte: "Trouvez un article de loi, une municipalité ou une section de l'app en tapant quelques lettres." },
+      { sel: "[data-ac-onglet='fonctions']", titre: "Fonctionnalités et recherche", texte: "Tous les outils sont ici, avec la recherche : un article de loi, une municipalité ou une section de l'app en quelques lettres." },
       { sel: "#ac-echeances", titre: "À ne pas oublier", texte: "Les dates limites du contrat de travail et les congés à planifier avant de les perdre." },
-      { sel: ".ac-raccourcis", titre: "Vos raccourcis", texte: "Quatre raccourcis vers ce que vous utilisez le plus. Touchez « Modifier » pour les choisir." },
+      { sel: ".accueil-nav", titre: "Accueil et Fonctionnalités", texte: "L'Accueil montre l'essentiel du jour. L'onglet « Fonctionnalités » regroupe tous les outils et la recherche." },
       { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre calendrier, vos échanges de quarts, les partages et vos heures du mois et de l'année." },
       { sel: ".nav [data-vue='paie']", titre: "Paie", texte: "Votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail." },
       { sel: ".nav [data-vue='csr']", titre: "Terrain", texte: "Les lois, les vitesses, la carte (« Où suis-je ? », bornes, qui couvre le territoire) et la météo avec Québec 511." },
