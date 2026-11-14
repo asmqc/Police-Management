@@ -3211,3 +3211,13 @@ html[data-theme="clair"] .ac-fiche, html:not([data-theme]) .ac-fiche { color: #E
 .ac-pos-adr.route { display: inline-block; justify-self: start; padding: 3px 9px; border-radius: 8px; background: #0E7A3E; color: #fff; font-family: var(--f-mono, ui-monospace, monospace); font-size: .85rem; letter-spacing: .02em; }
 
 #btn-reglages { display: none !important; }
+
+/* Fiche d'un point : repère kilométrique et adresse */
+.repere-km { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 6px 0 10px; padding: 10px; border-radius: 12px; background: #0E7A3E; color: #fff; }
+.repere-route { display: grid; place-items: center; min-width: 64px; padding: 4px 10px; border-radius: 8px; background: #fff; color: #0E7A3E; font: 900 1.2rem/1 var(--f-titre, inherit); }
+.repere-val, .repere-dir { display: grid; gap: 1px; }
+.repere-val small, .repere-dir small { font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.repere-val b { font: 900 1.6rem/1 var(--f-mono, ui-monospace, monospace); }
+.repere-dir b { font-size: 1.05rem; }
+.repere-nom { flex-basis: 100%; opacity: .9; }
+.adresse-lieu .code-postal { font-family: var(--f-mono, ui-monospace, monospace); letter-spacing: .04em; }

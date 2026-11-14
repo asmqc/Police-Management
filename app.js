@@ -2773,7 +2773,8 @@ Question : ${question}
           const rep = await charger("reperes.json");
           const [no, km, dir] = r.borne.r;
           const nr = nomRoute(no, rep);
-          emplacement = `${nr.court} · km ${km % 1 ? km.toFixed(1) : km}${dir ? " · direction " + dirNom(dir) : ""}`;
+          const kmE = r.borne.kmEstime != null ? r.borne.kmEstime : km;
+          emplacement = `${nr.court} · km ${(Math.round(kmE * 10) / 10).toLocaleString("fr-CA", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}${dir ? " · direction " + dirNom(dir) : ""}`;
         }
         const mrc = r.muni ? [r.muni.mrc, r.muni.region].filter(Boolean).join(" · ") : "";
         const corps = r.corps ? `<span class="etiquette-corps" style="--c:${r.corps.couleur}">${esc(r.corps.nom)}</span>`
@@ -2787,7 +2788,15 @@ Question : ${question}
     }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
   }
   // Adresse civique de la position : géocodage inversé d'Apple Plans (ou OpenStreetMap si la carte Apple n'est pas offerte)
-  async function adresseCivique(lat, lon) {
+  // Adresse civique complète (avec code postal) d'un point : géocodage inversé d'Apple Plans, ou OpenStreetMap en secours.
+  // Retourne { rue, ville, province, cp, complet, court }.
+  async function adresseComplete(lat, lon) {
+    const fmt = (rue, ville, prov, cp) => {
+      const p = (prov || "").replace(/^QC$|^Quebec$/i, "Québec");
+      const cpf = (cp || "").toUpperCase().replace(/^([A-Z]\d[A-Z])\s*(\d[A-Z]\d)$/, "$1 $2");
+      return { rue, ville, province: p, cp: cpf, court: [rue, ville].filter(Boolean).join(", "),
+        complet: [rue, [ville, p ? `(${p})` : ""].filter(Boolean).join(" "), cpf].filter(Boolean).join(", ") };
+    };
     if (window.mapkit && window.L && L.apple) {
       try {
         if (!window.mapkit.Geocoder && typeof window.mapkit.load === "function") await window.mapkit.load(["services"]);
@@ -2795,17 +2804,18 @@ Question : ${question}
           const res = await new Promise((ok, ko) => new window.mapkit.Geocoder({ language: "fr-CA" })
             .reverseLookup(new window.mapkit.Coordinate(lat, lon), (err, data) => (err ? ko(err) : ok(data)), { language: "fr-CA" }));
           const p = res && res.results && res.results[0];
-          if (p) return [p.fullThoroughfare || [p.subThoroughfare, p.thoroughfare].filter(Boolean).join(" "), p.locality].filter(Boolean).join(", ") || p.formattedAddress || "";
+          if (p) return fmt(p.fullThoroughfare || [p.subThoroughfare, p.thoroughfare].filter(Boolean).join(" "), p.locality || p.subLocality, p.administrativeAreaCode || p.administrativeArea, p.postCode);
         }
       } catch (e) { console.info("Géocodage Apple :", e && e.message); }
     }
     const rep = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=fr&lat=${lat.toFixed(5)}&lon=${lon.toFixed(5)}`);
-    if (!rep.ok) return "";
+    if (!rep.ok) return null;
     const d = await rep.json();
     const a = d.address || {};
-    const rue = [a.house_number, a.road].filter(Boolean).join(" ");
-    return [rue, a.city || a.town || a.village || a.municipality].filter(Boolean).join(", ");
+    return fmt([a.house_number, a.road].filter(Boolean).join(" "), a.city || a.town || a.village || a.municipality, a.state, a.postcode);
   }
+  async function adresseCivique(lat, lon) { const a = await adresseComplete(lat, lon); return a ? a.court : ""; }
+
   $("#ac-pos-activer").addEventListener("click", () => {
     try { localStorage.setItem("pm-minicarte", "1"); } catch { /* facultatif */ }
     miniPos.dernier = 0; majBlocPosition();
@@ -7914,7 +7924,18 @@ Format :
       const d = distanceM(lat, lon, r[4], r[3]);
       if (!proche || d < proche.d) proche = { d, r };
     }
-    if (proche && proche.d < 5000) res.borne = proche;
+    if (proche && proche.d < 5000) {
+      // Kilomètre estimé entre les deux bornes voisines de la même route et de la même direction
+      let voisine = null;
+      for (const r of rep.reperes) {
+        if (r === proche.r || r[0] !== proche.r[0] || r[2] !== proche.r[2] || r[1] === proche.r[1]) continue;
+        if (Math.abs(r[4] - lat) > 0.03 || Math.abs(r[3] - lon) > 0.04) continue;
+        const d = distanceM(lat, lon, r[4], r[3]);
+        if (d < 1500 && (!voisine || d < voisine.d)) voisine = { d, r };
+      }
+      proche.kmEstime = voisine ? proche.r[1] + (voisine.r[1] - proche.r[1]) * (proche.d / (proche.d + voisine.d)) : proche.r[1];
+      res.borne = proche;
+    }
     return res;
   }
 
@@ -7929,6 +7950,15 @@ Format :
   async function ficheLieu(res, titre) {
     const rep = await charger("reperes.json");
     const lignes = [];
+    // Sur une route numérotée : le repère kilométrique en premier, bien visible
+    let repere = "";
+    if (res.borne && (res.autoroutier || res.borne.d <= 400)) {
+      const [no, , dir] = res.borne.r;
+      const nr = nomRoute(no, rep);
+      const k = res.borne.kmEstime;
+      repere = `<div class="repere-km"><span class="repere-route">${esc(nr.court)}</span><span class="repere-val"><small>Kilomètre</small><b>${esc((Math.round(k * 10) / 10).toLocaleString("fr-CA", { minimumFractionDigits: 1, maximumFractionDigits: 1 }))}</b></span>${dir ? `<span class="repere-dir"><small>Direction</small><b>${esc(dirNom(dir))}</b></span>` : ""}${nr.long ? `<small class="repere-nom">${esc(nr.long)}</small>` : ""}</div>`;
+    }
+    lignes.push(["Adresse", `<span class="adresse-lieu" data-adresse-lieu>Recherche de l'adresse…</span>`]);
     if (res.corps) {
       lignes.push(["Corps de police", `<span class="etiquette-corps" style="--c:${res.corps.couleur}">${esc(res.corps.nom)}</span>${res.corps.inconnu ? `<br><small>Municipalité non desservie par la SQ. Ajoutez le corps de police dans Admin.</small>` : ""}${res.corps.telephone ? `<br><span class="ref">${esc(res.corps.telephone)}</span>` : ""}`]);
       if (!res.muni) lignes.push(["Municipalité", esc(res.municipalite.nom) + (res.municipalite.mrc ? `<br><small>${esc(res.municipalite.mrc)}</small>` : "")]);
@@ -7959,6 +7989,7 @@ Format :
     const f = $("#fiche-lieu");
     f.innerHTML = `<button class="btn-icone fermer" aria-label="Fermer">✕</button>
       <h4>${esc(titre || "Ce point")}</h4>
+      ${repere}
       ${lignes.map(([a, b]) => `<div class="ligne-info"><span>${a}</span><span>${b}</span></div>`).join("")}
       ${liensAller(res.lat, res.lon)}
       <div class="fiche-actions"><button class="lien" data-copier-pos>Copier la position</button><button class="lien" data-partager-pos>Partager ce point</button></div>`;
@@ -7967,6 +7998,14 @@ Format :
     $("[data-copier-pos]", f).addEventListener("click", () => copier(`${res.lat.toFixed(5)}, ${res.lon.toFixed(5)}`));
     $("[data-partager-pos]", f).addEventListener("click", () => partagerPoint(res.lat, res.lon, titre));
     $$("[data-copier-code]", f).forEach((b) => b.addEventListener("click", () => copier(b.dataset.copierCode)));
+    // Adresse complète avec code postal (arrive après coup)
+    const cible = $("[data-adresse-lieu]", f);
+    adresseComplete(res.lat, res.lon).then((a) => {
+      if (!cible.isConnected) return;
+      if (!a || !a.complet) { cible.textContent = "Aucune adresse civique à cet endroit"; return; }
+      cible.innerHTML = `${esc(a.rue || "")}${a.rue ? "<br>" : ""}${esc([a.ville, a.province ? `(${a.province})` : ""].filter(Boolean).join(" "))}${a.cp ? `<br><b class="code-postal">${esc(a.cp)}</b>` : ""} <button class="lien" data-copier-adr>Copier</button>`;
+      $("[data-copier-adr]", cible).addEventListener("click", () => copier(a.complet));
+    }).catch(() => { if (cible.isConnected) cible.textContent = "Adresse non disponible pour le moment"; });
   }
   // « Y aller » : itinéraire dans Plans (Apple), Google Maps ou Waze
   const liensAller = (lat, lon) => {
