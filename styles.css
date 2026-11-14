@@ -3056,3 +3056,30 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 @media (min-width: 760px) { .ac-fonctions .tuiles.racc { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 #ac-p-fonctions .ac-recherche { margin-bottom: 4px; }
 #ac-p-infos #ac-auj-titre { margin-top: 18px; }
+
+/* ===== Accueil refait (13 nov.) : colonne centrée, en-tête centré, espacement régulier ===== */
+#vue-accueil { display: block !important; width: 100%; max-width: 680px !important; margin-inline: auto !important; }
+#vue-accueil > * { grid-column: auto; grid-row: auto; }
+#ac-p-infos, #ac-p-fonctions { display: flex; flex-direction: column; gap: 14px; }
+#ac-p-infos[hidden], #ac-p-fonctions[hidden] { display: none; }
+#ac-p-infos > *, #ac-p-fonctions > * { margin: 0; max-width: none; }
+#ac-p-infos > [hidden] { display: none !important; }
+.accueil-nav { margin: 0 0 18px !important; }
+.accueil-tete { flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 4px 0 6px; }
+.accueil-tete .avatar.grand { width: 84px; height: 84px; font-size: 1.8rem; }
+.accueil-tete > div { display: grid; justify-items: center; gap: 2px; }
+.accueil-tete h2 { margin: 0; line-height: 1.1; }
+.accueil-tete .ac-sous { margin: 2px 0 0; }
+#ac-p-infos #ac-auj-titre, #ac-p-infos .ac-section-titre { margin: 8px 0 -4px !important; }
+#ac-p-infos .ac-quart, #ac-p-infos .ac-admin, #ac-p-infos .ts-confirmer, #ac-p-infos .ac-echeances { width: 100%; }
+#ac-p-infos .ac-annonces { display: flex; flex-direction: column; gap: 10px; overflow: visible; }
+#ac-p-infos .ac-annonces[hidden] { display: none; }
+#ac-p-infos .ac-annonces .annonce { height: auto; }
+#ac-p-infos .ac-annonces-tout { align-self: center; margin: -4px 0 0 !important; }
+#ac-p-infos .ac-fixes { display: flex; flex-direction: column; gap: 10px; }
+#ac-p-infos .ac-fixes[hidden] { display: none; }
+#ac-p-fonctions .vue-tete { text-align: center; }
+#ac-p-fonctions .vue-tete h2 { margin: 0; }
+#ac-p-fonctions .ac-fonctions .ac-section-titre:first-child { margin-top: 4px; }
+.pied-accueil { text-align: center; margin: 22px auto 8px !important; }
+@media (min-width: 1000px) { #vue-accueil { max-width: 760px !important; } }
