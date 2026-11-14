@@ -668,7 +668,7 @@
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     signalerActivite();
-    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos", "fonctions"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -1530,6 +1530,7 @@ Question : ${question}
     if (nom === "accueil") initAccueil();
     if (nom === "meteo") initMeteo();
     if (nom === "apropos") rendreAPropos();
+    if (nom === "fonctions") rendreFonctions();
     visiteDeVue(nom);
     if (nom === "reglages") { rendreVisitesReglages(); majBlocsNotif(); majChoixTheme(); rendreStyles(); majReglagePartage(); majReglagesHoraire(); majConsentementReglages(); }
     if (nom === "messages") { initMessages(); majBlocsNotif(); }
@@ -1567,7 +1568,7 @@ Question : ${question}
         pontNatif.postMessage({
           vue: etat.vue || "accueil",
           onglet: (() => { try { return ongletCourant(); } catch { return etat.vue || "accueil"; } })(),
-          titre: (() => { try { const o = ongletCourant(); return o === "paie" ? (etat.vue === "convention" ? "Contrat de travail" : "Ma paie") : o === "feuille" ? (etat.vue === "messages" ? "Messages" : etat.vue === "idees" ? "Idées" : "Mon poste") : null; } catch { return null; } })(),
+          titre: (() => { try { const o = ongletCourant(); return o === "paie" ? (etat.vue === "convention" ? "Contrat de travail" : "Ma paie") : o === "fonctions" ? (etat.vue === "fonctions" ? "Fonctionnalités" : etat.vue === "idees" ? "Idées" : etat.vue === "forum" ? "Forum" : etat.vue === "feuille" ? "Feuille de poste" : null) : null; } catch { return null; } })(),
           connecte: !$("#ecran-app").hidden,
           modal: !!document.querySelector(".voile:not([hidden]), .avert:not([hidden])"),
           plein: document.body.classList.contains("carte-plein"),
@@ -1648,7 +1649,8 @@ Question : ${question}
     const v = etat.vue;
     if (appIOSAncienne && ["carte", "corps", "meteo"].includes(v)) return "carte";
     if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
-    if (["forum", "feuille", "messages", "idees"].includes(v) || (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts"))) return "feuille";
+    if (["forum", "feuille", "messages", "idees"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
+    if (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) return "horaire";
     if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
     return v;
   }
@@ -2650,15 +2652,6 @@ Question : ${question}
     }).join("");
     $$("[data-racc]", $("#ac-fonctions")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
   }
-  function ongletAccueil(nom) {
-    $$("[data-ac-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.acOnglet === nom)));
-    $("#ac-p-infos").hidden = nom !== "infos";
-    $("#ac-p-fonctions").hidden = nom !== "fonctions";
-    if (nom === "fonctions") rendreFonctions();
-    window.scrollTo({ top: 0 });
-  }
-  $$("[data-ac-onglet]").forEach((b) => b.addEventListener("click", () => ongletAccueil(b.dataset.acOnglet)));
-
   async function initAccueil() {
     const p = etat.profil;
     const h = new Date().getHours();
@@ -8761,13 +8754,13 @@ Format :
   const VISITES = {
     bienvenue: { titre: "Bienvenue dans Police Management", vue: "accueil", etapes: [
       { titre: "Bienvenue !", texte: "Voici une visite rapide de l'app. Vous pourrez la revoir en tout temps dans Réglages › Visite guidée." },
-      { sel: "[data-ac-onglet='fonctions']", titre: "Fonctionnalités et recherche", texte: "Tous les outils sont ici, avec la recherche : un article de loi, une municipalité ou une section de l'app en quelques lettres." },
+      { sel: '.nav [data-vue="fonctions"]', titre: "Fonctionnalités et recherche", texte: "Tous les outils sont ici, avec la recherche : un article de loi, une municipalité ou une section de l'app en quelques lettres." },
       { sel: "#ac-echeances", titre: "À ne pas oublier", texte: "Les dates limites du contrat de travail et les congés à planifier avant de les perdre." },
-      { sel: ".accueil-nav", titre: "Accueil et Fonctionnalités", texte: "L'Accueil montre l'essentiel du jour. L'onglet « Fonctionnalités » regroupe tous les outils et la recherche." },
+      { sel: "#ac-p-infos", titre: "L'essentiel du jour", texte: "L'Accueil montre vos annonces, vos échéances et ce qui vous attend aujourd'hui. Tous les outils sont dans l'onglet « Fonctionnalités »." },
       { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre calendrier, vos échanges de quarts, les partages et vos heures du mois et de l'année." },
       { sel: ".nav [data-vue='paie']", titre: "Paie", texte: "Votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail." },
       { sel: ".nav [data-vue='csr']", titre: "Terrain", texte: "Les lois, les vitesses, la carte (« Où suis-je ? », bornes, qui couvre le territoire) et la météo avec Québec 511." },
-      { sel: ".nav [data-vue='feuille']", titre: "Poste", texte: "La feuille et l'horaire du poste, le TS du poste, le forum, les messages et les idées. La pastille indique vos messages non lus." },
+      { sel: ".nav [data-vue='fonctions']", titre: "Fonctionnalités", texte: "Tous les outils au même endroit : lois, vitesses, carte, paie, feuille de poste, forum, idées… avec la recherche." },
       { sel: "#btn-menu", titre: "Votre compte", texte: "Mon compte, Bien-être et soutien, installer l'app et se déconnecter." },
       { sel: "#btn-reglages", titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée." },
     ] },

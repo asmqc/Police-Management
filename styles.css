@@ -3083,3 +3083,7 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 #ac-p-fonctions .ac-fonctions .ac-section-titre:first-child { margin-top: 4px; }
 .pied-accueil { text-align: center; margin: 22px auto 8px !important; }
 @media (min-width: 1000px) { #vue-accueil { max-width: 760px !important; } }
+#vue-accueil[hidden] { display: none !important; }
+#vue-fonctions { width: 100%; max-width: 760px; margin-inline: auto; }
+#vue-fonctions .vue-tete { text-align: center; }
+.nav [data-vue="fonctions"] .nav-txt { letter-spacing: -.02em; }
