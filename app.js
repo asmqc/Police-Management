@@ -2704,7 +2704,7 @@ Question : ${question}
     } catch { carte.innerHTML = `<span class="pastille-q q q-C">–</span><span><small>Mon horaire</small><strong>Ouvrir l'horaire</strong></span>`; }
     compterMessages();
     afficherAnnonces();
-    try { majBlocPosition(); } catch (e) { console.warn(e); }
+    majBlocPosition().catch((e) => console.warn(e));
     // Demandes en attente (admin)
     const ad = $("#ac-admin");
     if (p.role === "admin") {
@@ -2719,8 +2719,19 @@ Question : ${question}
 
   /* ---------------- Accueil : mini-carte « Ma position » (sur demande, puis à chaque ouverture) ---------------- */
   const miniPos = { carte: null, marqueur: null, dernier: 0, lat: null, lon: null };
-  const miniPosActive = () => { try { return localStorage.getItem("pm-minicarte") === "1"; } catch { return false; } };
-  function majBlocPosition() {
+  const lireMiniPos = () => { try { return localStorage.getItem("pm-minicarte"); } catch { return null; } };
+  const miniPosActive = () => lireMiniPos() === "1";
+  // Dans l'app iPhone ou Android : la localisation est autorisée une seule fois au premier lancement;
+  // si elle l'est, la mini-carte s'affiche d'elle-même (sauf si le membre l'a masquée).
+  async function autorisationNative() {
+    try {
+      if (window.pmPositionNative) return (await window.pmPositionNative.etat()) === "autorise";
+      if (window.pmAndroid && typeof window.pmAndroid.positionAutorisee === "function") return !!window.pmAndroid.positionAutorisee();
+    } catch { /* facultatif */ }
+    return false;
+  }
+  async function majBlocPosition() {
+    if (lireMiniPos() === null && await autorisationNative()) { try { localStorage.setItem("pm-minicarte", "1"); } catch { /* facultatif */ } }
     const bloc = $("#ac-bloc-position");
     // Comme la carte, réservé aux membres dont le courriel est confirmé
     bloc.hidden = !(etat.profil && etat.profil.statut === "approuve" && courrielVerifie() && navigator.geolocation);
@@ -2767,7 +2778,7 @@ Question : ${question}
         if (!emplacement) adresseCivique(lat, lon).then((adr) => { const z = $("#ac-pos-adr"); if (z && adr && miniPos.lat === lat) z.textContent = adr; }).catch(() => {});
       } catch { $("#ac-pos-info").innerHTML = `<b>Position trouvée</b><i>Ouvrir la carte ›</i>`; }
     }, () => {
-      $("#ac-pos-info").innerHTML = `<b>Position introuvable</b><small>Autorisez la localisation pour ce site, puis touchez ici.</small>`;
+      $("#ac-pos-info").innerHTML = `<b>Position introuvable</b><small>${/PoliceManagement(App|Android)/.test(navigator.userAgent) ? "Autorisez la localisation dans les Réglages du téléphone › Police Management, puis touchez ici." : "Autorisez la localisation pour ce site, puis touchez ici."}</small>`;
       miniPos.dernier = 0;
     }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 });
   }
@@ -2796,7 +2807,7 @@ Question : ${question}
     miniPos.dernier = 0; majBlocPosition();
   });
   $("#ac-pos-masquer").addEventListener("click", () => {
-    try { localStorage.removeItem("pm-minicarte"); } catch { /* facultatif */ }
+    try { localStorage.setItem("pm-minicarte", "0"); } catch { /* facultatif */ } // choix du membre : ne plus l'afficher d'elle-même
     majBlocPosition();
   });
   $("#ac-pos-vue").addEventListener("click", () => {
