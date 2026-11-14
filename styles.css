@@ -3144,3 +3144,11 @@ body.est-admin .admin-seul { display: grid; gap: 12px; margin-bottom: 16px; }
 .ent-adm { padding: 0 16px 14px; }
 .ent-masquee { opacity: .6; }
 #ent-form[hidden], #ent-ajouter[hidden] { display: none; }
+
+.ent-rabais { font-size: .74rem; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: #FFC53D; color: #111; }
+.ent-filtres { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.ent-filtres button { white-space: normal !important; line-height: 1.15; font-size: .85rem; }
+.annonce-d-rabais { margin: 4px 0 14px; padding: 14px 16px; border-radius: 16px; background: color-mix(in srgb, #FFC53D 14%, transparent); border: 1px solid color-mix(in srgb, #FFC53D 55%, transparent); }
+.annonce-d-rabais[hidden] { display: none; }
+.annonce-d-rabais h4 { margin: 0 0 6px; font-size: 1rem; color: #FFC53D; }
+.annonce-d-rabais p { margin: 0; white-space: pre-line; }

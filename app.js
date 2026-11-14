@@ -5331,10 +5331,21 @@ Format :
     const admin = estAdmin();
     const { data, error } = await sb.from("entreprises").select("*").order("cree_le", { ascending: false }).limit(200);
     if (error) { z.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
+    // Une entreprise a toujours sa propre copie d'image (dossier entreprises/), jamais celle d'une annonce
+    if (admin) {
+      for (const e of data || []) {
+        if (!e.image_path || e.image_path.startsWith("entreprises/")) continue;
+        const copie = `entreprises/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${e.image_path.split(".").pop()}`;
+        const { error: ec } = await sb.storage.from("annonces").copy(e.image_path, copie);
+        if (ec) continue;
+        const { error: eu } = await sb.from("entreprises").update({ image_path: copie }).eq("id", e.id);
+        if (!eu) e.image_path = copie;
+      }
+    }
     const toutes = (data || []).filter((e) => admin || e.actif);
-    const liste = filtreEnt === "policier" ? toutes.filter((e) => e.geree_par_policier) : toutes;
+    const liste = filtreEnt === "policier" ? toutes.filter((e) => e.geree_par_policier) : filtreEnt === "rabais" ? toutes.filter((e) => e.rabais_police) : toutes;
     if (!liste.length) {
-      z.innerHTML = `<p class="vide">${filtreEnt === "policier" ? "Aucune entreprise gérée par un policier pour le moment." : admin ? "Aucune entreprise. Touchez « Ajouter une entreprise »." : "Aucune entreprise pour le moment. Revenez bientôt !"}</p>`;
+      z.innerHTML = `<p class="vide">${filtreEnt === "policier" ? "Aucune entreprise gérée par un policier pour le moment." : filtreEnt === "rabais" ? "Aucun rabais police pour le moment." : admin ? "Aucune entreprise. Touchez « Ajouter une entreprise »." : "Aucune entreprise pour le moment. Revenez bientôt !"}</p>`;
       return;
     }
     const urls = await urlsAnnonces(liste.map((e) => e.image_path));
@@ -5347,7 +5358,7 @@ Format :
         <div role="button" tabindex="0" data-entreprise="${e.id}" class="ent-ouvrir">
         ${img ? `<div class="ent-image" style="--fond:url('${esc(img)}')"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></div>` : `<div class="ent-image sans-image"><span>${esc(e.nom.slice(0, 1).toUpperCase())}</span></div>`}
         <div class="ent-corps">
-          <div class="ent-marques">${e.geree_par_policier ? `<span class="ent-policier">👮 Gérée par un policier</span>` : ""}${nouv ? `<span class="an-nouveau">Nouveau</span>` : ""}${e.actif ? "" : `<span class="an-fin">Masquée</span>`}</div>
+          <div class="ent-marques">${e.rabais_police ? `<span class="ent-rabais">🏷️ Rabais police</span>` : ""}${e.geree_par_policier ? `<span class="ent-policier">👮 Gérée par un policier</span>` : ""}${nouv ? `<span class="an-nouveau">Nouveau</span>` : ""}${e.actif ? "" : `<span class="an-fin">Masquée</span>`}</div>
           <b>${esc(e.nom)}</b>
           ${e.histoire ? `<p>${esc(e.histoire)}</p>` : ""}
           <span class="ent-actions"><span class="annonce-lien">Lire leur histoire ›</span>${site ? `<small>${esc(site)}</small>` : ""}</span>
@@ -5359,7 +5370,7 @@ Format :
     $$("[data-entreprise]", z).forEach((n) => {
       const ouvrir = () => {
         const e = parId[n.dataset.entreprise];
-        ouvrirAnnonce({ id: e.id, entreprise: true, geree_par_policier: e.geree_par_policier, titre: e.nom, texte: e.histoire, lien: e.lien, image_path: e.image_path, cree_le: e.cree_le, modifie_le: e.modifie_le }, urls);
+        ouvrirAnnonce({ id: e.id, entreprise: true, geree_par_policier: e.geree_par_policier, rabais_police: e.rabais_police, titre: e.nom, texte: e.histoire, lien: e.lien, image_path: e.image_path, cree_le: e.cree_le, modifie_le: e.modifie_le }, urls);
         const m = n.querySelector(".an-nouveau"); if (m) m.remove();
       };
       n.addEventListener("click", ouvrir);
@@ -5376,7 +5387,10 @@ Format :
       const e = parId[b.dataset.entSuppr];
       const { error: er } = await sb.from("entreprises").delete().eq("id", e.id);
       if (er) return toast(traduireErreur(er));
-      if (e.image_path) await sb.storage.from("annonces").remove([e.image_path]);
+      if (e.image_path) {
+        const { count } = await sb.from("annonces").select("id", { count: "exact", head: true }).eq("image_path", e.image_path);
+        if (!count) await sb.storage.from("annonces").remove([e.image_path]); // l'image peut aussi servir à une annonce
+      }
       toast("Entreprise supprimée"); rendreEntreprises();
     }));
   }
@@ -5384,7 +5398,7 @@ Format :
     entEdition = e || null;
     $("#ent-form").hidden = false; $("#ent-ajouter").hidden = true;
     $("#ent-form-titre").textContent = e ? `Modifier « ${e.nom} »` : "Nouvelle entreprise";
-    $("#ent-nom").value = e ? e.nom : ""; $("#ent-histoire").value = e ? e.histoire || "" : ""; $("#ent-lien").value = e ? e.lien || "" : "";
+    $("#ent-nom").value = e ? e.nom : ""; $("#ent-histoire").value = e ? e.histoire || "" : ""; $("#ent-rabais").value = e ? e.rabais_police || "" : ""; $("#ent-lien").value = e ? e.lien || "" : "";
     $("#ent-policier").checked = !!(e && e.geree_par_policier);
     $("#ent-image").value = ""; $("#ent-fichier").textContent = "";
     $("#ent-image-btn").textContent = e && e.image_path ? "Remplacer l'image" : "Ajouter une image (1600 × 900 idéalement)";
@@ -5411,7 +5425,7 @@ Format :
       const { error } = await sb.storage.from("annonces").upload(image_path, f, { contentType: f.type });
       if (error) { btn.disabled = false; return toast(traduireErreur(error)); }
     }
-    const champs = { nom, histoire: $("#ent-histoire").value.trim() || null, lien: lien || null, image_path, geree_par_policier: $("#ent-policier").checked };
+    const champs = { nom, histoire: $("#ent-histoire").value.trim() || null, rabais_police: $("#ent-rabais").value.trim() || null, lien: lien || null, image_path, geree_par_policier: $("#ent-policier").checked };
     const ancienne = entEdition && entEdition.image_path;
     const { error } = entEdition
       ? await sb.from("entreprises").update({ ...champs, modifie_le: new Date().toISOString() }).eq("id", entEdition.id)
@@ -5446,6 +5460,8 @@ Format :
     $("#annonce-d-date").textContent = `${a.entreprise ? (a.geree_par_policier ? "Entreprise · gérée par un policier" : "Entreprise") : "Annonce"} · ${quand(annonceDebut(a))}${a.expire_le ? (annonceExpiree(a) ? " · terminée" : ` · jusqu'au ${dateFr(a.expire_le)}`) : ""}${a.modifie_le ? " · modifiée" : ""}`;
     $("#annonce-d-titre").textContent = a.titre;
     $("#annonce-d-texte").textContent = a.texte || ""; $("#annonce-d-texte").hidden = !a.texte;
+    $("#annonce-d-rabais").hidden = !a.rabais_police;
+    $("#annonce-d-rabais-txt").textContent = a.rabais_police || "";
     const l = $("#annonce-d-lien");
     const lienOk = a.lien && /^https:\/\//.test(a.lien);
     l.hidden = !lienOk;

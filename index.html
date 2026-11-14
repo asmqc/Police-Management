@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611141807">
+  <link rel="stylesheet" href="styles.css?v=202611141812">
 </head>
 <body>
   <!-- Chargement -->
@@ -597,7 +597,8 @@
       <div class="vue-tete"><h2>Entreprises</h2><p class="ref">Des entreprises d'ici, dont plusieurs gérées par des policières et des policiers. Découvrez leur histoire et encouragez-les !</p></div>
       <div class="segmente ent-filtres" role="radiogroup" aria-label="Filtrer les entreprises">
         <button type="button" role="radio" data-ent-filtre="toutes" aria-checked="true">Toutes</button>
-        <button type="button" role="radio" data-ent-filtre="policier" aria-checked="false">Gérées par des policiers</button>
+        <button type="button" role="radio" data-ent-filtre="rabais" aria-checked="false">🏷️ Rabais police</button>
+        <button type="button" role="radio" data-ent-filtre="policier" aria-checked="false">👮 Gérées par des policiers</button>
       </div>
       <div class="ent-admin admin-seul">
         <button type="button" class="btn-principal" id="ent-ajouter">＋ Ajouter une entreprise</button>
@@ -605,6 +606,7 @@
           <h3 class="intertitre" id="ent-form-titre" style="margin:0">Nouvelle entreprise</h3>
           <input id="ent-nom" maxlength="120" placeholder="Nom de l'entreprise" aria-label="Nom de l'entreprise">
           <textarea id="ent-histoire" rows="6" maxlength="3000" placeholder="Son histoire : qui l'a fondée, ce qu'elle offre, où la trouver…" aria-label="Histoire de l'entreprise"></textarea>
+          <textarea id="ent-rabais" rows="4" maxlength="1500" placeholder="Rabais police (facultatif) : ce qui est donné, comment l'obtenir, les conditions" aria-label="Rabais police"></textarea>
           <input id="ent-lien" type="url" inputmode="url" maxlength="500" placeholder="Site web, ex. https://exemple.ca" aria-label="Site web">
           <label class="btn-secondaire petit" for="ent-image" id="ent-image-btn">Ajouter une image (1600 × 900 idéalement)</label>
           <input type="file" id="ent-image" accept="image/jpeg,image/png,image/webp" hidden>
@@ -1965,6 +1967,7 @@
       <span class="an-pastille" id="annonce-d-type" hidden></span>
       <h3 class="titre-voile" id="annonce-d-titre"></h3>
       <p id="annonce-d-texte"></p>
+      <section class="annonce-d-rabais" id="annonce-d-rabais" hidden><h4>🏷️ Rabais police</h4><p id="annonce-d-rabais-txt"></p></section>
       <a class="btn-principal" id="annonce-d-lien" target="_blank" rel="noopener noreferrer" hidden>Visiter le site web</a>
       <small class="ref annonce-d-site" id="annonce-d-site" hidden></small>
     </section>
@@ -2419,9 +2422,9 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611141807"></script>
+  <script src="config.js?v=202611141812"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611141807"></script>
-  <script src="app.js?v=202611141807"></script>
+  <script src="i18n.js?v=202611141812"></script>
+  <script src="app.js?v=202611141812"></script>
 </body>
 </html>
