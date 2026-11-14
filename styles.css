@@ -3109,3 +3109,31 @@ html[data-style="patrouille"] .nav button[aria-current="page"] .nav-ico { backgr
 .car-points button[aria-selected="true"] { width: 22px; background: var(--accent, #3b82f6); }
 .annonce-d-site { display: block; text-align: center; margin-top: 6px; }
 .annonce-detail p#annonce-d-texte { white-space: pre-line; display: block; -webkit-line-clamp: unset; overflow: visible; }
+
+/* Entreprises */
+#vue-entreprises { width: 100%; max-width: 760px; margin-inline: auto; }
+#vue-entreprises .vue-tete { text-align: center; display: grid; gap: 6px; justify-items: center; }
+.ent-filtres { margin: 6px 0 16px; }
+.ent-liste { display: grid; gap: 16px; }
+@media (min-width: 760px) { .ent-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ent-carte { display: grid; border-radius: 22px; overflow: hidden; background: var(--surface); border: 1px solid var(--ligne); box-shadow: var(--ombre-carte, 0 8px 22px rgba(0,0,0,.2)); cursor: pointer; transition: transform .12s; }
+.ent-carte:active { transform: scale(.98); }
+.ent-image { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #05060C; display: grid; place-items: center; }
+.ent-image::before { content: ""; position: absolute; inset: -20px; background: var(--fond) center / cover no-repeat; filter: blur(22px) brightness(.55); }
+.ent-image img { position: relative; width: 100%; height: 100%; object-fit: contain; }
+.ent-image.sans-image { background: linear-gradient(135deg, #0E9F6E, #065F46); }
+.ent-image.sans-image::before { display: none; }
+.ent-image.sans-image span { font: 900 4rem/1 var(--f-titre, inherit); color: rgba(255,255,255,.9); }
+.ent-corps { display: grid; gap: 6px; padding: 14px 16px 16px; }
+.ent-corps b { font-size: 1.15rem; line-height: 1.2; }
+.ent-corps p { margin: 0; color: var(--fg-doux); font-size: .92rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ent-marques { display: flex; gap: 6px; flex-wrap: wrap; }
+.ent-marques:empty { display: none; }
+.ent-policier { font-size: .74rem; font-weight: 800; padding: 3px 10px; border-radius: 99px; background: #1D4ED8; color: #fff; }
+.ent-actions { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 2px; }
+.ent-actions small { color: var(--fg-doux); }
+.an-categories button[data-an-cat="entreprise"][aria-checked="true"] { background: #0E9F6E !important; color: #fff !important; }
+.an-adm.an-entreprise { border-left-color: #0E9F6E; }
+.an-types[hidden], #adm-annonce-policier-l[hidden] { display: none; }
+.ent-filtres { display: grid !important; grid-template-columns: 1fr 1fr; } .ent-filtres button { white-space: nowrap; }
+.an-categories { display: grid !important; grid-template-columns: 1fr 1fr; }
