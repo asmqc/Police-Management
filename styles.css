@@ -3221,3 +3221,7 @@ html[data-theme="clair"] .ac-fiche, html:not([data-theme]) .ac-fiche { color: #E
 .repere-dir b { font-size: 1.05rem; }
 .repere-nom { flex-basis: 100%; opacity: .9; }
 .adresse-lieu .code-postal { font-family: var(--f-mono, ui-monospace, monospace); letter-spacing: .04em; }
+
+/* Décor de saison (saison.js) : derrière tout le contenu, jamais cliquable */
+#decor-saison { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
+html[data-style="nuit"] #decor-saison { display: none; }
