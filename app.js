@@ -5863,7 +5863,7 @@ Format :
     if (ongletAdmin === "loi25") rendreBilanLoi25();
   }));
 
-  // Capacité : avertir l'admin à l'approche de 400 membres actifs (une notification part aussi à 350 et à 400)
+  // Capacité : serveur Small depuis le 17 novembre 2026; alerte à 850 et à 1 000 membres actifs (seuils dans prive.parametres_capacite)
   async function majCapacite() {
     const { data } = await sb.rpc("admin_membres_actifs");
     const bloc = $("#adm-capacite");
@@ -5875,9 +5875,9 @@ Format :
     $("#adm-cap-nb").textContent = `${actifs} / ${seuil}`;
     $("#adm-cap-barre").style.width = Math.min(100, Math.round((actifs / seuil) * 100)) + "%";
     $("#adm-cap-msg").textContent = actifs >= seuil
-      ? "Seuil atteint : passez le serveur Supabase à « Small » (Settings › Compute) et Brevo au forfait payant, et accélérez l'approbation des demandes."
+      ? "Seuil atteint : passez le serveur Supabase à « Medium » (Project Settings › Infrastructure › Compute size) et Brevo au forfait payant, et accélérez l'approbation des demandes."
       : actifs >= alerte
-        ? `On approche des ${seuil} : prévoyez dès maintenant Brevo payant, le serveur « Small » et une approbation plus rapide.`
+        ? `On approche des ${seuil} : prévoyez dès maintenant Brevo payant, le serveur « Medium » et une approbation plus rapide.`
         : `Tout va bien. Dès ${alerte} membres actifs, vous recevrez une notification 3 fois par jour (8 h, 12 h et 18 h) jusqu'à ce que ce soit réglé. La santé de l'app (connexions, espace, tâches automatiques, demandes en attente) est aussi vérifiée chaque heure.`;
   }
 
