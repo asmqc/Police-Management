@@ -173,14 +173,6 @@
     }));
     document.querySelector(".segmente-theme").classList.toggle("inactif", styleChoisi !== "moderne");
   }
-  // Décor de saison (saison.js) : interrupteur dans Réglages › Apparence
-  { const c = document.getElementById("rg-saison");
-    if (c && window.pmSaison) {
-      c.checked = window.pmSaison.estVoulu();
-      const NOMS = { noel: "flocons du temps des Fêtes", hiver: "flocons de neige", printemps: "pétales", ete: "lucioles", automne: "feuilles d'érable" };
-      const aide = document.getElementById("rg-saison-aide"); if (aide) aide.textContent = `En ce moment : ${NOMS[window.pmSaison.nom()] || "décor de saison"}. Se retire en mode nuit rouge.`;
-      c.addEventListener("change", () => window.pmSaison.regler(c.checked));
-    } }
   function majChoixTheme() { document.querySelectorAll("[data-theme-choix]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.themeChoix === themeChoisi))); }
   document.querySelectorAll("[data-theme-choix]").forEach((b) => b.addEventListener("click", () => {
     themeChoisi = b.dataset.themeChoix;
@@ -852,7 +844,7 @@
   const NOUVEAUTES = [
     { id: "2026-11-17-saison", date: "2026-11-17", titre: "Un décor qui suit les saisons", points: [
       "Des flocons tombent maintenant en arrière-plan pour le temps des Fêtes. Le décor change avec les saisons : feuilles d'érable à l'automne, pétales au printemps, lucioles l'été.",
-      "Vous préférez sans ? Réglages › Apparence › Décor de saison. Il se retire aussi tout seul en mode nuit rouge.",
+      "Le décor reste derrière le contenu et se retire tout seul en mode nuit rouge, pour garder votre vision de nuit.",
     ] },
     { id: "2026-11-13-vie-privee", date: "2026-11-13", titre: "Vos renseignements personnels, mieux protégés", points: [
       "Nouveau : Mon compte › Mes données › Télécharger mes données vous remet une copie de tout ce que Police Management garde sur vous.",

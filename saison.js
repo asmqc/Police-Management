@@ -2,7 +2,7 @@
    Temps des Fêtes (15 novembre au 6 janvier) : beaucoup de flocons · Hiver : flocons · Printemps : pétales
    Été : lucioles · Automne : feuilles d'érable.
    Derrière tout le contenu, jamais cliquable. Désactivé en mode nuit rouge, si l'appareil demande moins
-   d'animations, quand l'onglet est caché, ou dans Réglages › Apparence › Décor de saison. */
+   d'animations ou quand l'onglet est caché. Aucun réglage pour les membres : seul DECOR_ACTIF ci-dessous le retire. */
 (() => {
   "use strict";
   const lire = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -25,7 +25,9 @@
   let L = 0, H = 0, dpr = 1, parts = [], saison = "", clair = false, anim = 0, dernier = 0, actif = false;
 
   const moinsMouvement = matchMedia("(prefers-reduced-motion: reduce)");
-  const voulu = () => lire("pm-saison") !== "0" && !moinsMouvement.matches && document.documentElement.dataset.style !== "nuit";
+  // Décidé dans le code seulement (aucun réglage pour les membres). Mettre false pour retirer le décor pour tout le monde.
+  const DECOR_ACTIF = true;
+  const voulu = () => DECOR_ACTIF && !moinsMouvement.matches && document.documentElement.dataset.style !== "nuit";
 
   function fondClair() {
     const c = getComputedStyle(document.body).backgroundColor.match(/\d+(\.\d+)?/g);
@@ -146,8 +148,6 @@
   }
   window.pmSaison = {
     nom: () => saisonDu(new Date()),
-    regler(on) { try { localStorage.setItem("pm-saison", on ? "1" : "0"); } catch { /* facultatif */ } maj(); },
-    estVoulu: () => lire("pm-saison") !== "0",
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
