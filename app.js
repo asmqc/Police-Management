@@ -3,6 +3,8 @@
   "use strict";
 
   const C = window.PE_CONFIG;
+  // Feuille de poste retirée pour le moment (17 novembre 2026). Mettre true pour la remettre : rien n'a été effacé.
+  const FEUILLE_OFFERTE = false;
   // Ouvert dans l'app iPhone/iPad (WKWebView) : l'app ajoute « PoliceManagementApp » à l'identifiant du navigateur
   const estAppIOS = /PoliceManagementApp/.test(navigator.userAgent);
   // Effet de verre allégé sur les appareils modestes (flou moins coûteux)
@@ -1499,7 +1501,8 @@ Question : ${question}
 
   /* ---------------- Navigation ---------------- */
   function afficherVue(nom) {
-    if (nom === "messages") nom = "feuille"; // messagerie retirée le 13 novembre 2026
+    if (nom === "messages") nom = FEUILLE_OFFERTE ? "feuille" : "forum"; // messagerie retirée le 13 novembre 2026
+    if (nom === "feuille" && !FEUILLE_OFFERTE) nom = "fonctions"; // feuille de poste retirée pour le moment
     if (nom === "paie") { ouvrirPaie(); return; }
     if (nom === "horaire" && !etat.versPaie && hr.onglet === "stats" && stats.contexte === "paie" && etat.vue !== "horaire") { hr.onglet = "calendrier"; stats.contexte = "horaire"; }
     if (nom !== "compte" && nom !== etat.vue) etat.vueAvant = nom;
@@ -1699,6 +1702,7 @@ Question : ${question}
   $$("[data-paie]").forEach((b) => b.addEventListener("click", () => { if (b.dataset.paie !== "contrat") ouvrirPaie(b.dataset.paie); }));
   $$("[data-stats-contrat]").forEach((b) => b.addEventListener("click", () => { afficherVue("convention"); $("#vue-convention").scrollTop = 0; }));
   // Mon poste : feuille de poste, horaire du poste, TS du poste, forum, messages et idées
+  if (!FEUILLE_OFFERTE) $$("[data-poste='feuille']").forEach((b) => b.remove());
   $$("[data-poste]").forEach((b) => b.addEventListener("click", () => {
     const p = b.dataset.poste;
     if (["feuille", "forum", "messages", "idees"].includes(p)) { afficherVue(p); return; }
@@ -2231,7 +2235,7 @@ Question : ${question}
     const el = $("#ac-resultats");
     if (q.length < 2) { el.hidden = true; el.innerHTML = ""; return; }
     const res = [];
-    for (const [nom, mots, cible] of SECTIONS_RECHERCHE) {
+    for (const [nom, mots, cible] of SECTIONS_RECHERCHE.filter((x) => FEUILLE_OFFERTE || x[2] !== "feuille")) {
       if (cible === "convention" && !accesConvention()) continue;
       if (["paie", "banques", "depenses", "retraite"].includes(cible) && !estSQ()) continue;
       if (norm(nom).includes(q) || mots.split(" ").some((m) => m.startsWith(q))) res.push({ g: "Sections", titre: nom, sous: "Ouvrir", agir: () => (cible === "frais" ? (afficherVue("csr"), ongletLois("frais")) : cible === "favoris" ? (afficherVue("csr"), ongletLois("favoris")) : allerA(cible)) });
@@ -2640,7 +2644,7 @@ Question : ${question}
     apropos: { t: "À propos", s: "Version et mises à jour", i: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>' },
     soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
   };
-  const raccOffert = (k) => { const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
+  const raccOffert = (k) => { if (k === "feuille" && !FEUILLE_OFFERTE) return false; const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
   // Onglet « Fonctionnalités » de l'accueil : tous les outils, regroupés
   const GROUPES_FONCTIONS = [
     ["Terrain", ["csr", "vitesse", "position", "carte", "corps", "meteo"]],
@@ -9085,7 +9089,7 @@ Format :
       { sel: ".nav [data-vue='horaire']", titre: "Horaire", texte: "Votre calendrier, vos échanges de quarts, les partages et vos heures du mois et de l'année." },
       { sel: ".nav [data-vue='paie']", titre: "Paie", texte: "Votre paie, vos banques, le temps supplémentaire, le compte de dépenses, la retraite et le contrat de travail." },
       { sel: ".nav [data-vue='csr']", titre: "Terrain", texte: "Les lois, les vitesses, la carte (« Où suis-je ? », bornes, qui couvre le territoire) et la météo avec Québec 511." },
-      { sel: ".nav [data-vue='fonctions']", titre: "Fonctionnalités", texte: "Tous les outils au même endroit : lois, vitesses, carte, paie, feuille de poste, forum, idées… avec la recherche." },
+      { sel: ".nav [data-vue='fonctions']", titre: "Fonctionnalités", texte: "Tous les outils au même endroit : lois, vitesses, carte, paie, forum, idées… avec la recherche." },
       { sel: "#btn-menu", titre: "Votre compte", texte: "Mon compte, Bien-être et soutien, installer l'app et se déconnecter." },
       { sel: '.nav [data-vue="fonctions"]', titre: "Réglages", texte: "Apparence (dont le mode nuit rouge), notifications et cette visite guidée : dans Fonctionnalités › Mon compte et réglages." },
     ] },
