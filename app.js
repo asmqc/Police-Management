@@ -9705,6 +9705,7 @@ Format :
           ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Envoyer un code</button>` : ""}
           ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
+          ${p.role !== "admin" && p.id !== etat.session.user.id ? `<button class="btn-danger" data-supprimer="${p.id}">Supprimer définitivement</button>` : ""}
         </div>
       </div>`).join("")
       : `<p class="vide">${filtreAdmin === "en_attente" ? "Aucune demande en attente." : filtreAdmin === "non_confirme" ? "Tout le monde a confirmé son courriel." : filtreAdmin === "inactif" ? "Aucun compte inactif depuis plus de 24 mois. Quand il y en aura, écrivez au membre, puis supprimez le compte s'il ne se reconnecte pas dans les 30 jours." : "Aucun compte dans cette catégorie."}</p>`;
@@ -9717,6 +9718,12 @@ Format :
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
     $$("button[data-confirmer]", el).forEach((btn) => btn.addEventListener("click", () => confirmerCourrielAdmin(btn, btn.dataset.confirmer)));
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
+    // Suppression directe depuis la liste (double toucher pour confirmer, comme dans la fiche)
+    $$("button[data-supprimer]", el).forEach((btn) => confirmer(btn, "Confirmer : supprimer pour toujours", async () => {
+      await actionCompte({ action: "supprimer", id: btn.dataset.supprimer });
+      toast("Compte supprimé définitivement");
+      await initAdmin();
+    }));
     rendreAdminCorps();
     rendreModelesAdmin();
     rendreAvertAdmin();
