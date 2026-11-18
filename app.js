@@ -1617,7 +1617,7 @@ Question : ${question}
   function fermerMenu() { $("#menu-voile").hidden = true; $("#btn-menu").setAttribute("aria-expanded", "false"); }
   $("#btn-menu").addEventListener("click", ouvrirMenu);
   // Rafraîchir : va chercher la dernière version de l'app et des données, puis recharge
-  $("#btn-rafraichir").addEventListener("click", async (e) => {
+  const rafraichirApp = async (e) => {
     const b = e.currentTarget;
     if (b.classList.contains("tourne")) return;
     b.classList.add("tourne");
@@ -1629,7 +1629,9 @@ Question : ${question}
     } catch { /* sans gravité */ }
     const vue = etat.vue;
     setTimeout(() => { location.hash = vue; location.reload(); }, 350);
-  });
+  };
+  $("#btn-rafraichir").addEventListener("click", rafraichirApp);
+  $("#btn-rafraichir-haut").addEventListener("click", rafraichirApp);
   $("#btn-reglages").addEventListener("click", () => afficherVue("reglages"));
   $("#menu-voile").addEventListener("click", (e) => { if (e.target.id === "menu-voile") fermerMenu(); });
   $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
