@@ -98,10 +98,10 @@
         language: langue,
       });
       if (typeof window.mapkit.load === "function" && !window.mapkit.Map) await window.mapkit.load(["map", "annotations", "overlays"]);
-      // Jeton refusé ou quota atteint : Leaflet pour les prochaines 24 h sur cet appareil
+      // Jeton refusé ou quota atteint : carte de secours pendant 1 h sur cet appareil (le bouton Rafraîchir réessaie tout de suite)
       window.mapkit.addEventListener("error", (e) => {
         console.warn("MapKit", e && e.status);
-        try { localStorage.setItem("pm-carte-apple-ko", String(Date.now() + 86400000)); } catch { /* facultatif */ }
+        try { localStorage.setItem("pm-carte-apple-ko", String(Date.now() + 3600000)); } catch { /* facultatif */ }
         toast("Carte Apple indisponible pour le moment. Rechargez l'app pour utiliser la carte de secours.");
       });
       window.L = window.PMCarteApple.creer(window.mapkit);
@@ -1621,6 +1621,7 @@ Question : ${question}
     const b = e.currentTarget;
     if (b.classList.contains("tourne")) return;
     b.classList.add("tourne");
+    try { localStorage.removeItem("pm-carte-apple-ko"); } catch { /* facultatif */ }
     try {
       if ("serviceWorker" in navigator) {
         const reg = await navigator.serviceWorker.getRegistration();
