@@ -759,7 +759,7 @@ img { -webkit-user-drag: none; }
 .fc-section h4, .legende-tete { text-transform: none; letter-spacing: 0; font-size: 1.1rem; }
 
 /* Cartes : sans bordure, ombre légère (bordure fine en sombre) */
-.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte {
+.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte, .cmp-carte {
   border: 1px solid var(--bord-carte); box-shadow: var(--ombre-carte); border-radius: var(--r);
 }
 .reponse { border-left: 5px solid var(--c, var(--sq)); }
@@ -1627,7 +1627,7 @@ body::before { background: var(--console); }
 .accueil-tete .ref { color: var(--ambre); font-weight: 700; }
 
 /* Surfaces plates à filet fin */
-.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte,
+.panneau, .tuile, .carte-corps, .demande, .vt-carte, .article, .edition-corps, .etapes li, .reponse, .verrou, .ac-admin, .auth-carte, .attente-carte, .cmp-carte,
 .liste-articles, .liste-reglages, .liste-conv, .liste-sq, .liste-messages, .table-defile {
   border: 1px solid var(--bord-carte); box-shadow: none;
 }
@@ -1909,7 +1909,7 @@ html:not([data-style]) body { background: var(--fond-deco); }
 html:not([data-style]) .app, html:not([data-style]) .vue { background: transparent; }
 
 /* Surfaces en verre */
-html:not([data-style]) :is(.panneau, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages,
+html:not([data-style]) :is(.panneau, .cmp-carte, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages,
   .table-defile, .liste-conv, .chat-tete, .chat-saisie, .legende, .fiche, .adresse-barre, .km-barre, .onglets-csr, .segmente, .fp-cadre, .cv-r, .hr-cal, .carte-mois) {
   background-color: var(--surface);
   border: 1px solid var(--verre-bord);
@@ -2888,7 +2888,7 @@ html[data-style="patrouille"] body {
   background-attachment: fixed;
 }
 html[data-style="patrouille"] .app, html[data-style="patrouille"] .vue { background: transparent; }
-html[data-style="patrouille"] :is(.panneau, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages, .fiche) { border-radius: 22px; border-color: var(--ligne); }
+html[data-style="patrouille"] :is(.panneau, .cmp-carte, .tuile, .liste-articles, .article, .forum-ligne, .forum-sujet, .forum-rep, .idee, .annonce, .liste-partages, .fiche) { border-radius: 22px; border-color: var(--ligne); }
 html[data-style="patrouille"] .barre { background: rgba(8,19,42,.86); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: inset 0 -1px 0 #1B2E57; }
 html[data-style="patrouille"] .marque span { color: var(--or); }
 html[data-style="patrouille"] h2, html[data-style="patrouille"] h3 { letter-spacing: .01em; }
@@ -3232,19 +3232,22 @@ html[data-style="nuit"] #decor-saison { display: none; }
 /* Comparateur des conventions */
 .cmp-filtres { margin: 10px 0 12px; }
 .cmp-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.cmp-carte { background: var(--carte, #0F1F40); border: 1px solid var(--bord, #23396A); border-radius: 16px; overflow: hidden; }
-.cmp-carte.moi { border-color: #E9C750; box-shadow: 0 0 0 1px #E9C750 inset; }
+.cmp-carte { background: var(--surface); color: var(--fg); border: 1px solid var(--bord-carte, var(--ligne)); border-radius: var(--r, 16px); overflow: hidden; }
+.cmp-carte.moi { border-color: var(--ambre, #E9C750); box-shadow: 0 0 0 1px var(--ambre, #E9C750) inset; }
 .cmp-carte summary { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; list-style: none; }
 .cmp-carte summary::-webkit-details-marker { display: none; }
 .cmp-rang { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: #3B7BFF; color: #fff; }
 .cmp-carte:nth-child(1) .cmp-rang { background: #E9C750; color: #2a1f00; }
-.cmp-nom { flex: 1; min-width: 0; } .cmp-nom b { display: block; } .cmp-nom small { opacity: .75; }
-.cmp-note { text-align: right; } .cmp-note b { font-size: 1.4em; } .cmp-note small { opacity: .7; }
+.cmp-nom { flex: 1; min-width: 0; } .cmp-nom b { display: block; color: var(--fg); } .cmp-nom small { color: var(--fg-doux); }
+.cmp-note { text-align: right; white-space: nowrap; } .cmp-note b { font-size: 1.4em; color: var(--fg); } .cmp-note small { color: var(--fg-doux); }
 .cmp-corps { padding: 0 14px 14px; }
-.cmp-barre { height: 6px; border-radius: 6px; background: rgba(127,127,127,.25); overflow: hidden; margin-bottom: 10px; }
+.cmp-barre { height: 6px; border-radius: 6px; background: var(--surface-2, rgba(127,127,127,.25)); overflow: hidden; margin-bottom: 10px; }
 .cmp-barre i { display: block; height: 100%; background: linear-gradient(90deg, #3B7BFF, #2FBF71); }
 .cmp-sal { margin: 4px 0; font-size: 1.05em; }
 .cmp-pc { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
 .cmp-pc h4 { margin: 0 0 6px; } .cmp-pc ul { margin: 0; padding-left: 18px; } .cmp-pc li { margin: 3px 0; font-size: .93em; }
 @media (max-width: 560px) { .cmp-pc { grid-template-columns: 1fr; } }
-.cmp-src a { color: #6EA2FF; }
+.cmp-carte li, .cmp-carte p { color: var(--fg); } .cmp-carte .aide { color: var(--fg-doux); }
+.cmp-src a { color: inherit; text-decoration: underline; }
+.cmp-carte summary:focus-visible { outline: 2px solid var(--fg); outline-offset: -4px; }
+html[data-style="nuit"] .cmp-rang, html[data-style="nuit"] .cmp-barre i { background: var(--fg) !important; color: #000 !important; }
