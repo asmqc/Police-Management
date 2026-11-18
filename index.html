@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611181411">
+  <link rel="stylesheet" href="styles.css?v=202611182118">
 </head>
 <body>
   <!-- Chargement -->
@@ -1282,6 +1282,25 @@
 
     <!-- Vue App (installation) -->
     <!-- Bien-être et soutien : ressources publiques vérifiées, aucun renseignement recueilli -->
+    <section id="vue-comparatif" class="vue" hidden>
+      <div class="vue-tete">
+        <h2>Comparer les conventions</h2>
+        <p class="ref">Les conditions de travail des policiers au Canada, classées du meilleur au moins bon selon les données publiques.</p>
+      </div>
+      <div class="panneau cmp-methode">
+        <p><b>Comment la note est calculée (sur 100)</b></p>
+        <p>70 % : salaire d'un agent au sommet de l'échelle, ramené à 2026 (+3 % par année quand le taux publié est plus ancien, −3 % quand il est plus récent). 15 % : rapidité pour atteindre le sommet. 15 % : âge de la retraite sans pénalité (25 ans de service ou facteur 80 : meilleur). Quand une donnée n'est pas publiée, la note de ce critère est neutre (50).</p>
+        <p class="aide">Le coût de la vie, les primes et les horaires varient beaucoup d'un endroit à l'autre : lisez les pour et les contre. Données publiques vérifiées le <span id="cmp-date"></span>. Ce classement est un outil d'information, pas un avis officiel. Les sources sont indiquées pour chaque corps.</p>
+      </div>
+      <div class="segmente cmp-filtres" role="tablist" aria-label="Région">
+        <button role="tab" aria-checked="true" data-cmp="tous">Canada</button>
+        <button role="tab" aria-checked="false" data-cmp="QC">Québec</button>
+        <button role="tab" aria-checked="false" data-cmp="hors">Hors Québec</button>
+      </div>
+      <ol class="cmp-liste" id="cmp-liste"></ol>
+      <div class="panneau"><p><b>À venir</b></p><p class="aide" id="cmp-venir"></p><p class="aide">Vous avez la convention de votre corps de police ? Envoyez-la à police.management@hotmail.com pour qu'il soit ajouté.</p></div>
+    </section>
+
     <section id="vue-apropos" class="vue" hidden>
       <div class="vue-tete">
         <h2>À propos</h2>
@@ -2457,10 +2476,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611181411"></script>
+  <script src="config.js?v=202611182118"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611181411"></script>
-  <script src="saison.js?v=202611181411"></script>
-  <script src="app.js?v=202611181411"></script>
+  <script src="i18n.js?v=202611182118"></script>
+  <script src="saison.js?v=202611182118"></script>
+  <script src="app.js?v=202611182118"></script>
 </body>
 </html>

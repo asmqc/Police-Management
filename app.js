@@ -670,7 +670,7 @@
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     signalerActivite();
-    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos", "fonctions", "entreprises"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos", "fonctions", "entreprises", "comparatif"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -842,6 +842,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-18-comparatif", date: "2026-11-18", titre: "Comparez les conventions des policiers au Canada", points: [
+      "Fonctionnalités › Comparer les conventions : 15 corps de police du Québec et du Canada classés selon le salaire au sommet, la rapidité pour l'atteindre et la retraite, avec 5 pour et 5 contre chacun.",
+      "La méthode et les sources sont indiquées. D'autres corps s'ajouteront au fur et à mesure.",
+    ] },
     { id: "2026-11-18-h1", date: "2026-11-18", titre: "Horaire hybride H1 : heures corrigées", points: [
       "Les heures de l'horaire H1 suivent maintenant celles des postes MRC : 7 h-16 h, 15 h-0 h et 23 h-8 h en semaine, 7 h-19 h et 19 h-7 h la fin de semaine. Merci au collègue qui nous l'a signalé !",
       "Vous travaillez sur l'autoroute ? Horaire › Modifier ma rotation › activez « Poste autoroutier » pour garder les quarts décalés de 30 minutes (6 h 30, 14 h 30, 18 h 30, 22 h 30).",
@@ -1545,6 +1549,7 @@ Question : ${question}
     if (nom === "accueil") initAccueil();
     if (nom === "meteo") initMeteo();
     if (nom === "apropos") rendreAPropos();
+    if (nom === "comparatif") rendreComparatif();
     if (nom === "fonctions") rendreFonctions();
     if (nom === "entreprises") rendreEntreprises();
     visiteDeVue(nom);
@@ -1668,7 +1673,7 @@ Question : ${question}
     const v = etat.vue;
     if (appIOSAncienne && ["carte", "corps", "meteo"].includes(v)) return "carte";
     if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
-    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien", "reglages", "compte", "apropos"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
+    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien", "reglages", "compte", "apropos", "comparatif"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
     if (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) return "horaire";
     if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
     return v;
@@ -2243,7 +2248,7 @@ Question : ${question}
     ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
     ["Ma paie", "paie salaire talon remuneration", "paie"], ["Banques", "banques soldes heures vacances", "banques"], ["Temps supplémentaire", "temps supplementaire ts reclamation", "ts"],
     ["Compte de dépenses", "depenses repas kilometrage reclamation", "depenses"], ["Retraite", "retraite rente rrmsq", "retraite"], ["Contrat de travail", "contrat convention collective clause", "convention"],
-    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"], ["Entreprises", "entreprises commerces quebecoises policiers encourager achat local", "entreprises"], ["À propos et mises à jour", "a propos version historique mises a jour nouveautes", "apropos"],
+    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"], ["Entreprises", "entreprises commerces quebecoises policiers encourager achat local", "entreprises"], ["À propos et mises à jour", "a propos version historique mises a jour nouveautes", "apropos"], ["Comparer les conventions", "comparer conventions collectives salaire classement canada grc opp spvm toronto vancouver", "comparatif"],
   ];
   let rechMinuteur;
   $("#ac-q").addEventListener("input", () => { clearTimeout(rechMinuteur); rechMinuteur = setTimeout(rechercheGlobale, 180); });
@@ -2658,6 +2663,7 @@ Question : ${question}
     entreprises: { t: "Entreprises", s: "D'ici et gérées par des policiers", i: '<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5"/>' },
     reglages: { t: "Réglages", s: "Apparence, notifications, confidentialité", i: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' },
     compte: { t: "Mon compte", s: "Profil, photo, mes données", i: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>' },
+    comparatif: { t: "Comparer les conventions", s: "Classement des policiers au Canada", i: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>' },
     apropos: { t: "À propos", s: "Version et mises à jour", i: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>' },
     soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
   };
@@ -2665,11 +2671,56 @@ Question : ${question}
   // Onglet « Fonctionnalités » de l'accueil : tous les outils, regroupés
   const GROUPES_FONCTIONS = [
     ["Terrain", ["csr", "vitesse", "position", "carte", "corps", "meteo"]],
-    ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention"]],
+    ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention", "comparatif"]],
     ["Mon poste", ["feuille", "forum", "idees"]],
     ["Pour moi", ["soutien", "entreprises"]],
     ["Mon compte et réglages", ["reglages", "compte", "apropos"]],
   ];
+  /* ---------------- Comparateur des conventions collectives (tous les membres) ---------------- */
+  let cmpDonnees = null, cmpFiltre = "tous";
+  async function rendreComparatif() {
+    const el = $("#cmp-liste");
+    if (!cmpDonnees) {
+      el.innerHTML = '<li class="vide">Chargement…</li>';
+      try { cmpDonnees = await (await fetch("data/comparatif_conventions.json?v=" + encodeURIComponent(versionSite()))).json(); }
+      catch { el.innerHTML = '<li class="vide">Comparatif indisponible pour le moment. Réessayez plus tard.</li>'; return; }
+    }
+    const d = cmpDonnees;
+    $("#cmp-date").textContent = new Date(d.verifie_le + "T12:00:00").toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+    $("#cmp-venir").textContent = d.a_venir.join(" · ");
+    const ajuste = (c) => Math.round(c.sal * Math.pow(1.03, 2026 - c.annee));
+    const sals = d.corps.map(ajuste), min = Math.min(...sals), max = Math.max(...sals);
+    const rapidite = (m) => m == null ? 50 : Math.max(0, Math.min(100, Math.round(100 - (m - 36) * (100 / 96))));
+    const RET = { "25ans": 100, f80: 100, f85: 60, age60: 30 };
+    const liste = d.corps.map((c) => {
+      const sa = ajuste(c), ns = max > min ? ((sa - min) / (max - min)) * 100 : 50;
+      const nr = rapidite(c.mois), np = c.retraite ? RET[c.retraite] : 50;
+      return { ...c, sa, ns, nr, np, note: Math.round(0.7 * ns + 0.15 * nr + 0.15 * np) };
+    }).sort((a, b) => b.note - a.note || b.sa - a.sa);
+    liste.forEach((c, i) => { c.rang = i + 1; });
+    const moi = (etat.profil && etat.profil.corps_police || "").toLowerCase();
+    const vus = liste.filter((c) => cmpFiltre === "tous" || (cmpFiltre === "QC" ? c.prov === "QC" : c.prov !== "QC"));
+    const argent = (n) => n.toLocaleString("fr-CA") + " $";
+    el.innerHTML = vus.map((c) => `<li class="cmp-carte${moi && moi === c.nom.toLowerCase() ? " moi" : ""}">
+      <details>
+        <summary><span class="cmp-rang">${c.rang}</span><span class="cmp-nom"><b>${esc(c.nom)}</b><small>${esc(c.sigle)} · ${esc(c.prov === "CA" ? "Canada" : c.prov)}${moi && moi === c.nom.toLowerCase() ? " · votre corps" : ""}</small></span><span class="cmp-note"><b>${c.note}</b><small>/100</small></span></summary>
+        <div class="cmp-corps">
+          <div class="cmp-barre" aria-hidden="true"><i style="width:${c.note}%"></i></div>
+          <p class="cmp-sal"><b>${argent(c.sa)}</b> en 2026${c.annee !== 2026 ? ` <small>(taux publié de ${c.annee} : ${argent(c.sal)}, ajusté)</small>` : ""}</p>
+          <p class="aide">${esc(c.base)}${c.mois ? ` · sommet après ${c.mois % 12 ? c.mois + " mois" : c.mois / 12 + " ans"}` : ""}</p>
+          <p class="aide">Salaire ${Math.round(c.ns)}/100 · Rapidité ${c.nr}/100 · Retraite ${c.np}/100</p>
+          <div class="cmp-pc"><div><h4>👍 Pour</h4><ul>${c.pour.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>
+          <div><h4>👎 Contre</h4><ul>${c.contre.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div></div>
+          <p class="aide cmp-src">Sources : ${c.sources.map(([t, u]) => `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a>`).join(" · ")}</p>
+        </div>
+      </details></li>`).join("") || '<li class="vide">Aucun corps de police dans ce filtre.</li>';
+  }
+  $$("[data-cmp]").forEach((b) => b.addEventListener("click", () => {
+    cmpFiltre = b.dataset.cmp;
+    $$("[data-cmp]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    rendreComparatif();
+  }));
+
   function rendreFonctions() {
     $("#ac-fonctions").innerHTML = GROUPES_FONCTIONS.map(([titre, cles]) => {
       const l = cles.filter(raccOffert);
