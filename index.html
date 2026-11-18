@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611181251">
+  <link rel="stylesheet" href="styles.css?v=202611181315">
 </head>
 <body>
   <!-- Chargement -->
@@ -243,7 +243,7 @@
         <div>
           <p class="site-sur">Corps de police</p>
           <h2>Pensée pour la Sûreté du Québec, ouverte à tous les corps</h2>
-          <p>Postes MRC et autoroutiers, horaire hybride autoroutier et territoires de desserte de la SQ sont intégrés. Les corps de police municipaux et autochtones ont leur propre espace : territoire sur la carte, forum, idées et annonces.</p>
+          <p>Postes MRC et autoroutiers, horaire hybride H1 (heures MRC ou autoroutières) et territoires de desserte de la SQ sont intégrés. Les corps de police municipaux et autochtones ont leur propre espace : territoire sur la carte, forum, idées et annonces.</p>
           <div class="site-cta"><button type="button" class="site-btn site-btn-plein" data-site-auth="demande">Demander l'accès pour mon corps</button></div>
         </div>
         <figure class="site-tel site-appareil"><img src="assets/site/appareil-forum.webp" width="620" height="1155" loading="lazy" decoding="async" alt="Le forum d'un corps de police sur un iPhone"></figure>
@@ -1258,7 +1258,9 @@
         <label for="hr-debut">Premier jour du cycle</label>
         <input id="hr-debut" type="date" required>
         <p class="aide">C'est la date où commence la case n° 1 ci-dessous.</p>
-        <label class="interrupteur hr-hybride" for="hr-hybride"><span class="interrupteur-txt"><b>Horaire hybride autoroutier (Sûreté du Québec)</b><small>Heures automatiques : quarts de 9 h en semaine, de 12 h la fin de semaine.</small></span><input type="checkbox" id="hr-hybride" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur hr-hybride" for="hr-hybride"><span class="interrupteur-txt"><b>Horaire hybride H1 (Sûreté du Québec)</b><small>Heures automatiques : quarts de 9 h en semaine, de 12 h la fin de semaine.</small></span><input type="checkbox" id="hr-hybride" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur hr-autoroute" for="hr-autoroute" hidden><span class="interrupteur-txt"><b>Poste autoroutier</b><small>Quarts décalés de 30 minutes (début à 6 h 30, 14 h 30, 18 h 30 ou 22 h 30).</small></span><input type="checkbox" id="hr-autoroute" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <p class="aide" id="hr-hybride-heures" hidden></p>
 
         <label>Cycle (<span id="hr-longueur">0</span> jours) — touchez une case pour changer le quart</label>
         <div class="hr-cycle" id="hr-cycle"></div>
@@ -2452,10 +2454,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611181251"></script>
+  <script src="config.js?v=202611181315"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611181251"></script>
-  <script src="saison.js?v=202611181251"></script>
-  <script src="app.js?v=202611181251"></script>
+  <script src="i18n.js?v=202611181315"></script>
+  <script src="saison.js?v=202611181315"></script>
+  <script src="app.js?v=202611181315"></script>
 </body>
 </html>

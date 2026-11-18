@@ -13,7 +13,7 @@ const MS_JOUR = 86400000;
 const jourUTC = (iso: string) => { const [a, m, j] = iso.split("-").map(Number); return Date.UTC(a, m - 1, j) / MS_JOUR; };
 const isoDe = (n: number) => new Date(n * MS_JOUR).toISOString().slice(0, 10);
 
-type Config = { cycle?: string[]; debut?: string; heures?: Record<string, [string, string]>; hybride?: boolean };
+type Config = { cycle?: string[]; debut?: string; heures?: Record<string, [string, string]>; hybride?: boolean; autoroute?: boolean };
 type Exc = { type?: string; debut?: string; fin?: string; tsp?: { debut?: string; fin?: string }; tspAvant?: { debut?: string; fin?: string } };
 
 function quart(iso: string, c: Config | null, ex: Record<string, Exc>) {
@@ -30,7 +30,9 @@ function heures(code: string, iso: string, c: Config | null, e?: Exc): [string, 
   if (!["J", "S", "N"].includes(code)) return null;
   if (c && c.hybride) {
     const fds = [0, 6].includes(new Date(iso + "T12:00:00Z").getUTCDay());
-    return ({ J: fds ? ["06:30", "18:30"] : ["06:30", "15:30"], N: fds ? ["18:30", "06:30"] : ["22:30", "07:30"], S: ["14:30", "23:30"] } as Record<string, [string, string]>)[code];
+    // H1 de base (MRC) : 9 h en semaine, 12 h la fin de semaine. Poste autoroutier : décalé de 30 min.
+    if (c.autoroute) return ({ J: fds ? ["06:30", "18:30"] : ["06:30", "15:30"], N: fds ? ["18:30", "06:30"] : ["22:30", "07:30"], S: ["14:30", "23:30"] } as Record<string, [string, string]>)[code];
+    return ({ J: fds ? ["07:00", "19:00"] : ["07:00", "16:00"], N: fds ? ["19:00", "07:00"] : ["23:00", "08:00"], S: ["15:00", "00:00"] } as Record<string, [string, string]>)[code];
   }
   return (c && c.heures && c.heures[code]) || HEURES_DEFAUT[code];
 }

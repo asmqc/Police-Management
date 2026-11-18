@@ -842,6 +842,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-18-h1", date: "2026-11-18", titre: "Horaire hybride H1 : heures corrigées", points: [
+      "Les heures de l'horaire H1 suivent maintenant celles des postes MRC : 7 h-16 h, 15 h-0 h et 23 h-8 h en semaine, 7 h-19 h et 19 h-7 h la fin de semaine. Merci au collègue qui nous l'a signalé !",
+      "Vous travaillez sur l'autoroute ? Horaire › Modifier ma rotation › activez « Poste autoroutier » pour garder les quarts décalés de 30 minutes (6 h 30, 14 h 30, 18 h 30, 22 h 30).",
+    ] },
     { id: "2026-11-18-annee", date: "2026-11-18", titre: "Votre horaire de l'année, à imprimer", points: [
       "Horaire › Horaire de l'année : les 12 mois sur une seule page, en couleurs, avec le total de jours, de soirs, de nuits et de vacances. Imprimez-le ou enregistrez-le en PDF.",
       "L'année imprimée est celle affichée dans le calendrier : avancez jusqu'en janvier pour obtenir l'horaire de l'an prochain.",
@@ -1849,7 +1853,7 @@ Question : ${question}
     const seulementPlus = !!e && e.type === prevu && Object.keys(e).every((k) => ["type", "plus", "plusInfo", "note"].includes(k)) && !e.note;
     return { code: e ? e.type : prevu, prevu, note: e ? e.note : "", exception: !!e && !seulementPlus, tsp: tsps[0] || null, tsps, motif: mo ? mo[1] : "", motifCle: e && e.motif || "", plus };
   }
-  // Heures d'un quart pour une date : exception (heures saisies), mode hybride autoroutier, heures de la rotation, défauts
+  // Heures d'un quart pour une date : exception (heures saisies), mode hybride H1 (MRC ou autoroutier), heures de la rotation, défauts
   function heuresJour(code, iso, src = affichee()) {
     const e = iso && (src.exceptions || {})[iso];
     if (e && e.debut && e.fin) return [e.debut, e.fin];
@@ -1857,7 +1861,9 @@ Question : ${question}
     const c = src.config || {};
     if (c.hybride && iso) {
       const fds = [0, 6].includes(new Date(iso + "T12:00").getDay());
-      return { J: fds ? ["06:30", "18:30"] : ["06:30", "15:30"], N: fds ? ["18:30", "06:30"] : ["22:30", "07:30"], S: ["14:30", "23:30"] }[code];
+      // H1 de base (MRC) : 9 h en semaine (7-16, 15-00, 23-08), 12 h la fin de semaine (7-19, 19-7). Poste autoroutier : décalé de 30 min.
+      if (c.autoroute) return { J: fds ? ["06:30", "18:30"] : ["06:30", "15:30"], N: fds ? ["18:30", "06:30"] : ["22:30", "07:30"], S: ["14:30", "23:30"] }[code];
+      return { J: fds ? ["07:00", "19:00"] : ["07:00", "16:00"], N: fds ? ["19:00", "07:00"] : ["23:00", "08:00"], S: ["15:00", "00:00"] }[code];
     }
     return (c.heures && c.heures[code]) || HEURES_DEFAUT[code];
   }
@@ -6193,8 +6199,9 @@ Format :
   }
   function ouvrirConfig() {
     const c = cibleEdition().config;
-    hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) }, hybride: !!(c && c.hybride) };
+    hr.brouillon = { cycle: c ? [...c.cycle] : MODELES["4-4J"].split(""), debut: c ? c.debut : aujourdhuiISO(), heures: { ...HEURES_DEFAUT, ...(c && c.heures) }, hybride: !!(c && c.hybride), autoroute: !!(c && c.autoroute) };
     $("#hr-hybride").checked = hr.brouillon.hybride;
+    $("#hr-autoroute").checked = hr.brouillon.autoroute;
     // Quarts de 12 h la fin de semaine : horaire hybride autoroutier de la Sûreté du Québec seulement
     $(".hr-hybride").hidden = !(estSQ() || hr.cible === "conjoint" || hr.brouillon.hybride);
     chargerModelesAdmin().then(() => { if (c && c.modele && String(c.modele).startsWith("m:")) $("#hr-modele").value = c.modele; });
@@ -6222,8 +6229,12 @@ Format :
       <input type="time" data-h="${k}" data-pos="1" value="${esc(b.heures[k][1])}" aria-label="${QUARTS[k].nom} : fin"></div>`).join("");
     $$("#hr-heures input").forEach((inp) => inp.addEventListener("change", () => { b.heures[inp.dataset.h][+inp.dataset.pos] = inp.value; }));
     $("#hr-heures").hidden = $("#hr-heures-titre").hidden = !!b.hybride;
+    $(".hr-autoroute").hidden = !b.hybride;
+    const ha = $("#hr-hybride-heures");
+    if (ha) { ha.hidden = !b.hybride; ha.textContent = b.autoroute ? "Semaine : 6 h 30-15 h 30, 14 h 30-23 h 30, 22 h 30-7 h 30 · Fin de semaine : 6 h 30-18 h 30, 18 h 30-6 h 30" : "Semaine : 7 h-16 h, 15 h-0 h, 23 h-8 h · Fin de semaine : 7 h-19 h, 19 h-7 h"; }
   }
   $("#hr-hybride").addEventListener("change", (e) => { hr.brouillon.hybride = e.target.checked; rendreBrouillon(); });
+  $("#hr-autoroute").addEventListener("change", (e) => { hr.brouillon.autoroute = e.target.checked; rendreBrouillon(); });
   $("#hr-modele").addEventListener("change", (e) => {
     if (MODELES[e.target.value]) {
       hr.brouillon.cycle = MODELES[e.target.value].split("");
@@ -6231,6 +6242,8 @@ Format :
       const sq = MODELES_SQ[e.target.value];
       if (sq) {
         hr.brouillon.hybride = !!sq.hybride; if ($("#hr-hybride")) $("#hr-hybride").checked = !!sq.hybride;
+        // Poste autoroutier dans le profil : quarts décalés de 30 minutes cochés d'office (modifiable)
+        if (sq.hybride && hr.cible !== "conjoint") { hr.brouillon.autoroute = /^poste autoroutier/i.test(etat.profil.unite || ""); $("#hr-autoroute").checked = hr.brouillon.autoroute; }
         if (sq.heures) hr.brouillon.heures = { ...sq.heures };
         if (sq.debut) { const deb = debutEquipeSQ(e.target.value, $("#hr-equipe").value); hr.brouillon.debut = deb; $("#hr-debut").value = deb; }
         if (sq.gabarit) toast("Gabarit conforme au contrat : ajustez les cases pour qu'elles correspondent à l'horaire affiché à votre poste");
@@ -6258,7 +6271,7 @@ Format :
     if (!debut) { $("#hr-debut").focus(); return toast("Choisissez le premier jour du cycle"); }
     const cible = cibleEdition();
     const ancien = cible.config;
-    cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride,
+    cible.config = { cycle: hr.brouillon.cycle, debut, heures: hr.brouillon.heures, modele: $("#hr-modele").value || "perso", hybride: !!hr.brouillon.hybride, ...(hr.brouillon.hybride && hr.brouillon.autoroute ? { autoroute: true } : {}),
       ...(MODELES_SQ[$("#hr-modele").value] && MODELES_SQ[$("#hr-modele").value].debut ? { equipe: +$("#hr-equipe").value } : {}) };
     try {
       await sauverHoraire();
