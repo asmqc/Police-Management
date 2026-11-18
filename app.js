@@ -842,6 +842,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-18-annee", date: "2026-11-18", titre: "Votre horaire de l'année, à imprimer", points: [
+      "Horaire › Horaire de l'année : les 12 mois sur une seule page, en couleurs, avec le total de jours, de soirs, de nuits et de vacances. Imprimez-le ou enregistrez-le en PDF.",
+      "L'année imprimée est celle affichée dans le calendrier : avancez jusqu'en janvier pour obtenir l'horaire de l'an prochain.",
+    ] },
     { id: "2026-11-17-saison", date: "2026-11-17", titre: "Un décor qui suit les saisons", points: [
       "Des flocons tombent maintenant en arrière-plan pour le temps des Fêtes. Le décor change avec les saisons : feuilles d'érable à l'automne, pétales au printemps, lucioles l'été.",
       "Le décor reste derrière le contenu et se retire tout seul en mode nuit rouge, pour garder votre vision de nuit.",
@@ -6670,6 +6674,48 @@ Format :
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
     toast("Fichier prêt : ouvrez-le pour l'ajouter à votre calendrier");
+  });
+
+  // Horaire de l'année : les 12 mois sur une page, à imprimer ou à enregistrer en PDF (année affichée dans le calendrier)
+  $("#hr-annee").addEventListener("click", () => {
+    const src = affichee();
+    if (!src.config || !src.config.cycle || !src.config.cycle.length) return toast("Configurez d'abord votre rotation : Modifier ma rotation");
+    const annee = Number((cal.date || aujourdhuiISO()).slice(0, 4));
+    const COUL = { J: ["#F2B33D", "#1A1204"], S: ["#7B4FC9", "#fff"], N: ["#1F3A64", "#fff"], C: ["#fff", "#999"], V: ["#1E8A55", "#fff"], M: ["#C62F3A", "#fff"], F: ["#0E7C86", "#fff"], T: ["#2467C4", "#fff"], X: ["#C2410C", "#fff"], O: ["#4DB6AC", "#0B2B28"], H: ["#BA68C8", "#fff"], L: ["#8D6E63", "#fff"], B: ["#5C6BC0", "#fff"], E: ["#6D4C41", "#fff"], P: ["#EC407A", "#fff"], D: ["#00897B", "#fff"], A: ["#E65100", "#fff"], Y: ["#546E7A", "#fff"], U: ["#9E9E9E", "#1A1A1A"] };
+    const tot = {}, auj = aujourdhuiISO();
+    const pad = (x) => String(x).padStart(2, "0");
+    let mois = "";
+    for (let m = 0; m < 12; m++) {
+      const premier = new Date(annee, m, 1), nb = new Date(annee, m + 1, 0).getDate();
+      const decal = (premier.getDay() + 6) % 7; // lundi en premier, comme dans l'app
+      let cases = ["L", "M", "M", "J", "V", "S", "D"].map((j) => `<i class="js">${j}</i>`).join("") + "<i></i>".repeat(decal);
+      for (let d = 1; d <= nb; d++) {
+        const iso = `${annee}-${pad(m + 1)}-${pad(d)}`, q = quartDu(iso, src), k = q.code || "";
+        if (k && k !== "C") tot[k] = (tot[k] || 0) + 1;
+        const [bg, fg] = COUL[k] || ["#fff", "#999"];
+        cases += `<i class="j${iso === auj ? " auj" : ""}${q.exception ? " exc" : ""}" style="background:${bg};color:${fg}"><b>${d}</b><span>${k && k !== "C" ? k : ""}</span></i>`;
+      }
+      mois += `<section><h2>${esc(premier.toLocaleDateString("fr-CA", { month: "long" }))}</h2><div class="g">${cases}</div></section>`;
+    }
+    const codes = Object.keys(COUL).filter((k) => k !== "C" && tot[k]);
+    const legende = codes.map((k) => `<span><i style="background:${COUL[k][0]};color:${COUL[k][1]}">${k}</i>${esc(QUARTS[k].nom)}${["J", "S", "N"].includes(k) && heuresDe(k, src) ? " (" + esc(heuresDe(k, src)) + ")" : ""} · <b>${tot[k]}</b></span>`).join("");
+    const qui = src === hr || !hr.vue ? enteteDoc() : "";
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Horaire ${annee}</title><style>${STYLE_DOC}
+      @page{size:letter landscape;margin:9mm}
+      h1{font-size:22px}.mois{display:grid;grid-template-columns:repeat(4,1fr);gap:4px 14px}
+      section h2{margin:6px 0 4px;font-size:13px;text-transform:capitalize}
+      .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}.g i{font-style:normal;display:flex;flex-direction:column;align-items:center;justify-content:center;height:21px;border-radius:3px;font-size:9px;line-height:1.05}
+      .g i.js{height:13px;font-weight:700;color:#666;background:none}.g i.j{border:1px solid #ddd}.g i.j b{font-size:10px}.g i.j span{font-size:8px;font-weight:700}
+      .g i.exc{outline:2px solid #111;outline-offset:-2px}.g i.auj{box-shadow:inset 0 0 0 2px #E11D2E}
+      .leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0 0;font-size:11px}.leg i{font-style:normal;display:inline-grid;place-items:center;width:18px;height:16px;border-radius:3px;margin-right:5px;font-size:9px;font-weight:700}
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{body{margin:0}h1{font-size:18px}.pied{margin-top:6px}}</style></head><body>
+      <h1>Horaire ${annee}</h1>${qui}
+      <button class="imprimer" onclick="print()">Imprimer ou enregistrer en PDF</button>
+      <div class="mois">${mois}</div>
+      <div class="leg">${legende}<span><i style="outline:2px solid #111;outline-offset:-2px"></i>Journée modifiée</span></div>
+      <p class="pied">Police Management · Imprimé le ${esc(new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" }))}. Les journées à venir suivent votre rotation; l'horaire officiel de votre organisation fait foi.</p>
+      </body></html>`;
+    ouvrirDocument(html, `horaire-${annee}.html`);
   });
 
   /* ---------------- Aide : installation ---------------- */
