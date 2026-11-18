@@ -9707,12 +9707,15 @@ Format :
   const dateFr = (d) => d ? new Date(d).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }) : "—";
   const NOM_STATUT = { en_attente: "En attente", approuve: "Approuvé", refuse: "Refusé", bloque: "Bloqué" };
 
+  let rappelsAdmin = new Map(); // rappels de confirmation déjà envoyés (date, nombre)
   async function initAdmin() {
     if (!etat.profil || etat.profil.role !== "admin") return;
     const el = $("#admin-liste");
     const { data, error } = await sb.rpc("admin_comptes");
     if (error) { el.innerHTML = `<p class="vide">${esc(traduireErreur(error))}</p>`; return; }
     comptesAdmin = data || [];
+    { const { data: rp } = await sb.from("rappels_confirmation").select("user_id, envoye_le, nombre");
+      rappelsAdmin = new Map((rp || []).map((r) => [r.user_id, r])); }
     remplirCorpsAdmin();
     const tousComptes = comptesAdmin;
     const vus = tousComptes.filter((p) => corpsVisible(corpsDe(p)));
@@ -9764,7 +9767,7 @@ Format :
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
             <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
           ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Envoyer un code</button>` : ""}
-          ${nonConfirme(p) ? `<a class="btn-secondaire" href="${esc(lienRappelConfirmation(p))}">✉︎ Rappel</a>` : ""}
+          ${nonConfirme(p) ? `<a class="btn-secondaire${rappelsAdmin.has(p.id) ? " rappel-fait" : ""}" data-rappel="${p.id}" href="${esc(lienRappelConfirmation(p))}">${rappelsAdmin.has(p.id) ? "✓ Rappel envoyé · " + esc(new Date(rappelsAdmin.get(p.id).envoye_le).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })) + (rappelsAdmin.get(p.id).nombre > 1 ? " (" + rappelsAdmin.get(p.id).nombre + "×)" : "") : "✉︎ Rappel"}</a>` : ""}
           ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
           ${p.role !== "admin" && p.id !== etat.session.user.id ? `<button class="btn-danger" data-supprimer="${p.id}">Supprimer définitivement</button>` : ""}
@@ -9778,6 +9781,15 @@ Format :
       btn.textContent = "Code envoyé";
     }));
     $$("button[data-statut]", el).forEach((btn) => btn.addEventListener("click", () => decider(btn, btn.dataset.id, btn.dataset.statut)));
+    // Rappel : on note la date dès que le courriel prérédigé s'ouvre (visible sur tous vos appareils)
+    $$("a[data-rappel]", el).forEach((a) => a.addEventListener("click", async () => {
+      const id = a.dataset.rappel;
+      const { data: t, error } = await sb.rpc("admin_noter_rappel", { p_id: id });
+      if (error) return toast(traduireErreur(error));
+      const r = rappelsAdmin.get(id); rappelsAdmin.set(id, { user_id: id, envoye_le: t, nombre: r ? r.nombre + 1 : 1 });
+      a.classList.add("rappel-fait");
+      a.textContent = "✓ Rappel envoyé · " + new Date(t).toLocaleDateString("fr-CA", { day: "numeric", month: "short" }) + (r ? " (" + (r.nombre + 1) + "×)" : "");
+    }));
     $$("button[data-confirmer]", el).forEach((btn) => btn.addEventListener("click", () => confirmerCourrielAdmin(btn, btn.dataset.confirmer)));
     $$("button[data-fiche]", el).forEach((btn) => btn.addEventListener("click", () => ouvrirFiche(btn.dataset.fiche)));
     // Suppression directe depuis la liste (double toucher pour confirmer, comme dans la fiche)
