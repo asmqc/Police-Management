@@ -9762,6 +9762,7 @@ Format :
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
             <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
           ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Envoyer un code</button>` : ""}
+          ${nonConfirme(p) ? `<a class="btn-secondaire" href="${esc(lienRappelConfirmation(p))}">✉︎ Rappel</a>` : ""}
           ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
           <button class="btn-secondaire" data-fiche="${p.id}">Voir le compte</button>
           ${p.role !== "admin" && p.id !== etat.session.user.id ? `<button class="btn-danger" data-supprimer="${p.id}">Supprimer définitivement</button>` : ""}
@@ -9800,6 +9801,33 @@ Format :
     toast("Courriel confirmé par l'administrateur");
     await initAdmin();
     return true;
+  }
+
+  // Rappel par courriel (app de courriel de l'admin) : le compte sera supprimé dans 30 jours si le courriel n'est pas confirmé
+  function lienRappelConfirmation(p) {
+    const prenom = (p.nom_complet || "").trim().split(/\s+/)[0] || "";
+    const limite = new Date(Date.now() + 30 * 864e5).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+    const corps = `Bonjour${prenom ? " " + prenom : ""},
+
+Vous avez demandé l'accès à Police Management le ${new Date(p.cree_le).toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}, mais votre adresse courriel n'a pas encore été confirmée. Sans cette confirmation, votre accès ne peut pas être activé.
+
+Pour confirmer votre adresse, il suffit de :
+1. Aller sur https://policemanagement.ca
+2. Vous connecter avec cette adresse courriel
+3. Entrer le code à 6 chiffres reçu par courriel (pensez à vérifier vos courriels indésirables)
+
+Sans confirmation d'ici le ${limite}, votre demande et les renseignements qui y sont liés seront supprimés de façon définitive, conformément à notre politique de confidentialité. Vous pourrez toujours présenter une nouvelle demande par la suite.
+
+Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message : aucune action n'est requise.
+
+Pour toute question, répondez simplement à ce courriel.
+
+Cordialement,
+
+Anthony Smith
+Administrateur, Police Management
+https://policemanagement.ca`;
+    return `mailto:${encodeURIComponent(p.email).replace(/%40/g, "@")}?subject=${encodeURIComponent("Police Management : confirmez votre adresse courriel")}&body=${encodeURIComponent(corps)}`;
   }
 
   async function decider(btn, id, statut) {
