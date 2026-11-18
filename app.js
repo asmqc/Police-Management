@@ -9765,7 +9765,8 @@ Format :
         </div>
         <div class="boutons">
           ${p.statut === "en_attente" ? `<button class="btn-ok" data-id="${p.id}" data-statut="approuve">Approuver</button>
-            <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>` : ""}
+            <button class="btn-danger" data-id="${p.id}" data-statut="refuse">Refuser</button>
+            <a class="btn-secondaire" href="${esc(lienMauvaisCourriel(p))}">✉︎ Mauvais courriel</a>` : ""}
           ${filtreAdmin === "non_confirme" ? `<button class="btn-secondaire" data-relance="${esc(p.email)}">Envoyer un code</button>` : ""}
           ${nonConfirme(p) ? `<a class="btn-secondaire${rappelsAdmin.has(p.id) ? " rappel-fait" : ""}" data-rappel="${p.id}" href="${esc(lienRappelConfirmation(p))}">${rappelsAdmin.has(p.id) ? "✓ Rappel envoyé · " + esc(new Date(rappelsAdmin.get(p.id).envoye_le).toLocaleDateString("fr-CA", { day: "numeric", month: "short" })) + (rappelsAdmin.get(p.id).nombre > 1 ? " (" + rappelsAdmin.get(p.id).nombre + "×)" : "") : "✉︎ Rappel"}</a>` : ""}
           ${nonConfirme(p) ? `<button class="btn-ok" data-confirmer="${p.id}" title="Vous avez vérifié l'adresse vous-même">Confirmer le courriel</button>` : ""}
@@ -9815,6 +9816,36 @@ Format :
     toast("Courriel confirmé par l'administrateur");
     await initAdmin();
     return true;
+  }
+
+  // Demande en attente avec une adresse non professionnelle : courriel prérédigé pour demander l'adresse de son service
+  function lienMauvaisCourriel(p) {
+    const prenom = (p.nom_complet || "").trim().split(/\s+/)[0] || "";
+    const corps = `Bonjour${prenom ? " " + prenom : ""},
+
+Merci de l'intérêt que vous portez à Police Management.
+
+Nous avons bien reçu votre demande d'accès, mais nous ne pouvons pas l'approuver pour le moment : l'adresse courriel utilisée (${p.email}) ne nous permet pas de confirmer que vous êtes membre d'un corps de police ou agent de la paix.
+
+Pour protéger les membres et les renseignements de la plateforme, chaque compte doit être associé à une adresse courriel professionnelle, fournie par votre service de police ou votre organisation.
+
+Pour obtenir votre accès :
+1. Allez sur https://policemanagement.ca
+2. Présentez une nouvelle demande avec votre adresse courriel professionnelle
+3. Confirmez-la avec le code à 6 chiffres reçu par courriel
+
+Votre demande actuelle sera ensuite retirée, de même que les renseignements qui y sont liés.
+
+Si vous n'avez pas d'adresse professionnelle ou croyez qu'il s'agit d'une erreur, répondez simplement à ce courriel : nous trouverons une solution ensemble.
+
+Merci de votre compréhension.
+
+Cordialement,
+
+Anthony Smith
+Administrateur, Police Management
+https://policemanagement.ca`;
+    return `mailto:${encodeURIComponent(p.email).replace(/%40/g, "@")}?subject=${encodeURIComponent("Police Management : votre demande d'accès")}&body=${encodeURIComponent(corps)}`;
   }
 
   // Rappel par courriel (app de courriel de l'admin) : le compte sera supprimé dans 30 jours si le courriel n'est pas confirmé
