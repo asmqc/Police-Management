@@ -18,7 +18,7 @@ async function chargerCles() {
   const { data, error } = await admin.rpc("cles_notifications");
   if (error || !data) throw new Error("Clés introuvables");
   cles = data;
-  webpush.setVapidDetails("mailto:anthony.smith@surete.qc.ca", data.vapid_public, data.vapid_private);
+  webpush.setVapidDetails("mailto:police.management@hotmail.com", data.vapid_public, data.vapid_private);
   return cles;
 }
 
@@ -34,7 +34,17 @@ async function pastille(userId: string): Promise<number> {
   return total;
 }
 
-async function envoyer(userIds: string[], charge: Record<string, unknown>) {
+// Préférences du membre (Réglages › Notifications). Sans ligne : tout est activé.
+type Categorie = "rappels" | "annonces" | "echanges" | "forum";
+async function filtrer(userIds: string[], cat?: Categorie) {
+  if (!cat || !userIds.length) return userIds;
+  const { data } = await admin.from("push_preferences").select("user_id").in("user_id", userIds).eq(cat, false);
+  const refus = new Set((data ?? []).map((x) => x.user_id));
+  return userIds.filter((id) => !refus.has(id));
+}
+
+async function envoyer(idsDemandes: string[], charge: Record<string, unknown>, cat?: Categorie) {
+  const userIds = await filtrer(idsDemandes, cat);
   if (!userIds.length) return 0;
   const { data: abos } = await admin.from("push_abonnements").select("id, user_id, endpoint, p256dh, auth").in("user_id", userIds);
   const chiffres: Record<string, number> = {};
@@ -94,7 +104,7 @@ Deno.serve(async (req) => {
         corps: quand + (e.lieu ? ` · ${e.lieu}` : ""),
         url: "#horaire",
         tag: `rappel-${e.id}-${e.debut}`,
-      });
+      }, "rappels");
       return Response.json({ envoye: n });
     }
 
@@ -112,18 +122,18 @@ Deno.serve(async (req) => {
         corps: `${[o.grade, o.nom_complet].filter(Boolean).join(" ")} offre son quart : ${quart}, ${jour}${e.debut ? ` (${e.debut}–${e.fin})` : ""}`,
         url: "#horaire",
         tag: `echange-${e.id}`,
-      });
+      }, "echanges");
       return Response.json({ envoye: n });
     }
 
     if (e.type === "echange_pris") {
       const jour = new Date(e.jour + "T12:00:00Z").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-      const n = await envoyer([e.destinataire], { titre: "Votre quart a été pris", corps: `${e.preneur} prend votre quart du ${jour}. Votre horaire est à jour.`, url: "#horaire", tag: `echange-${e.id}` });
+      const n = await envoyer([e.destinataire], { titre: "Votre quart a été pris", corps: `${e.preneur} prend votre quart du ${jour}. Votre horaire est à jour.`, url: "#horaire", tag: `echange-${e.id}` }, "echanges");
       return Response.json({ envoye: n });
     }
 
     if (e.type === "forum_reponse") {
-      const n = await envoyer([e.destinataire], { titre: `Nouvelle réponse : ${e.sujet}`, corps: `${e.auteur} a répondu à votre sujet dans le forum.`, url: "#forum", tag: `forum-${e.id}` });
+      const n = await envoyer([e.destinataire], { titre: `Nouvelle réponse : ${e.sujet}`, corps: `${e.auteur} a répondu à votre sujet dans le forum.`, url: "#forum", tag: `forum-${e.id}` }, "forum");
       return Response.json({ envoye: n });
     }
 
@@ -137,7 +147,17 @@ Deno.serve(async (req) => {
       let req = admin.from("profiles").select("id").eq("statut", "approuve");
       if (e.corps) req = req.eq("corps_police", e.corps); // annonce visant un seul corps de police
       const { data: membres } = await req;
-      const n = await envoyer((membres ?? []).map((x) => x.id), { titre: e.titre, corps: e.texte ? String(e.texte).slice(0, 180) : "Nouvelle annonce dans Police Management.", url: "#accueil", tag: `annonce-${e.id}` });
+      // Image (Android et ordinateur) et niveau d'urgence de l'annonce
+      const { data: a } = await admin.from("annonces").select("type, image_path").eq("id", e.id).maybeSingle();
+      let image: string | undefined;
+      if (a?.image_path) {
+        const { data: s } = await admin.storage.from("annonces").createSignedUrl(a.image_path, 7 * 86400);
+        image = s?.signedUrl;
+      }
+      const n = await envoyer((membres ?? []).map((x) => x.id), {
+        titre: e.titre, corps: e.texte ? String(e.texte).slice(0, 180) : "Nouvelle annonce dans Police Management.",
+        url: `#annonce=${e.id}`, tag: `annonce-${e.id}`, image, urgent: a?.type === "urgent",
+      }, a?.type === "urgent" ? undefined : "annonces"); // une annonce urgente est toujours envoyée
       return Response.json({ envoye: n });
     }
 
@@ -149,7 +169,9 @@ Deno.serve(async (req) => {
     if (e.type === "avis" && Array.isArray(e.destinataires)) {
       // Avis préparé par la base de données (horaire du poste publié, TS obtenu, rappel d'approbation du mercredi)
       const ids = e.destinataires.filter((x: unknown) => typeof x === "string").slice(0, 500);
-      const n = await envoyer(ids, { titre: String(e.titre ?? "Police Management").slice(0, 80), corps: String(e.corps ?? "").slice(0, 200), url: String(e.url ?? "#horaire"), tag: String(e.tag ?? "avis") });
+      const tag = String(e.tag ?? "avis");
+      const cat: Categorie | undefined = /^horaire/.test(tag) ? "rappels" : undefined;
+      const n = await envoyer(ids, { titre: String(e.titre ?? "Police Management").slice(0, 80), corps: String(e.corps ?? "").slice(0, 200), url: String(e.url ?? "#horaire"), tag }, cat);
       return Response.json({ envoye: n });
     }
 

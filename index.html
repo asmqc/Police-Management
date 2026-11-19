@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611182122">
+  <link rel="stylesheet" href="styles.css?v=202611192317">
 </head>
 <body>
   <!-- Chargement -->
@@ -175,7 +175,7 @@
           <article><b>Lois</b><p>CSR, Code criminel, cannabis, drogues, véhicules hors route et plus, avec recherche, favoris et tableau des frais et contributions.</p></article>
           <article><b>Forum de votre corps</b><p>Échangez avec vos collègues sur les infractions et l'émission de constats. Chaque publication peut être signalée à l'administrateur.</p></article>
           <article><b>Idées et sondages</b><p>Proposez des nouveautés, votez pour celles des autres et répondez aux sondages de l'administration.</p></article>
-          <article><b>Rappels et notifications</b><p>Rappel avant chaque quart, rappels d'événements, messages et annonces, même quand l'app est fermée.</p></article>
+          <article><b>Rappels et notifications</b><p>Rappel avant chaque quart, rappels d'événements, annonces, échanges de quarts et réponses au forum, même quand l'app est fermée. Choisissez ce que vous recevez.</p></article>
           <article><b>Paie et banques (SQ)</b><p>Paie aux deux semaines estimée selon le contrat de travail, banques de vacances, de fériés et de temps en jours et en heures.</p></article>
           <article><b>IA du contrat de travail (SQ)</b><p>Posez votre question en mots de tous les jours : l'IA cite mot pour mot les clauses qui répondent, avec la page du PDF officiel.</p></article>
           <article><b>Québec 511 de votre secteur</b><p>Entraves et travaux sur le territoire de votre unité, actualisés automatiquement. Mode nuit rouge pour garder la vision nocturne.</p></article>
@@ -917,9 +917,17 @@
       <h3 class="intertitre">Notifications</h3>
       <div class="panneau">
         <div class="notif-bloc" data-notif>
-          <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+          <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Rappels de quart, annonces, échanges de quarts et réponses au forum, même app fermée.</small></div>
           <button type="button" class="btn-ok petit notif-bouton">Activer</button>
         </div>
+        <div id="notif-prefs" hidden>
+        <p class="aide">Choisissez ce que vous recevez (pour tous vos appareils) :</p>
+        <label class="interrupteur" for="np-rappels"><span class="interrupteur-txt"><b>Rappels</b><small>Avant vos quarts et vos événements, horaire du poste publié</small></span><input type="checkbox" id="np-rappels" data-pref="rappels" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur" for="np-annonces"><span class="interrupteur-txt"><b>Annonces</b><small>Nouvelles annonces (les annonces urgentes arrivent toujours)</small></span><input type="checkbox" id="np-annonces" data-pref="annonces" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur" for="np-echanges"><span class="interrupteur-txt"><b>Échanges de quarts</b><small>Quart offert à votre poste, votre quart a été pris</small></span><input type="checkbox" id="np-echanges" data-pref="echanges" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <label class="interrupteur" for="np-forum"><span class="interrupteur-txt"><b>Forum</b><small>Réponses à vos sujets</small></span><input type="checkbox" id="np-forum" data-pref="forum" role="switch" checked><span class="interrupteur-piste" aria-hidden="true"></span></label>
+        <button type="button" class="btn-secondaire" id="notif-test">Envoyer une notification test</button>
+      </div>
       </div>
       </div>
 
@@ -1006,7 +1014,7 @@
           <p class="ref" id="conv-resume"></p>
         </div>
         <div class="notif-bloc compact" data-notif>
-        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Rappels de quart, annonces, échanges de quarts et réponses au forum, même app fermée.</small></div>
         <button type="button" class="btn-ok petit notif-bouton">Activer</button>
       </div>
         <div class="conv-nouvelle">
@@ -1024,7 +1032,7 @@
           <span class="beta">BÊTA</span>
         </header>
         <div class="chat-notif"><div class="notif-bloc compact" data-notif>
-        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Rappels de quart, annonces, échanges de quarts et réponses au forum, même app fermée.</small></div>
         <button type="button" class="btn-ok petit notif-bouton">Activer</button>
       </div></div>
         <p class="avert-conv" role="note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20zM12 10v4m0 3v.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Non chiffré de bout en bout.</b> Aucune information opérationnelle, aucun dossier, aucun renseignement sur des civils ni du CRPQ. L'administrateur a un accès technique aux messages et un tribunal peut les exiger. <a href="politique.html#messagerie" target="_blank" rel="noopener">En savoir plus</a></span></p>
@@ -1595,7 +1603,7 @@
       <h3 class="intertitre">Notifications</h3>
       <div class="panneau">
       <div class="notif-bloc" data-notif>
-        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Recevez une alerte pour chaque nouveau message, même app fermée.</small></div>
+        <div class="notif-txt"><b>Notifications</b><small class="notif-etat">Rappels de quart, annonces, échanges de quarts et réponses au forum, même app fermée.</small></div>
         <button type="button" class="btn-ok petit notif-bouton">Activer</button>
       </div>
       </div>
@@ -2476,10 +2484,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611182122"></script>
+  <script src="config.js?v=202611192317"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611182122"></script>
-  <script src="saison.js?v=202611182122"></script>
-  <script src="app.js?v=202611182122"></script>
+  <script src="i18n.js?v=202611192317"></script>
+  <script src="saison.js?v=202611192317"></script>
+  <script src="app.js?v=202611192317"></script>
 </body>
 </html>

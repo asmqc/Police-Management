@@ -3251,3 +3251,8 @@ html[data-style="nuit"] #decor-saison { display: none; }
 .cmp-src a { color: inherit; text-decoration: underline; }
 .cmp-carte summary:focus-visible { outline: 2px solid var(--fg); outline-offset: -4px; }
 html[data-style="nuit"] .cmp-rang, html[data-style="nuit"] .cmp-barre i { background: var(--fg) !important; color: #000 !important; }
+
+/* Notifications : choix par type */
+#notif-prefs { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--ligne); }
+#notif-prefs[hidden] { display: none; }
+#notif-prefs .btn-secondaire { justify-self: start; }

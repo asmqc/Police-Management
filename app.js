@@ -665,6 +665,7 @@
     if (p.consentement_version !== VERSION_POLITIQUE) $("#consent-voile").hidden = false;
     chargerAvertissement().finally(afficherAvertissement);
     let depart = (location.hash || "").replace("#", "");
+    if (depart.startsWith("annonce=")) { const id = depart.slice(8); depart = "accueil"; setTimeout(() => ouvrirAnnonceParId(id), 600); } // ouverte depuis une notification
     if (depart.startsWith("carte@") || pointPartageEnAttente()) depart = "carte";
     document.body.classList.toggle("est-sq", estSQ() || p.role === "admin");
     document.body.classList.toggle("a-convention", accesConvention());
@@ -842,6 +843,11 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-19-notif", date: "2026-11-19", titre: "Notifications améliorées", points: [
+      "Choisissez ce que vous recevez : rappels, annonces, échanges de quarts et forum (Réglages › Notifications). Les annonces urgentes arrivent toujours.",
+      "Touchez une notification d'annonce pour l'ouvrir directement. Sur Android et ordinateur, l'image de l'annonce s'affiche dans la notification.",
+      "Un bouton « Envoyer une notification test » permet de vérifier que tout fonctionne sur votre appareil.",
+    ] },
     { id: "2026-11-18-comparatif", date: "2026-11-18", titre: "Comparez les conventions des policiers au Canada", points: [
       "Fonctionnalités › Comparer les conventions : 15 corps de police du Québec et du Canada classés selon le salaire au sommet, la rapidité pour l'atteindre et la retraite, avec 5 pour et 5 contre chacun.",
       "La méthode et les sources sont indiquées. D'autres corps s'ajouteront au fur et à mesure.",
@@ -2174,7 +2180,7 @@ Question : ${question}
     } else {
       const abo = await abonnementActuel().catch(() => null);
       actif = !!abo && Notification.permission === "granted";
-      etatTxt = actif ? "Activées sur cet appareil." : "Recevez une alerte pour chaque nouveau message, même app fermée.";
+      etatTxt = actif ? "Activées sur cet appareil." : "Rappels de quart, annonces, échanges de quarts et réponses au forum, même app fermée.";
       libelle = actif ? "Désactiver" : "Activer";
     }
     blocs.forEach((b) => {
@@ -2187,6 +2193,7 @@ Question : ${question}
       b.classList.toggle("actif", actif);
       b.hidden = b.classList.contains("compact") && actif; // dans Messages, on cache le rappel une fois activé
     });
+    if ($("#notif-prefs")) { $("#notif-prefs").hidden = !actif; if (actif) chargerPrefsNotif().catch(() => {}); }
   }
   async function basculerNotifications() {
     if (!pushPossible()) {
@@ -2211,6 +2218,24 @@ Question : ${question}
     majBlocsNotif();
   }
   $$("[data-notif] .notif-bouton").forEach((b) => b.addEventListener("click", basculerNotifications));
+  // Préférences par type (Réglages) et notification test
+  async function chargerPrefsNotif() {
+    const zone = $("#notif-prefs"); if (!zone) return;
+    const { data } = await sb.from("push_preferences").select("rappels, annonces, echanges, forum").maybeSingle();
+    $$("[data-pref]", zone).forEach((c) => { c.checked = data ? data[c.dataset.pref] !== false : true; });
+  }
+  $$("#notif-prefs [data-pref]").forEach((c) => c.addEventListener("change", async () => {
+    const prefs = Object.fromEntries($$("#notif-prefs [data-pref]").map((x) => [x.dataset.pref, x.checked]));
+    const { error } = await sb.from("push_preferences").upsert({ user_id: etat.profil.id, ...prefs, modifie_le: new Date().toISOString() }, { onConflict: "user_id" });
+    if (error) { toast(traduireErreur(error)); c.checked = !c.checked; return; }
+    toast(c.checked ? "Activé" : "Désactivé");
+  }));
+  if ($("#notif-test")) $("#notif-test").addEventListener("click", async (e) => {
+    const b = e.currentTarget; b.disabled = true;
+    const { error } = await sb.rpc("notif_test");
+    toast(error ? traduireErreur(error) : "Notification envoyée : elle devrait arriver dans quelques secondes");
+    setTimeout(() => { b.disabled = false; }, 8000);
+  });
   // À chaque connexion, on s'assure que l'appareil déjà autorisé est bien enregistré
   async function verifierAbonnement() {
     try {
@@ -2223,7 +2248,9 @@ Question : ${question}
   // Clic sur une notification alors que l'app est déjà ouverte
   if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => {
     const cible = e.data && e.data.aller && e.data.aller.replace("#", "");
-    if (cible && etat.profil && etat.profil.statut === "approuve") afficherVue(cible === "admin" && !estAdmin() ? "accueil" : cible);
+    if (!cible || !etat.profil || etat.profil.statut !== "approuve") return;
+    if (cible.startsWith("annonce=")) { afficherVue("accueil"); ouvrirAnnonceParId(cible.slice(8)); return; }
+    afficherVue(cible === "admin" && !estAdmin() ? "accueil" : cible);
   });
   // Pastille sur l'icône de l'app : messages non lus + demandes en attente (admin)
   // On attend d'avoir les deux chiffres avant de toucher à la pastille, pour ne jamais l'effacer par erreur
@@ -5655,6 +5682,12 @@ Format :
   $("#ac-annonces-tout").addEventListener("click", ouvrirToutesAnnonces);
   $("#annonces-t-fermer").addEventListener("click", () => ($("#annonces-voile").hidden = true));
   $("#annonces-voile").addEventListener("click", (e) => { if (e.target.id === "annonces-voile") $("#annonces-voile").hidden = true; });
+  async function ouvrirAnnonceParId(id) {
+    if (!/^[0-9a-f-]{36}$/i.test(id || "")) return;
+    const { data: a } = await sb.from("annonces").select("*").eq("id", id).maybeSingle();
+    if (!a) return toast("Cette annonce n'est plus disponible");
+    ouvrirAnnonce(a, await urlsAnnonces([a.image_path]));
+  }
   function ouvrirAnnonce(a, urls) {
     if (!a) return;
     marquerAnnonceLue(a.id);
