@@ -826,6 +826,9 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-20-semaine", date: "2026-11-20", titre: "Votre semaine commence quand vous voulez", points: [
+      "Réglages › Horaire › Début de la semaine : choisissez dimanche ou lundi. Le calendrier, la vue semaine et l'horaire de l'année suivent votre choix.",
+    ] },
     { id: "2026-11-19-theme", date: "2026-11-19", titre: "Un seul thème, clair et lumineux", points: [
       "L'app utilise maintenant un seul thème pour tout le monde : Liquid Glass clair.",
       "Le mode Nuit rouge reste offert pour la conduite de nuit : Réglages › Apparence, ou le menu du compte.",
@@ -3180,6 +3183,19 @@ Question : ${question}
   const hhmm = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   const heureCourte = (d) => `${d.getHours()} h${d.getMinutes() ? " " + String(d.getMinutes()).padStart(2, "0") : ""}`; // 17 h, 9 h 30
   const lundiDe = (iso) => ajoutJours(iso, -((minuit(iso).getDay() + 6) % 7));
+  // Premier jour de la semaine dans le calendrier : choix du membre (Réglages › Horaire), lundi par défaut
+  let semaineDimanche = false;
+  try { semaineDimanche = localStorage.getItem("pm-semaine") === "dimanche"; } catch { /* stockage indisponible */ }
+  const debutSemaine = (iso) => semaineDimanche ? ajoutJours(iso, -minuit(iso).getDay()) : lundiDe(iso);
+  const JOURS_ENTETE = () => semaineDimanche ? ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"] : ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+  { const sel = document.getElementById("rg-semaine");
+    if (sel) { sel.value = semaineDimanche ? "dimanche" : "lundi";
+      sel.addEventListener("change", () => {
+        semaineDimanche = sel.value === "dimanche";
+        try { localStorage.setItem("pm-semaine", sel.value); } catch { /* facultatif */ }
+        try { rendreCalendrier(); } catch { /* calendrier pas encore affiché */ }
+        toast(`La semaine commence maintenant le ${sel.value}`);
+      }); } }
   const avecEvenements = () => !hr.vue && hr.cible !== "conjoint"; // événements privés : jamais affichés pour un collègue ni dans le calendrier du conjoint
 
   async function chargerEvenements(forcer = false) {
@@ -3246,7 +3262,7 @@ Question : ${question}
   function rendreMois() {
     const [a, m] = cal.date.split("-").map(Number);
     $("#hr-mois").textContent = new Date(a, m - 1, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
-    const debutGrille = lundiDe(`${a}-${String(m).padStart(2, "0")}-01`);
+    const debutGrille = debutSemaine(`${a}-${String(m).padStart(2, "0")}-01`);
     const nbJoursMois = new Date(a, m, 0).getDate();
     const nbSemaines = Math.ceil((jourUTC(`${a}-${String(m).padStart(2, "0")}-01`) - jourUTC(debutGrille) + nbJoursMois) / 7);
     const occs = occurrences(minuit(debutGrille), minuit(ajoutJours(debutGrille, nbSemaines * 7)));
@@ -3255,7 +3271,7 @@ Question : ${question}
       for (let d = isoLoc(o.debut); d <= isoLoc(new Date(Math.max(o.fin - 1, o.debut))); d = ajoutJours(d, 1)) (parJour[d] = parJour[d] || []).push(o);
     }
     const auj = aujourdhuiISO();
-    let html = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((j) => `<span class="jsem">${j}</span>`).join("");
+    let html = JOURS_ENTETE().map((j) => `<span class="jsem">${j}</span>`).join("");
     for (let i = 0; i < nbSemaines * 7; i++) {
       const iso = ajoutJours(debutGrille, i), qq = quartDu(iso);
       const dansMois = Number(iso.slice(5, 7)) === m;
@@ -3404,7 +3420,7 @@ Question : ${question}
 
   // Vues Jour et Semaine : grille horaire avec les quarts en bandes et les événements positionnés
   function rendreTemps() {
-    const jours = cal.vue === "jour" ? [cal.date] : Array.from({ length: 7 }, (_, i) => ajoutJours(lundiDe(cal.date), i));
+    const jours = cal.vue === "jour" ? [cal.date] : Array.from({ length: 7 }, (_, i) => ajoutJours(debutSemaine(cal.date), i));
     const premier = minuit(jours[0]), dernier = minuit(jours[jours.length - 1]);
     $("#hr-mois").textContent = cal.vue === "jour"
       ? premier.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" })
@@ -6793,8 +6809,8 @@ Format :
     let mois = "";
     for (let m = 0; m < 12; m++) {
       const premier = new Date(annee, m, 1), nb = new Date(annee, m + 1, 0).getDate();
-      const decal = (premier.getDay() + 6) % 7; // lundi en premier, comme dans l'app
-      let cases = ["L", "M", "M", "J", "V", "S", "D"].map((j) => `<i class="js">${j}</i>`).join("") + "<i></i>".repeat(decal);
+      const decal = semaineDimanche ? premier.getDay() : (premier.getDay() + 6) % 7; // même premier jour que le calendrier de l'app
+      let cases = (semaineDimanche ? ["D", "L", "M", "M", "J", "V", "S"] : ["L", "M", "M", "J", "V", "S", "D"]).map((j) => `<i class="js">${j}</i>`).join("") + "<i></i>".repeat(decal);
       for (let d = 1; d <= nb; d++) {
         const iso = `${annee}-${pad(m + 1)}-${pad(d)}`, q = quartDu(iso, src), k = q.code || "";
         if (k && k !== "C") tot[k] = (tot[k] || 0) + 1;
