@@ -1911,7 +1911,9 @@ Question : ${question}
   };
 
   async function compterMessages() {
-    return; // messagerie retirée
+    // messagerie retirée : zéro message, mais on le dit à la pastille pour qu'elle puisse s'effacer
+    try { compteurs.messages = 0; majPastille(); effacerNotifsAffichees(); } catch { /* pas encore prêt */ }
+    return;
     if (!etat.profil) return 0;
     const { count } = await sb.from("messages").select("id", { count: "exact", head: true }).eq("destinataire", etat.profil.id).is("lu_le", null);
     const b = $("#badge-messages");
@@ -2255,6 +2257,13 @@ Question : ${question}
   // Pastille sur l'icône de l'app : messages non lus + demandes en attente (admin)
   // On attend d'avoir les deux chiffres avant de toucher à la pastille, pour ne jamais l'effacer par erreur
   const compteurs = { messages: null, demandes: null };
+  // À l'ouverture de l'app : on retire les notifications déjà affichées dans le centre de notifications
+  function effacerNotifsAffichees() {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.getRegistration().then((reg) => reg && reg.getNotifications && reg.getNotifications())
+      .then((liste) => (liste || []).forEach((n) => n.close())).catch(() => {});
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && etat.profil) { effacerNotifsAffichees(); majPastille(); } });
   function majPastille() {
     if (compteurs.messages === null || (estAdmin() && compteurs.demandes === null)) return;
     const total = compteurs.messages + (estAdmin() ? compteurs.demandes : 0);
