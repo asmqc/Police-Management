@@ -142,44 +142,27 @@
     { id: "poste", nom: "Poste de police", desc: "Logiciel de poste rétro", c: ["#0A246A", "#3A6EA5", "#ECE9D8"] },
     { id: "nuit", nom: "Nuit rouge", desc: "Auto-patrouille la nuit", c: ["#000000", "#D23A3A", "#140303"] },
   ];
-  // Style par défaut : Patrouille (10 novembre 2026). Ceux qui avaient le style par défaut d'avant passent à Patrouille une fois;
-  // un autre style choisi est gardé, et Liquid Glass reste offert dans Réglages.
-  let styleChoisi = "patrouille";
-  try {
-    const s0 = localStorage.getItem("pm-style");
-    if (!localStorage.getItem("pm-style-v2")) { localStorage.setItem("pm-style-v2", "1"); if (!s0 || s0 === "moderne") localStorage.setItem("pm-style", "patrouille"); }
-    styleChoisi = localStorage.getItem("pm-style") || "patrouille";
-  } catch { /* stockage indisponible */ }
+  // Thème unique depuis le 19 novembre 2026 : Liquid Glass clair pour tout le monde.
+  // Seul le mode Nuit rouge (vision de nuit en auto-patrouille) reste offert : Réglages ou menu du compte.
+  let styleChoisi = "moderne";
+  try { if (localStorage.getItem("pm-style") === "nuit") styleChoisi = "nuit"; } catch { /* stockage indisponible */ }
   function appliquerStyle(id) {
-    const st = STYLES.find((x) => x.id === id) || STYLES[0];
+    const st = STYLES.find((x) => x.id === id) || STYLES[1];
     if (st.id === "moderne") document.documentElement.removeAttribute("data-style");
     else document.documentElement.setAttribute("data-style", st.id);
     if (st.id !== "moderne") { const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.setAttribute("content", st.c[0]); }
   }
-  appliquerStyle(styleChoisi);
-  let themeChoisi = "auto";
-  try { themeChoisi = localStorage.getItem("pm-theme") || "auto"; } catch { /* stockage indisponible */ }
+  const themeChoisi = "light";
   appliquerTheme(themeChoisi);
-  if (styleChoisi !== "moderne") appliquerStyle(styleChoisi);
+  appliquerStyle(styleChoisi);
   function rendreStyles() {
-    const el = document.getElementById("styles-choix");
-    el.innerHTML = STYLES.map((st) => `<button type="button" role="radio" data-style-choix="${st.id}" aria-checked="${st.id === styleChoisi}">
-      <span class="style-apercu" style="--a:${st.c[0]};--b:${st.c[1]};--c:${st.c[2]}"><i></i><i></i><i></i></span><b>${st.nom}</b><small>${st.desc}</small></button>`).join("");
-    el.querySelectorAll("[data-style-choix]").forEach((b) => b.addEventListener("click", () => {
-      styleChoisi = b.dataset.styleChoix;
-      try { localStorage.setItem("pm-style", styleChoisi); } catch { /* stockage indisponible */ }
-      appliquerStyle(styleChoisi); appliquerTheme(themeChoisi); if (styleChoisi !== "moderne") appliquerStyle(styleChoisi);
-      rendreStyles();
-    }));
-    document.querySelector(".segmente-theme").classList.toggle("inactif", styleChoisi !== "moderne");
+    const c = document.getElementById("rg-nuit-rouge");
+    if (c) c.checked = styleChoisi === "nuit";
   }
-  function majChoixTheme() { document.querySelectorAll("[data-theme-choix]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.themeChoix === themeChoisi))); }
-  document.querySelectorAll("[data-theme-choix]").forEach((b) => b.addEventListener("click", () => {
-    themeChoisi = b.dataset.themeChoix;
-    try { localStorage.setItem("pm-theme", themeChoisi); } catch { /* stockage indisponible */ }
-    appliquerTheme(themeChoisi);
-    majChoixTheme();
-  }));
+  function majChoixTheme() { /* thème unique */ }
+  rendreStyles();
+  { const c = document.getElementById("rg-nuit-rouge");
+    if (c) c.addEventListener("change", () => { if ((styleChoisi === "nuit") !== c.checked) basculerNuitRouge(); }); }
 
   // Pas de zoom (pincement ou double toucher) ailleurs que sur la carte
   const surCarte = (e) => e.target && e.target.closest && e.target.closest("#carte");
@@ -843,6 +826,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-19-theme", date: "2026-11-19", titre: "Un seul thème, clair et lumineux", points: [
+      "L'app utilise maintenant un seul thème pour tout le monde : Liquid Glass clair.",
+      "Le mode Nuit rouge reste offert pour la conduite de nuit : Réglages › Apparence, ou le menu du compte.",
+    ] },
     { id: "2026-11-19-carte", date: "2026-11-19", titre: "Une carte plus grande et plus épurée", points: [
       "La carte occupe maintenant tout l'écran : les onglets et la recherche flottent par-dessus.",
       "Le panneau Couches est replié par défaut ; Repère et Mesurer sont devenus des boutons ronds à droite.",
@@ -1660,15 +1647,14 @@ Question : ${question}
   $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
   // Mode nuit rouge : bascule rapide depuis le menu (revient ensuite au style précédent)
   function majBoutonNuit() { const b = $("#menu-nuit"); if (b) $("span", b).textContent = styleChoisi === "nuit" ? "Quitter le mode nuit rouge" : "Mode nuit rouge"; }
-  if ($("#menu-nuit")) $("#menu-nuit").addEventListener("click", () => {
-    let avant = "moderne";
-    try { avant = localStorage.getItem("pm-style-avant-nuit") || "moderne"; } catch { /* facultatif */ }
-    if (styleChoisi === "nuit") styleChoisi = avant === "nuit" ? "moderne" : avant;
-    else { try { localStorage.setItem("pm-style-avant-nuit", styleChoisi); } catch { /* facultatif */ } styleChoisi = "nuit"; }
+  function basculerNuitRouge(depuisMenu) {
+    styleChoisi = styleChoisi === "nuit" ? "moderne" : "nuit";
     try { localStorage.setItem("pm-style", styleChoisi); } catch { /* facultatif */ }
-    appliquerStyle(styleChoisi); majBoutonNuit(); fermerMenu();
+    appliquerStyle(styleChoisi); majBoutonNuit(); rendreStyles();
+    if (depuisMenu) fermerMenu();
     toast(styleChoisi === "nuit" ? "Mode nuit rouge activé" : "Mode nuit rouge désactivé");
-  });
+  }
+  if ($("#menu-nuit")) $("#menu-nuit").addEventListener("click", () => basculerNuitRouge(true));
   majBoutonNuit();
   { const v = (document.querySelector('script[src^="app.js"]') || {}).src || ""; const m = v.match(/v=(\d{8})(\d{4})/); if (m) $("#rg-version").textContent = `Version du ${m[1].slice(6, 8)}/${m[1].slice(4, 6)}/${m[1].slice(0, 4)}`; }
   $$(".nav button").forEach((b) => b.addEventListener("click", () => {

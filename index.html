@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611200154">
+  <link rel="stylesheet" href="styles.css?v=202611200214">
 </head>
 <body>
   <!-- Chargement -->
@@ -902,14 +902,7 @@
       <div class="rg-bloc">
       <h3 class="intertitre">Apparence</h3>
       <div class="panneau">
-        <div class="segmente segmente-theme" role="radiogroup" aria-label="Thème">
-          <button type="button" role="radio" data-theme-choix="auto" aria-checked="true">Automatique</button>
-          <button type="button" role="radio" data-theme-choix="light" aria-checked="false">Clair</button>
-          <button type="button" role="radio" data-theme-choix="dark" aria-checked="false">Sombre</button>
-        </div>
-        <p class="aide">Automatique suit le réglage de votre téléphone ou ordinateur (sombre la nuit, par exemple).</p>
-        <b class="rg-sous">Style d'interface</b>
-        <div class="styles-choix" id="styles-choix" role="radiogroup" aria-label="Style d'interface"></div>
+        <label class="interrupteur" for="rg-nuit-rouge"><span class="interrupteur-txt"><b>Mode nuit rouge</b><small>Écran noir et rouge pour garder votre vision de nuit en auto-patrouille. Aussi offert dans le menu du compte.</small></span><input type="checkbox" id="rg-nuit-rouge" role="switch"><span class="interrupteur-piste" aria-hidden="true"></span></label>
       </div>
       </div>
 
@@ -2484,10 +2477,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611200154"></script>
+  <script src="config.js?v=202611200214"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611200154"></script>
-  <script src="saison.js?v=202611200154"></script>
-  <script src="app.js?v=202611200154"></script>
+  <script src="i18n.js?v=202611200214"></script>
+  <script src="saison.js?v=202611200214"></script>
+  <script src="app.js?v=202611200214"></script>
 </body>
 </html>
