@@ -843,6 +843,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-19-carte", date: "2026-11-19", titre: "Une carte plus grande et plus épurée", points: [
+      "La carte occupe maintenant tout l'écran : les onglets et la recherche flottent par-dessus.",
+      "Le panneau Couches est replié par défaut ; Repère et Mesurer sont devenus des boutons ronds à droite.",
+    ] },
     { id: "2026-11-19-notif", date: "2026-11-19", titre: "Notifications améliorées", points: [
       "Choisissez ce que vous recevez : rappels, annonces, échanges de quarts et forum (Réglages › Notifications). Les annonces urgentes arrivent toujours.",
       "Touchez une notification d'annonce pour l'ouvrir directement. Sur Android et ordinateur, l'image de l'annonce s'affiche dans la notification.",
@@ -1644,6 +1648,13 @@ Question : ${question}
   };
   $("#btn-rafraichir").addEventListener("click", rafraichirApp);
   $("#btn-rafraichir-haut").addEventListener("click", rafraichirApp);
+  // Carte : panneau Couches fermé par défaut (la carte prend toute la place), ouvert d'un toucher
+  $("#legende-bascule").addEventListener("click", (e) => {
+    const ouvert = e.currentTarget.getAttribute("aria-expanded") === "true";
+    e.currentTarget.setAttribute("aria-expanded", String(!ouvert));
+    $("#legende-corps").hidden = ouvert;
+    $("#legende").classList.toggle("ouverte", !ouvert);
+  });
   $("#btn-reglages").addEventListener("click", () => afficherVue("reglages"));
   $("#menu-voile").addEventListener("click", (e) => { if (e.target.id === "menu-voile") fermerMenu(); });
   $$("[data-menu]").forEach((b) => b.addEventListener("click", () => { fermerMenu(); afficherVue(b.dataset.menu); }));
@@ -8510,12 +8521,6 @@ Format :
     bascule("#c-sq", "sq", true); bascule("#c-mun", "mun"); bascule("#c-aut", "aut"); bascule("#c-km", "km"); bascule("#c-sorties", "sorties"); bascule("#c-bur", "bur"); bascule("#c-limites", "limites"); bascule("#c-cam", "cam");
     etat.surligne = L.layerGroup().addTo(carte);
     etat.choixUnitePret = remplirChoixUnite();
-    $("#legende-bascule").addEventListener("click", (e) => {
-      const ouvert = e.currentTarget.getAttribute("aria-expanded") === "true";
-      e.currentTarget.setAttribute("aria-expanded", String(!ouvert));
-      $("#legende-corps").hidden = ouvert;
-    });
-    if (window.innerWidth < 600) $("#legende-bascule").click();
 
     let marqueur;
     etat.placer = async (lat, lon, titre, zoom) => {

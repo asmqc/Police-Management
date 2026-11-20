@@ -3256,3 +3256,38 @@ html[data-style="nuit"] .cmp-rang, html[data-style="nuit"] .cmp-barre i { backgr
 #notif-prefs { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--ligne); }
 #notif-prefs[hidden] { display: none; }
 #notif-prefs .btn-secondaire { justify-self: start; }
+
+/* ---------- Carte plus grande et plus épurée (19 nov. 2026) ----------
+   Les onglets Terrain flottent sur la carte au lieu de lui prendre de la hauteur.
+   Couches fermé par défaut ; Repère et Mesurer en boutons ronds empilés à droite. */
+.vue-carte { position: relative; }
+.vue-carte > .terrain-nav { position: absolute; z-index: 900; top: 8px; left: 12px; right: 12px; margin: 0 !important;
+  background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: 0 6px 22px rgba(6, 13, 24, .22); max-width: 640px; }
+html.app-natif .vue-carte > .terrain-nav { top: calc(var(--natif-haut) + 6px); margin: 0 !important; }
+.vue-carte .carte-outils { top: 62px; }
+html.app-natif .vue-carte .carte-outils { top: calc(var(--natif-haut) + 60px); }
+body.carte-plein .vue-carte .carte-outils { top: max(10px, env(safe-area-inset-top)); }
+/* Couches : une pastille compacte à droite, qui s'ouvre en panneau */
+.vue-carte .legende { top: 122px; right: max(12px, env(safe-area-inset-right)); max-width: min(290px, calc(100vw - 24px)); }
+html.app-natif .vue-carte .legende { top: calc(var(--natif-haut) + 120px); }
+.vue-carte .legende-tete { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: .95rem; }
+.vue-carte .legende:not(.ouverte) { border-radius: 999px; }
+.vue-carte .legende.ouverte .legende-tete { border-bottom: 1px solid var(--ligne); margin-bottom: 8px; }
+/* Repère et Mesurer : boutons ronds empilés sous Couches */
+.vue-carte .btn-repere { left: auto; right: max(12px, env(safe-area-inset-right)); top: 176px; width: 46px; height: 46px; padding: 0; border-radius: 50%; justify-content: center;
+  background: color-mix(in srgb, var(--surface) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid var(--ligne); box-shadow: 0 6px 22px rgba(6, 13, 24, .22); color: var(--fg); }
+.vue-carte .btn-repere > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.vue-carte .btn-mesure { top: 230px; }
+html.app-natif .vue-carte .btn-repere { top: calc(var(--natif-haut) + 174px); }
+html.app-natif .vue-carte .btn-mesure { top: calc(var(--natif-haut) + 228px); }
+.vue-carte .btn-repere[aria-pressed="true"] { background: var(--console); color: var(--ambre-vif); }
+/* Quand le panneau Couches est ouvert, il passe par-dessus les boutons ronds */
+.vue-carte .legende.ouverte { z-index: 950; }
+body.carte-plein .vue-carte .legende { top: calc(64px + env(safe-area-inset-top, 0px)); }
+body.carte-plein .vue-carte .btn-repere { top: calc(118px + env(safe-area-inset-top, 0px)); }
+body.carte-plein .vue-carte .btn-mesure { top: calc(172px + env(safe-area-inset-top, 0px)); }
+@media (min-width: 900px) {
+  .vue-carte > .terrain-nav { left: 16px; right: auto; width: 520px; }
+  .vue-carte .carte-outils { left: 16px; }
+}
