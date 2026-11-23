@@ -826,6 +826,10 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-23-assistant", date: "2026-11-23", titre: "Configurez votre horaire en 3 étapes", points: [
+      "Un assistant vous guide : votre rotation (H1 et autres), votre équipe ou votre jour dans le cycle, puis vos heures. Aperçu de vos 14 prochains jours avant d'enregistrer.",
+      "Il s'ouvre sur l'accueil tant que votre horaire n'est pas configuré. Ensuite, votre quart du jour s'affiche et vous pouvez activer un rappel avant chaque quart.",
+    ] },
     { id: "2026-11-20-semaine", date: "2026-11-20", titre: "Votre semaine commence quand vous voulez", points: [
       "Réglages › Horaire › Début de la semaine : choisissez dimanche ou lundi. Le calendrier, la vue semaine et l'horaire de l'année suivent votre choix.",
     ] },
@@ -2798,6 +2802,9 @@ Question : ${question}
       if (!hr.config) {
         $("#ac-statut-auj").innerHTML = `<b>Configurer ma rotation</b>`;
         $("#ac-statut-dem").innerHTML = `<em>Votre quart s'affichera ici</em>`;
+        // Assistant : s'ouvre tout seul une fois par jour tant que l'horaire n'est pas configuré
+        let vu = ""; try { vu = localStorage.getItem("pm-assistant-vu") || ""; } catch { /* facultatif */ }
+        if (vu !== aujourdhuiISO() && $("#assist-voile").hidden && !$("#consent-voile, .voile-consent:not([hidden])")) setTimeout(() => { if (!hr.config && document.body.dataset.vue === "accueil") ouvrirAssist(); }, 900);
       } else {
         const a0 = aujourdhuiISO();
         $("#ac-statut-auj").innerHTML = celQuart(a0);
@@ -2947,7 +2954,7 @@ Question : ${question}
     const champ = { csr: "#csr-q", carte: "#adresse-q", corps: "#corps-q" }[cible];
     if (champ) setTimeout(() => $(champ).focus(), 150);
   }
-  $$("[data-aller]").forEach((b) => b.addEventListener("click", () => allerA(b.dataset.aller)));
+  $$("[data-aller]").forEach((b) => b.addEventListener("click", () => (b.dataset.aller === "horaire" && !hr.config && b.closest("#vue-accueil")) ? ouvrirAssist() : allerA(b.dataset.aller)));
 
   async function initHoraire() {
     if (!hr.chargé) {
@@ -6371,7 +6378,7 @@ Format :
   });
   $("#hr-ajout-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length < 84) { hr.brouillon.cycle.push("C"); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
   $("#hr-retrait-jour").addEventListener("click", () => { if (hr.brouillon.cycle.length > 1) { hr.brouillon.cycle.pop(); $("#hr-modele").value = "perso"; rendreBrouillon(); } });
-  $("#hr-commencer").addEventListener("click", ouvrirConfig);
+  $("#hr-commencer").addEventListener("click", () => (hr.cible === "conjoint" ? ouvrirConfig() : ouvrirAssist()));
   $("#hr-config").addEventListener("click", ouvrirConfig);
   $("#hr-annuler").addEventListener("click", () => { $("#hr-form").hidden = true; rendreHoraire(); });
   $("#hr-form").addEventListener("submit", async (ev) => {
@@ -6388,6 +6395,134 @@ Format :
       rendreHoraire();
       toast("Rotation enregistrée");
     } catch (e) { cible.config = ancien; toast(traduireErreur(e)); }
+  });
+
+  /* ---------------- Assistant de configuration de l'horaire ----------------
+     3 étapes : 1) quel horaire 2) où vous êtes dans le cycle 3) les heures. Ensuite : invitation aux rappels. */
+  const assist = { etape: 1, modele: null, cycle: null, debut: null, heures: null, hybride: false, autoroute: false, equipe: 2 };
+  const NOMS_ROTATIONS = {
+    "SQ-H1": ["Horaire hybride H1", "9 h en semaine, 12 h la fin de semaine · cycle de 35 jours"],
+    "SQ-H2": ["Horaire H2", "Quarts de 12 h · gabarit à ajuster"], "SQ-H3-9": ["Horaire H3 (9 h)", "Gabarit à ajuster"], "SQ-H3-12": ["Horaire H3 (12 h)", "Gabarit à ajuster"],
+    "SQ-4-3": ["4 jours, 3 congés (9 h)", "Enquêtes, bureau"],
+    "4-4JN": ["4-4 jour et nuit", "4 jours, 4 congés, 4 nuits, 4 congés"], "dupont": ["Dupont", "Quarts de 12 h · cycle de 28 jours"],
+    "3-3JN": ["3-3 jour et nuit", "3 jours, 3 congés, 3 nuits, 3 congés"], "4-3-3-4JN": ["4-3-3-4 jour et nuit", "Quarts de 12 h · cycle de 28 jours"],
+    "2-3-2": ["2-3-2 (Pitman)", "Quarts de 12 h · cycle de 14 jours"], "5-2": ["5-2", "Du lundi au vendredi"], "4-4J": ["4-4 jour", "4 jours, 4 congés"],
+    "swing": ["Swing 7-7-7 (8 h)", "Jour, soir, nuit · cycle de 28 jours"],
+  };
+  function choixRotations() {
+    const sq = estSQ();
+    const liste = sq ? ["SQ-H1", "SQ-H2", "SQ-H3-9", "SQ-H3-12", "SQ-4-3", "4-4JN", "dupont", "5-2"] : ["4-4JN", "dupont", "3-3JN", "4-3-3-4JN", "2-3-2", "swing", "4-4J", "5-2"];
+    return liste.map((id) => ({ id, nom: NOMS_ROTATIONS[id][0], desc: NOMS_ROTATIONS[id][1] }))
+      .concat(modelesAdmin.map((m) => ({ id: "m:" + m.id, nom: m.nom, desc: `Cycle de ${m.cycle.length} jours` })));
+  }
+  function choisirModeleAssist(id) {
+    assist.modele = id;
+    const m = id.startsWith("m:") && modelesAdmin.find((x) => "m:" + x.id === id);
+    assist.cycle = m ? [...m.cycle] : MODELES[id].split("");
+    const sq = MODELES_SQ[id];
+    assist.hybride = !!(m ? m.hybride : sq && sq.hybride);
+    assist.autoroute = assist.hybride && /^poste autoroutier/i.test(etat.profil.unite || "");
+    assist.heures = { ...HEURES_DEFAUT, ...((m && m.heures) || (sq && sq.heures) || MODELES_HEURES[id] || {}) };
+    assist.debut = sq && sq.debut ? debutEquipeSQ(id, assist.equipe) : null;
+  }
+  function apercuAssist() {
+    if (!assist.debut) return "";
+    const conf = { cycle: assist.cycle, debut: assist.debut, heures: assist.heures, hybride: assist.hybride, autoroute: assist.autoroute };
+    const auj = aujourdhuiISO();
+    return `<div class="assist-apercu">${Array.from({ length: 14 }, (_, i) => {
+      const iso = isoDe(jourUTC(auj) + i), q = quartDu(iso, { config: conf, exceptions: {} });
+      return `<span class="${i === 0 ? "auj" : ""}"><small>${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "short" }).replace(".", ""))}</small><b>${Number(iso.slice(8))}</b><i class="q q-${esc(q.code || "C")}">${esc(q.code || "–")}</i></span>`;
+    }).join("")}</div><p class="assist-aide">Vos 14 prochains jours. Si ce n'est pas votre horaire, changez votre réponse ci-dessus.</p>`;
+  }
+  function rendreAssist() {
+    const e = assist.etape, corps = $("#assist-corps");
+    $$(".assist-etapes i").forEach((x, i) => x.classList.toggle("fait", i < e));
+    $("#assist-sur").textContent = e <= 3 ? `Étape ${e} de 3` : "C'est prêt";
+    $("#assist-retour").hidden = e === 1 || e === 4;
+    $("#assist-suivant").disabled = (e === 1 && !assist.modele) || (e === 2 && !assist.debut);
+    if (e === 1) {
+      $("#assist-titre").textContent = "Quel horaire faites-vous ?";
+      $("#assist-aide").textContent = "Choisissez votre rotation. Vous pourrez ajuster chaque jour plus tard.";
+      corps.innerHTML = `<div class="assist-choix">${choixRotations().map((r) => `<button type="button" data-rot="${esc(r.id)}" aria-pressed="${assist.modele === r.id}"><b>${esc(r.nom)}</b><small>${esc(r.desc)}</small></button>`).join("")}
+        <button type="button" data-rot="perso"><b>Autre rotation</b><small>Je la crée moi-même, jour par jour</small></button></div>`;
+      $$("[data-rot]", corps).forEach((b) => b.addEventListener("click", () => {
+        if (b.dataset.rot === "perso") { fermerAssist(true); afficherVue("horaire"); setTimeout(() => { ouvrirConfig(); $("#hr-modele").value = "perso"; }, 250); return; }
+        choisirModeleAssist(b.dataset.rot); rendreAssist();
+      }));
+      $("#assist-suivant").textContent = "Suivant";
+    } else if (e === 2) {
+      $("#assist-titre").textContent = "Où en êtes-vous dans le cycle ?";
+      if (MODELES_SQ[assist.modele] && MODELES_SQ[assist.modele].debut) {
+        $("#assist-aide").textContent = "Choisissez votre équipe : l'app place votre rotation au bon endroit.";
+        corps.innerHTML = `<div class="assist-equipes">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-eq="${n}" aria-pressed="${assist.equipe === n}">Équipe ${n}</button>`).join("")}</div>${apercuAssist()}`;
+        $$("[data-eq]", corps).forEach((b) => b.addEventListener("click", () => { assist.equipe = +b.dataset.eq; assist.debut = debutEquipeSQ(assist.modele, assist.equipe); rendreAssist(); }));
+      } else {
+        $("#assist-aide").textContent = "Touchez le jour du cycle où vous êtes aujourd'hui (regardez votre horaire de poste).";
+        const idx = assist.debut ? ((jourUTC(aujourdhuiISO()) - jourUTC(assist.debut)) % assist.cycle.length + assist.cycle.length) % assist.cycle.length : -1;
+        corps.innerHTML = `<div class="assist-cycle">${assist.cycle.map((q, i) => `<button type="button" class="q q-${q}" data-i="${i}" aria-pressed="${i === idx}" aria-label="Jour ${i + 1} : ${QUARTS[q].nom}">${q}<small>${i + 1}</small></button>`).join("")}</div>${apercuAssist()}`;
+        $$("[data-i]", corps).forEach((b) => b.addEventListener("click", () => { assist.debut = isoDe(jourUTC(aujourdhuiISO()) - +b.dataset.i); rendreAssist(); }));
+      }
+      $("#assist-suivant").textContent = "Suivant";
+    } else if (e === 3) {
+      $("#assist-titre").textContent = "Vos heures";
+      if (assist.hybride) {
+        $("#assist-aide").textContent = "Les heures de l'horaire H1 sont calculées automatiquement.";
+        corps.innerHTML = `<label class="interrupteur" for="assist-auto"><span class="interrupteur-txt"><b>Poste autoroutier</b><small>Quarts décalés de 30 minutes (6 h 30, 14 h 30, 18 h 30, 22 h 30)</small></span><input type="checkbox" id="assist-auto" role="switch" ${assist.autoroute ? "checked" : ""}><span class="interrupteur-piste" aria-hidden="true"></span></label>
+          <p class="assist-aide">${assist.autoroute ? "Semaine : 6 h 30-15 h 30, 14 h 30-23 h 30, 22 h 30-7 h 30 · Fin de semaine : 6 h 30-18 h 30, 18 h 30-6 h 30" : "Semaine : 7 h-16 h, 15 h-0 h, 23 h-8 h · Fin de semaine : 7 h-19 h, 19 h-7 h"}</p>`;
+        $("#assist-auto").addEventListener("change", (ev) => { assist.autoroute = ev.target.checked; rendreAssist(); });
+      } else {
+        $("#assist-aide").textContent = "Vérifiez les heures de vos quarts. Elles servent aux rappels et à la paie.";
+        const codes = ["J", "S", "N"].filter((k) => assist.cycle.includes(k));
+        corps.innerHTML = `<div class="assist-heures">${codes.map((k) => `<div class="ligne"><span><i class="q q-${k}"></i>${QUARTS[k].nom}</span>
+          <input type="time" data-h="${k}" data-pos="0" value="${esc(assist.heures[k][0])}" aria-label="${QUARTS[k].nom} : début">
+          <input type="time" data-h="${k}" data-pos="1" value="${esc(assist.heures[k][1])}" aria-label="${QUARTS[k].nom} : fin"></div>`).join("")}</div>`;
+        $$("[data-h]", corps).forEach((inp) => inp.addEventListener("change", () => { assist.heures[inp.dataset.h][+inp.dataset.pos] = inp.value; }));
+      }
+      $("#assist-suivant").textContent = "Enregistrer mon horaire";
+    } else {
+      $("#assist-titre").textContent = "Votre horaire est prêt 🎉";
+      $("#assist-aide").textContent = "Votre quart du jour s'affiche maintenant sur l'accueil, et la paie est calculée selon votre rotation.";
+      const notifOk = "Notification" in window && Notification.permission === "granted";
+      corps.innerHTML = `${apercuAssist()}${notifOk ? "" : `<div class="assist-notif"><b>Recevez un rappel avant chaque quart</b><p class="assist-aide">Activez les notifications sur cet appareil. Sur iPhone, ajoutez d'abord l'app à l'écran d'accueil (menu du compte › Installer l'app).</p><button type="button" class="btn-ok" id="assist-notif">Activer les rappels</button></div>`}`;
+      if ($("#assist-notif")) $("#assist-notif").addEventListener("click", async () => {
+        try { await basculerNotifications(); } catch { /* message déjà affiché */ }
+        const sel = $("#rg-rappel-quart");
+        if (sel && !sel.value) { sel.value = "60"; sel.dispatchEvent(new Event("change")); }
+      });
+      $("#assist-suivant").textContent = "Voir mon horaire";
+    }
+  }
+  function ouvrirAssist() {
+    if (!etat.profil || etat.profil.statut !== "approuve") return;
+    chargerModelesAdmin().catch(() => {}).finally(() => {
+      Object.assign(assist, { etape: 1, modele: null, cycle: null, debut: null, heures: null, hybride: false, autoroute: false, equipe: 2 });
+      if (estSQ()) choisirModeleAssist("SQ-H1");
+      rendreAssist();
+      $("#assist-voile").hidden = false;
+    });
+  }
+  function fermerAssist(silence) {
+    $("#assist-voile").hidden = true;
+    try { localStorage.setItem("pm-assistant-vu", aujourdhuiISO()); } catch { /* facultatif */ }
+    if (!silence && !hr.config) toast("Vous pourrez configurer votre horaire en tout temps à partir de l'accueil");
+  }
+  $("#assist-fermer").addEventListener("click", () => fermerAssist());
+  $("#assist-voile").addEventListener("click", (ev) => { if (ev.target.id === "assist-voile") fermerAssist(); });
+  $("#assist-retour").addEventListener("click", () => { assist.etape = Math.max(1, assist.etape - 1); rendreAssist(); });
+  $("#assist-suivant").addEventListener("click", async () => {
+    if (assist.etape < 3) { assist.etape++; return rendreAssist(); }
+    if (assist.etape === 4) { fermerAssist(true); afficherVue("horaire"); return; }
+    const b = $("#assist-suivant"); b.disabled = true;
+    const ancien = hr.config;
+    hr.config = { cycle: assist.cycle, debut: assist.debut, heures: assist.heures, modele: assist.modele, hybride: assist.hybride,
+      ...(assist.hybride && assist.autoroute ? { autoroute: true } : {}), ...(MODELES_SQ[assist.modele] && MODELES_SQ[assist.modele].debut ? { equipe: assist.equipe } : {}) };
+    try {
+      await sauverHoraire();
+      assist.etape = 4; rendreAssist();
+      try { rendreHoraire(); } catch { /* vue pas encore affichée */ }
+      try { if (document.body.dataset.vue === "accueil") afficherVue("accueil"); } catch { /* facultatif */ }
+    } catch (e) { hr.config = ancien; toast(traduireErreur(e)); }
+    b.disabled = false;
   });
 
   // Exceptions sur une journée
