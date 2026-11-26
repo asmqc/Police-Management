@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
     { id: "2026-11-23-assistant", date: "2026-11-23", titre: "Configurez votre horaire en 3 étapes", points: [
       "Un assistant vous guide : votre rotation (H1 et autres), votre équipe ou votre jour dans le cycle, puis vos heures. Aperçu de vos 14 prochains jours avant d'enregistrer.",
       "Il s'ouvre sur l'accueil tant que votre horaire n'est pas configuré. Ensuite, votre quart du jour s'affiche et vous pouvez activer un rappel avant chaque quart.",
@@ -2765,8 +2766,9 @@ Question : ${question}
     $("#ac-fonctions").innerHTML = GROUPES_FONCTIONS.map(([titre, cles]) => {
       const l = cles.filter(raccOffert);
       if (!l.length) return "";
-      return `<h3 class="ac-section-titre">${esc(titre)}</h3><div class="tuiles racc">${l.map((k) => { const r = RACC_ACCUEIL[k];
-        return `<button class="tuile" data-racc="${k}"><span class="tuile-ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.i}</svg></span><b>${esc(r.t)}</b><small>${esc(r.s)}</small></button>`; }).join("")}</div>`;
+      // Liste groupée : une ligne par outil (icône, nom, description)
+      return `<h3 class="ac-section-titre">${esc(titre)}</h3><div class="fn-liste">${l.map((k) => { const r = RACC_ACCUEIL[k];
+        return `<button class="fn-ligne" data-racc="${k}"><span class="fn-ico"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${r.i}</svg></span><span class="fn-txt"><b>${esc(r.t)}</b><small>${esc(r.s)}</small></span><span class="fn-chev" aria-hidden="true">›</span></button>`; }).join("")}</div>`;
     }).join("");
     $$("[data-racc]", $("#ac-fonctions")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
   }
