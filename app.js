@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-ts-mon-emploi", date: "2026-11-26", titre: "TS calculé sur votre emploi par défaut", points: ["Pendant un remplacement ou un prêt de service, le temps supplémentaire est maintenant calculé par défaut sur le salaire de votre propre emploi.", "S'il a été fait dans l'emploi remplacé, changez « Fait comme… » dans le TS (Plus d'options)."] },
     { id: "2026-11-26-ts-simple", date: "2026-11-26", titre: "Temps supplémentaire plus simple", points: ["La fiche d'une journée n'a plus d'onglets : tout est sur une seule page.", "Pour le temps supplémentaire, entrez seulement l'heure de début et de fin : l'app trouve si c'est avant ou après votre quart et calcule les heures.", "Les cas particuliers (rappel, temps double, avant et après, disponibilité) sont dans « Plus d'options »."] },
     { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["La section Entreprises devient « Mes rabais » et « Pour moi » passe en premier.","Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
     { id: "2026-11-23-assistant", date: "2026-11-23", titre: "Configurez votre horaire en 3 étapes", points: [
@@ -3412,7 +3413,7 @@ Question : ${question}
         <select name="maj" aria-label="Taux"><option value="1.5">Temps et demi (1 ½)</option><option value="2"${+inf.maj === 2 ? " selected" : ""}>Temps double (art. 12.02)</option></select>
         <select name="rappel" aria-label="Situation"><option value="hors">Rappel séparé de mon quart (min. 3 h × 1,5)</option><option value=""${inf.rappel === "" ? " selected" : ""}>Temps supplémentaire planifié, sans minimum</option></select>
         <select name="pris" aria-label="Payé ou compensé"><option value="paie">Temps payé (sur la paie)</option><option value="banque"${inf.pris === "banque" ? " selected" : ""}>Temps compensé (banque de temps)</option></select>
-        ${desig ? `<select name="comme" aria-label="Fait dans quel emploi"><option value="">Fait comme… (à choisir)</option><option value="sergent"${inf.comme === "sergent" ? " selected" : ""}>Fait comme ${esc(EMPLOIS_SQ[designationDu(iso)].nom.toLowerCase())} (emploi remplacé, 17.04 d)</option><option value="agent"${inf.comme === "agent" ? " selected" : ""}>Fait comme agent (mon emploi)</option></select>` : ""}
+        ${desig ? `<select name="comme" aria-label="Fait dans quel emploi"><option value="agent">Fait dans mon emploi (mon salaire habituel)</option><option value="sergent"${inf.comme === "sergent" ? " selected" : ""}>Fait comme ${esc(EMPLOIS_SQ[designationDu(iso)].nom.toLowerCase())} (emploi remplacé, 17.04 d)</option></select>` : ""}
       </div>
       <label class="ref">Note (facultatif)</label>
       <input name="note" maxlength="140" value="${esc(inf.note || "")}" placeholder="Ex. cour, formation, rappel">
@@ -3853,7 +3854,7 @@ Question : ${question}
     return paie.rempl_fin ? moisJours(paie.rempl_debut, paie.rempl_fin) + 1 > 30 : moisJours(paie.rempl_debut, iso) >= 30;
   }
   // TS pendant une désignation de plus de 30 jours (17.04 d) : au traitement de l'emploi remplacé seulement s'il est fait dans cet emploi.
-  // Le membre choisit pour chaque TS (« Fait comme »); tant que ce n'est pas choisi, le taux de son propre emploi est utilisé.
+  // Par défaut, le TS est calculé sur le salaire de son propre emploi; le membre choisit « Fait comme… » seulement s'il l'a fait dans l'emploi remplacé.
   const commeTS = (e, defaut) => (e && (e.comme === "agent" || e.comme === "sergent") ? e.comme : defaut);
   function tauxTSJour(iso, comme, paie = etat.paie) {
     const s = salaireSQ(paie, iso); if (!s) return 0;
@@ -6570,7 +6571,7 @@ Format :
     $("#hr-jour-ts").open = !!(ex.ts && Object.values(ex.ts).some(Boolean));
     $("#hr-jour-maj").value = String(+ex.maj || 1.5);
     $("#hr-jour-pris").value = ex.pris === "banque" ? "banque" : "paie";
-    $("#hr-jour-comme").value = commeTS(ex, "");
+    $("#hr-jour-comme").value = commeTS(ex, "agent");
     majChampsComme();
     remplirBlocTS("tsp", ex.tsp); remplirBlocTS("tspa", ex.tspAvant);
     $("#hr-jour-rappel").value = ex.rappel && RAPPELS_TS[ex.rappel] ? ex.rappel : "";
@@ -6816,7 +6817,7 @@ Format :
     for (const p of ["tspa", "tsp", "jour"]) {
       const el = $(`#hr-${p}-comme`); if (!el) continue;
       el.hidden = !d;
-      if (d) el.options[1].textContent = `Fait comme ${nom} (emploi remplacé, 17.04 d)`;
+      if (d) el.querySelector("option[value='sergent']").textContent = `Fait comme ${nom} (emploi remplacé, 17.04 d)`;
     }
   }
   function remplirBlocTS(p, d) {
@@ -6825,7 +6826,7 @@ Format :
     $(`#hr-${p}-maj`).value = String((d && +d.maj) || 1.5);
     $(`#hr-${p}-rappel`).value = d && d.rappel === "hors" ? "hors" : "";
     $(`#hr-${p}-pris`).value = d && d.pris === "banque" ? "banque" : "paie";
-    $(`#hr-${p}-comme`).value = commeTS(d, "");
+    $(`#hr-${p}-comme`).value = commeTS(d, "agent"); // par défaut : mon emploi (mon salaire habituel), même pendant un prêt
   }
   function lireBlocTS(p) {
     if ($(`#hr-${p}-champs`).hidden) return null;
