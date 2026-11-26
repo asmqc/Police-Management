@@ -3383,3 +3383,9 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .hr-grille .carres.n3 .chip:first-child { width: 100%; }
 .hr-grille .carres .chip.ev { color: #fff; border-radius: 999px !important; } /* événement personnel : rond, pour le distinguer des codes de l horaire */
 .hr-grille .carres .chip.plus-n { background: var(--surface-2); color: var(--fg-doux); }
+
+/* Banques (Paie) : le libellé garde toujours sa place, le dépassement passe sous le chiffre (2026-11-26) */
+.vt-detail { grid-template-columns: minmax(9em, 1fr) auto; }
+.vt-detail dt { overflow-wrap: normal; word-break: normal; }
+.vt-detail dd.total { display: grid; justify-items: end; gap: 2px; }
+.banque-depasse { font-family: var(--f-texte, inherit); font-size: .8rem; font-weight: 700; color: var(--rouge); white-space: nowrap; }

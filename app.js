@@ -4197,6 +4197,7 @@ Question : ${question}
     const base = B.type === "12" ? 12 : 9;
     const jh = (n) => fmtJH(n, base);
     const h = (n) => jh(Math.max(0, n)) + (n < 0 ? " (dépassé de " + jh(-n) + ")" : "");
+    const hTotal = (n) => (n < 0 ? `${jh(0)}<small class="banque-depasse">dépassé de ${jh(-n)}</small>` : jh(n)); // le dépassement sur sa propre ligne
     const dc = (iso) => dateCourte(iso, true);
     el.innerHTML = `
       <p class="aide">Soldes en jours et heures, comme vos soldes officiels (1 jour = ${base} h). Horaire ${B.type === "12" ? "de 12 heures (annexe I)" : "de 9 heures ou hybride"}${b.horaire === "auto" ? " · détecté selon votre rotation" : ""}. Les heures prises viennent de votre horaire : chaque V ou H compte les heures du quart qu'il remplace.</p>
@@ -4208,7 +4209,7 @@ Question : ${question}
           ${vac.depart ? `<dt>Solde au ${esc(dc(vac.depart.date))} (talon)</dt><dd>${jh(+vac.depart.h)}</dd>` : `<dt>Droit de l'année (23.03${B.type === "12" ? ", annexe I 6.3" : ""})</dt><dd>${jh(vac.droit)}</dd>${vac.report ? `<dt>Reportées de l'an dernier (23.13)</dt><dd>${jh(vac.report)}</dd>` : ""}`}
           <dt>Prises</dt><dd>${jh(vac.pris)}</dd>
           <dt>Prévues à l'horaire</dt><dd>${jh(vac.prevus)}</dd>
-          <dt class="total">Restantes au 31 mars</dt><dd class="total">${h(vac.soldeFin)}</dd>
+          <dt class="total">Restantes au 31 mars</dt><dd class="total">${hTotal(vac.soldeFin)}</dd>
         </dl>
         ${vac.soldeFin > 36 && +vac.fin.slice(0, 4) === +aujourdhuiISO().slice(0, 4) && aujourdhuiISO() >= vac.fin.slice(0, 4) + "-01-15" ? `<p class="banque-avis">Au plus 36 h peuvent être reportées après le 31 mars (23.13). Planifiez le reste avant.</p>` : ""}
       </section>
@@ -4220,7 +4221,7 @@ Question : ${question}
           ${fer.depart ? `<dt>Solde au ${esc(dc(fer.depart.date))} (talon)</dt><dd>${jh(+fer.depart.h)}</dd>` : `<dt>Droit de l'année (23.17${B.type === "12" ? ", annexe I 7.1" : ""})</dt><dd>${jh(fer.droit)}</dd>${fer.report ? `<dt>Reportées (23.17 c)</dt><dd>${jh(fer.report)}</dd>` : ""}`}
           <dt>Pris</dt><dd>${jh(fer.pris)}</dd>
           <dt>Prévus à l'horaire</dt><dd>${jh(fer.prevus)}</dd>
-          <dt class="total">Restants au 31 décembre</dt><dd class="total">${h(fer.soldeFin)}</dd>
+          <dt class="total">Restants au 31 décembre</dt><dd class="total">${hTotal(fer.soldeFin)}</dd>
         </dl>
         ${fer.special ? `<p class="aide">Congé spécial de ${fer.special} h en plus (23.17 d), à convenir avec la Sûreté.</p>` : `<p class="aide">À partir du 1ᵉʳ avril 2027 : congé spécial de ${B.type === "12" ? 12 : 9} h de plus par année (23.17 d).</p>`}
         ${fer.soldeFin > 12 ? `<p class="banque-avis">Au 31 décembre, au plus 12 h peuvent être reportées ou payées (23.17 c). Il vous en resterait ${jh(fer.soldeFin)}.</p>` : ""}
