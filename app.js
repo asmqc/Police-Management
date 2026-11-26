@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-carres", date: "2026-11-26", titre: "Calendrier plus clair", points: ["Chaque chose de la journée a maintenant son propre carré dans le calendrier : le quart, le temps supplémentaire (X) et ce qui est ajouté en plus.", "Vos événements personnels sont des ronds avec leur première lettre."] },
     { id: "2026-11-26-ts-mon-emploi", date: "2026-11-26", titre: "TS calculé sur votre emploi par défaut", points: ["Pendant un remplacement ou un prêt de service, le temps supplémentaire est maintenant calculé par défaut sur le salaire de votre propre emploi.", "S'il a été fait dans l'emploi remplacé, changez « Fait comme… » dans le TS (Plus d'options)."] },
     { id: "2026-11-26-ts-simple", date: "2026-11-26", titre: "Temps supplémentaire plus simple", points: ["La fiche d'une journée n'a plus d'onglets : tout est sur une seule page.", "Pour le temps supplémentaire, entrez seulement l'heure de début et de fin : l'app trouve si c'est avant ou après votre quart et calcule les heures.", "Les cas particuliers (rappel, temps double, avant et après, disponibilité) sont dans « Plus d'options »."] },
     { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["La section Entreprises devient « Mes rabais » et « Pour moi » passe en premier.","Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
@@ -3284,6 +3285,18 @@ Question : ${question}
   }
 
   // Vue Mois : grille avec le quart et des points de couleur, agenda du jour choisi en dessous (comme sur iPhone)
+  // Un carré par chose dans la journée : le quart, le temps supp. (X), ce qui est ajouté « en plus », puis les événements
+  function carresJour(qq, evs) {
+    const c = [], rot = rotationVisible();
+    if (rot && qq.code) c.push(`<span class="chip q q-${esc(qq.code)}" title="${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : qq.code)}">${esc(qq.code)}</span>`);
+    if (rot && qq.code !== "X" && (qq.tsps || []).length) c.push(`<span class="chip q q-X" title="Temps supplémentaire">X</span>`);
+    if (rot) for (const k of qq.plus || []) if (!(k === "X" && c.length > 1)) c.push(`<span class="chip q q-${esc(k)}" title="${esc(QUARTS[k] ? QUARTS[k].nom : k)}">${esc(k)}</span>`);
+    const vusEv = new Set();
+    for (const o of evs) { const cle = o.ev.id || o.ev.titre; if (vusEv.has(cle)) continue; vusEv.add(cle); const t = (o.ev.titre || "").trim(); c.push(`<span class="chip ev" style="background:${couleurEv(o.ev)}" title="${esc(t)}">${esc((t[0] || "•").toUpperCase())}</span>`); }
+    if (!c.length) return "";
+    const vus = c.length > 4 ? [...c.slice(0, 3), `<span class="chip plus-n">+${Math.min(c.length - 3, 9)}</span>`] : c;
+    return `<span class="carres n${Math.min(vus.length, 4)}">${vus.join("")}</span>`;
+  }
   function rendreMois() {
     const [a, m] = cal.date.split("-").map(Number);
     $("#hr-mois").textContent = new Date(a, m - 1, 15).toLocaleDateString("fr-CA", { month: "long", year: "numeric" });
@@ -3302,8 +3315,7 @@ Question : ${question}
       const dansMois = Number(iso.slice(5, 7)) === m;
       const evs = parJour[iso] || [];
       html += `<button data-jour="${iso}" class="${dansMois ? "" : "hors"} ${iso === auj ? "auj" : ""} ${iso === cal.sel ? "choisi" : ""} ${qq.exception && rotationVisible() ? "exc" : ""}" aria-label="${esc(new Date(iso + "T12:00").toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" }))} : ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "aucun quart")}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}">
-        <span class="num">${Number(iso.slice(8))}</span>${qq.code && rotationVisible() ? `<span class="chip q q-${esc(qq.code)}">${esc(qq.code)}${qq.tsp ? `<sup class="tsp-plus">+X</sup>` : ""}</span>` : ""}
-        <span class="points">${(rotationVisible() ? qq.plus : []).map((k) => `<i class="q q-${esc(k)}" title="${esc(QUARTS[k].nom)}"></i>`).join("")}${evs.slice(0, Math.max(0, 3 - (rotationVisible() ? qq.plus.length : 0))).map((o) => `<i style="background:${couleurEv(o.ev)}"></i>`).join("")}</span></button>`;
+        <span class="num">${Number(iso.slice(8))}</span>${carresJour(qq, evs)}</button>`;
     }
     $("#hr-grille").innerHTML = html;
     $$("#hr-grille button").forEach((b) => b.addEventListener("click", () => { cal.sel = b.dataset.jour; rendreMois(); }));

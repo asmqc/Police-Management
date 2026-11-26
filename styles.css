@@ -3375,3 +3375,11 @@ html[data-style="nuit"] .ts-s-deduit { color: var(--fg); background: rgba(255, 0
   background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .45), 0 18px 40px rgba(0, 0, 0, .3); }
 .hr-rapide[hidden] { display: none; }
 html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .7); }
+
+/* ---------------- Calendrier : un carré par chose dans la journée (2026-11-26) ---------------- */
+.hr-grille .carres { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; width: 100%; padding: 0 3px; }
+.hr-grille .carres .chip { display: grid; place-items: center; line-height: 1; }
+.hr-grille .carres.n2 .chip, .hr-grille .carres.n3 .chip, .hr-grille .carres.n4 .chip { min-width: 0; width: calc(50% - 2px); padding: 4px 0; font-size: .78rem; border-radius: 6px; }
+.hr-grille .carres.n3 .chip:first-child { width: 100%; }
+.hr-grille .carres .chip.ev { color: #fff; border-radius: 999px !important; } /* événement personnel : rond, pour le distinguer des codes de l horaire */
+.hr-grille .carres .chip.plus-n { background: var(--surface-2); color: var(--fg-doux); }
