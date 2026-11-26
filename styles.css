@@ -3369,3 +3369,9 @@ body.carte-plein .vue-carte .btn-mesure { top: calc(172px + env(safe-area-inset-
 .ts-s-plus { justify-self: start; font-size: .85rem; color: var(--fg-doux); text-align: left; }
 .ts-s-retour { justify-self: start; margin: 6px 0 2px; }
 html[data-style="nuit"] .ts-s-deduit { color: var(--fg); background: rgba(255, 0, 0, .1); }
+
+/* Fenêtre « Que voulez-vous faire ? » de l'ajout rapide : vraie fenêtre centrée, fond opaque et voile foncé (2026-11-26) */
+.hr-rapide { position: fixed; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); z-index: 30; margin: 0; max-width: 460px; margin-inline: auto;
+  background: #fff; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .45), 0 18px 40px rgba(0, 0, 0, .3); }
+.hr-rapide[hidden] { display: none; }
+html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .7); }

@@ -6733,8 +6733,8 @@ Format :
   $("#hr-jour-choix").addEventListener("click", (e) => {
     const b = e.target.closest("[data-q]");
     setTimeout(() => {
+      if (b && hr.ajoutRapide) { majChampsJour(); demanderRapide(b.dataset.q); return; } // la fenêtre décide, puis on ouvre la bonne section
       if (b && b.dataset.q === "X") ongletJour("ts"); else majChampsJour();
-      if (b && hr.ajoutRapide) demanderRapide(b.dataset.q);
     }, 0);
   });
   // Ajout rapide (bouton +) : remplacer le code de la journée, ou l'ajouter « en plus » (point de couleur dans la case)
@@ -6744,16 +6744,31 @@ Format :
     if (code === actuel.code) { toast(`Cette journée est déjà : ${nom}`); return; }
     const d = $("#hr-rapide");
     $("#hr-rapide-txt").innerHTML = `Le ${esc(dateCourte(iso))} est déjà : <b>${esc(actuel.code && QUARTS[actuel.code] ? QUARTS[actuel.code].nom : "aucun quart")}</b>. Que voulez-vous faire avec <b>${esc(nom)}</b> ?`;
-    $("#hr-rapide-remplacer").textContent = `Remplacer par ${nom}`;
-    $("#hr-rapide-plus").textContent = `Ajouter ${nom} en plus`;
-    d.hidden = false; d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    // Temps supp. sur une journée travaillée : « en plus » = du TS avant ou après le quart (section simple)
+    const hq = code === "X" && actuel.code && heuresJour(actuel.code, iso, hr);
+    const nomActuel = actuel.code && QUARTS[actuel.code] ? QUARTS[actuel.code].nom : "";
+    $("#hr-rapide-remplacer").textContent = hq ? `Journée complète de temps supp. (remplace ${nomActuel})` : `Remplacer par ${nom}`;
+    $("#hr-rapide-plus").textContent = hq ? `Ajouter du temps supp. à mon quart (${nomActuel})` : `Ajouter ${nom} en plus`;
+    d.hidden = false;
+    const montrer = (el, champ) => { if (!el) return; el.scrollIntoView({ block: "center", behavior: "smooth" }); if (champ) try { champ.focus({ preventScroll: true }); } catch { /* facultatif */ } };
     $("#hr-rapide-remplacer").onclick = () => {
       d.hidden = true;
-      if (code === "X" || MOTIFS[code]) { hr.ajoutRapide = false; choisir(code); if (code === "X") ongletJour("ts"); else majChampsJour(); return; } // détails à préciser
+      if (code === "X" || MOTIFS[code]) {
+        hr.ajoutRapide = false; choisir(code); majChampsJour();
+        if (code === "X") montrer($("#hr-jour-heures"), $("#hr-jour-debut")); // ouvre tout de suite les heures du TS
+        else montrer($("#hr-motif-bloc"), null);
+        return;
+      } // détails à préciser
       hr.ajoutRapide = false; choisir(code); $("#hr-jour-ok").click();
     };
     $("#hr-rapide-plus").onclick = async () => {
       d.hidden = true; hr.ajoutRapide = false; choisir(actuel.code);
+      if (hq) { // ouvre directement la saisie du TS, début déjà collé à la fin du quart
+        hr.tsAvance = false; hr.tsSimpleOuvert = true;
+        if (!blocTsActif()) { $("#ts-s-debut").value = $("#hr-jour-fin").value || hq[1]; $("#ts-s-fin").value = ""; }
+        majChampsJour(); montrer($("#ts-simple"), $("#ts-s-fin"));
+        return;
+      }
       const avant = hr.exceptions[iso] ? JSON.parse(JSON.stringify(hr.exceptions[iso])) : null;
       const ex = hr.exceptions[iso] || { type: actuel.prevu, note: "" };
       ex.plus = [...new Set([...(ex.plus || []), code])];
