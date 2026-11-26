@@ -826,7 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
-    { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
+    { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["La section Entreprises devient « Mes rabais » et « Pour moi » passe en premier.","Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
     { id: "2026-11-23-assistant", date: "2026-11-23", titre: "Configurez votre horaire en 3 étapes", points: [
       "Un assistant vous guide : votre rotation (H1 et autres), votre équipe ou votre jour dans le cycle, puis vos heures. Aperçu de vos 14 prochains jours avant d'enregistrer.",
       "Il s'ouvre sur l'accueil tant que votre horaire n'est pas configuré. Ensuite, votre quart du jour s'affiche et vous pouvez activer un rappel avant chaque quart.",
@@ -2289,7 +2289,7 @@ Question : ${question}
     ["Réglages", "reglages theme style notifications nuit", "reglages"], ["Favoris des lois", "favoris etoile", "favoris"],
     ["Ma paie", "paie salaire talon remuneration", "paie"], ["Banques", "banques soldes heures vacances", "banques"], ["Temps supplémentaire", "temps supplementaire ts reclamation", "ts"],
     ["Compte de dépenses", "depenses repas kilometrage reclamation", "depenses"], ["Retraite", "retraite rente rrmsq", "retraite"], ["Contrat de travail", "contrat convention collective clause", "convention"],
-    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"], ["Entreprises", "entreprises commerces quebecoises policiers encourager achat local", "entreprises"], ["À propos et mises à jour", "a propos version historique mises a jour nouveautes", "apropos"], ["Comparer les conventions", "comparer conventions collectives salaire classement canada grc opp spvm toronto vancouver", "comparatif"],
+    ["Météo et 511", "meteo soleil 511 entraves circulation travaux", "meteo"], ["Bien-être et soutien", "soutien bien etre aide psychologique", "soutien"], ["Mes rabais", "mes rabais entreprises commerces promotions promo offres quebecoises policiers encourager achat local", "entreprises"], ["À propos et mises à jour", "a propos version historique mises a jour nouveautes", "apropos"], ["Comparer les conventions", "comparer conventions collectives salaire classement canada grc opp spvm toronto vancouver", "comparatif"],
   ];
   let rechMinuteur;
   $("#ac-q").addEventListener("input", () => { clearTimeout(rechMinuteur); rechMinuteur = setTimeout(rechercheGlobale, 180); });
@@ -2701,7 +2701,7 @@ Question : ${question}
     messages: { t: "Messages", s: "Collègues et administrateur", i: '<path d="M4 5h16v11H9l-5 4z"/>' },
     forum: { t: "Forum", s: "Votre corps de police", i: '<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>' },
     idees: { t: "Idées", s: "Proposer et voter", i: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>' },
-    entreprises: { t: "Entreprises", s: "D'ici et gérées par des policiers", i: '<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5"/>' },
+    entreprises: { t: "Mes rabais", s: "Promotions d'entreprises d'ici pour les policiers", i: '<path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5"/>' },
     reglages: { t: "Réglages", s: "Apparence, notifications, confidentialité", i: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' },
     compte: { t: "Mon compte", s: "Profil, photo, mes données", i: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>' },
     comparatif: { t: "Comparer les conventions", s: "Classement des policiers au Canada", i: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>' },
@@ -2711,10 +2711,10 @@ Question : ${question}
   const raccOffert = (k) => { if (k === "feuille" && !FEUILLE_OFFERTE) return false; const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
   // Onglet « Fonctionnalités » de l'accueil : tous les outils, regroupés
   const GROUPES_FONCTIONS = [
+    ["Pour moi", ["entreprises", "soutien"]],
     ["Terrain", ["csr", "vitesse", "position", "carte", "corps", "meteo"]],
     ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention", "comparatif"]],
     ["Mon poste", ["feuille", "forum", "idees"]],
-    ["Pour moi", ["soutien", "entreprises"]],
     ["Mon compte et réglages", ["reglages", "compte", "apropos"]],
   ];
   /* ---------------- Comparateur des conventions collectives (tous les membres) ---------------- */
