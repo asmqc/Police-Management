@@ -2772,7 +2772,21 @@ Question : ${question}
     }).join("");
     $$("[data-racc]", $("#ac-fonctions")).forEach((b) => b.addEventListener("click", () => allerA(b.dataset.racc)));
   }
+  // Avis « Affichez votre entreprise gratuitement » : une seule fois par personne (par appareil), sur l'accueil
+  function planifierPopRabais() {
+    let vu = ""; try { vu = localStorage.getItem("pm-pop-rabais-vu") || ""; } catch { return; }
+    if (vu) return;
+    setTimeout(() => {
+      if (document.body.dataset.vue !== "accueil" || !$("#assist-voile").hidden || $(".voile-consent:not([hidden])")) return;
+      $("#pop-rabais").hidden = false;
+    }, 1500);
+  }
+  const fermerPopRabais = () => { $("#pop-rabais").hidden = true; try { localStorage.setItem("pm-pop-rabais-vu", aujourdhuiISO()); } catch { /* facultatif */ } };
+  ["#pop-rabais-fermer", "#pop-rabais-ok"].forEach((s) => $(s).addEventListener("click", fermerPopRabais));
+  $$("#pop-rabais a").forEach((x) => x.addEventListener("click", () => setTimeout(fermerPopRabais, 300)));
+  $("#pop-rabais").addEventListener("click", (e) => { if (e.target.id === "pop-rabais") fermerPopRabais(); });
   async function initAccueil() {
+    planifierPopRabais();
     const p = etat.profil;
     // Fiche de service : grade et nom, corps et poste, date et heure
     const grade = (p.grade || "").trim();

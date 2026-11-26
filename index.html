@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611261830">
+  <link rel="stylesheet" href="styles.css?v=202611261833">
 </head>
 <body>
   <!-- Chargement -->
@@ -2018,6 +2018,22 @@
     </section>
   </div>
   <!-- Assistant de configuration de l'horaire (première utilisation) -->
+  <!-- Avis unique : afficher son entreprise gratuitement dans « Mes rabais » -->
+  <div id="pop-rabais" class="voile" hidden>
+    <section class="fiche-compte pop-rabais" role="dialog" aria-modal="true" aria-labelledby="pop-rabais-titre">
+      <button class="btn-icone fermer" id="pop-rabais-fermer" aria-label="Fermer">✕</button>
+      <span class="pop-rabais-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9M3 9h18M3 9v1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9m0 1a3 3 0 0 0 6 0V9M5 13v8h14v-8M10 21v-5h4v5"/></svg></span>
+      <h2 id="pop-rabais-titre">Vous avez une entreprise ?</h2>
+      <p>Affichez-la <b>gratuitement</b> dans la section <b>Mes rabais</b> de Police Management et offrez une promotion à vos collègues policiers.</p>
+      <p>Écrivez-moi ou appelez-moi au <b>438-495-9849</b>, ou envoyez-moi un courriel à <b>police.management@hotmail.com</b>.</p>
+      <div class="pop-rabais-actions">
+        <a class="btn-ok" href="tel:+14384959849">Appeler</a>
+        <a class="btn-secondaire" href="sms:+14384959849">Texto</a>
+        <a class="btn-secondaire" href="mailto:police.management@hotmail.com?subject=Afficher%20mon%20entreprise%20dans%20Police%20Management">Courriel</a>
+      </div>
+      <button type="button" class="pop-rabais-plus-tard" id="pop-rabais-ok">Plus tard</button>
+    </section>
+  </div>
   <div id="assist-voile" class="voile" hidden>
     <section class="fiche-compte assist" role="dialog" aria-modal="true" aria-labelledby="assist-titre">
       <button class="btn-icone fermer" id="assist-fermer" aria-label="Plus tard">✕</button>
@@ -2496,10 +2512,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611261830"></script>
+  <script src="config.js?v=202611261833"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611261830"></script>
-  <script src="saison.js?v=202611261830"></script>
-  <script src="app.js?v=202611261830"></script>
+  <script src="i18n.js?v=202611261833"></script>
+  <script src="saison.js?v=202611261833"></script>
+  <script src="app.js?v=202611261833"></script>
 </body>
 </html>
