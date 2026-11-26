@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611261833">
+  <link rel="stylesheet" href="styles.css?v=202611261849">
 </head>
 <body>
   <!-- Chargement -->
@@ -2144,6 +2144,21 @@
         <p class="aide" id="hr-remplace-desig" hidden></p>
         <label class="hr-tsp-interrupteur" id="hr-gaind-bloc" hidden><input type="checkbox" id="hr-gaind"><span><b>Congé hebdomadaire travaillé : accumuler en congé D</b><small>Avec le consentement écrit de la Sûreté (10.11). Repris plus tard avec le code D.</small></span></label>
       </div>
+      <!-- Temps supp. simplifié : l'heure de début et de fin suffisent, l'app déduit avant ou après le quart -->
+      <div class="hr-edition ts-simple" id="ts-simple" hidden>
+        <p class="ref">Temps supplémentaire</p>
+        <div class="ts-s-carte">
+          <button type="button" class="ts-s-ajout" id="ts-s-ajout"><i aria-hidden="true">+</i>Ajouter du temps supp.</button>
+          <div class="ts-s-champs" id="ts-s-champs" hidden>
+            <div class="fc-ligne ts-s-heures"><input type="time" id="ts-s-debut" aria-label="Début du temps supplémentaire"><span>à</span><input type="time" id="ts-s-fin" aria-label="Fin du temps supplémentaire"></div>
+            <p class="ts-s-deduit" id="ts-s-deduit" aria-live="polite" hidden></p>
+            <div class="segmente ts-s-pris" role="radiogroup" aria-label="Payé ou compensé"><button type="button" role="radio" data-ts-pris="paie" aria-checked="true">Payé</button><button type="button" role="radio" data-ts-pris="banque" aria-checked="false">Banque de temps</button></div>
+            <button type="button" class="lien ts-s-retirer" id="ts-s-retirer">Retirer le temps supp.</button>
+          </div>
+          <button type="button" class="lien ts-s-plus" id="ts-s-plus">Plus d'options (avant et après, rappel, temps double, disponibilité) ›</button>
+        </div>
+      </div>
+      <button type="button" class="lien hr-edition ts-s-retour" id="ts-s-retour" hidden>‹ Revenir au mode simple</button>
       <p class="aide hr-ts-vide hr-edition" id="hr-ts-vide" data-tab="ts" hidden></p>
       <div class="hr-edition hr-quand" id="hr-quand-bloc" data-tab="ts" hidden>
         <p class="ref">Ton temps supplémentaire est…</p>
@@ -2512,10 +2527,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611261833"></script>
+  <script src="config.js?v=202611261849"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611261833"></script>
-  <script src="saison.js?v=202611261833"></script>
-  <script src="app.js?v=202611261833"></script>
+  <script src="i18n.js?v=202611261849"></script>
+  <script src="saison.js?v=202611261849"></script>
+  <script src="app.js?v=202611261849"></script>
 </body>
 </html>

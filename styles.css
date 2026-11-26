@@ -3348,3 +3348,24 @@ body.carte-plein .vue-carte .btn-mesure { top: calc(172px + env(safe-area-inset-
 .pop-rabais-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-top: 6px; }
 .pop-rabais-actions a { text-align: center; text-decoration: none; display: grid; place-items: center; min-height: 44px; }
 .pop-rabais-plus-tard { background: none; border: 0; color: var(--fg-doux); font: inherit; font-weight: 700; padding: 8px; cursor: pointer; }
+
+/* ---------------- Fiche de la journée : une seule page, temps supp. simplifié (2026-11-26) ---------------- */
+#hr-onglets, #hr-ts-vide { display: none !important; }
+.hr-fiche-jour.ts-mode-simple :is(#hr-quand-bloc, #hr-tspa-bloc, #hr-tsp-bloc, #hr-dispo-bloc) { display: none !important; }
+.hr-fiche-jour.ts-mode-simple #hr-jour-ts[data-tab="ts"] { display: none !important; }
+.ts-simple { display: grid; gap: 6px; margin-top: 6px; }
+.ts-simple[hidden] { display: none; }
+.ts-s-carte { background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 10px; }
+.ts-s-ajout { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 2px 0; font: inherit; font-weight: 800; font-size: 1rem; color: var(--marque); cursor: pointer; text-align: left; }
+.ts-s-ajout i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 1.2rem; background: color-mix(in srgb, var(--marque) 14%, var(--surface)); }
+.ts-s-ajout[hidden], .ts-s-champs[hidden] { display: none; }
+.ts-s-champs { display: grid; gap: 10px; }
+.ts-s-heures { align-items: center; }
+.ts-s-heures input { flex: 1; min-width: 0; font-size: 1.15rem; text-align: center; }
+.ts-s-deduit { margin: 0; padding: 9px 12px; border-radius: 10px; font-size: .88rem; font-weight: 700; line-height: 1.35; color: #0f766e; background: color-mix(in srgb, #0f766e 12%, var(--surface)); }
+.ts-s-deduit[hidden] { display: none; }
+.ts-s-pris { display: grid; grid-template-columns: 1fr 1fr; }
+.ts-s-retirer { justify-self: start; color: var(--fg-doux); }
+.ts-s-plus { justify-self: start; font-size: .85rem; color: var(--fg-doux); text-align: left; }
+.ts-s-retour { justify-self: start; margin: 6px 0 2px; }
+html[data-style="nuit"] .ts-s-deduit { color: var(--fg); background: rgba(255, 0, 0, .1); }

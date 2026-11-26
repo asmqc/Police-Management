@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-ts-simple", date: "2026-11-26", titre: "Temps supplémentaire plus simple", points: ["La fiche d'une journée n'a plus d'onglets : tout est sur une seule page.", "Pour le temps supplémentaire, entrez seulement l'heure de début et de fin : l'app trouve si c'est avant ou après votre quart et calcule les heures.", "Les cas particuliers (rappel, temps double, avant et après, disponibilité) sont dans « Plus d'options »."] },
     { id: "2026-11-26-fonctions-liste", date: "2026-11-26", titre: "Fonctionnalités en liste", points: ["La section Entreprises devient « Mes rabais » et « Pour moi » passe en premier.","Les outils sont maintenant présentés en liste groupée, une ligne par outil avec sa description.", "Plus d'outils visibles d'un coup d'œil, moins de défilement."] },
     { id: "2026-11-23-assistant", date: "2026-11-23", titre: "Configurez votre horaire en 3 étapes", points: [
       "Un assistant vous guide : votre rotation (H1 et autres), votre équipe ou votre jour dans le cycle, puis vos heures. Aperçu de vos 14 prochains jours avant d'enregistrer.",
@@ -6580,7 +6581,9 @@ Format :
     $("#hr-dispo-type").value = (ex.dispo && ex.dispo.type) || "domicile"; $("#hr-dispo-h").value = ex.dispo ? ex.dispo.h : "";
     $("#hr-jour-retirer").hidden = !q.exception;
     $("#hr-jour-offrir").hidden = lecture || hr.cible === "conjoint" || !["J", "S", "N", "X"].includes(q.code) || iso < aujourdhuiISO();
-    $("#hr-fiche-jour").dataset.onglet = "quart"; $$("[data-hr-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrOnglet === "quart")));
+    $("#hr-fiche-jour").dataset.onglet = "tout"; // une seule page (plus d'onglets Quart / Temps supp.)
+    hr.tsAvance = ($("#hr-tsp-actif").checked && $("#hr-tspa-actif").checked) || $("#hr-dispo-actif").checked;
+    hr.tsSimpleOuvert = false; syncTsSimple();
     majChampsJour();
     $("#hr-voile").hidden = false;
     if (!lecture) setTimeout(() => visiteAutomatique("jour"), 700);
@@ -6628,7 +6631,7 @@ Format :
     $("#hr-dispo-bloc").hidden = !!hr.vue || !sqEdition || !t;
     $("#hr-dispo-champs").hidden = $("#hr-dispo-bloc").hidden || !$("#hr-dispo-actif").checked;
     majValeurDispo();
-    // Les heures d'une journée de temps supplémentaire (X) se règlent dans l'onglet Temps supp.
+    // Journée complète de temps supplémentaire (X) : ses heures et son taux sont sur la même page
     $("#hr-jour-heures").dataset.tab = t === "X" ? "ts" : "quart";
     $("#hr-jour-ts").dataset.tab = t === "F" ? "quart" : "ts";
     const tsActif = t === "X" || $("#hr-tsp-actif").checked || $("#hr-tspa-actif").checked || $("#hr-dispo-actif").checked;
@@ -6644,13 +6647,88 @@ Format :
     const h = ["B", "V", "H"].includes(t) ? heuresJour(prevuJ, hr.jourChoisi, { ...cibleEdition(), exceptions: {} }) : heuresJour(t, null, cibleEdition());
     $("#hr-jour-debut").placeholder = h ? h[0] : ""; $("#hr-jour-fin").placeholder = h ? h[1] : "";
     $("#hr-jour-defaut").textContent = h ? ` · par défaut ${h[0]} – ${h[1]}` : "";
+    majTsSimple(t);
   }
   // Onglets de la fiche de la journée : Quart / Temps supp.
   function ongletJour(nom) {
-    $("#hr-fiche-jour").dataset.onglet = nom;
-    $$("[data-hr-onglet]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrOnglet === nom)));
+    // Plus d'onglets : on reste sur la page unique et on fait défiler jusqu'au temps supplémentaire au besoin
+    $("#hr-fiche-jour").dataset.onglet = "tout";
     majChampsJour();
+    if (nom === "ts") {
+      const c = [$("#ts-simple"), $("#hr-quand-bloc"), $("#hr-jour-pris-bloc")].find((x) => x && !x.hidden);
+      if (c) setTimeout(() => c.scrollIntoView({ block: "center", behavior: "smooth" }), 50);
+    }
   }
+  /* ---------- Temps supp. simplifié (fiche de la journée) ----------
+     Le membre entre seulement l'heure de début et de fin. L'app compare avec les heures du quart pour savoir si c'est
+     avant ou après, et si c'est en continu ou un rappel séparé. Les blocs détaillés (avant / après) restent la source
+     des données : on les remplit ici, et « Plus d'options » les affiche tels quels. */
+  const minutesDe = (x) => { const [a, b] = x.split(":").map(Number); return a * 60 + b; };
+  const modJour = (m) => ((m % 1440) + 1440) % 1440;
+  function sensTS(t, deb, fin) {
+    const q = heuresJour(t, hr.jourChoisi, cibleEdition());
+    if (!q) return { p: "tsp", rappel: "hors", sansQuart: true };
+    const qd = $("#hr-jour-debut").value || q[0], qf = $("#hr-jour-fin").value || q[1];
+    const apres = modJour(minutesDe(fin) - minutesDe(qf)), avant = modJour(minutesDe(qd) - minutesDe(deb));
+    if (avant < apres) { const ecart = modJour(minutesDe(qd) - minutesDe(fin)); return { p: "tspa", rappel: ecart && ecart < 720 ? "hors" : "" }; }
+    const ecart = modJour(minutesDe(deb) - minutesDe(qf)); return { p: "tsp", rappel: ecart && ecart < 720 ? "hors" : "" };
+  }
+  const blocTsActif = () => ($("#hr-tsp-actif").checked ? "tsp" : $("#hr-tspa-actif").checked ? "tspa" : null);
+  function syncTsSimple() {
+    const p = blocTsActif();
+    $("#ts-s-debut").value = p ? $(`#hr-${p}-debut`).value : ""; $("#ts-s-fin").value = p ? $(`#hr-${p}-fin`).value : "";
+  }
+  const prisSimple = () => ($("[data-ts-pris='banque']").getAttribute("aria-checked") === "true" ? "banque" : "paie");
+  function appliquerTsSimple() {
+    const deb = $("#ts-s-debut").value, fin = $("#ts-s-fin").value;
+    if (deb && fin && deb !== fin) {
+      const s = sensTS(typeChoisi(), deb, fin), autre = s.p === "tsp" ? "tspa" : "tsp";
+      $(`#hr-${s.p}-actif`).checked = true;
+      $(`#hr-${s.p}-debut`).value = deb; $(`#hr-${s.p}-fin`).value = fin;
+      $(`#hr-${s.p}-rappel`).value = s.rappel; $(`#hr-${s.p}-pris`).value = prisSimple();
+      $(`#hr-${autre}-actif`).checked = false;
+    }
+    majChampsJour(); majValeurTsp();
+  }
+  function majTsSimple(t) {
+    const possible = !hr.vue && !!t && t !== "X", simple = possible && !hr.tsAvance;
+    $("#ts-simple").hidden = !simple;
+    $("#ts-s-retour").hidden = !(possible && hr.tsAvance);
+    $("#hr-fiche-jour").classList.toggle("ts-mode-simple", simple);
+    if (!simple) return;
+    const p = blocTsActif(), ouvert = !!p || hr.tsSimpleOuvert;
+    $("#ts-s-ajout").hidden = ouvert; $("#ts-s-champs").hidden = !ouvert;
+    const banque = p ? $(`#hr-${p}-pris`).value === "banque" : prisSimple() === "banque";
+    $$("[data-ts-pris]").forEach((b) => b.setAttribute("aria-checked", String((b.dataset.tsPris === "banque") === banque)));
+    const out = $("#ts-s-deduit"), deb = p && $(`#hr-${p}-debut`).value, fin = p && $(`#hr-${p}-fin`).value;
+    out.hidden = !(p && deb && fin);
+    if (out.hidden) return;
+    const d = dureeH([deb, fin]), maj = +$(`#hr-${p}-maj`).value || 1.5, rap = $(`#hr-${p}-rappel`).value;
+    const e = eqTS(d, maj, { rappel: rap, adjacent: !rap }), sansQuart = !heuresJour(t, hr.jourChoisi, cibleEdition());
+    const ou = sansQuart ? "Rappel" : `${p === "tsp" ? "Après" : "Avant"} ton quart${rap ? " (rappel séparé)" : ""}`;
+    const m = $(`#hr-${p}-montant`), argent = m && !m.hidden && m.querySelector("b") ? ` · ${m.querySelector("b").textContent}` : "";
+    out.textContent = `✓ ${ou} · ${fmtH(d)} à ${maj === 2 ? "temps double" : "temps et demi"} · ${fmtH(e.eq)} ${banque ? "en banque" : "payées"}${e.minimum ? " (minimum garanti)" : ""}${argent}`;
+  }
+  $("#ts-s-ajout").addEventListener("click", () => {
+    hr.tsSimpleOuvert = true;
+    const q = heuresJour(typeChoisi(), hr.jourChoisi, cibleEdition());
+    if (!$("#ts-s-debut").value && q) $("#ts-s-debut").value = $("#hr-jour-fin").value || q[1]; // suggestion : collé à la fin du quart
+    majChampsJour();
+    setTimeout(() => $("#ts-s-fin").focus(), 50);
+  });
+  ["#ts-s-debut", "#ts-s-fin"].forEach((q) => $(q).addEventListener("change", appliquerTsSimple));
+  $$("[data-ts-pris]").forEach((b) => b.addEventListener("click", () => {
+    $$("[data-ts-pris]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    const p = blocTsActif(); if (p) $(`#hr-${p}-pris`).value = b.dataset.tsPris;
+    majValeurTsp(); majChampsJour();
+  }));
+  $("#ts-s-retirer").addEventListener("click", () => {
+    $("#hr-tsp-actif").checked = false; $("#hr-tspa-actif").checked = false;
+    $("#ts-s-debut").value = ""; $("#ts-s-fin").value = ""; hr.tsSimpleOuvert = false;
+    majChampsJour();
+  });
+  $("#ts-s-plus").addEventListener("click", () => { hr.tsAvance = true; majChampsJour(); });
+  $("#ts-s-retour").addEventListener("click", () => { hr.tsAvance = false; syncTsSimple(); majChampsJour(); });
   $$("[data-hr-onglet]").forEach((b) => b.addEventListener("click", () => ongletJour(b.dataset.hrOnglet)));
   $("#hr-jour-choix").addEventListener("click", (e) => {
     const b = e.target.closest("[data-q]");
@@ -9418,9 +9496,9 @@ Format :
       { sel: "#hr-abo-btn", titre: "Calendrier abonné", texte: "Votre horaire dans le Calendrier de l'iPhone, Google Agenda ou Outlook, mis à jour tout seul." },
     ] },
     jour: { titre: "La fiche d'une journée", nouveau: true, etapes: [
-      { sel: "#hr-onglets", titre: "Deux onglets", texte: "Nouveau : l'onglet Quart pour le code de la journée, l'onglet Temps supp. pour le temps supplémentaire avant ou après votre quart." },
       { sel: "#hr-jour-choix", titre: "Le code de la journée", texte: "J, S, N, vacances, maladie, férié, banque de temps, événement familial… Chaque code suit les règles du contrat." },
-      { sel: "#hr-jour-ok", titre: "Enregistrer", texte: "Enregistre les deux onglets. « Revenir à la rotation » efface les changements de la journée." },
+      { sel: "#ts-simple", titre: "Temps supplémentaire", texte: "Nouveau : entrez seulement l'heure de début et de fin. L'app trouve si c'est avant ou après votre quart. Les cas particuliers sont dans « Plus d'options »." },
+      { sel: "#hr-jour-ok", titre: "Enregistrer", texte: "Enregistre la journée et son temps supplémentaire. « Revenir à la rotation » efface les changements de la journée." },
     ] },
     remuneration: { titre: "Rémunération (SQ)", nouveau: true, sq: true, etapes: [
       { sel: ".hr-stats-vue .stats-mode", titre: "Paie, réclamations et retraite", texte: "Paie aux deux semaines, banques, réclamation de temps supplémentaire, compte de dépenses, retraite et contrat de travail. Glissez pour voir toutes les sections." },
