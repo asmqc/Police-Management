@@ -2691,6 +2691,7 @@ Question : ${question}
   /* Accueil : 4 raccourcis choisis par chaque membre (gardés sur l'appareil) */
   const RACC_ACCUEIL = {
     csr: { t: "Chercher un article", s: "Lois et règlements", i: '<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 16h6"/>' },
+    constats: { t: "Historique des constats", s: "Photo du constat, sur l'appareil seulement", i: '<path d="M6 3h9l4 4v14H6zM15 3v4h4M9 11h6M9 15h4"/><circle cx="17.5" cy="17.5" r="3.2"/><path d="M17.5 16v1.5l1 .8"/>', constats: true },
     vitesse: { t: "Vitesses", s: "Amende, points, grand excès", i: '<path d="M12 14l4-4M4 18a9 9 0 1 1 16 0"/>' },
     paie: { t: "Ma paie", s: "Paie, banques, réclamations", i: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/>', paie: true },
     position: { t: "Où suis-je ?", s: "Corps de police, code municipal", i: '<path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>' },
@@ -2712,11 +2713,11 @@ Question : ${question}
     apropos: { t: "À propos", s: "Version et mises à jour", i: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>' },
     soutien: { t: "Bien-être", s: "Aide gratuite et confidentielle", i: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
   };
-  const raccOffert = (k) => { if (k === "feuille" && !FEUILLE_OFFERTE) return false; const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
+  const raccOffert = (k) => { if (k === "feuille" && !FEUILLE_OFFERTE) return false; if (k === "constats" && !(estAppIOS || (etat.profil && etat.profil.role === "admin"))) return false; /* app iPhone et iPad (et test administrateur) */ const r = RACC_ACCUEIL[k]; return !!r && (!r.sq || estSQ()) && (!r.conv || accesConvention()); };
   // Onglet « Fonctionnalités » de l'accueil : tous les outils, regroupés
   const GROUPES_FONCTIONS = [
     ["Pour moi", ["entreprises", "soutien"]],
-    ["Terrain", ["csr", "vitesse", "position", "carte", "corps", "meteo"]],
+    ["Terrain", ["csr", "constats", "vitesse", "position", "carte", "corps", "meteo"]],
     ["Horaire et paie", ["horaire", "paie", "ts", "depenses", "convention", "comparatif"]],
     ["Mon poste", ["feuille", "forum", "idees"]],
     ["Mon compte et réglages", ["reglages", "compte", "apropos"]],
@@ -2968,6 +2969,7 @@ Question : ${question}
 
   function allerA(cible) {
     if (cible === "vitesse") { afficherVue("csr"); ongletLois("vitesse"); majOngletCourant(); return; }
+    if (cible === "constats") { afficherVue("csr"); ongletLois("constats"); majOngletCourant(); return; }
     if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
     if (cible === "paie" || MODES_PAIE.includes(cible)) { ouvrirPaie(cible === "paie" ? (estSQ() ? "paie" : "ts") : cible); return; }
     afficherVue(cible);
