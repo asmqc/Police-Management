@@ -7875,6 +7875,13 @@ Format :
     return true;
   }
   $("#ct-photo").addEventListener("click", () => $("#ct-photo-fichier").click());
+  // Choisir une photo déjà prise (photothèque ou fichiers) : même lecture que la caméra
+  $("#ct-photo-galerie-btn").addEventListener("click", () => $("#ct-photo-galerie").click());
+  $("#ct-photo-galerie").addEventListener("change", (e) => {
+    if (!e.target.files || !e.target.files.length) return;
+    const cible = $("#ct-photo-fichier"), dt = new DataTransfer(); dt.items.add(e.target.files[0]); cible.files = dt.files; e.target.value = "";
+    cible.dispatchEvent(new Event("change"));
+  });
   $("#ct-photo-fichier").addEventListener("change", async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
@@ -10244,6 +10251,13 @@ Format :
     } finally { if (w) w.terminate().catch(() => {}); }
   }
   $("#pub-photo").addEventListener("click", () => $("#pub-photo-fichier").click());
+  // Choisir une photo déjà prise (photothèque ou fichiers) : même lecture que la caméra
+  $("#pub-photo-galerie-btn").addEventListener("click", () => $("#pub-photo-galerie").click());
+  $("#pub-photo-galerie").addEventListener("change", (e) => {
+    if (!e.target.files || !e.target.files.length) return;
+    const cible = $("#pub-photo-fichier"), dt = new DataTransfer(); dt.items.add(e.target.files[0]); cible.files = dt.files; e.target.value = "";
+    cible.dispatchEvent(new Event("change"));
+  });
   $("#pub-photo-fichier").addEventListener("change", async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";

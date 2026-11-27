@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611271025">
+  <link rel="stylesheet" href="styles.css?v=202611271027">
 </head>
 <body>
   <!-- Chargement -->
@@ -2376,10 +2376,10 @@
       <button class="btn-icone fermer" id="ct-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="ct-titre">Nouveau constat</h3>
       <form id="ct-form" class="ct-form" autocomplete="off">
-        <button type="button" class="btn-principal ct-photo" id="ct-photo">
+        <div class="photo-choix"><button type="button" class="btn-principal ct-photo" id="ct-photo">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          Lire le constat avec une photo</button>
-        <input type="file" id="ct-photo-fichier" accept="image/*" capture="environment" hidden>
+          Prendre une photo</button><button type="button" class="btn-secondaire ct-photo" id="ct-photo-galerie-btn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 16l-5-5-9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Choisir une photo</button></div>
+        <input type="file" id="ct-photo-fichier" accept="image/*" capture="environment" hidden><input type="file" id="ct-photo-galerie" accept="image/*" hidden>
         <p class="aide" id="ct-photo-etat">La photo est lue sur cet appareil, puis oubliée : seuls le numéro, l'infraction et l'emplacement sont pris. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.</p>
         <label for="ct-numero">Numéro du constat</label>
         <input id="ct-numero" required maxlength="40" autocapitalize="characters" spellcheck="false" placeholder="Numéro inscrit au constat">
@@ -2411,10 +2411,10 @@
     <section class="fiche-compte pub-fiche" role="dialog" aria-modal="true" aria-labelledby="pub-titre-h">
       <button class="btn-icone fermer" id="pub-fermer" aria-label="Fermer">✕</button>
       <h3 class="titre-voile" id="pub-titre-h">Publier un horaire de travail</h3>
-      <button type="button" class="btn-principal ct-photo" id="pub-photo">
+      <div class="photo-choix"><button type="button" class="btn-principal ct-photo" id="pub-photo">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        Lire l'horaire avec une photo</button>
-      <input type="file" id="pub-photo-fichier" accept="image/*" capture="environment" hidden>
+        Prendre une photo</button><button type="button" class="btn-secondaire ct-photo" id="pub-photo-galerie-btn"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 16l-5-5-9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg> Choisir une photo</button></div>
+      <input type="file" id="pub-photo-fichier" accept="image/*" capture="environment" hidden><input type="file" id="pub-photo-galerie" accept="image/*" hidden>
       <p class="aide" id="pub-photo-etat">La photo est lue sur cet appareil, puis effacée : elle n'est jamais envoyée ni gardée. Vérifiez et corrigez les quarts lus avant de publier.</p>
       <div class="pub-periode">
         <label>Du <input type="date" id="pub-debut" required></label>
@@ -2570,10 +2570,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611271025"></script>
+  <script src="config.js?v=202611271027"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611271025"></script>
-  <script src="saison.js?v=202611271025"></script>
-  <script src="app.js?v=202611271025"></script>
+  <script src="i18n.js?v=202611271027"></script>
+  <script src="saison.js?v=202611271027"></script>
+  <script src="app.js?v=202611271027"></script>
 </body>
 </html>

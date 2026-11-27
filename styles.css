@@ -3469,3 +3469,8 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .hb-ok, .hb-non { margin: 0; display: block; font-size: .9rem; }
 .hb-ok { color: #0f766e; } .hb-non { color: var(--fg-doux); }
 .hb-ok small, .hb-non small { display: block; font-size: .78rem; color: var(--fg-doux); margin-left: 1.2em; }
+
+/* Photo : prendre ou choisir (2026-11-27) */
+.photo-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.photo-choix .ct-photo { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; padding-inline: 8px; font-size: .9rem; white-space: nowrap; }
+.photo-choix .ct-photo svg { flex: none; }
