@@ -3389,3 +3389,10 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .vt-detail dt { overflow-wrap: normal; word-break: normal; }
 .vt-detail dd.total { display: grid; justify-items: end; gap: 2px; }
 .banque-depasse { font-family: var(--f-texte, inherit); font-size: .8rem; font-weight: 700; color: var(--rouge); white-space: nowrap; }
+
+/* Historique des constats : filtres par type, regroupement par catégorie d'infraction (2026-11-26) */
+.ct-filtres { display: grid; grid-template-columns: repeat(3, 1fr); margin: 10px 0 2px; }
+.ct-cat { display: flex; align-items: baseline; justify-content: space-between; margin: 18px 2px 8px; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-doux); }
+.ct-cat small { font-size: .8rem; font-weight: 800; letter-spacing: 0; background: var(--surface-2); color: var(--fg); border-radius: 999px; padding: 1px 9px; }
+.ct-type-pastille { font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--marque) 14%, var(--surface)); color: var(--marque); justify-self: start; }
+.ct-type-pastille.mun { background: color-mix(in srgb, #0f766e 14%, var(--surface)); color: #0f766e; }

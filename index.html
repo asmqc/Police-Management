@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611270455">
+  <link rel="stylesheet" href="styles.css?v=202611270500">
 </head>
 <body>
   <!-- Chargement -->
@@ -685,6 +685,11 @@
           <div class="ct-barre">
             <input type="search" id="ct-q" placeholder="N° de constat, article, lieu, mot…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans l'historique">
             <button type="button" class="btn-principal" id="ct-nouveau">+ Nouveau</button>
+          </div>
+          <div class="segmente ct-filtres" role="radiogroup" aria-label="Type de constat">
+            <button type="button" role="radio" data-ct-filtre="tous" aria-checked="true">Tous</button>
+            <button type="button" role="radio" data-ct-filtre="100400" aria-checked="false">Nationaux</button>
+            <button type="button" role="radio" data-ct-filtre="100391" aria-checked="false">Municipaux</button>
           </div>
           <p class="aide" id="ct-compte"></p>
           <div id="ct-liste" class="ct-liste"></div>
@@ -2527,10 +2532,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611270455"></script>
+  <script src="config.js?v=202611270500"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611270455"></script>
-  <script src="saison.js?v=202611270455"></script>
-  <script src="app.js?v=202611270455"></script>
+  <script src="i18n.js?v=202611270500"></script>
+  <script src="saison.js?v=202611270500"></script>
+  <script src="app.js?v=202611270500"></script>
 </body>
 </html>

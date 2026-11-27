@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-constats-classes", date: "2026-11-26", titre: "Constats classés", points: ["L'historique des constats est maintenant classé par catégorie d'infraction (vitesse, cellulaire, ceinture, signalisation…), avec le nombre de constats dans chacune.", "Filtrez par type : tous, nationaux (100400) ou municipaux (100391)."] },
     { id: "2026-11-26-historique-constats", date: "2026-11-26", titre: "Historique des constats", points: ["Le registre des constats s'appelle maintenant « Historique des constats » (Lois, app iPhone et iPad).", "La photo du constat prend seulement le numéro, l'infraction et l'emplacement. Tout le reste est ignoré, et la photo n'est jamais gardée."] },
     { id: "2026-11-26-carres", date: "2026-11-26", titre: "Calendrier plus clair", points: ["Chaque chose de la journée a maintenant son propre carré dans le calendrier : le quart, le temps supplémentaire (X) et ce qui est ajouté en plus.", "Vos événements personnels sont des ronds avec leur première lettre."] },
     { id: "2026-11-26-ts-mon-emploi", date: "2026-11-26", titre: "TS calculé sur votre emploi par défaut", points: ["Pendant un remplacement ou un prêt de service, le temps supplémentaire est maintenant calculé par défaut sur le salaire de votre propre emploi.", "S'il a été fait dans l'emploi remplacé, changez « Fait comme… » dans le TS (Plus d'options)."] },
@@ -7617,17 +7618,52 @@ Format :
     }
   }
   const dateConstat = (d) => { try { return new Date(d).toLocaleString("fr-CA", { dateStyle: "medium", timeStyle: "short" }); } catch { return d; } };
+  // Catégorie d'une infraction selon la partie du Code de la sécurité routière où se trouve l'article
+  const CATS_CONSTAT = [
+    ["vitesse", "Vitesse"], ["distraction", "Cellulaire et distractions"], ["ceinture", "Ceinture et sièges d'enfant"],
+    ["signalisation", "Signalisation et feux"], ["conduite", "Conduite, dépassement et virages"], ["permis", "Permis de conduire"],
+    ["immatriculation", "Immatriculation"], ["equipement", "Équipement du véhicule"], ["stationnement", "Arrêt et stationnement"],
+    ["pietons", "Piétons"], ["velos", "Vélos, motos et cyclomoteurs"], ["lourds", "Véhicules lourds et transport"],
+    ["accident", "Accident"], ["circulation", "Autres règles de circulation"], ["autres", "Autres infractions"],
+  ];
+  function categorieConstat(article) {
+    const m = String(article || "").trim().replace(/^art\.?\s*/i, "").match(/^(\d+)(?:\.(\d+))?/);
+    if (!m) return "autres";
+    const n = +m[1] + (m[2] ? +("0." + m[2].padStart(2, "0")) : 0), entre = (a, b) => n >= a && n < b;
+    if (n === 439.01 || entre(443.01, 444)) return "distraction";
+    if (entre(327, 338)) return "vitesse";
+    if (entre(395, 402)) return "ceinture";
+    if (entre(288, 319) || entre(359, 372)) return "signalisation";
+    if (entre(319, 327) || entre(338, 359) || entre(372, 380)) return "conduite";
+    if (entre(60.01, 150) || entre(209.01, 210)) return "permis";
+    if (entre(6, 60.01)) return "immatriculation";
+    if (entre(210, 288) || entre(520, 547)) return "equipement";
+    if (entre(380, 395)) return "stationnement";
+    if (entre(444, 454)) return "pietons";
+    if (entre(477, 493)) return "velos";
+    if (entre(454, 477) || entre(519, 520)) return "lourds";
+    if (entre(166, 180)) return "accident";
+    if (entre(402, 444) || entre(493, 519)) return "circulation";
+    return "autres";
+  }
   function rendreConstats() {
     const q = norm($("#ct-q").value.trim());
+    $$("[data-ct-filtre]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.ctFiltre === (ct.filtre || "tous"))));
     const tries = [...ct.liste].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    const liste = q ? tries.filter((c) => norm([c.numero, c.article, "art " + c.article, c.lieu, c.narration, c.type].join(" ")).includes(q)) : tries;
-    $("#ct-compte").textContent = ct.liste.length ? (q ? `${liste.length} résultat${liste.length > 1 ? "s" : ""} sur ${ct.liste.length}` : `${ct.liste.length} constat${ct.liste.length > 1 ? "s" : ""} sur cet appareil`) : "";
-    $("#ct-liste").innerHTML = liste.length ? liste.map((c) => `
+    const nomCat = Object.fromEntries(CATS_CONSTAT);
+    const parType = tries.filter((c) => !ct.filtre || ct.filtre === "tous" || (c.type || "100400") === ct.filtre);
+    const liste = q ? parType.filter((c) => norm([c.numero, c.article, "art " + c.article, c.lieu, c.narration, c.type, nomCat[categorieConstat(c.article)]].join(" ")).includes(q)) : parType;
+    $("#ct-compte").textContent = ct.liste.length ? (q || liste.length !== ct.liste.length ? `${liste.length} constat${liste.length > 1 ? "s" : ""} sur ${ct.liste.length}` : `${ct.liste.length} constat${ct.liste.length > 1 ? "s" : ""} sur cet appareil`) : "";
+    // Regroupés par catégorie d'infraction (la plus fréquente en premier), du plus récent au plus ancien dans chacune
+    const groupes = new Map();
+    for (const c of liste) { const k = categorieConstat(c.article); if (!groupes.has(k)) groupes.set(k, []); groupes.get(k).push(c); }
+    const ordre = [...groupes.keys()].sort((a, b) => groupes.get(b).length - groupes.get(a).length || CATS_CONSTAT.findIndex((x) => x[0] === a) - CATS_CONSTAT.findIndex((x) => x[0] === b));
+    const carte = (c) => `
       <article class="panneau ct-item" data-ct="${esc(c.id)}">
         <button type="button" class="ct-tete" data-ct-ouvrir="${esc(c.id)}" aria-expanded="false">
           <span class="ct-num">${esc(c.numero)}</span>
-          <span class="ct-art">CSR art. ${esc(c.article)}</span>
-          <small>${esc(dateConstat(c.date))} · ${c.type === "100391" ? "Municipal" : "National"}${c.lieu ? " · " + esc(c.lieu.slice(0, 60)) : ""}</small>
+          <span class="ct-art">CSR art. ${esc(c.article)}</span><span class="ct-type-pastille ${c.type === "100391" ? "mun" : ""}">${c.type === "100391" ? "Municipal" : "National"}</span>
+          <small>${esc(dateConstat(c.date))}${c.lieu ? " · " + esc(c.lieu.slice(0, 60)) : ""}</small>
         </button>
         <div class="ct-detail" hidden>
           ${c.lieu ? `<p><b>Emplacement</b><br>${esc(c.lieu)}</p>` : ""}
@@ -7640,8 +7676,10 @@ Format :
             <button type="button" class="btn-secondaire" data-ct-modifier="${esc(c.id)}">Modifier</button>
           </div>
         </div>
-      </article>`).join("")
-      : `<p class="vide">${ct.liste.length ? "Aucun constat ne correspond à cette recherche." : "Aucun constat. Touchez « + Nouveau » pour inscrire votre premier constat."}</p>`;
+      </article>`;
+    $("#ct-liste").innerHTML = liste.length
+      ? ordre.map((k) => `<h3 class="ct-cat"><span>${esc(nomCat[k])}</span><small>${groupes.get(k).length}</small></h3>${groupes.get(k).map(carte).join("")}`).join("")
+      : `<p class="vide">${ct.liste.length ? "Aucun constat ne correspond à ce choix." : "Aucun constat. Touchez « + Nouveau » pour inscrire votre premier constat."}</p>`;
     const trouve = (id) => ct.liste.find((x) => x.id === id);
     $$("[data-ct-ouvrir]").forEach((b) => b.addEventListener("click", () => {
       const d = b.nextElementSibling, ouvrir = d.hidden;
@@ -7842,6 +7880,7 @@ Format :
   $("#ct-ouvrir").addEventListener("click", ouvrirConstats);
   $("#ct-verrouiller").addEventListener("click", async () => { try { await appelRegistre("verrouiller"); } catch { /* déjà verrouillé */ } afficherVerrouConstats(); });
   $("#ct-q").addEventListener("input", rendreConstats);
+  $$("[data-ct-filtre]").forEach((b) => b.addEventListener("click", () => { ct.filtre = b.dataset.ctFiltre; rendreConstats(); }));
   $("#ct-nouveau").addEventListener("click", () => editerConstat(null));
   $("#ct-fermer").addEventListener("click", () => ($("#ct-voile").hidden = true));
   $$("[data-ct-type]").forEach((b) => b.addEventListener("click", () => choisirTypeConstat(b.dataset.ctType)));
