@@ -3206,7 +3206,7 @@ Question : ${question}
     ["20160", "2 semaines avant", "2 semaines avant (9 h)"], ["43200", "1 mois avant", "1 mois avant (9 h)"], ["86400", "2 mois avant", "2 mois avant (9 h)"]];
   const lireLocal = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const ecrireLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage indisponible */ } };
-  const cal = { vue: lireLocal("pm-cal-vue", "mois"), date: aujourdhuiISO(), sel: aujourdhuiISO(), evs: [], chargé: false, masques: new Set(lireLocal("pm-cal-masques", [])), edition: null };
+  const cal = { vue: lireLocal("pm-cal-vue", "mois"), date: aujourdhuiISO(), sel: aujourdhuiISO(), evs: [], chargé: false, masques: new Set(), /* choix des calendriers retiré le 27 nov. 2026 : tout est toujours affiché */ edition: null };
   const H_HEURE = 48; // hauteur d'une heure dans les vues Jour et Semaine
   const isoLoc = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const ajoutJours = (iso, n) => isoDe(jourUTC(iso) + n);

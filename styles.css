@@ -3413,3 +3413,6 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .lois-outils .nb-fav:empty { display: none; }
 .lois-retour { display: block; margin: 4px 0 10px; font-weight: 800; }
 .lois-retour[hidden] { display: none; }
+
+/* Bouton « Calendriers » (choix de ce qui s'affiche) retiré le 27 nov. 2026 */
+#cal-calendriers { display: none !important; }
