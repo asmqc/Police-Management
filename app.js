@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-26-historique-constats", date: "2026-11-26", titre: "Historique des constats", points: ["Le registre des constats s'appelle maintenant « Historique des constats » (Lois, app iPhone et iPad).", "La photo du constat prend seulement le numéro, l'infraction et l'emplacement. Tout le reste est ignoré, et la photo n'est jamais gardée."] },
     { id: "2026-11-26-carres", date: "2026-11-26", titre: "Calendrier plus clair", points: ["Chaque chose de la journée a maintenant son propre carré dans le calendrier : le quart, le temps supplémentaire (X) et ce qui est ajouté en plus.", "Vos événements personnels sont des ronds avec leur première lettre."] },
     { id: "2026-11-26-ts-mon-emploi", date: "2026-11-26", titre: "TS calculé sur votre emploi par défaut", points: ["Pendant un remplacement ou un prêt de service, le temps supplémentaire est maintenant calculé par défaut sur le salaire de votre propre emploi.", "S'il a été fait dans l'emploi remplacé, changez « Fait comme… » dans le TS (Plus d'options)."] },
     { id: "2026-11-26-ts-simple", date: "2026-11-26", titre: "Temps supplémentaire plus simple", points: ["La fiche d'une journée n'a plus d'onglets : tout est sur une seule page.", "Pour le temps supplémentaire, entrez seulement l'heure de début et de fin : l'app trouve si c'est avant ou après votre quart et calcule les heures.", "Les cas particuliers (rappel, temps double, avant et après, disponibilité) sont dans « Plus d'options »."] },
@@ -6119,7 +6120,7 @@ Format :
     }));
   }
   // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
-  const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · constats",
+  const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · historique des constats",
     carte: "Carte", horaire: "Horaire", "stats-paie": "Paie", "stats-banques": "Banques", "stats-ts": "Temps supplémentaire", "stats-depenses": "Dépenses", "stats-retraite": "Retraite", "stats-mois": "Heures du mois", "stats-annee": "Année",
     feuille: "Feuille de poste", "horaire-poste": "Horaire du poste", "ts-poste": "TS du poste", forum: "Forum", messages: "Messages", convention: "Contrat de travail", compte: "Réglages", idees: "Idées", corps: "Corps de police" };
   async function rendreBilanAdmin() {
@@ -7603,13 +7604,13 @@ Format :
       rendreConstats();
     } catch (e) {
       if (/verrouille/.test(String(e && e.message || e))) return afficherVerrouConstats();
-      toast("Lecture du registre impossible.");
+      toast("Lecture de l'historique impossible.");
     }
   }
   async function sauverConstats() {
     try { await appelRegistre("ecrire", { donnees: JSON.stringify(ct.liste) }); return true; }
     catch (e) {
-      if (/verrouille/.test(String(e && e.message || e))) { afficherVerrouConstats(); toast("Le registre s'est verrouillé. Déverrouillez-le, puis recommencez."); return false; }
+      if (/verrouille/.test(String(e && e.message || e))) { afficherVerrouConstats(); toast("L'historique s'est verrouillé. Déverrouillez-le, puis recommencez."); return false; }
       toast("Enregistrement impossible sur cet appareil."); return false;
     }
   }
@@ -7788,10 +7789,9 @@ Format :
       const r = analyserConstat(lignes || [], articlesCsr);
       const trouves = [];
       if (marquerAuto("#ct-numero", r.numero)) trouves.push("numéro" + (r.numeroIncertain ? " (à confirmer)" : ""));
-      if (r.type) { choisirTypeConstat(r.type); trouves.push("type"); }
-      if (r.date) { const v = r.date + "T" + (r.heure || "00:00"); $("#ct-date").value = v; $("#ct-date").classList.add("ct-auto"); trouves.push(r.heure ? "date et heure" : "date"); }
-      if (marquerAuto("#ct-article", r.article)) { majArticleConstat(); trouves.push("article" + (r.articleIncertain ? " (à confirmer)" : "")); }
-      if (marquerAuto("#ct-lieu", r.lieu)) trouves.push("lieu");
+      // Seulement le numéro, l'infraction et l'emplacement : le reste du constat est ignoré
+      if (marquerAuto("#ct-article", r.article)) { majArticleConstat(); trouves.push("infraction" + (r.articleIncertain ? " (à confirmer)" : "")); }
+      if (marquerAuto("#ct-lieu", r.lieu)) trouves.push("emplacement");
       etatP.textContent = trouves.length ? `Lu sur l'appareil : ${trouves.join(", ")}. Vérifiez chaque champ surligné avant d'enregistrer. La photo n'a pas été conservée.` : "Aucune information reconnue. Reprenez la photo bien à plat, avec un bon éclairage, ou remplissez les champs à la main.";
     } catch (err) {
       etatP.textContent = "Lecture impossible : " + String((err && err.message) || err).replace(/^Error:\s*/, "") + ". Remplissez les champs à la main.";
@@ -7833,7 +7833,7 @@ Format :
     majCoordConstat(); majArticleConstat();
     $("#ct-supprimer").hidden = !c;
     $$("#ct-form .ct-auto").forEach((x) => x.classList.remove("ct-auto"));
-    $("#ct-photo-etat").textContent = "La photo est lue sur cet appareil, puis oubliée : seuls le numéro, le type, la date, l'article et le lieu sont gardés. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.";
+    $("#ct-photo-etat").textContent = "La photo est lue sur cet appareil, puis oubliée : seuls le numéro, l'infraction et l'emplacement sont pris. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.";
     $("#ct-voile").hidden = false;
     if (!c) setTimeout(() => $("#ct-numero").focus(), 50);
   }
@@ -7858,7 +7858,7 @@ Format :
     const numero = $("#ct-numero").value.trim().toUpperCase();
     const article = $("#ct-article").value.trim().replace(/^art\.?\s*/i, "");
     if (!numero || !article) return toast("Inscrivez le numéro du constat et l'article.");
-    if (ct.liste.some((x) => x.id !== ct.edition && norm(x.numero) === norm(numero))) return toast("Ce numéro de constat est déjà dans le registre.");
+    if (ct.liste.some((x) => x.id !== ct.edition && norm(x.numero) === norm(numero))) return toast("Ce numéro de constat est déjà dans l'historique.");
     const fiche = { numero, type: ct.type, date: $("#ct-date").value, article, lieu: $("#ct-lieu").value.trim(), lat: ct.lat, lon: ct.lon, narration: $("#ct-narration").value.trim(), modifie: new Date().toISOString() };
     const avant = ct.liste.slice();
     if (ct.edition) ct.liste = ct.liste.map((x) => (x.id === ct.edition ? { ...x, ...fiche } : x));
@@ -7878,7 +7878,7 @@ Format :
   });
   $("#ct-tout-effacer").addEventListener("click", async () => {
     if (!ct.liste.length || !confirm(`Effacer les ${ct.liste.length} constats de cet appareil ? Cette action est définitive.`)) return;
-    try { await appelRegistre("effacer"); ct.liste = []; rendreConstats(); toast("Registre effacé."); } catch { toast("Effacement impossible."); }
+    try { await appelRegistre("effacer"); ct.liste = []; rendreConstats(); toast("Historique effacé."); } catch { toast("Effacement impossible."); }
   });
 
   /* ---------------- Code de la sécurité routière ---------------- */

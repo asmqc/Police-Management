@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611262132">
+  <link rel="stylesheet" href="styles.css?v=202611270454">
 </head>
 <body>
   <!-- Chargement -->
@@ -666,7 +666,7 @@
         <button role="tab" data-csr-onglet="vitesse" aria-selected="false" hidden>Vitesses</button>
         <button role="tab" data-csr-onglet="frais" aria-selected="false">Frais judiciaires</button>
         <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
-        <button role="tab" data-csr-onglet="constats" aria-selected="false" id="csr-onglet-constats" hidden>Constats d'infraction</button>
+        <button role="tab" data-csr-onglet="constats" aria-selected="false" id="csr-onglet-constats" hidden>Historique des constats</button>
         <button type="button" class="seulement-convention onglet-lien" data-aller="convention">Contrat de travail ›</button>
       </div>
 
@@ -675,22 +675,22 @@
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           <p><b>Sur cet appareil seulement.</b> Jamais envoyé au serveur ni à iCloud, chiffré par l'iPhone et protégé par Face ID. N'inscrivez aucun nom, date de naissance, plaque ni numéro de permis : le numéro de constat suffit pour retrouver le dossier dans BERA.</p>
         </div>
-        <div id="ct-test" class="ct-test" hidden><b>Mode test administrateur.</b> Visible par vous seulement. Le registre est gardé dans ce navigateur, sur cet appareil (rien n'est envoyé au serveur), sans Face ID. Utilisez des données fictives : l'app iPhone et iPad à jour (build 3017) prendra le relais avec le fichier chiffré et Face ID.</div>
-        <div id="ct-maj" class="panneau" hidden><p>Le registre des constats demande la dernière version de l'app Police Management. Mettez l'app à jour, puis rouvrez cet onglet.</p></div>
+        <div id="ct-test" class="ct-test" hidden><b>Mode test administrateur.</b> Visible par vous seulement. L'historique est gardé dans ce navigateur, sur cet appareil (rien n'est envoyé au serveur), sans Face ID. Utilisez des données fictives : l'app iPhone et iPad à jour (build 3017) prendra le relais avec le fichier chiffré et Face ID.</div>
+        <div id="ct-maj" class="panneau" hidden><p>L'historique des constats demande la dernière version de l'app Police Management. Mettez l'app à jour, puis rouvrez cet onglet.</p></div>
         <div id="ct-verrou" class="panneau ct-verrou" hidden>
-          <p><b>Registre verrouillé</b></p>
+          <p><b>Historique verrouillé</b></p>
           <button type="button" class="btn-principal" id="ct-ouvrir">Déverrouiller</button>
         </div>
         <div id="ct-registre" hidden>
           <div class="ct-barre">
-            <input type="search" id="ct-q" placeholder="N° de constat, article, lieu, mot…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans le registre">
+            <input type="search" id="ct-q" placeholder="N° de constat, article, lieu, mot…" autocomplete="off" enterkeyhint="search" aria-label="Rechercher dans l'historique">
             <button type="button" class="btn-principal" id="ct-nouveau">+ Nouveau</button>
           </div>
           <p class="aide" id="ct-compte"></p>
           <div id="ct-liste" class="ct-liste"></div>
           <div class="ct-pied">
             <button type="button" class="lien" id="ct-verrouiller">Verrouiller</button>
-            <button type="button" class="lien rouge" id="ct-tout-effacer">Effacer tout le registre</button>
+            <button type="button" class="lien rouge" id="ct-tout-effacer">Effacer tout l'historique</button>
           </div>
         </div>
       </div>
@@ -2337,7 +2337,7 @@
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           Lire le constat avec une photo</button>
         <input type="file" id="ct-photo-fichier" accept="image/*" capture="environment" hidden>
-        <p class="aide" id="ct-photo-etat">La photo est lue sur cet appareil, puis oubliée : seuls le numéro, le type, la date, l'article et le lieu sont gardés. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.</p>
+        <p class="aide" id="ct-photo-etat">La photo est lue sur cet appareil, puis oubliée : seuls le numéro, l'infraction et l'emplacement sont pris. Le nom, l'adresse, la date de naissance, le permis et la plaque sont ignorés.</p>
         <label for="ct-numero">Numéro du constat</label>
         <input id="ct-numero" required maxlength="40" autocapitalize="characters" spellcheck="false" placeholder="Numéro inscrit au constat">
         <div class="segmente ct-type" role="radiogroup" aria-label="Type de constat">
@@ -2527,10 +2527,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611262132"></script>
+  <script src="config.js?v=202611270454"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611262132"></script>
-  <script src="saison.js?v=202611262132"></script>
-  <script src="app.js?v=202611262132"></script>
+  <script src="i18n.js?v=202611270454"></script>
+  <script src="saison.js?v=202611270454"></script>
+  <script src="app.js?v=202611270454"></script>
 </body>
 </html>
