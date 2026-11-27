@@ -3263,7 +3263,7 @@ html[data-style="nuit"] .cmp-rang, html[data-style="nuit"] .cmp-barre i { backgr
 .vue-carte { position: relative; }
 .vue-carte > .terrain-nav { position: absolute; z-index: 900; top: 8px; left: 12px; right: 12px; margin: 0 !important;
   background: color-mix(in srgb, var(--surface) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-  box-shadow: 0 6px 22px rgba(6, 13, 24, .22); max-width: 640px; }
+  box-shadow: 0 6px 22px rgba(6, 13, 24, .22); max-width: 640px; width: auto !important; box-sizing: border-box; }
 html.app-natif .vue-carte > .terrain-nav { top: calc(var(--natif-haut) + 6px); margin: 0 !important; }
 .vue-carte .carte-outils { top: 62px; }
 html.app-natif .vue-carte .carte-outils { top: calc(var(--natif-haut) + 60px); }
@@ -3288,7 +3288,7 @@ body.carte-plein .vue-carte .legende { top: calc(64px + env(safe-area-inset-top,
 body.carte-plein .vue-carte .btn-repere { top: calc(118px + env(safe-area-inset-top, 0px)); }
 body.carte-plein .vue-carte .btn-mesure { top: calc(172px + env(safe-area-inset-top, 0px)); }
 @media (min-width: 900px) {
-  .vue-carte > .terrain-nav { left: 16px; right: auto; width: 520px; }
+  .vue-carte > .terrain-nav { left: 16px; right: auto; width: 520px !important; }
   .vue-carte .carte-outils { left: 16px; }
 }
 
