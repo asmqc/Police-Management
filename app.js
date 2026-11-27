@@ -654,7 +654,7 @@
     document.body.classList.toggle("a-convention", accesConvention());
     if (depart === "convention" && p.role !== "admin") await chargerMaConvention(); else chargerMaConvention();
     signalerActivite();
-    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos", "fonctions", "entreprises", "comparatif"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
+    afficherVue(["accueil", "csr", "carte", "corps", "meteo", "paie", "horaire", "messages", "compte", "reglages", "aide", "admin", "forum", "idees", "convention", "feuille", "soutien", "apropos", "fonctions", "entreprises", "comparatif", "constats"].includes(depart) && (depart !== "admin" || p.role === "admin") && (depart !== "convention" || accesConvention()) ? depart : "accueil");
     chargerCorps();
     etat.paie = undefined; chargerPaie().catch(() => {});
     compterMessages();
@@ -678,7 +678,7 @@
   /* ---------------- Confirmation du courriel ----------------
      Un policier approuvé entre dans l'app même sans avoir confirmé son courriel,
      mais la carte, le CSR et les territoires restent verrouillés jusqu'à la confirmation. */
-  const VUES_VERROU = ["csr", "carte", "corps", "feuille"];
+  const VUES_VERROU = ["csr", "carte", "corps", "feuille", "constats"];
   const courrielVerifie = () => !!(etat.profil && etat.profil.courriel_verifie_le);
   async function verifierCourriel() {
     if (!etat.profil || etat.profil.courriel_verifie_le) return;
@@ -1542,6 +1542,7 @@ Question : ${question}
     if (verrou) { afficherVerrou(nom); return; }
     if (nom !== "admin") compterSection(nom === "horaire" && hr.onglet === "stats" && stats.contexte === "paie" ? "paie" : nom);
     if (nom === "csr") initCsr();
+    if (nom === "constats") { if (!(estAppIOS || estAdminRegistre())) { afficherVue("fonctions"); return; } initConstats(); }
     if (nom === "carte") {
       // Leaflet est chargé seulement quand la carte sert (premier affichage plus rapide)
       if (!etat.carte && !etat.placer) etat.placer = (...args) => { etat.placerAttente = args; };
@@ -1689,7 +1690,7 @@ Question : ${question}
     const v = etat.vue;
     if (appIOSAncienne && ["carte", "corps", "meteo"].includes(v)) return "carte";
     if ((v === "horaire" && hr.onglet === "stats" && contexteStats() === "paie") || v === "convention") return "paie";
-    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien", "reglages", "compte", "apropos", "comparatif"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
+    if (["forum", "feuille", "messages", "idees", "entreprises", "soutien", "reglages", "compte", "apropos", "comparatif", "constats"].includes(v)) return "fonctions"; // l'onglet Poste est remplacé par Fonctionnalités
     if (v === "horaire" && (hr.onglet === "poste" || hr.onglet === "ts")) return "horaire";
     if (["csr", "carte", "corps", "meteo"].includes(v)) return "csr";
     return v;
@@ -2970,7 +2971,7 @@ Question : ${question}
 
   function allerA(cible) {
     if (cible === "vitesse") { afficherVue("csr"); ongletLois("vitesse"); majOngletCourant(); return; }
-    if (cible === "constats") { afficherVue("csr"); ongletLois("constats"); majOngletCourant(); return; }
+    if (cible === "constats") { afficherVue("constats"); return; }
     if (cible === "position") { afficherVue("carte"); setTimeout(() => $("#btn-position").click(), 300); return; }
     if (cible === "paie" || MODES_PAIE.includes(cible)) { ouvrirPaie(cible === "paie" ? (estSQ() ? "paie" : "ts") : cible); return; }
     afficherVue(cible);
@@ -6123,7 +6124,7 @@ Format :
     }));
   }
   // Bilan (tableau de bord) : agrégats seulement, aucun suivi individuel
-  const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · historique des constats",
+  const NOMS_SECTIONS = { accueil: "Accueil", paie: "Paie (onglet)", meteo: "Météo et 511", csr: "Lois · articles", "lois-vitesse": "Lois · vitesses", "lois-frais": "Lois · frais judiciaires", "lois-favoris": "Lois · favoris", "lois-constats": "Lois · historique des constats", constats: "Historique des constats",
     carte: "Carte", horaire: "Horaire", "stats-paie": "Paie", "stats-banques": "Banques", "stats-ts": "Temps supplémentaire", "stats-depenses": "Dépenses", "stats-retraite": "Retraite", "stats-mois": "Heures du mois", "stats-annee": "Année",
     feuille: "Feuille de poste", "horaire-poste": "Horaire du poste", "ts-poste": "TS du poste", forum: "Forum", messages: "Messages", convention: "Contrat de travail", compte: "Réglages", idees: "Idées", corps: "Corps de police" };
   async function rendreBilanAdmin() {
@@ -7533,8 +7534,6 @@ Format :
   function ongletLois(nom) {
     if (nom !== "articles") compterSection("lois-" + nom);
     $$("[data-csr-onglet]").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.csrOnglet === nom)));
-    $("#csr-constats").hidden = nom !== "constats";
-    if (nom === "constats") initConstats();
     $("#csr-vitesse").hidden = nom !== "vitesse";
     $("#csr-articles").hidden = nom !== "articles";
     $("#csr-favoris").hidden = nom !== "favoris";
@@ -7575,7 +7574,7 @@ Format :
   const ct = { liste: [], ouvert: false, edition: null, type: "100400", lat: null, lon: null };
   function majOngletConstats() {
     pontRegistre = pontNatifRegistre || (estAdminRegistre() ? registreTest : null);
-    $("#csr-onglet-constats").hidden = !(estAppIOS || estAdminRegistre());
+    /* onglet à part (vue-constats) : accessible par Fonctionnalités seulement là où il est offert */
     $("#ct-test").hidden = !modeTestRegistre();
     $("#ct-avis").hidden = modeTestRegistre();
   }

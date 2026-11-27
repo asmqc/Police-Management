@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611270500">
+  <link rel="stylesheet" href="styles.css?v=202611270950">
 </head>
 <body>
   <!-- Chargement -->
@@ -655,22 +655,10 @@
     </section>
 
     <!-- Vue CSR -->
-    <section id="vue-csr" class="vue" hidden>
-      <div class="segmente sous-nav terrain-nav" role="tablist" aria-label="Terrain"><button type="button" role="tab" data-terrain="lois" aria-checked="true">Lois</button><button type="button" role="tab" data-terrain="vitesse" aria-checked="false">Vitesses</button><button type="button" role="tab" data-terrain="carte" aria-checked="false">Carte</button><button type="button" role="tab" data-terrain="meteo" aria-checked="false">Météo et 511</button></div>
-      <div class="vue-tete">
-        <h2 id="loi-titre">Code de la sécurité routière</h2>
-        <p class="ref" id="loi-ref">RLRQ, c. C-24.2</p>
-      </div>
-      <div class="onglets-csr" role="tablist" aria-label="Section du CSR">
-        <button role="tab" data-csr-onglet="articles" aria-selected="true">Articles</button>
-        <button role="tab" data-csr-onglet="vitesse" aria-selected="false" hidden>Vitesses</button>
-        <button role="tab" data-csr-onglet="frais" aria-selected="false">Frais judiciaires</button>
-        <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
-        <button role="tab" data-csr-onglet="constats" aria-selected="false" id="csr-onglet-constats" hidden>Historique des constats</button>
-        <button type="button" class="seulement-convention onglet-lien" data-aller="convention">Contrat de travail ›</button>
-      </div>
-
-      <div id="csr-constats" class="constats" hidden>
+    <!-- Historique des constats : onglet à part (app iPhone et iPad; test administrateur sur le site) -->
+    <section id="vue-constats" class="vue" hidden>
+      <div class="vue-tete"><h2>Historique des constats</h2><p class="ref">Vos constats, classés par type et catégorie. Sur cet appareil seulement.</p></div>
+      <div id="csr-constats" class="constats">
         <div class="ct-avis" id="ct-avis">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
           <p><b>Sur cet appareil seulement.</b> Jamais envoyé au serveur ni à iCloud, chiffré par l'iPhone et protégé par Face ID. N'inscrivez aucun nom, date de naissance, plaque ni numéro de permis : le numéro de constat suffit pour retrouver le dossier dans BERA.</p>
@@ -698,6 +686,21 @@
             <button type="button" class="lien rouge" id="ct-tout-effacer">Effacer tout l'historique</button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section id="vue-csr" class="vue" hidden>
+      <div class="segmente sous-nav terrain-nav" role="tablist" aria-label="Terrain"><button type="button" role="tab" data-terrain="lois" aria-checked="true">Lois</button><button type="button" role="tab" data-terrain="vitesse" aria-checked="false">Vitesses</button><button type="button" role="tab" data-terrain="carte" aria-checked="false">Carte</button><button type="button" role="tab" data-terrain="meteo" aria-checked="false">Météo et 511</button></div>
+      <div class="vue-tete">
+        <h2 id="loi-titre">Code de la sécurité routière</h2>
+        <p class="ref" id="loi-ref">RLRQ, c. C-24.2</p>
+      </div>
+      <div class="onglets-csr" role="tablist" aria-label="Section du CSR">
+        <button role="tab" data-csr-onglet="articles" aria-selected="true">Articles</button>
+        <button role="tab" data-csr-onglet="vitesse" aria-selected="false" hidden>Vitesses</button>
+        <button role="tab" data-csr-onglet="frais" aria-selected="false">Frais judiciaires</button>
+        <button role="tab" data-csr-onglet="favoris" aria-selected="false">★ Favoris<span class="nb-fav" id="nb-fav"></span></button>
+        <button type="button" class="seulement-convention onglet-lien" data-aller="convention">Contrat de travail ›</button>
       </div>
 
       <div id="csr-frais" class="frais" hidden>
@@ -2532,10 +2535,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611270500"></script>
+  <script src="config.js?v=202611270950"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611270500"></script>
-  <script src="saison.js?v=202611270500"></script>
-  <script src="app.js?v=202611270500"></script>
+  <script src="i18n.js?v=202611270950"></script>
+  <script src="saison.js?v=202611270950"></script>
+  <script src="app.js?v=202611270950"></script>
 </body>
 </html>
