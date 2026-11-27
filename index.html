@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611271006">
+  <link rel="stylesheet" href="styles.css?v=202611271007">
 </head>
 <body>
   <!-- Chargement -->
@@ -1096,6 +1096,7 @@
           <button type="button" role="radio" data-cal-vue="jour" aria-checked="false">Jour</button>
           <button type="button" role="radio" data-cal-vue="semaine" aria-checked="false">Semaine</button>
           <button type="button" role="radio" data-cal-vue="mois" aria-checked="true">Mois</button>
+          <button type="button" role="radio" data-cal-vue="annee" aria-checked="false">Année</button>
           <button type="button" role="radio" data-cal-vue="liste" aria-checked="false">Liste</button>
         </div>
         <div class="hr-mois-tete cal-tete">
@@ -1123,6 +1124,7 @@
               <div class="cal-grille-temps"><div class="cal-heures" id="cal-heures"></div><div class="cal-colonnes" id="cal-colonnes"></div></div>
             </div>
           </div>
+          <div id="cal-annee" class="cal-annee" hidden></div>
           <div id="cal-liste" class="cal-liste" hidden>
             <div class="recherche"><input type="search" id="cal-recherche" placeholder="Rechercher un événement" aria-label="Rechercher un événement" autocomplete="off"></div>
             <div id="cal-liste-contenu"></div>
@@ -2536,10 +2538,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611271006"></script>
+  <script src="config.js?v=202611271007"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611271006"></script>
-  <script src="saison.js?v=202611271006"></script>
-  <script src="app.js?v=202611271006"></script>
+  <script src="i18n.js?v=202611271007"></script>
+  <script src="saison.js?v=202611271007"></script>
+  <script src="app.js?v=202611271007"></script>
 </body>
 </html>

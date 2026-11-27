@@ -3416,3 +3416,21 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 
 /* Bouton « Calendriers » (choix de ce qui s'affiche) retiré le 27 nov. 2026 */
 #cal-calendriers { display: none !important; }
+
+/* ---------------- Horaire : vue Année (2026-11-27) ---------------- */
+.cal-annee { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+@media (min-width: 700px) { .cal-annee { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .cal-annee { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.cal-annee[hidden] { display: none; }
+.an-mois { display: grid; gap: 6px; padding: 10px 8px 8px; text-align: left; background: var(--surface); border: 1px solid var(--ligne); border-radius: var(--r); color: var(--fg); font: inherit; cursor: pointer; }
+.an-mois.courant { box-shadow: inset 0 0 0 2px var(--marque); }
+.an-mois b { font-size: .92rem; font-weight: 800; text-transform: capitalize; padding-left: 2px; }
+.an-mois.courant b { color: var(--marque); }
+.an-grille { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.an-grille i { font-style: normal; font-size: .55rem; font-weight: 800; text-align: center; color: var(--fg-doux); }
+.an-grille span { position: relative; aspect-ratio: 1; display: grid; place-items: center; font-size: .56rem; font-weight: 700; border-radius: 3px; line-height: 1; }
+.an-grille span.q { background: var(--q); color: var(--qt); }
+.an-grille span.auj { outline: 2px solid var(--marque); outline-offset: 0; z-index: 1; }
+.an-grille span.plus::after { content: ""; position: absolute; right: 1px; top: 1px; width: 4px; height: 4px; border-radius: 50%; background: #C2410C; box-shadow: 0 0 0 1px #fff; }
+.cal-vues { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+.cal-vues button { min-width: 0; padding-inline: 2px; font-size: .9rem; }

@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-27-vue-annee", date: "2026-11-27", titre: "Vue Année dans l'horaire", points: ["Nouveau choix « Année » à côté de Mois : les 12 mois d'un coup d'œil, chaque journée colorée selon votre quart.", "Touchez un mois pour l'ouvrir."] },
     { id: "2026-11-26-constats-classes", date: "2026-11-26", titre: "Constats classés", points: ["L'historique des constats est maintenant classé par catégorie d'infraction (vitesse, cellulaire, ceinture, signalisation…), avec le nombre de constats dans chacune.", "Filtrez par type : tous, nationaux (100400) ou municipaux (100391)."] },
     { id: "2026-11-26-historique-constats", date: "2026-11-26", titre: "Historique des constats", points: ["Le registre des constats s'appelle maintenant « Historique des constats » (Lois, app iPhone et iPad).", "La photo du constat prend seulement le numéro, l'infraction et l'emplacement. Tout le reste est ignoré, et la photo n'est jamais gardée."] },
     { id: "2026-11-26-carres", date: "2026-11-26", titre: "Calendrier plus clair", points: ["Chaque chose de la journée a maintenant son propre carré dans le calendrier : le quart, le temps supplémentaire (X) et ce qui est ajouté en plus.", "Vos événements personnels sont des ronds avec leur première lettre."] },
@@ -3281,10 +3282,12 @@ Question : ${question}
     $("#cal-mois").hidden = cal.vue !== "mois";
     $("#cal-temps").hidden = !["jour", "semaine"].includes(cal.vue);
     $("#cal-liste").hidden = cal.vue !== "liste";
+    $("#cal-annee").hidden = cal.vue !== "annee";
     $("#hr-prec").hidden = $("#hr-suiv").hidden = cal.vue === "liste";
     $("#cal-temps").classList.toggle("une-colonne", cal.vue === "jour");
     if (cal.vue === "mois") rendreMois();
     else if (cal.vue === "liste") rendreListe();
+    else if (cal.vue === "annee") rendreAnnee();
     else rendreTemps();
     $("#hr-legende").innerHTML = Object.entries(QUARTS).map(([k, v]) => `<span><i class="q q-${k}"></i>${k} ${esc(v.nom)}</span>`).join("");
   }
@@ -3301,6 +3304,30 @@ Question : ${question}
     if (!c.length) return "";
     const vus = c.length > 4 ? [...c.slice(0, 3), `<span class="chip plus-n">+${Math.min(c.length - 3, 9)}</span>`] : c;
     return `<span class="carres n${Math.min(vus.length, 4)}">${vus.join("")}</span>`;
+  }
+  // Vue Année : les 12 mois d'un coup d'œil, chaque jour coloré selon le quart; un toucher ouvre le mois
+  function rendreAnnee() {
+    const an = Number(cal.date.slice(0, 4)), auj = aujourdhuiISO(), rot = rotationVisible();
+    $("#hr-mois").textContent = String(an);
+    const ent = JOURS_ENTETE().map((j) => `<i>${j[0]}</i>`).join("");
+    let html = "";
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, "0"), premier = `${an}-${mm}-01`, debut = debutSemaine(premier), nb = new Date(an, m, 0).getDate();
+      const vides = jourUTC(premier) - jourUTC(debut);
+      let cases = "";
+      for (let k = 0; k < vides; k++) cases += "<span></span>";
+      for (let d = 1; d <= nb; d++) {
+        const iso = `${an}-${mm}-${String(d).padStart(2, "0")}`, qq = rot ? quartDu(iso) : {};
+        const plus = rot && ((qq.tsps || []).length || (qq.plus || []).length) ? " plus" : "";
+        cases += `<span class="${qq.code ? `q q-${esc(qq.code)}` : ""}${iso === auj ? " auj" : ""}${plus}" title="${d} ${esc(QUARTS[qq.code] ? QUARTS[qq.code].nom : "")}">${d}</span>`;
+      }
+      const nom = new Date(an, m - 1, 15).toLocaleDateString("fr-CA", { month: "long" });
+      html += `<button type="button" class="an-mois${auj.slice(0, 7) === `${an}-${mm}` ? " courant" : ""}" data-an-mois="${premier}" aria-label="Ouvrir ${esc(nom)} ${an}"><b>${esc(nom)}</b><div class="an-grille">${ent}${cases}</div></button>`;
+    }
+    $("#cal-annee").innerHTML = html;
+    $$("[data-an-mois]").forEach((b) => b.addEventListener("click", () => {
+      const p = b.dataset.anMois; cal.date = p; cal.sel = auj.slice(0, 7) === p.slice(0, 7) ? auj : p; changerVue("mois");
+    }));
   }
   function rendreMois() {
     const [a, m] = cal.date.split("-").map(Number);
@@ -3572,9 +3599,10 @@ Question : ${question}
   }
 
   function changerVue(v) { cal.vue = v; ecrireLocal("pm-cal-vue", v); rendreCalendrier(); }
-  $$("[data-cal-vue]").forEach((b) => b.addEventListener("click", () => { if (cal.vue === "mois" || cal.vue === "liste") cal.date = cal.sel; changerVue(b.dataset.calVue); }));
+  $$("[data-cal-vue]").forEach((b) => b.addEventListener("click", () => { if (cal.vue === "mois" || cal.vue === "liste") cal.date = cal.sel; else if (cal.vue === "annee" && b.dataset.calVue !== "annee") cal.date = cal.sel = cal.date.slice(0, 4) === cal.sel.slice(0, 4) ? cal.sel : cal.date; changerVue(b.dataset.calVue); }));
   function deplacer(sens) {
     if (cal.vue === "mois") { const d = minuit(cal.date.slice(0, 8) + "01"); d.setMonth(d.getMonth() + sens); cal.date = isoLoc(d); const [a, m] = cal.sel.split("-"); if (`${a}-${m}` !== cal.date.slice(0, 7)) cal.sel = cal.date; }
+    else if (cal.vue === "annee") { const an = Number(cal.date.slice(0, 4)) + sens; cal.date = `${an}${cal.date.slice(4, 8)}01`; }
     else if (cal.vue === "semaine") cal.date = cal.sel = ajoutJours(cal.date, 7 * sens);
     else if (cal.vue === "jour") cal.date = cal.sel = ajoutJours(cal.date, sens);
     rendreCalendrier();
