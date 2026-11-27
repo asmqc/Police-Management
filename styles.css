@@ -3396,3 +3396,20 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .ct-cat small { font-size: .8rem; font-weight: 800; letter-spacing: 0; background: var(--surface-2); color: var(--fg); border-radius: 999px; padding: 1px 9px; }
 .ct-type-pastille { font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--marque) 14%, var(--surface)); color: var(--marque); justify-self: start; }
 .ct-type-pastille.mun { background: color-mix(in srgb, #0f766e 14%, var(--surface)); color: #0f766e; }
+
+/* ---------------- Lois : une seule rangée d'onglets (Terrain); Favoris, Frais et Contrat en boutons ronds (2026-11-27) ---------------- */
+.vue-tete.lois-tete { display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.lois-titres { min-width: 0; }
+.lois-tete h2 { font-size: 1.55rem; line-height: 1.1; }
+.vue-tete .onglets-csr.lois-outils { display: flex !important; flex: none; gap: 2px; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.lois-outils .lo-ico { display: flex !important; flex-direction: column; align-items: center; gap: 3px; width: 50px; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; color: var(--marque); }
+.lois-outils .lo-ico[hidden] { display: none !important; }
+.lois-outils .lo-rond { position: relative; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--ligne); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.lois-outils .lo-rond svg { width: 21px; height: 21px; }
+.lois-outils .lo-ico small { font-size: .66rem; font-weight: 800; color: var(--fg-doux); white-space: nowrap; }
+.lois-outils .lo-ico[aria-selected="true"] .lo-rond { background: var(--marque); color: #fff; border-color: var(--marque); }
+.lois-outils .lo-ico[aria-selected="true"] small { color: var(--marque); }
+.lois-outils .nb-fav { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: #E8A317; color: #1A1204; font-size: .68rem; font-weight: 800; line-height: 18px; text-align: center; opacity: 1 !important; margin: 0 !important; font-family: inherit !important; }
+.lois-outils .nb-fav:empty { display: none; }
+.lois-retour { display: block; margin: 4px 0 10px; font-weight: 800; }
+.lois-retour[hidden] { display: none; }

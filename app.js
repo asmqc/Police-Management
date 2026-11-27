@@ -7541,9 +7541,13 @@ Format :
     if (nom === "frais") initFrais();
     if (nom === "vitesse") initVitesse();
     if (nom === "favoris") rendreFavoris();
+    $("#lois-retour").hidden = !["frais", "favoris"].includes(nom);
+    $("#lois-retour").textContent = nom === "frais" ? "‹ Frais judiciaires · retour aux articles" : nom === "favoris" ? "‹ Mes favoris · retour aux articles" : "‹ Retour aux articles";
     if (etat.vue === "csr") majOngletCourant();
   }
-  $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => ongletLois(b.dataset.csrOnglet)));
+  // Un toucher sur le bouton déjà actif (Favoris ou Frais) ramène aux articles
+  $$("[data-csr-onglet]").forEach((b) => b.addEventListener("click", () => ongletLois(b.getAttribute("aria-selected") === "true" && b.classList.contains("lo-ico") ? "articles" : b.dataset.csrOnglet)));
+  $("#lois-retour").addEventListener("click", () => ongletLois("articles"));
 
   /* ---------------- Registre des constats d'infraction (app iPhone et iPad seulement) ----------------
      Stocké par l'app, sur l'appareil seulement (Registre.swift) : fichier chiffré par iOS, exclu des sauvegardes,
