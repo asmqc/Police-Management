@@ -9992,16 +9992,18 @@ Format :
     toast(`${hb.plan.agents.length} agent${hb.plan.agents.length > 1 ? "s" : ""} trouvé${hb.plan.agents.length > 1 ? "s" : ""}${hb.ts.length ? ` · ${hb.ts.length} TS offert${hb.ts.length > 1 ? "s" : ""}` : ""} (test)`);
   }
 
-  function prochainJeudi17() {
-    const d = new Date(), j = new Date(d); j.setHours(17, 0, 0, 0);
-    j.setDate(j.getDate() + ((4 - j.getDay() + 7) % 7));
-    if (j <= d) j.setDate(j.getDate() + 7);
+  // Les inscriptions ouvrent dès que l'horaire est mis (photo lue) et ferment toujours le jeudi suivant à 17 h
+  function finInscriptions() {
+    const depart = hb.plan && hb.plan.lu_le ? new Date(hb.plan.lu_le) : new Date(), j = new Date(depart);
+    j.setHours(17, 0, 0, 0); j.setDate(j.getDate() + ((4 - j.getDay() + 7) % 7));
+    if (j <= depart) j.setDate(j.getDate() + 7);
     return j;
   }
   function statutInscriptions() {
-    const d = new Date(), jour = d.getDay(), j17 = prochainJeudi17(), h = Math.round((j17 - d) / 3600000);
-    const ouvert = (jour === 2 || jour === 3) || (jour === 4 && d.getHours() < 17);
-    return ouvert ? `Inscriptions ouvertes · attribution jeudi à 17 h (dans ${h < 24 ? `${h} h` : `${Math.round(h / 24)} jours`})` : `Inscriptions fermées · elles rouvrent mardi, attribution jeudi ${j17.toLocaleDateString("fr-CA", { day: "numeric", month: "long" })} à 17 h`;
+    if (!hb.plan) return "Les inscriptions ouvriront dès que l'horaire sera mis.";
+    const d = new Date(), fin = finInscriptions(), h = Math.round((fin - d) / 3600000);
+    const quand = fin.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+    return d < fin ? `Inscriptions ouvertes · fermeture et attribution ${quand} à 17 h (dans ${h < 24 ? `${Math.max(h, 0)} h` : `${Math.round(h / 24)} jour${Math.round(h / 24) > 1 ? "s" : ""}`})` : `Inscriptions fermées depuis ${quand} à 17 h · attribution faite`;
   }
 
   // Attribution du jeudi 17 h : équité (le moins de TS obtenus ce mois-ci), puis ancienneté, puis premier inscrit.
