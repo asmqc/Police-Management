@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611271010">
+  <link rel="stylesheet" href="styles.css?v=202611271025">
 </head>
 <body>
   <!-- Chargement -->
@@ -1089,6 +1089,7 @@
         <button type="button" role="tab" data-hr-vue="poste" aria-checked="false" hidden>Poste</button>
         <button type="button" role="tab" data-hr-vue="ts" aria-checked="false" hidden>TS<b class="hp-pastille" id="hp-pastille" hidden></b></button>
         <button type="button" role="tab" data-hr-vue="stats" aria-checked="false">Heures</button>
+        <button type="button" role="tab" data-hr-vue="beta" aria-checked="false" hidden>Poste <sup class="hb-beta">bêta</sup></button>
       </div>
 
       <div id="hr-vide" class="panneau" hidden>
@@ -1154,6 +1155,28 @@
           <div id="hr-abo-contenu"></div>
           <p class="aide hr-abo-avert"><b>Ce lien est personnel.</b> Toute personne qui l'a peut voir votre horaire de travail. Partagez-le seulement avec vos proches. Si vous croyez qu'il a circulé, créez-en un nouveau : l'ancien cesse de fonctionner.</p>
         </div>
+      </div>
+
+      <!-- Bêta « Poste » (administrateur seulement, mode test) : lecture d'un horaire en photo, assignation aux patrouilleurs
+           et attribution du TS du jeudi 17 h, simulées. Rien n'est écrit chez les collègues et aucune notification ne part. -->
+      <div id="hr-beta" class="hb" hidden>
+        <p class="hb-bandeau"><b>Bêta · mode test.</b> Visible par vous seulement. Rien n'est écrit dans l'horaire de vos collègues et aucune notification ne leur est envoyée : l'app vous montre ce qui serait fait.</p>
+        <div class="segmente hb-onglets" role="tablist" aria-label="Poste">
+          <button type="button" role="tab" data-hb="horaire" aria-checked="true">Horaire du poste</button>
+          <button type="button" role="tab" data-hb="ts" aria-checked="false">Temps supplémentaire<b class="hb-nb" id="hb-nb-ts" hidden></b></button>
+        </div>
+        <section id="hb-horaire">
+          <button type="button" class="btn-principal hb-photo" id="hb-photo"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg> Lire un horaire en photo</button>
+          <p class="aide">La photo est lue sur cet appareil, puis effacée. Vous vérifiez les quarts lus, puis l'app les assigne aux patrouilleurs de votre poste selon leur matricule.</p>
+          <div id="hb-resultat"></div>
+        </section>
+        <section id="hb-ts" hidden>
+          <p class="hb-statut" id="hb-statut"></p>
+          <p class="aide">Les agents s'inscrivent du mardi au jeudi 17 h. Jeudi à 17 h, chaque TS va d'abord à l'agent qui a obtenu le moins de TS ce mois-ci (équité), puis au plus ancien. Un agent qui travaille déjà à ces heures n'est pas retenu. Le contrat de travail (art. 12.14) laisse l'attribution aux politiques de gestion de la Sûreté.</p>
+          <div id="hb-ts-liste"></div>
+          <button type="button" class="btn-principal" id="hb-attribuer" hidden>Simuler l'attribution de jeudi 17 h</button>
+          <div id="hb-attribution"></div>
+        </section>
       </div>
 
       <!-- Horaire du poste et temps supplémentaire (membres de la SQ) -->
@@ -2547,10 +2570,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611271010"></script>
+  <script src="config.js?v=202611271025"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611271010"></script>
-  <script src="saison.js?v=202611271010"></script>
-  <script src="app.js?v=202611271010"></script>
+  <script src="i18n.js?v=202611271025"></script>
+  <script src="saison.js?v=202611271025"></script>
+  <script src="app.js?v=202611271025"></script>
 </body>
 </html>

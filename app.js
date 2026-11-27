@@ -1676,7 +1676,7 @@ Question : ${question}
   $$(".nav button").forEach((b) => b.addEventListener("click", () => {
     const v = b.dataset.vue;
     if (v === "horaire") { // l'onglet Horaire ramène toujours au calendrier de l'usager
-      if (hr.onglet === "poste" || hr.onglet === "ts" || (hr.onglet === "stats" && stats.contexte === "paie")) hr.onglet = "calendrier";
+      if (hr.onglet === "poste" || hr.onglet === "ts" || hr.onglet === "beta" || (hr.onglet === "stats" && stats.contexte === "paie")) hr.onglet = "calendrier";
       stats.contexte = "horaire";
     }
     afficherVue(v);
@@ -3158,6 +3158,17 @@ Question : ${question}
     $("#hr-poste-vue").hidden = !ongletPoste;
     if (!lecture && !conj) $("#hr-titre").textContent = ongletPoste ? "Mon poste" : "Mon horaire";
     if (etat.vue === "horaire") majOngletCourant();
+    const betaOk = estAdmin() && !lecture && !conj && !enConfig;
+    $("[data-hr-vue='beta']").hidden = !betaOk;
+    const ongletBeta = betaOk && hr.onglet === "beta";
+    $("#hr-beta").hidden = !ongletBeta;
+    if (ongletBeta) {
+      $("#hr-qui-bloc").hidden = true;
+      $$("[data-hr-vue]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hrVue === "beta")));
+      for (const id of ["#hr-vide", "#hr-principal", "#stats-voile", "#hr-partage", "#hr-echanges", "#hr-lecture-vide", "#hr-tsc"]) $(id).hidden = true;
+      rendreBeta();
+      return;
+    }
     if (ongletPoste) {
       $("#hr-resume").textContent = etat.profil.unite || "";
       $("#hr-qui-bloc").hidden = true;
@@ -9921,7 +9932,9 @@ Format :
     return tr;
   }
   function majComptePub() { const n = $$("#pub-table tbody tr").length; $("#pub-compte").textContent = `${n} quart${n > 1 ? "s" : ""}`; }
+  let pubBeta = false; // fiche de publication ouverte depuis la bêta « Poste » (mode test)
   function ouvrirPublication() {
+    pubBeta = false; $("#pub-titre-h").textContent = "Publier un horaire de travail"; $("#pub-ok").textContent = "Publier au poste";
     const lun = isoPlus(lundiDe(aujourdhuiISO()), 7);
     $("#pub-debut").value = lun; $("#pub-fin").value = isoPlus(lun, 13); $("#pub-titre").value = "";
     $("#pub-table tbody").innerHTML = ""; $("#pub-table tbody").appendChild(ligneQuartPub({ jour: lun })); majComptePub();
@@ -9933,6 +9946,132 @@ Format :
     $("#pub-voile").hidden = false;
   }
   $("#hp-publier").addEventListener("click", ouvrirPublication);
+
+  /* ---------------- Bêta « Poste » (administrateur seulement, MODE TEST) ----------------
+     Lecture d'un horaire en photo, assignation aux patrouilleurs du poste selon le matricule, puis attribution du TS
+     du jeudi 17 h (équité : le moins de TS obtenus ce mois-ci, puis ancienneté). Tout est simulé : rien n'est écrit
+     dans l'horaire des collègues et aucune notification ne leur est envoyée. Gardé dans cette session seulement. */
+  const hb = { onglet: "horaire", membres: null, plan: null, ts: [], resultat: null };
+  try { Object.assign(hb, JSON.parse(sessionStorage.getItem("pm-beta-poste") || "{}"), { membres: null }); } catch { /* facultatif */ }
+  const sauverBeta = () => { try { sessionStorage.setItem("pm-beta-poste", JSON.stringify({ onglet: hb.onglet, plan: hb.plan, ts: hb.ts, resultat: hb.resultat })); } catch { /* facultatif */ } };
+  const normMat = (m) => String(m || "").trim().toUpperCase().replace(/^0+(?=\d)/, "");
+  async function membresBeta() {
+    if (hb.membres) return hb.membres;
+    const { data, error } = await sb.rpc("beta_membres_poste");
+    if (error) { toast(traduireErreur(error)); return []; }
+    hb.membres = data || [];
+    return hb.membres;
+  }
+  const nomAgent = (m) => [m.grade, m.nom].filter(Boolean).join(" ") || `Matricule ${m.matricule}`;
+  const minQ = (t) => { const [a, b] = String(t).split(":").map(Number); return a * 60 + b; };
+  const intervalle = (q) => { if (!q.debut || !q.fin) return null; const d = minQ(q.debut); let f = minQ(q.fin); if (f <= d) f += 1440; return [d, f]; };
+  const chevauche = (a, b) => { if (a.jour !== b.jour) return false; const x = intervalle(a), y = intervalle(b); return !x || !y || (x[0] < y[1] && y[0] < x[1]); };
+  const heuresTxt = (q) => (q.debut && q.fin ? `${q.debut.replace(":", " h ")} à ${q.fin.replace(":", " h ")}`.replace(/ h 00/g, " h") : "heures à préciser");
+
+  async function betaAssigner(quarts, debut, fin) {
+    const membres = await membresBeta();
+    const parMat = new Map(membres.filter((m) => m.matricule).map((m) => [normMat(m.matricule), m]));
+    const agents = new Map(), inconnus = new Map();
+    for (const q of quarts.filter((x) => !x.ts && x.matricule)) {
+      const m = parMat.get(normMat(q.matricule));
+      if (!m) { inconnus.set(q.matricule, (inconnus.get(q.matricule) || 0) + 1); continue; }
+      if (!agents.has(m.id)) agents.set(m.id, { id: m.id, nom: nomAgent(m), matricule: m.matricule, rotation: m.rotation, quarts: [] });
+      agents.get(m.id).quarts.push({ jour: q.jour, code: q.code, debut: q.debut, fin: q.fin });
+    }
+    hb.plan = { debut, fin, lu_le: new Date().toISOString(), agents: [...agents.values()].sort((a, b) => a.nom.localeCompare(b.nom)), inconnus: [...inconnus.entries()], quarts: quarts.filter((x) => !x.ts) };
+    hb.ts = quarts.filter((x) => x.ts).map((q, i) => ({ id: `ts${i}-${q.jour}`, jour: q.jour, debut: q.debut, fin: q.fin, code: q.code || "X", places: Math.max(1, +q.places || 1), inscrits: [] }));
+    hb.resultat = null; hb.onglet = "horaire"; sauverBeta();
+    rendreBeta();
+    toast(`${hb.plan.agents.length} agent${hb.plan.agents.length > 1 ? "s" : ""} trouvé${hb.plan.agents.length > 1 ? "s" : ""}${hb.ts.length ? ` · ${hb.ts.length} TS offert${hb.ts.length > 1 ? "s" : ""}` : ""} (test)`);
+  }
+
+  function prochainJeudi17() {
+    const d = new Date(), j = new Date(d); j.setHours(17, 0, 0, 0);
+    j.setDate(j.getDate() + ((4 - j.getDay() + 7) % 7));
+    if (j <= d) j.setDate(j.getDate() + 7);
+    return j;
+  }
+  function statutInscriptions() {
+    const d = new Date(), jour = d.getDay(), j17 = prochainJeudi17(), h = Math.round((j17 - d) / 3600000);
+    const ouvert = (jour === 2 || jour === 3) || (jour === 4 && d.getHours() < 17);
+    return ouvert ? `Inscriptions ouvertes · attribution jeudi à 17 h (dans ${h < 24 ? `${h} h` : `${Math.round(h / 24)} jours`})` : `Inscriptions fermées · elles rouvrent mardi, attribution jeudi ${j17.toLocaleDateString("fr-CA", { day: "numeric", month: "long" })} à 17 h`;
+  }
+
+  // Attribution du jeudi 17 h : équité (le moins de TS obtenus ce mois-ci), puis ancienneté, puis premier inscrit.
+  function attribuerTS(membres) {
+    const parId = new Map(membres.map((m) => [m.id, m]));
+    const compte = new Map(membres.map((m) => [m.id, +m.ts_mois || 0]));
+    const obtenus = new Map(); // TS déjà obtenus dans cette attribution, pour éviter deux TS en même temps
+    const res = [];
+    for (const q of [...hb.ts].sort((a, b) => (a.jour + (a.debut || "")).localeCompare(b.jour + (b.debut || "")))) {
+      const lignes = q.inscrits.map((id, ordre) => {
+        const m = parId.get(id) || { id, nom: "?" };
+        const regulier = ((hb.plan && hb.plan.agents.find((a) => a.id === id)) || { quarts: [] }).quarts.find((x) => chevauche(x, q));
+        const autreTS = (obtenus.get(id) || []).find((x) => chevauche(x, q));
+        return { id, nom: nomAgent(m), ordre, rang: m.rang, n: compte.get(id) || 0, exclu: regulier ? `travaille déjà (${regulier.code} ${heuresTxt(regulier)})` : autreTS ? "a déjà un TS à ces heures" : "" };
+      });
+      const admissibles = lignes.filter((l) => !l.exclu).sort((a, b) => a.n - b.n || (a.rang ?? 1e9) - (b.rang ?? 1e9) || a.ordre - b.ordre);
+      const retenus = admissibles.slice(0, q.places);
+      for (const r of retenus) { compte.set(r.id, (compte.get(r.id) || 0) + 1); obtenus.set(r.id, [...(obtenus.get(r.id) || []), q]); }
+      const pourquoi = (l) => `${l.n} TS obtenu${l.n > 1 ? "s" : ""} ce mois-ci · ${l.rang ? `ancienneté : ${l.rang}${l.rang === 1 ? "er" : "e"}` : "ancienneté non inscrite"}`;
+      res.push({ q, retenus: retenus.map((l) => ({ nom: l.nom, raison: pourquoi(l) })),
+        autres: lignes.filter((l) => !retenus.includes(l)).map((l) => ({ nom: l.nom, raison: l.exclu || `${pourquoi(l)} · places déjà comblées` })),
+        manque: Math.max(0, q.places - retenus.length) });
+    }
+    return res;
+  }
+
+  async function rendreBeta() {
+    $$("[data-hb]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.hb === hb.onglet)));
+    $("#hb-horaire").hidden = hb.onglet !== "horaire"; $("#hb-ts").hidden = hb.onglet !== "ts";
+    $("#hb-nb-ts").hidden = !hb.ts.length; $("#hb-nb-ts").textContent = hb.ts.length;
+    const p = hb.plan;
+    $("#hb-resultat").innerHTML = !p ? `<p class="vide">Aucun horaire lu. Touchez « Lire un horaire en photo ».</p>` : `
+      <h3 class="intertitre">Horaire du ${esc(jourCourt(p.debut))} au ${esc(jourCourt(p.fin))}</h3>
+      <p class="aide">${p.agents.length} patrouilleur${p.agents.length > 1 ? "s" : ""} trouvé${p.agents.length > 1 ? "s" : ""} dans votre poste${hb.ts.length ? ` · ${hb.ts.length} TS offert${hb.ts.length > 1 ? "s" : ""} (onglet Temps supplémentaire)` : ""}.</p>
+      ${p.inconnus.length ? `<div class="hb-alerte">Aucun membre de votre poste pour ${p.inconnus.map(([m, n]) => `le matricule <b>${esc(m)}</b> (${n} quart${n > 1 ? "s" : ""})`).join(", ")}. Vérifiez la lecture ou ajoutez ce matricule dans le compte de l'agent.</div>` : ""}
+      ${p.agents.map((a) => `<article class="panneau hb-agent">
+        <div class="hb-agent-tete"><b>${esc(a.nom)}</b><small>Matricule ${esc(a.matricule)}</small></div>
+        <ul class="hb-quarts">${a.quarts.sort((x, y) => (x.jour + (x.debut || "")).localeCompare(y.jour + (y.debut || ""))).map((q) => `<li><span>${esc(jourCourt(q.jour))}</span><b class="chip q q-${esc(q.code)}">${esc(q.code)}</b><span>${esc(heuresTxt(q))}</span></li>`).join("")}</ul>
+        <p class="hb-action">✓ Serait ajouté à son horaire (${a.quarts.length} quart${a.quarts.length > 1 ? "s" : ""}${a.rotation ? ", ces journées remplacent sa rotation" : ""}).</p>
+        <p class="hb-notif">Notification : « Votre horaire du ${esc(jourCourt(p.debut))} au ${esc(jourCourt(p.fin))} est maintenant dans Police Management. »</p>
+      </article>`).join("")}`;
+    $("#hb-statut").textContent = statutInscriptions();
+    const membres = hb.ts.length ? await membresBeta() : [];
+    $("#hb-ts-liste").innerHTML = hb.ts.length ? hb.ts.map((q) => `<article class="panneau hb-ts" data-hb-q="${esc(q.id)}">
+        <div class="hb-agent-tete"><b>${esc(jourLong(q.jour))}</b><small>${esc(heuresTxt(q))} · ${q.places} place${q.places > 1 ? "s" : ""}</small></div>
+        <div class="hb-inscrits">${q.inscrits.length ? q.inscrits.map((id) => { const m = membres.find((x) => x.id === id); return `<span class="hb-chip">${esc(m ? nomAgent(m) : "?")}<button type="button" data-hb-retirer="${esc(id)}" aria-label="Retirer">✕</button></span>`; }).join("") : `<small class="aide">Aucun inscrit.</small>`}</div>
+        <select data-hb-inscrire aria-label="Inscrire un agent (test)"><option value="">+ Inscrire un agent (test)</option>${membres.filter((m) => !q.inscrits.includes(m.id)).map((m) => `<option value="${esc(m.id)}">${esc(nomAgent(m))}</option>`).join("")}</select>
+      </article>`).join("") : `<p class="vide">Aucun TS offert. Dans la photo lue, cochez « TS » sur les quarts offerts au poste.</p>`;
+    $("#hb-attribuer").hidden = !hb.ts.some((q) => q.inscrits.length);
+    const r = hb.resultat;
+    $("#hb-attribution").innerHTML = !r ? "" : `<h3 class="intertitre">Résultat de l'attribution (test)</h3>` + r.map((x) => `<article class="panneau hb-res">
+        <div class="hb-agent-tete"><b>${esc(jourLong(x.q.jour))}</b><small>${esc(heuresTxt(x.q))}</small></div>
+        ${x.retenus.map((l) => `<p class="hb-ok">✓ <b>${esc(l.nom)}</b> obtient le TS<small>${esc(l.raison)}</small></p>`).join("")}
+        ${x.autres.map((l) => `<p class="hb-non">✕ ${esc(l.nom)}<small>${esc(l.raison)}</small></p>`).join("")}
+        ${x.manque ? `<p class="hb-alerte">${x.manque} place${x.manque > 1 ? "s" : ""} encore libre${x.manque > 1 ? "s" : ""} : personne d'autre d'admissible.</p>` : ""}
+        <p class="hb-notif">Notifications : « Vous avez obtenu le TS du ${esc(jourLong(x.q.jour))}. Il est ajouté à votre horaire. » aux agents retenus, « Votre inscription n'a pas été retenue. » aux autres.</p>
+      </article>`).join("");
+  }
+  $$("[data-hb]").forEach((b) => b.addEventListener("click", () => { hb.onglet = b.dataset.hb; sauverBeta(); rendreBeta(); }));
+  $("#hb-photo").addEventListener("click", () => {
+    ouvrirPublication(); pubBeta = true;
+    $("#pub-titre-h").textContent = "Lire l'horaire du poste (bêta · test)"; $("#pub-ok").textContent = "Assigner aux patrouilleurs (test)";
+  });
+  $("#hb-ts-liste").addEventListener("change", (e) => {
+    const s2 = e.target.closest("[data-hb-inscrire]"); if (!s2 || !s2.value) return;
+    const q = hb.ts.find((x) => x.id === s2.closest("[data-hb-q]").dataset.hbQ); if (q && !q.inscrits.includes(s2.value)) q.inscrits.push(s2.value);
+    hb.resultat = null; sauverBeta(); rendreBeta();
+  });
+  $("#hb-ts-liste").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-hb-retirer]"); if (!b) return;
+    const q = hb.ts.find((x) => x.id === b.closest("[data-hb-q]").dataset.hbQ); if (q) q.inscrits = q.inscrits.filter((id) => id !== b.dataset.hbRetirer);
+    hb.resultat = null; sauverBeta(); rendreBeta();
+  });
+  $("#hb-attribuer").addEventListener("click", async () => {
+    hb.resultat = attribuerTS(await membresBeta()); sauverBeta(); rendreBeta();
+    setTimeout(() => $("#hb-attribution").scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  });
   $("#pub-heures-ok").addEventListener("click", () => {
     let n = 0;
     for (const tr of $$("#pub-table tbody tr")) {
@@ -9971,6 +10110,7 @@ Format :
       quarts.push(q);
     }
     if (!quarts.length) return toast("Ajoutez au moins un quart.");
+    if (pubBeta) { $("#pub-voile").hidden = true; return betaAssigner(quarts, debut, fin); } // bêta : simulation seulement
     $("#pub-ok").disabled = true;
     const { error } = await sb.rpc("horaire_poste_publier", { p_debut: debut, p_fin: fin, p_titre: $("#pub-titre").value, p_quarts: quarts });
     $("#pub-ok").disabled = false;

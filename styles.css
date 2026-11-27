@@ -3441,3 +3441,31 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .hr-noms { display: grid; gap: 6px; margin: 8px 0; }
 .hr-noms label { font-weight: 700; font-size: .85rem; color: var(--fg-doux); margin-top: 4px; }
 .hr-noms-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+
+/* ---------------- Bêta « Poste » : administrateur seulement, mode test (2026-11-27) ---------------- */
+.hb[hidden], #hb-horaire[hidden], #hb-ts[hidden] { display: none; }
+.hb { display: grid; gap: 12px; }
+.hb-beta { font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #92400e; background: #fef3c7; border-radius: 999px; padding: 1px 6px; vertical-align: 2px; }
+.hb-bandeau { margin: 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #f59e0b 14%, var(--surface)); border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent); font-size: .85rem; line-height: 1.4; }
+.hb-onglets { display: grid; grid-template-columns: 1fr 1fr; }
+.hb-nb { margin-left: 6px; font-size: .7rem; background: var(--marque); color: #fff; border-radius: 999px; padding: 1px 7px; }
+.hb-nb[hidden] { display: none; }
+#hb-horaire, #hb-ts { display: grid; gap: 10px; }
+.hb-photo { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.hb-agent, .hb-ts, .hb-res { display: grid; gap: 8px; }
+.hb-agent-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.hb-agent-tete b { font-size: 1rem; }
+.hb-agent-tete small { color: var(--fg-doux); font-weight: 700; }
+.hb-quarts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hb-quarts li { display: grid; grid-template-columns: 7.5em 2.2em 1fr; align-items: center; gap: 8px; font-size: .88rem; }
+.hb-quarts .chip { min-width: 0; padding: 3px 0; text-align: center; border-radius: 6px; font-size: .8rem; }
+.hb-action { margin: 0; font-weight: 700; font-size: .88rem; color: #0f766e; }
+.hb-notif { margin: 0; font-size: .8rem; color: var(--fg-doux); font-style: italic; }
+.hb-alerte { padding: 9px 12px; border-radius: 10px; background: color-mix(in srgb, #dc2626 10%, var(--surface)); font-size: .85rem; margin: 0; }
+.hb-statut { margin: 0; font-weight: 800; color: var(--marque); }
+.hb-inscrits { display: flex; flex-wrap: wrap; gap: 6px; }
+.hb-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 4px 4px 10px; border-radius: 999px; background: var(--surface-2); font-size: .85rem; font-weight: 700; text-transform: capitalize; }
+.hb-chip button { border: 0; background: none; color: var(--fg-doux); cursor: pointer; padding: 2px 6px; }
+.hb-ok, .hb-non { margin: 0; display: block; font-size: .9rem; }
+.hb-ok { color: #0f766e; } .hb-non { color: var(--fg-doux); }
+.hb-ok small, .hb-non small { display: block; font-size: .78rem; color: var(--fg-doux); margin-left: 1.2em; }
