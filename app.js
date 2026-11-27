@@ -826,6 +826,7 @@
   }
   // Seulement les nouveautés de la dernière version (remplacer à chaque mise à jour)
   const NOUVEAUTES = [
+    { id: "2026-11-27-noms-calendriers", date: "2026-11-27", titre: "Nommez vos calendriers", points: ["Avec un deuxième calendrier, touchez « ✎ Nommer mes calendriers » dans Horaire pour donner un nom à chacun."] },
     { id: "2026-11-27-vue-annee", date: "2026-11-27", titre: "Vue Année dans l'horaire", points: ["Nouveau choix « Année » à côté de Mois : les 12 mois d'un coup d'œil, chaque journée colorée selon votre quart.", "Touchez un mois pour l'ouvrir."] },
     { id: "2026-11-26-constats-classes", date: "2026-11-26", titre: "Constats classés", points: ["L'historique des constats est maintenant classé par catégorie d'infraction (vitesse, cellulaire, ceinture, signalisation…), avec le nombre de constats dans chacune.", "Filtrez par type : tous, nationaux (100400) ou municipaux (100391)."] },
     { id: "2026-11-26-historique-constats", date: "2026-11-26", titre: "Historique des constats", points: ["Le registre des constats s'appelle maintenant « Historique des constats » (Lois, app iPhone et iPad).", "La photo du constat prend seulement le numéro, l'infraction et l'emplacement. Tout le reste est ignoré, et la photo n'est jamais gardée."] },
@@ -1899,7 +1900,7 @@ Question : ${question}
     hr.config = data && data.config && data.config.cycle ? data.config : null;
     hr.exceptions = (data && data.exceptions) || {};
     const c = data && data.conjoint;
-    hr.conj = c ? { nom: c.nom || "Conjoint·e", config: c.config && c.config.cycle ? c.config : null, exceptions: c.exceptions || {} } : null;
+    hr.conj = c ? { nom: c.nom || "Conjoint·e", nomMoi: c.nomMoi || "", config: c.config && c.config.cycle ? c.config : null, exceptions: c.exceptions || {} } : null;
     if (!hr.conj) hr.cible = "moi";
     hr.chargé = true;
   }
@@ -3123,7 +3124,7 @@ Question : ${question}
   });
 
   async function sauverHoraire() {
-    const conjoint = hr.conj ? { nom: hr.conj.nom, config: hr.conj.config || null, exceptions: hr.conj.exceptions || {} } : null;
+    const conjoint = hr.conj ? { nom: hr.conj.nom, nomMoi: hr.conj.nomMoi || "", config: hr.conj.config || null, exceptions: hr.conj.exceptions || {} } : null;
     const { error } = await sb.from("horaires").upsert({ user_id: etat.profil.id, config: hr.config || {}, exceptions: hr.exceptions, conjoint, maj_le: new Date().toISOString() });
     if (error) throw error;
   }
@@ -3135,10 +3136,12 @@ Question : ${question}
     const conj = !lecture && hr.cible === "conjoint" && !!hr.conj;
     if (lecture) $("#hr-form").hidden = true;
     const enConfig = !$("#hr-form").hidden;
-    $("#hr-titre").textContent = lecture ? `Horaire de ${hr.vue.nom}` : conj ? `Horaire de ${hr.conj.nom}` : "Mon horaire";
+    const nomMoi = (hr.conj && hr.conj.nomMoi) || "Mon horaire";
+    $("#hr-titre").textContent = lecture ? `Horaire de ${hr.vue.nom}` : conj ? `Horaire de ${hr.conj.nom}` : nomMoi;
     $("#hr-cible").hidden = lecture || !hr.conj;
     $$("[data-cible]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cible === (conj ? "conjoint" : "moi"))));
-    if (hr.conj) $("#hr-cible-conj").textContent = hr.conj.nom;
+    if (hr.conj) { $("#hr-cible-conj").textContent = hr.conj.nom; $("#hr-cible-moi").textContent = nomMoi; }
+    $("#hr-renommer").hidden = lecture || !hr.conj || !$("#hr-noms").hidden;
     $("#hr-qui-bloc").hidden = conj || !hr.quiVisible;
     $("#hr-echanges").hidden = lecture || conj || enConfig || (hr.onglet === "stats" && !!affichee().config);
     $$(".hr-moi-seul").forEach((el) => (el.hidden = conj));
@@ -3773,6 +3776,21 @@ Question : ${question}
 
 
   /* ---------------- Calendrier du conjoint·e (2e calendrier, privé) ---------------- */
+  // Nommer ses calendriers : « Mon horaire » et le 2e calendrier (ex. « Julie », « Horaire d'été »)
+  $("#hr-renommer").addEventListener("click", () => {
+    if (!hr.conj) return;
+    $("#hr-nom-moi").value = hr.conj.nomMoi || ""; $("#hr-nom-conj").value = hr.conj.nom === "Conjoint·e" ? "" : hr.conj.nom;
+    $("#hr-noms").hidden = false; $("#hr-renommer").hidden = true; $("#hr-nom-moi").focus();
+  });
+  $("#hr-noms-annuler").addEventListener("click", () => { $("#hr-noms").hidden = true; rendreHoraire(); });
+  $("#hr-noms-ok").addEventListener("click", async () => {
+    if (!hr.conj) return;
+    hr.conj.nomMoi = $("#hr-nom-moi").value.trim().slice(0, 30);
+    hr.conj.nom = $("#hr-nom-conj").value.trim().slice(0, 30) || "Conjoint·e";
+    try { await sauverHoraire(); toast("Noms enregistrés"); } catch (err) { toast(traduireErreur(err)); }
+    if ($("#rg-conjoint-nom")) $("#rg-conjoint-nom").value = hr.conj.nom;
+    $("#hr-noms").hidden = true; rendreHoraire();
+  });
   $$("[data-cible]").forEach((b) => b.addEventListener("click", () => {
     hr.cible = b.dataset.cible === "conjoint" && hr.conj ? "conjoint" : "moi";
     hr.vue = null; $("#hr-qui").value = ""; $("#hr-form").hidden = true;

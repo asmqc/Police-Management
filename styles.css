@@ -3434,3 +3434,10 @@ html[data-style="nuit"] .hr-rapide { background: #0D0202; box-shadow: 0 0 0 100v
 .an-grille span.plus::after { content: ""; position: absolute; right: 1px; top: 1px; width: 4px; height: 4px; border-radius: 50%; background: #C2410C; box-shadow: 0 0 0 1px #fff; }
 .cal-vues { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
 .cal-vues button { min-width: 0; padding-inline: 2px; font-size: .9rem; }
+
+/* Nommer ses calendriers (2026-11-27) */
+.hr-renommer { display: block; margin: 6px 2px 4px; font-weight: 800; font-size: .88rem; }
+.hr-renommer[hidden], .hr-noms[hidden] { display: none; }
+.hr-noms { display: grid; gap: 6px; margin: 8px 0; }
+.hr-noms label { font-weight: 700; font-size: .85rem; color: var(--fg-doux); margin-top: 4px; }
+.hr-noms-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }

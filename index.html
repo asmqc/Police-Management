@@ -35,7 +35,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="preconnect" href="https://skafnhlxlptmykboqzfq.supabase.co" crossorigin>
   <link rel="stylesheet" href="assets/polices/polices.css">
-  <link rel="stylesheet" href="styles.css?v=202611271007">
+  <link rel="stylesheet" href="styles.css?v=202611271010">
 </head>
 <body>
   <!-- Chargement -->
@@ -1063,8 +1063,17 @@
         <select id="hr-qui"><option value="">Mon horaire</option></select>
       </div>
       <div class="segmente hr-cible" id="hr-cible" role="radiogroup" aria-label="Calendrier affiché" hidden>
-        <button type="button" role="radio" data-cible="moi" aria-checked="true">Mon horaire</button>
+        <button type="button" role="radio" data-cible="moi" aria-checked="true" id="hr-cible-moi">Mon horaire</button>
         <button type="button" role="radio" data-cible="conjoint" aria-checked="false" id="hr-cible-conj">Conjoint·e</button>
+      </div>
+      <!-- Nommer ses calendriers (quand il y en a plus d'un) -->
+      <button type="button" class="lien hr-renommer" id="hr-renommer" hidden>✎ Nommer mes calendriers</button>
+      <div class="panneau hr-noms" id="hr-noms" hidden>
+        <label for="hr-nom-moi">Nom de mon calendrier</label>
+        <input id="hr-nom-moi" type="text" maxlength="30" placeholder="Mon horaire" autocomplete="off">
+        <label for="hr-nom-conj">Nom du 2e calendrier</label>
+        <input id="hr-nom-conj" type="text" maxlength="30" placeholder="Conjoint·e" autocomplete="off">
+        <div class="hr-noms-actions"><button type="button" class="btn-secondaire" id="hr-noms-annuler">Annuler</button><button type="button" class="btn-principal" id="hr-noms-ok">Enregistrer</button></div>
       </div>
       <p id="hr-lecture-vide" class="vide" hidden>Ce collègue n'a pas encore configuré sa rotation.</p>
       <div class="segmente sous-nav poste-nav" id="hr-poste-nav" hidden role="tablist" aria-label="Mon poste">
@@ -2538,10 +2547,10 @@
     </div>
   </div>
 
-  <script src="config.js?v=202611271007"></script>
+  <script src="config.js?v=202611271010"></script>
   <script src="assets/lib/supabase-2.45.4.js"></script>
-  <script src="i18n.js?v=202611271007"></script>
-  <script src="saison.js?v=202611271007"></script>
-  <script src="app.js?v=202611271007"></script>
+  <script src="i18n.js?v=202611271010"></script>
+  <script src="saison.js?v=202611271010"></script>
+  <script src="app.js?v=202611271010"></script>
 </body>
 </html>
